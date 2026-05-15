@@ -4,24 +4,42 @@ import { AddressInput } from "@workspace/ui/components/address-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CountrySelect } from "@/components/ui/country-select";
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { usePlacesAutocomplete } from "@/hooks/use-places-autocomplete";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { CountryCode, PublicUserType } from "@convex/lib/constants";
 import { Home, Phone, Plus, Trash2 } from "lucide-react";
-import { useMemo } from "react";
+import { forwardRef, useImperativeHandle, useMemo } from "react";
+import {
+	Controller,
+	useFieldArray,
+	useForm,
+	type UseFormReturn,
+} from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import type { EmergencyContact, OnboardingData } from "../types";
+import {
+	contactsSchemaFor,
+	type ContactsValues,
+} from "../lib/schemas";
+import type { StepHandle } from "../lib/stepHandle";
+import type { OnboardingData } from "../types";
 
-export function ContactsStep({
-	data,
-	updateData,
-	userType,
-}: {
+type Props = {
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
 	userType: PublicUserType;
-}) {
+};
+
+export const ContactsStep = forwardRef<StepHandle, Props>(function ContactsStep(
+	{ data, updateData, userType },
+	ref,
+) {
 	const { t } = useTranslation();
 	const isLong = userType === PublicUserType.LongStay;
 	const isForeigner =
@@ -32,23 +50,47 @@ export function ContactsStep({
 	const wantsEmergency = isLong || isForeigner;
 	const wantsHomeland = isLong;
 
-	const emergency: EmergencyContact[] = data.emergencyContacts ?? [{}];
+	const schema = useMemo(() => contactsSchemaFor(userType), [userType]);
 
-	const setEmergency = (next: EmergencyContact[]) =>
-		updateData({ emergencyContacts: next });
+	const form = useForm<ContactsValues>({
+		resolver: zodResolver(schema),
+		mode: "onTouched",
+		defaultValues: {
+			address: {
+				street: data.address?.street ?? data.address?.full ?? "",
+				city: data.address?.city ?? "",
+				postalCode: data.address?.postalCode ?? "",
+				country: data.address?.country ?? CountryCode.FR,
+				full: data.address?.full,
+				lat: data.address?.lat,
+				lng: data.address?.lng,
+			},
+			homeland: data.homeland ?? undefined,
+			emergencyContacts:
+				data.emergencyContacts && data.emergencyContacts.length > 0
+					? (data.emergencyContacts as ContactsValues["emergencyContacts"])
+					: wantsEmergency
+						? ([{ firstName: "", lastName: "", phone: "" }] as ContactsValues["emergencyContacts"])
+						: undefined,
+		},
+	});
 
-	const updateEC = (i: number, key: keyof EmergencyContact, val: string) => {
-		const next = [...emergency];
-		next[i] = { ...next[i], [key]: val };
-		setEmergency(next);
-	};
-
-	const updateHomeland = (key: "full", v: string) => {
-		updateData({ homeland: { ...(data.homeland ?? {}), [key]: v } });
-	};
+	useImperativeHandle(
+		ref,
+		() => ({
+			async validateAndNext() {
+				const ok = await form.trigger();
+				if (!ok) return false;
+				updateData(form.getValues() as Partial<OnboardingData>);
+				return true;
+			},
+		}),
+		[form, updateData],
+	);
 
 	const places = usePlacesAutocomplete({
-		components: "country:fr|country:ga|country:be|country:ch|country:ca|country:us|country:gb|country:de|country:es|country:it",
+		components:
+			"country:fr|country:ga|country:be|country:ch|country:ca|country:us|country:gb|country:de|country:es|country:it",
 		debounceMs: 350,
 	});
 
@@ -79,17 +121,11 @@ export function ContactsStep({
 		[places],
 	);
 
-	const addressValue = {
-		street: data.address?.street ?? data.address?.full ?? "",
-		city: data.address?.city ?? "",
-		postalCode: data.address?.postalCode ?? "",
-		country: data.address?.country ?? CountryCode.FR,
-		lat: data.address?.lat,
-		lng: data.address?.lng,
-	};
-
 	return (
-		<div className="flex flex-col gap-5">
+		<form
+			onSubmit={(e) => e.preventDefault()}
+			className="flex flex-col gap-5"
+		>
 			<header className="flex flex-col gap-2">
 				<h1
 					className="text-2xl font-semibold tracking-tight md:text-3xl"
@@ -104,45 +140,67 @@ export function ContactsStep({
 
 			<Card>
 				<CardContent className="flex flex-col gap-4 p-5">
-					<AddressInput
-						value={addressValue}
-						onChange={(next) =>
-							updateData({
-								address: {
-									...(data.address ?? {}),
-									street: next.street,
-									city: next.city,
-									postalCode: next.postalCode,
-									country: next.country,
-									lat: next.lat,
-									lng: next.lng,
-								},
-							})
-						}
-						autocomplete={autocompleteAdapter}
-						countrySelector={
-							<CountrySelect
-								type="single"
-								selected={
-									(data.address?.country as CountryCode) ?? CountryCode.FR
-								}
-								onChange={(v) =>
-									updateData({
-										address: { ...(data.address ?? {}), country: v },
-									})
-								}
-							/>
-						}
-						showCoordinates
-						labels={{
-							street: t("onboarding.contacts.address.street"),
-							streetPlaceholder: t(
-								"onboarding.contacts.address.streetPlaceholder",
-							),
-							city: t("onboarding.contacts.address.city"),
-							postalCode: t("onboarding.contacts.address.postalCode"),
-							country: t("onboarding.contacts.address.country"),
-						}}
+					<Controller
+						control={form.control}
+						name="address"
+						render={({ field, fieldState }) => (
+							<Field data-invalid={fieldState.invalid}>
+								<AddressInput
+									value={{
+										street: field.value?.street ?? "",
+										city: field.value?.city ?? "",
+										postalCode: field.value?.postalCode ?? "",
+										country: field.value?.country ?? CountryCode.FR,
+										lat: field.value?.lat,
+										lng: field.value?.lng,
+									}}
+									onChange={(next) =>
+										field.onChange({
+											...(field.value ?? {}),
+											street: next.street,
+											city: next.city,
+											postalCode: next.postalCode,
+											country: next.country,
+											lat: next.lat,
+											lng: next.lng,
+										})
+									}
+									autocomplete={autocompleteAdapter}
+									countrySelector={
+										<CountrySelect
+											type="single"
+											selected={
+												(field.value?.country as CountryCode) ?? CountryCode.FR
+											}
+											onChange={(v) =>
+												field.onChange({ ...(field.value ?? {}), country: v })
+											}
+										/>
+									}
+									showCoordinates={false}
+									labels={{
+										street: t("onboarding.contacts.address.street"),
+										streetPlaceholder: t(
+											"onboarding.contacts.address.streetPlaceholder",
+										),
+										city: t("onboarding.contacts.address.city"),
+										postalCode: t("onboarding.contacts.address.postalCode"),
+										country: t("onboarding.contacts.address.country"),
+									}}
+								/>
+								{fieldState.invalid && (
+									<FieldError
+										errors={[
+											fieldState.error,
+											...((fieldState.error &&
+												"types" in (fieldState.error as object)
+												? []
+												: []) as never),
+										]}
+									/>
+								)}
+							</Field>
+						)}
 					/>
 				</CardContent>
 			</Card>
@@ -156,143 +214,216 @@ export function ContactsStep({
 								{t("onboarding.contacts.homeland.title")}
 							</h3>
 						</div>
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="homelandFull" suppressHydrationWarning>
-								{t("onboarding.contacts.homeland.fullLabel")}
-							</Label>
-							<Input
-								id="homelandFull"
-								value={data.homeland?.full ?? ""}
-								onChange={(e) => updateHomeland("full", e.target.value)}
-								placeholder={t("onboarding.contacts.homeland.placeholder")}
-							/>
-							<p className="text-xs text-muted-foreground" suppressHydrationWarning>
-								{t("onboarding.contacts.homeland.help")}
-							</p>
-						</div>
+						<Controller
+							control={form.control}
+							name="homeland.full"
+							render={({ field, fieldState }) => (
+								<Field data-invalid={fieldState.invalid}>
+									<FieldLabel htmlFor="homelandFull" suppressHydrationWarning>
+										{t("onboarding.contacts.homeland.fullLabel")}
+									</FieldLabel>
+									<Input
+										id="homelandFull"
+										placeholder={t("onboarding.contacts.homeland.placeholder")}
+										aria-invalid={fieldState.invalid}
+										{...field}
+										value={field.value ?? ""}
+									/>
+									<p
+										className="text-xs text-muted-foreground"
+										suppressHydrationWarning
+									>
+										{t("onboarding.contacts.homeland.help")}
+									</p>
+								</Field>
+							)}
+						/>
 					</CardContent>
 				</Card>
 			)}
 
-			{wantsEmergency && (
-				<Card className="border-gabon-yellow/40 bg-gabon-yellow-tint/30">
-					<CardContent className="flex flex-col gap-4 p-5">
-						<div className="flex items-center gap-2">
-							<Phone className="size-4 text-gabon-yellow" />
-							<h3 className="text-sm font-semibold" suppressHydrationWarning>
-								{t("onboarding.contacts.emergency.title")}
-							</h3>
-						</div>
-						<p className="text-xs text-muted-foreground" suppressHydrationWarning>
-							{t("onboarding.contacts.emergency.description")}
-						</p>
+			{wantsEmergency && <EmergencyContactsSection form={form} />}
+		</form>
+	);
+});
 
-						<div className="flex flex-col gap-3">
-							{emergency.map((ec, i) => (
-								<div
-									key={i}
-									className="relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
+function EmergencyContactsSection({
+	form,
+}: {
+	form: UseFormReturn<ContactsValues>;
+}) {
+	const { t } = useTranslation();
+	const { fields, append, remove } = useFieldArray({
+		control: form.control,
+		name: "emergencyContacts" as const,
+	});
+
+	return (
+		<Card className="border-gabon-yellow/40 bg-gabon-yellow-tint/30">
+			<CardContent className="flex flex-col gap-4 p-5">
+				<div className="flex items-center gap-2">
+					<Phone className="size-4 text-gabon-yellow" />
+					<h3 className="text-sm font-semibold" suppressHydrationWarning>
+						{t("onboarding.contacts.emergency.title")}
+					</h3>
+				</div>
+				<p
+					className="text-xs text-muted-foreground"
+					suppressHydrationWarning
+				>
+					{t("onboarding.contacts.emergency.description")}
+				</p>
+
+				<div className="flex flex-col gap-3">
+					{fields.map((f, i) => (
+						<div
+							key={f.id}
+							className="relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
+						>
+							<div className="flex items-center justify-between">
+								<strong
+									className="text-xs uppercase tracking-wide text-muted-foreground"
+									suppressHydrationWarning
 								>
-									<div className="flex items-center justify-between">
-										<strong
-											className="text-xs uppercase tracking-wide text-muted-foreground"
-											suppressHydrationWarning
-										>
-											{t("onboarding.contacts.emergency.contactN", { n: i + 1 })}
-										</strong>
-										{emergency.length > 1 && (
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												className="h-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-												onClick={() =>
-													setEmergency(emergency.filter((_, j) => j !== i))
-												}
-												aria-label={t(
-													"onboarding.contacts.emergency.removeAria",
-												)}
-											>
-												<Trash2 className="size-3.5" />
-											</Button>
+									{t("onboarding.contacts.emergency.contactN", { n: i + 1 })}
+								</strong>
+								{fields.length > 1 && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="h-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+										onClick={() => remove(i)}
+										aria-label={t(
+											"onboarding.contacts.emergency.removeAria",
 										)}
-									</div>
-									<div className="grid gap-3 md:grid-cols-2">
-										<div className="flex flex-col gap-2">
-											<Label suppressHydrationWarning>
+									>
+										<Trash2 className="size-3.5" />
+									</Button>
+								)}
+							</div>
+							<FieldGroup className="grid gap-3 md:grid-cols-2">
+								<Controller
+									control={form.control}
+									name={`emergencyContacts.${i}.firstName` as const}
+									render={({ field, fieldState }) => (
+										<Field data-invalid={fieldState.invalid}>
+											<FieldLabel suppressHydrationWarning>
 												{t("onboarding.contacts.emergency.firstName")}{" "}
 												<span className="text-destructive">*</span>
-											</Label>
+											</FieldLabel>
 											<Input
-												value={ec.firstName ?? ""}
-												onChange={(e) =>
-													updateEC(i, "firstName", e.target.value)
-												}
+												aria-invalid={fieldState.invalid}
+												{...field}
+												value={field.value ?? ""}
 											/>
-										</div>
-										<div className="flex flex-col gap-2">
-											<Label suppressHydrationWarning>
+											{fieldState.invalid && (
+												<FieldError errors={[fieldState.error]} />
+											)}
+										</Field>
+									)}
+								/>
+								<Controller
+									control={form.control}
+									name={`emergencyContacts.${i}.lastName` as const}
+									render={({ field, fieldState }) => (
+										<Field data-invalid={fieldState.invalid}>
+											<FieldLabel suppressHydrationWarning>
 												{t("onboarding.contacts.emergency.lastName")}{" "}
 												<span className="text-destructive">*</span>
-											</Label>
+											</FieldLabel>
 											<Input
-												value={ec.lastName ?? ""}
-												onChange={(e) =>
-													updateEC(i, "lastName", e.target.value)
-												}
+												aria-invalid={fieldState.invalid}
+												{...field}
+												value={field.value ?? ""}
 											/>
-										</div>
-										<div className="flex flex-col gap-2">
-											<Label suppressHydrationWarning>
+											{fieldState.invalid && (
+												<FieldError errors={[fieldState.error]} />
+											)}
+										</Field>
+									)}
+								/>
+								<Controller
+									control={form.control}
+									name={`emergencyContacts.${i}.phone` as const}
+									render={({ field, fieldState }) => (
+										<Field data-invalid={fieldState.invalid}>
+											<FieldLabel suppressHydrationWarning>
 												{t("onboarding.contacts.emergency.phone")}{" "}
 												<span className="text-destructive">*</span>
-											</Label>
+											</FieldLabel>
 											<Input
 												type="tel"
-												value={ec.phone ?? ""}
-												onChange={(e) => updateEC(i, "phone", e.target.value)}
+												aria-invalid={fieldState.invalid}
+												{...field}
+												value={field.value ?? ""}
 											/>
-										</div>
-										<div className="flex flex-col gap-2">
-											<Label suppressHydrationWarning>
+											{fieldState.invalid && (
+												<FieldError errors={[fieldState.error]} />
+											)}
+										</Field>
+									)}
+								/>
+								<Controller
+									control={form.control}
+									name={`emergencyContacts.${i}.email` as const}
+									render={({ field, fieldState }) => (
+										<Field data-invalid={fieldState.invalid}>
+											<FieldLabel suppressHydrationWarning>
 												{t("onboarding.contacts.emergency.email")}
-											</Label>
+											</FieldLabel>
 											<Input
 												type="email"
-												value={ec.email ?? ""}
-												onChange={(e) => updateEC(i, "email", e.target.value)}
+												aria-invalid={fieldState.invalid}
+												{...field}
+												value={field.value ?? ""}
 											/>
-										</div>
-										<div className="flex flex-col gap-2 md:col-span-2">
-											<Label suppressHydrationWarning>
+											{fieldState.invalid && (
+												<FieldError errors={[fieldState.error]} />
+											)}
+										</Field>
+									)}
+								/>
+								<Controller
+									control={form.control}
+									name={`emergencyContacts.${i}.country` as const}
+									render={({ field }) => (
+										<Field className="md:col-span-2">
+											<FieldLabel suppressHydrationWarning>
 												{t("onboarding.contacts.emergency.country")}
-											</Label>
+											</FieldLabel>
 											<CountrySelect
 												type="single"
-												selected={
-													(ec.country as CountryCode) ?? CountryCode.GA
-												}
-												onChange={(v) => updateEC(i, "country", v)}
+												selected={(field.value as CountryCode) ?? CountryCode.GA}
+												onChange={(v) => field.onChange(v)}
 											/>
-										</div>
-									</div>
-								</div>
-							))}
-							<Button
-								type="button"
-								variant="outline"
-								className="border-dashed"
-								onClick={() => setEmergency([...emergency, {}])}
-							>
-								<Plus className="mr-1 size-4" />
-								<span suppressHydrationWarning>
-									{t("onboarding.contacts.emergency.add")}
-								</span>
-							</Button>
+										</Field>
+									)}
+								/>
+							</FieldGroup>
 						</div>
-					</CardContent>
-				</Card>
-			)}
-		</div>
+					))}
+					<Button
+						type="button"
+						variant="outline"
+						className="border-dashed"
+						onClick={() =>
+							append({
+								firstName: "",
+								lastName: "",
+								phone: "",
+							} as ContactsValues["emergencyContacts"] extends Array<infer T>
+								? T
+								: never)
+						}
+					>
+						<Plus className="mr-1 size-4" />
+						<span suppressHydrationWarning>
+							{t("onboarding.contacts.emergency.add")}
+						</span>
+					</Button>
+				</div>
+			</CardContent>
+		</Card>
 	);
 }

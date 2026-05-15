@@ -2,6 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { api } from "@convex/_generated/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "convex/react";
 import {
 	AlertTriangle,
 	ArrowLeft,
@@ -10,12 +13,14 @@ import {
 	Mail,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useAuthSyncWait } from "../../lib/useAuthSyncWait";
+import { otpSchema, type OtpValues } from "../../lib/schemas";
 import { OtpInput } from "../../ui/OtpInput";
 import type { OnboardingData } from "../../types";
 
-type UiStage = "idle" | "verifying" | "signing-in" | "syncing" | "done";
+type UiStage = "sending" | "idle" | "verifying" | "syncing" | "done";
 
 const COUNTDOWN_SECONDS = 50;
 
@@ -32,16 +37,75 @@ export function OtpPhase({
 }) {
 	const { t } = useTranslation();
 	const { waitForSync } = useAuthSyncWait();
-	const [otp, setOtp] = useState<string>(data.otp ?? "");
-	const [error, setError] = useState<string | null>(null);
-	const [stage, setStage] = useState<UiStage>("idle");
+	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
+	const [stage, setStage] = useState<UiStage>(
+		data._authState === "verified" ? "idle" : "sending",
+	);
 	const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
 	const [resending, setResending] = useState(false);
 	const lastAttemptedRef = useRef<string | null>(null);
 	const submittingRef = useRef(false);
+	const otpSentRef = useRef(false);
 
 	const email = data.email ?? "";
-	const password = data.password ?? "";
+	const fullName =
+		[data.firstName, data.lastName].filter(Boolean).join(" ") || email;
+
+	const form = useForm<OtpValues>({
+		resolver: zodResolver(otpSchema),
+		mode: "onSubmit",
+		defaultValues: { otp: "" },
+	});
+
+	const otp = form.watch("otp") ?? "";
+	const serverError = form.formState.errors.root?.server?.message;
+
+	// Send the sign-in OTP on mount. Better Auth's emailOTP with type=sign-in
+	// will create the user on /sign-in/email-otp ONLY after a successful OTP
+	// verification — no account is created here.
+	useEffect(() => {
+		if (otpSentRef.current) return;
+		if (data._authState === "verified") {
+			setStage("idle");
+			return;
+		}
+		if (!email) {
+			setStage("idle");
+			return;
+		}
+		otpSentRef.current = true;
+		(async () => {
+			try {
+				const res = await authClient.emailOtp.sendVerificationOtp({
+					email,
+					type: "sign-in",
+				});
+				if (res.error) {
+					form.setError("root.server", {
+						message:
+							res.error.message ||
+							t("onboarding.identity.otp.resendImpossible"),
+					});
+					setStage("idle");
+					otpSentRef.current = false;
+					return;
+				}
+				setStage("idle");
+				setCountdown(COUNTDOWN_SECONDS);
+			} catch (err) {
+				console.error("send sign-in OTP error:", err);
+				form.setError("root.server", {
+					message:
+						err instanceof Error
+							? err.message
+							: t("onboarding.identity.otp.resendImpossible"),
+				});
+				setStage("idle");
+				otpSentRef.current = false;
+			}
+		})();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	useEffect(() => {
 		if (countdown <= 0) return;
@@ -49,6 +113,70 @@ export function OtpPhase({
 		return () => clearTimeout(t);
 	}, [countdown]);
 
+	const submit = async (code: string) => {
+		if (submittingRef.current) return;
+		if (!email) {
+			form.setError("root.server", {
+				message: t("onboarding.identity.otp.missingEmail"),
+			});
+			return;
+		}
+		submittingRef.current = true;
+		lastAttemptedRef.current = code;
+		form.clearErrors("root.server");
+		setStage("verifying");
+		try {
+			// signIn.emailOtp creates the user (with `name`) if it doesn't exist
+			// AND opens the session in a single call. `disableSignUp` is not set
+			// on the server plugin, so first-time users sign up here.
+			const signIn = await authClient.signIn.emailOtp({
+				email,
+				otp: code,
+				name: fullName,
+			});
+			if (signIn.error) {
+				form.setError("root.server", {
+					message:
+						signIn.error.message || t("onboarding.identity.otp.invalidCode"),
+				});
+				setStage("idle");
+				return;
+			}
+
+			setStage("syncing");
+			console.time("ensure-user-sync");
+			await waitForSync({ timeoutMs: 8000 });
+			console.timeEnd("ensure-user-sync");
+
+			// Stamp lastOtpVerifiedAt on the freshly-synced Convex user. The
+			// Better Auth `after` hook stamped nothing because the user record
+			// didn't exist yet at that point — re-stamp here so createPin can
+			// run within the recent-OTP window.
+			try {
+				await markOtpVerified();
+			} catch (err) {
+				console.error("markOtpVerified failed:", err);
+			}
+
+			updateData({ _authState: "verified" });
+			setStage("done");
+			onNext();
+		} catch (err) {
+			console.error("OTP flow error:", err);
+			const message =
+				err instanceof Error && err.message === "auth_timeout"
+					? t("onboarding.identity.otp.syncTimeout")
+					: err instanceof Error
+						? err.message
+						: t("onboarding.identity.otp.unexpectedError");
+			form.setError("root.server", { message });
+			setStage("idle");
+		} finally {
+			submittingRef.current = false;
+		}
+	};
+
+	// Auto-submit when 6 digits typed.
 	useEffect(() => {
 		if (
 			otp.length === 6 &&
@@ -60,104 +188,42 @@ export function OtpPhase({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [otp]);
 
-	const submit = async (code: string) => {
-		if (submittingRef.current) return;
-		if (!email) {
-			setError(t("onboarding.identity.otp.missingEmail"));
-			return;
-		}
-		if (!password) {
-			setError(t("onboarding.identity.otp.missingPassword"));
-			return;
-		}
-		submittingRef.current = true;
-		lastAttemptedRef.current = code;
-		setError(null);
-		setStage("verifying");
-		try {
-			const verify = await authClient.emailOtp.verifyEmail({
-				email,
-				otp: code,
-			});
-			if (verify.error) {
-				setError(
-					verify.error.message || t("onboarding.identity.otp.invalidCode"),
-				);
-				setStage("idle");
-				return;
-			}
-
-			setStage("signing-in");
-			const signIn = await authClient.signIn.email({ email, password });
-			if (signIn.error) {
-				setError(
-					signIn.error.message ||
-						t("onboarding.identity.otp.autoSignInFailed"),
-				);
-				setStage("idle");
-				return;
-			}
-
-			setStage("syncing");
-			console.time("ensure-user-sync");
-			await waitForSync({ timeoutMs: 8000 });
-			console.timeEnd("ensure-user-sync");
-
-			updateData({ _authState: "verified", otp: undefined });
-			setStage("done");
-			onNext();
-		} catch (err) {
-			console.error("OTP flow error:", err);
-			const message =
-				err instanceof Error && err.message === "auth_timeout"
-					? t("onboarding.identity.otp.syncTimeout")
-					: err instanceof Error
-						? err.message
-						: t("onboarding.identity.otp.unexpectedError");
-			setError(message);
-			setStage("idle");
-		} finally {
-			submittingRef.current = false;
-		}
-	};
-
 	const handleResend = async () => {
 		if (resending || countdown > 0) return;
 		setResending(true);
-		setError(null);
+		form.clearErrors("root.server");
 		try {
 			const res = await authClient.emailOtp.sendVerificationOtp({
 				email,
-				type: "email-verification",
+				type: "sign-in",
 			});
 			if (res.error) {
-				setError(
-					res.error.message || t("onboarding.identity.otp.resendImpossible"),
-				);
+				form.setError("root.server", {
+					message:
+						res.error.message ||
+						t("onboarding.identity.otp.resendImpossible"),
+				});
 			} else {
 				setCountdown(COUNTDOWN_SECONDS);
 				lastAttemptedRef.current = null;
-				setOtp("");
-				updateData({ otp: undefined });
+				form.setValue("otp", "");
 			}
 		} catch (err) {
-			setError(
-				err instanceof Error
-					? err.message
-					: t("onboarding.identity.otp.resendImpossible"),
-			);
+			form.setError("root.server", {
+				message:
+					err instanceof Error
+						? err.message
+						: t("onboarding.identity.otp.resendImpossible"),
+			});
 		} finally {
 			setResending(false);
 		}
 	};
 
-	const handleManualSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (otp.length === 6) void submit(otp);
-	};
+	const onSubmit = form.handleSubmit((values) => submit(values.otp));
 
 	const disabled =
-		stage === "verifying" || stage === "signing-in" || stage === "syncing";
+		stage === "verifying" || stage === "syncing" || stage === "sending";
 
 	if (stage === "syncing") {
 		return (
@@ -176,8 +242,25 @@ export function OtpPhase({
 		);
 	}
 
+	if (stage === "sending") {
+		return (
+			<div className="flex flex-col items-center gap-4 py-12 text-center">
+				<Loader2 className="size-10 animate-spin text-gabon-blue" />
+				<h2 className="text-xl font-semibold" suppressHydrationWarning>
+					{t("onboarding.identity.otp.preparingTitle")}
+				</h2>
+				<p
+					className="max-w-sm text-sm text-muted-foreground"
+					suppressHydrationWarning
+				>
+					{t("onboarding.identity.otp.preparingDescription")}
+				</p>
+			</div>
+		);
+	}
+
 	return (
-		<form onSubmit={handleManualSubmit} className="flex flex-col gap-6">
+		<form onSubmit={onSubmit} className="flex flex-col gap-6">
 			<header className="flex flex-col gap-2">
 				<h1
 					className="text-2xl font-semibold tracking-tight md:text-3xl"
@@ -194,17 +277,22 @@ export function OtpPhase({
 				</p>
 			</header>
 
-			<OtpInput
-				value={otp}
-				onChange={(v) => {
-					setOtp(v);
-					if (v !== otp) updateData({ otp: v });
-					if (error) setError(null);
-				}}
-				autoFocus
-				disabled={disabled}
-				hasError={!!error}
-				ariaLabel={t("onboarding.identity.otp.otpAriaLabel")}
+			<Controller
+				control={form.control}
+				name="otp"
+				render={({ field, fieldState }) => (
+					<OtpInput
+						value={field.value}
+						onChange={(v) => {
+							field.onChange(v);
+							if (serverError) form.clearErrors("root.server");
+						}}
+						autoFocus
+						disabled={disabled}
+						hasError={fieldState.invalid || !!serverError}
+						ariaLabel={t("onboarding.identity.otp.otpAriaLabel")}
+					/>
+				)}
 			/>
 
 			<div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -247,13 +335,13 @@ export function OtpPhase({
 				</Button>
 			</div>
 
-			{error && (
+			{serverError && (
 				<div
 					role="alert"
 					className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
 				>
 					<AlertTriangle className="mt-0.5 size-4 shrink-0" />
-					<span>{error}</span>
+					<span>{serverError}</span>
 				</div>
 			)}
 
@@ -270,13 +358,11 @@ export function OtpPhase({
 					</span>
 				</Button>
 				<Button type="submit" disabled={otp.length !== 6 || disabled}>
-					{stage === "verifying" || stage === "signing-in" ? (
+					{stage === "verifying" ? (
 						<>
 							<Loader2 className="mr-1 size-4 animate-spin" />
 							<span suppressHydrationWarning>
-								{stage === "verifying"
-									? t("onboarding.identity.otp.verifying")
-									: t("onboarding.identity.otp.signingIn")}
+								{t("onboarding.identity.otp.verifying")}
 							</span>
 						</>
 					) : (

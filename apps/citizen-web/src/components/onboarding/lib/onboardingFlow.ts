@@ -109,7 +109,6 @@ export const RECOMMENDED_PROFILE_TYPE: PublicUserType = PublicUserType.LongStay;
 export type IdentityPhase =
 	| "name"
 	| "contact"
-	| "password"
 	| "otp"
 	| "pin"
 	| "birth"
@@ -118,7 +117,6 @@ export type IdentityPhase =
 export const IDENTITY_PHASES: IdentityPhase[] = [
 	"name",
 	"contact",
-	"password",
 	"otp",
 	"pin",
 	"birth",
@@ -128,7 +126,6 @@ export const IDENTITY_PHASES: IdentityPhase[] = [
 export const IDENTITY_PHASE_LABELS: Record<IdentityPhase, string> = {
 	name: "Votre nom",
 	contact: "Vos coordonnées",
-	password: "Mot de passe",
 	otp: "Vérification email",
 	pin: "Code PIN",
 	birth: "Naissance & nationalité",

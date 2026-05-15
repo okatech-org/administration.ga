@@ -2,9 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { ImageCropDialog } from "@/components/documents/ImageCropDialog";
+import { FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { PublicUserType } from "@convex/lib/constants";
 import {
+	AlertTriangle,
 	Camera,
 	Check,
 	FileText,
@@ -16,8 +18,10 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { documentsSchemaFor } from "../lib/schemas";
+import type { StepHandle } from "../lib/stepHandle";
 import type { OnboardingData } from "../types";
 
 export type RegistrationFiles = Record<string, File | undefined>;
@@ -143,6 +147,7 @@ function DocumentCard({
 	onFile,
 	onRemove,
 	hasAIPrefill,
+	hasError = false,
 }: {
 	doc: DocDef;
 	filename?: string;
@@ -150,6 +155,7 @@ function DocumentCard({
 	onFile: (f: File) => void;
 	onRemove: () => void;
 	hasAIPrefill: boolean;
+	hasError?: boolean;
 }) {
 	const { t } = useTranslation();
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -195,7 +201,10 @@ function DocumentCard({
 				filled && "border-gabon-green bg-gabon-green-tint/40",
 				!filled && autoFilled && "border-gabon-blue bg-gabon-blue-tint/40",
 				!filled && !autoFilled && "border-border bg-card",
+				hasError && !filled && "border-destructive/60 bg-destructive/5",
 			)}
+			data-invalid={hasError || undefined}
+			aria-invalid={hasError || undefined}
 		>
 			<div
 				className={cn(
@@ -290,15 +299,7 @@ function DocumentCard({
 	);
 }
 
-export function DocumentsStep({
-	data,
-	updateData,
-	userType,
-	files,
-	setFile,
-	removeFile,
-	onDocumentUploaded,
-}: {
+type DocumentsStepProps = {
 	data: OnboardingData;
 	updateData: (patch: Partial<OnboardingData>) => void;
 	userType: PublicUserType;
@@ -306,59 +307,128 @@ export function DocumentsStep({
 	setFile: (key: string, file: File) => void;
 	removeFile: (key: string) => void;
 	onDocumentUploaded?: (docKey: string) => void;
-}) {
-	const { t } = useTranslation();
-	const docs = getDocsForUserType(userType);
-	const documents = data.documents ?? {};
-	const hasAIPrefill = Boolean(data._hasAIPrefill);
+};
 
-	const handleFile = (key: string, file: File) => {
-		setFile(key, file);
-		updateData({ documents: { ...documents, [key]: file.name } });
-		onDocumentUploaded?.(key);
-	};
+export const DocumentsStep = forwardRef<StepHandle, DocumentsStepProps>(
+	function DocumentsStep(
+		{
+			data,
+			updateData,
+			userType,
+			files,
+			setFile,
+			removeFile,
+			onDocumentUploaded,
+		},
+		ref,
+	) {
+		const { t } = useTranslation();
+		const docs = getDocsForUserType(userType);
+		const documents = data.documents ?? {};
+		const hasAIPrefill = Boolean(data._hasAIPrefill);
+		const [errors, setErrors] = useState<Record<string, string | undefined>>(
+			{},
+		);
 
-	const handleRemove = (key: string) => {
-		removeFile(key);
-		const next = { ...documents };
-		delete next[key];
-		updateData({ documents: next });
-	};
+		const handleFile = (key: string, file: File) => {
+			setFile(key, file);
+			updateData({ documents: { ...documents, [key]: file.name } });
+			onDocumentUploaded?.(key);
+			if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+		};
 
-	return (
-		<div className="flex flex-col gap-5">
-			<header className="flex flex-col gap-2">
-				<h1
-					className="text-2xl font-semibold tracking-tight md:text-3xl"
-					suppressHydrationWarning
-				>
-					{t("onboarding.documents.title")}
-				</h1>
-				<p className="text-sm text-muted-foreground" suppressHydrationWarning>
-					{hasAIPrefill
-						? t("onboarding.documents.subtitleWithAi")
-						: t("onboarding.documents.subtitle")}
-				</p>
-			</header>
+		const handleRemove = (key: string) => {
+			removeFile(key);
+			const next = { ...documents };
+			delete next[key];
+			updateData({ documents: next });
+		};
 
-			<div className="flex flex-col gap-3">
-				{docs.map((doc) => (
-					<DocumentCard
-						key={doc.key}
-						doc={doc}
-						filename={documents[doc.key]}
-						file={files[doc.key]}
-						onFile={(f) => handleFile(doc.key, f)}
-						onRemove={() => handleRemove(doc.key)}
-						hasAIPrefill={hasAIPrefill}
-					/>
-				))}
+		useImperativeHandle(
+			ref,
+			() => ({
+				async validateAndNext() {
+					const schema = documentsSchemaFor(userType);
+					// Provide the combined view: locally staged File takes precedence,
+					// otherwise the persisted filename string proves prior upload.
+					const values: Record<string, File | string | undefined> = {};
+					for (const doc of docs) {
+						values[doc.key] = files[doc.key] ?? documents[doc.key];
+					}
+					const result = schema.safeParse(values);
+					if (result.success) {
+						setErrors({});
+						return true;
+					}
+					const next: Record<string, string | undefined> = {};
+					for (const issue of result.error.issues) {
+						const key = issue.path[0] as string;
+						if (key && !next[key]) next[key] = issue.message;
+					}
+					setErrors(next);
+					return false;
+				},
+			}),
+			[docs, documents, files, userType],
+		);
+
+		return (
+			<div className="flex flex-col gap-5">
+				<header className="flex flex-col gap-2">
+					<h1
+						className="text-2xl font-semibold tracking-tight md:text-3xl"
+						suppressHydrationWarning
+					>
+						{t("onboarding.documents.title")}
+					</h1>
+					<p className="text-sm text-muted-foreground" suppressHydrationWarning>
+						{hasAIPrefill
+							? t("onboarding.documents.subtitleWithAi")
+							: t("onboarding.documents.subtitle")}
+					</p>
+				</header>
+
+				<div className="flex flex-col gap-3">
+					{docs.map((doc) => (
+						<div key={doc.key} className="flex flex-col gap-1.5">
+							<DocumentCard
+								doc={doc}
+								filename={documents[doc.key]}
+								file={files[doc.key]}
+								onFile={(f) => handleFile(doc.key, f)}
+								onRemove={() => handleRemove(doc.key)}
+								hasAIPrefill={hasAIPrefill}
+								hasError={!!errors[doc.key]}
+							/>
+							{errors[doc.key] && (
+								<FieldError
+									className="pl-1"
+									errors={[{ message: errors[doc.key] }]}
+								/>
+							)}
+						</div>
+					))}
+				</div>
+
+				{Object.values(errors).some(Boolean) && (
+					<div
+						role="alert"
+						className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+					>
+						<AlertTriangle className="mt-0.5 size-4 shrink-0" />
+						<span suppressHydrationWarning>
+							{t("onboarding.documents.errorsSummary")}
+						</span>
+					</div>
+				)}
+
+				<div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+					<Info className="mt-0.5 size-3.5 shrink-0" />
+					<span suppressHydrationWarning>
+						{t("onboarding.documents.footer")}
+					</span>
+				</div>
 			</div>
-
-			<div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-				<Info className="mt-0.5 size-3.5 shrink-0" />
-				<span suppressHydrationWarning>{t("onboarding.documents.footer")}</span>
-			</div>
-		</div>
-	);
-}
+		);
+	},
+);

@@ -8,7 +8,7 @@
 
 import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { v } from "convex/values";
-import { query, mutation, internalMutation } from "../_generated/server";
+import { query, mutation, internalMutation, internalQuery } from "../_generated/server";
 import { authQuery, authMutation, backofficeMutation, backofficeQuery } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { logCortexAction } from "../lib/neocortex";
@@ -89,6 +89,23 @@ export const getPinStatus = authQuery({
       lastOtpVerifiedAt: (user as any).lastOtpVerifiedAt ?? null,
       isLocked: !!((user as any).pinLockedUntil && (user as any).pinLockedUntil > Date.now()),
     };
+  },
+});
+
+/**
+ * Résolution email depuis téléphone pour le flux PIN par téléphone.
+ * Utilisé par /api/auth/pin-session quand l'utilisateur s'identifie via phone.
+ */
+export const getEmailByPhone = internalQuery({
+  args: { phone: v.string() },
+  handler: async (ctx, { phone }) => {
+    if (!PHONE_REGEX.test(phone)) return null;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_phone", (q) => q.eq("phone", phone))
+      .unique();
+    if (!user || !user.isActive) return null;
+    return user.email ?? null;
   },
 });
 
@@ -352,6 +369,24 @@ export const markOtpVerifiedByAuthId = internalMutation({
       .unique();
     if (!user) return;
     await ctx.db.patch(user._id, {
+      lastOtpVerifiedAt: Date.now(),
+      pinFailedAttempts: 0,
+      pinLockedUntil: undefined,
+    } as any);
+  },
+});
+
+/**
+ * Client-callable variant for the registration flow. On first OTP sign-up,
+ * the Better Auth `after` hook fires BEFORE the Convex `users` record is
+ * created by `ensureUser` — so the internal stamp is a no-op. The client
+ * must call this mutation after `waitForSync` to anchor the OTP timestamp,
+ * otherwise `createPin` later refuses with PIN_RECENT_OTP_REQUIRED.
+ */
+export const markOtpVerified = authMutation({
+  args: {},
+  handler: async (ctx) => {
+    await ctx.db.patch(ctx.user._id, {
       lastOtpVerifiedAt: Date.now(),
       pinFailedAttempts: 0,
       pinLockedUntil: undefined,

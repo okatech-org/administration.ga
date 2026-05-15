@@ -1222,6 +1222,30 @@ export const createFromRegistration = authMutation({
       .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
       .unique();
 
+    const isNewProfile = !existing;
+
+    // Defense-in-depth: enforce required fields on a fresh registration.
+    // The front-end validates these via zod, but a buggy/legacy client or a
+    // direct API call must not be able to bypass the obligation. Existing
+    // profiles can patch partially, so we only enforce on creation.
+    if (isNewProfile) {
+      const missing: string[] = [];
+      if (!args.identity?.firstName) missing.push("identity.firstName");
+      if (!args.identity?.lastName) missing.push("identity.lastName");
+      if (!args.identity?.birthDate) missing.push("identity.birthDate");
+      if (!args.identity?.gender) missing.push("identity.gender");
+      if (!args.identity?.nationality) missing.push("identity.nationality");
+      if (!args.identity?.nationalityAcquisition) {
+        missing.push("identity.nationalityAcquisition");
+      }
+      if (!args.documents?.identityPhoto) missing.push("documents.identityPhoto");
+      if (missing.length > 0) {
+        throw new Error(
+          `REGISTRATION_INCOMPLETE: missing required fields — ${missing.join(", ")}`,
+        );
+      }
+    }
+
     const now = Date.now();
 
     // Convert birthDate string to timestamp if provided

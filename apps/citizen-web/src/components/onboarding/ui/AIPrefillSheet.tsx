@@ -240,7 +240,7 @@ function UploadStage({
 					const file = files[doc.key];
 					const Icon = doc.icon;
 					return (
-						<div key={doc.key}>
+						<div key={doc.key} className="w-full min-w-0">
 							<input
 								ref={(el) => {
 									inputRefs.current[doc.key] = el;
@@ -259,7 +259,7 @@ function UploadStage({
 									else inputRefs.current[doc.key]?.click();
 								}}
 								className={cn(
-									"flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-left transition-colors",
+									"flex w-full min-w-0 items-center gap-3.5 overflow-hidden rounded-xl px-4 py-3.5 text-left transition-colors",
 									file
 										? "border border-gabon-green bg-gabon-green-tint"
 										: "border border-dashed border-border bg-card hover:bg-secondary",

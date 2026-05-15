@@ -35,9 +35,10 @@ export type OnboardingData = {
 	email?: string;
 	phone?: string;
 
-	// Identity — Password (NEVER persisted)
+	// Identity — Auth bridge password.
+	// Généré aléatoirement côté client par OtpPhase pour permettre `signUp.email`
+	// puis `signIn.email`. JAMAIS exposé à l'utilisateur, JAMAIS persisté.
 	password?: string;
-	passwordConfirm?: string;
 	acceptTerms?: boolean;
 
 	// Identity — OTP (NEVER persisted)
@@ -109,7 +110,6 @@ export type OnboardingProfileType = PublicUserType;
  */
 export const SENSITIVE_KEYS: ReadonlyArray<keyof OnboardingData> = [
 	"password",
-	"passwordConfirm",
 	"otp",
 	"pin",
 	"pinConfirm",

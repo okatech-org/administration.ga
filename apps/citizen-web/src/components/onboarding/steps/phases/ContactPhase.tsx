@@ -1,13 +1,20 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight, Shield } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { contactSchema, type ContactValues } from "../../lib/schemas";
 import type { OnboardingData } from "../../types";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ContactPhase({
 	data,
@@ -21,18 +28,23 @@ export function ContactPhase({
 	onPrev: () => void;
 }) {
 	const { t } = useTranslation();
-	const emailValid = EMAIL_RE.test(data.email ?? "");
-	const phoneValid = (data.phone ?? "").replace(/\D/g, "").length >= 6;
-	const canContinue = emailValid && phoneValid;
+
+	const form = useForm<ContactValues>({
+		resolver: zodResolver(contactSchema),
+		mode: "onTouched",
+		defaultValues: {
+			email: data.email ?? "",
+			phone: data.phone ?? "",
+		},
+	});
+
+	const onSubmit = form.handleSubmit((values) => {
+		updateData(values);
+		onNext();
+	});
 
 	return (
-		<form
-			onSubmit={(e) => {
-				e.preventDefault();
-				if (canContinue) onNext();
-			}}
-			className="flex flex-col gap-6"
-		>
+		<form onSubmit={onSubmit} className="flex flex-col gap-6">
 			<header className="flex flex-col gap-2">
 				<h1
 					className="text-2xl font-semibold tracking-tight md:text-3xl"
@@ -45,40 +57,59 @@ export function ContactPhase({
 				</p>
 			</header>
 
-			<div className="flex flex-col gap-4">
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="email" suppressHydrationWarning>
-						{t("onboarding.identity.contact.email")}{" "}
-						<span className="text-destructive">*</span>
-					</Label>
-					<Input
-						id="email"
-						type="email"
-						value={data.email ?? ""}
-						onChange={(e) => updateData({ email: e.target.value })}
-						placeholder={t("onboarding.identity.contact.emailPlaceholder")}
-						autoComplete="email"
-						autoFocus
-					/>
-					<p className="text-xs text-muted-foreground" suppressHydrationWarning>
-						{t("onboarding.identity.contact.emailHelp")}
-					</p>
-				</div>
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="phone" suppressHydrationWarning>
-						{t("onboarding.identity.contact.phone")}{" "}
-						<span className="text-destructive">*</span>
-					</Label>
-					<Input
-						id="phone"
-						type="tel"
-						value={data.phone ?? ""}
-						onChange={(e) => updateData({ phone: e.target.value })}
-						placeholder={t("onboarding.identity.contact.phonePlaceholder")}
-						autoComplete="tel"
-					/>
-				</div>
-			</div>
+			<FieldGroup className="flex flex-col gap-4">
+				<Controller
+					control={form.control}
+					name="email"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="email" suppressHydrationWarning>
+								{t("onboarding.identity.contact.email")}{" "}
+								<span className="text-destructive">*</span>
+							</FieldLabel>
+							<Input
+								id="email"
+								type="email"
+								placeholder={t("onboarding.identity.contact.emailPlaceholder")}
+								autoComplete="email"
+								autoFocus
+								aria-invalid={fieldState.invalid}
+								{...field}
+							/>
+							{fieldState.invalid ? (
+								<FieldError errors={[fieldState.error]} />
+							) : (
+								<FieldDescription suppressHydrationWarning>
+									{t("onboarding.identity.contact.emailHelp")}
+								</FieldDescription>
+							)}
+						</Field>
+					)}
+				/>
+				<Controller
+					control={form.control}
+					name="phone"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="phone" suppressHydrationWarning>
+								{t("onboarding.identity.contact.phone")}{" "}
+								<span className="text-destructive">*</span>
+							</FieldLabel>
+							<Input
+								id="phone"
+								type="tel"
+								placeholder={t("onboarding.identity.contact.phonePlaceholder")}
+								autoComplete="tel"
+								aria-invalid={fieldState.invalid}
+								{...field}
+							/>
+							{fieldState.invalid && (
+								<FieldError errors={[fieldState.error]} />
+							)}
+						</Field>
+					)}
+				/>
+			</FieldGroup>
 
 			<div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
 				<Shield className="mt-0.5 size-4 shrink-0" />
@@ -102,7 +133,7 @@ export function ContactPhase({
 						{t("onboarding.identity.contact.back")}
 					</span>
 				</Button>
-				<Button type="submit" disabled={!canContinue}>
+				<Button type="submit" disabled={form.formState.isSubmitting}>
 					<span suppressHydrationWarning>
 						{t("onboarding.identity.contact.continue")}
 					</span>

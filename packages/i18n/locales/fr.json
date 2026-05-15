@@ -639,6 +639,7 @@
 		"confirm": "Confirmer",
 		"close": "Fermer",
 		"loading": "Chargement...",
+		"verifying": "Vérification…",
 		"firstName": "Prénom",
 		"lastName": "Nom",
 		"postalCode": "Code postal",
@@ -1314,7 +1315,6 @@
 			"signUpFailed": "Échec de l'inscription. Veuillez réessayer.",
 			"noAccount": "Pas encore de compte ?",
 			"alreadyHaveAccount": "Vous avez déjà un compte ?",
-			"signIn": "Se connecter",
 			"signUp": "S'inscrire",
 			"orDivider": "ou",
 			"signInWithIDN": "Se connecter avec Identite.ga",
@@ -1336,7 +1336,62 @@
 			},
 			"invalidCredentials": "Email ou mot de passe incorrect.",
 			"emailAlreadyExists": "Un compte existe déjà avec cet email.",
-			"phoneAlreadyExists": "Ce numéro de téléphone est déjà associé à un compte."
+			"phoneAlreadyExists": "Ce numéro de téléphone est déjà associé à un compte.",
+			"signIn": {
+				"identifyTitle": "Connexion à votre espace",
+				"identifySubtitle": "Entrez votre email ou votre numéro de téléphone. Nous adapterons les options de connexion à votre compte.",
+				"continue": "Continuer",
+				"securityNote": "La connexion est chiffrée. Nous ne stockons jamais vos identifiants en clair.",
+				"greetingGeneric": "Bon retour",
+				"pinPrompt": "Saisissez votre code PIN pour ouvrir votre espace.",
+				"usingPin": "Connexion par code PIN",
+				"change": "Changer",
+				"pinLabel": "Code PIN à 6 chiffres",
+				"otherMethods": "autres méthodes",
+				"methodEmail": "Recevoir un code par email",
+				"methodSms": "Recevoir un code par SMS",
+				"pinForgotten": "Code PIN oublié ?",
+				"welcomeBack": "Re-bienvenue",
+				"legacyTitle": "Comment souhaitez-vous vous connecter ?",
+				"legacySubtitle": "Aucun code PIN n'est encore configuré sur votre compte. Choisissez une méthode pour continuer — vous activerez le PIN juste après.",
+				"legacyHintLabel": "Nouveau :",
+				"legacyHint": "activez un code PIN pour vous connecter en quelques secondes lors de vos prochaines visites.",
+				"recommended": "Recommandé",
+				"attemptsRemaining_one": "Code incorrect. {{count}} tentative restante.",
+				"attemptsRemaining_other": "Code incorrect. {{count}} tentatives restantes.",
+				"pinLocked": "Code PIN verrouillé temporairement. Connexion par code à usage unique requise.",
+				"pinInvalid": "Code PIN incorrect.",
+				"otpTitle": "Saisissez le code reçu",
+				"otpSubtitle": "Un code à 6 chiffres a été envoyé {{channel}}",
+				"channelEmail": "à votre adresse",
+				"channelSms": "à votre numéro"
+			},
+			"setupPin": {
+				"title": "Sécurisez votre compte avec un code PIN",
+				"subtitle": "Pour finaliser votre connexion, choisissez un code PIN à 6 chiffres. Il vous permettra de revenir sur votre espace en quelques secondes lors de vos prochaines visites.",
+				"eyebrowRequired": "Étape requise · 1 fois",
+				"cta": "Configurer mon code PIN",
+				"benefitFastTitle": "Connexion rapide",
+				"benefitFastSubtitle": "Plus besoin de patienter sur un email à chaque visite.",
+				"benefitLocalTitle": "Reste sur votre appareil",
+				"benefitLocalSubtitle": "Le PIN ne quitte jamais votre téléphone ou navigateur.",
+				"benefitFallbackTitle": "Repli toujours possible",
+				"benefitFallbackSubtitle": "Vous pourrez toujours utiliser un code par email ou SMS si besoin.",
+				"step1of2": "ÉTAPE 1 / 2",
+				"step2of2": "ÉTAPE 2 / 2",
+				"createTitle": "Choisissez un code PIN",
+				"createSubtitle": "6 chiffres. Évitez les dates de naissance et les suites évidentes (123456, 000000…).",
+				"confirmTitle": "Confirmez votre code PIN",
+				"confirmSubtitle": "Saisissez à nouveau les 6 mêmes chiffres.",
+				"mismatch": "Les codes ne correspondent pas.",
+				"info": "Ce code reste local à votre appareil et ne remplace pas l'envoi d'un code par email — il sert d'accès rapide pour vos prochaines connexions.",
+				"restart": "Recommencer",
+				"successTitle": "Code PIN configuré",
+				"successSubtitle": "Vous serez désormais connecté plus rapidement à vos prochaines visites.",
+				"redirecting": "Redirection en cours…",
+				"otpRequired": "Vérification email requise. Reconnectez-vous d'abord avec un code à usage unique.",
+				"genericError": "Une erreur est survenue lors de la configuration du PIN."
+			}
 		},
 		"appointments": {
 			"notFound": "Rendez-vous introuvable",
@@ -3672,7 +3727,7 @@
 			"admin_services": "Services administratifs"
 		},
 		"submitted": {
-			"title": "Dossier soumis",
+			"title": "Dossier envoyé",
 			"description": "Votre dossier a été transmis au service consulaire. Vous recevrez une notification par email dès qu'il sera traité.",
 			"refLabel": "Référence du dossier",
 			"refHelp": "Conservez cette référence pour suivre l'avancement de votre demande dans votre espace personnel.",
@@ -3838,6 +3893,8 @@
 				"resendImpossible": "Renvoi impossible.",
 				"syncingTitle": "Création de votre espace…",
 				"syncingDescription": "Nous synchronisons votre compte. Cela ne prendra que quelques secondes.",
+				"preparingTitle": "Préparation de votre compte…",
+				"preparingDescription": "Nous créons votre espace consulaire et vous envoyons un code de vérification par email.",
 				"resendIn": "Renvoyer le code dans",
 				"sending": "Envoi…",
 				"resend": "Renvoyer le code",
@@ -4013,7 +4070,8 @@
 			"formatLine": "{{formats}} · max {{max}}",
 			"formatLineWithHint": "{{formats}} · max {{max}} · {{hint}}",
 			"tooLarge": "Le fichier dépasse la taille maximale ({{max}}).",
-			"footer": "Vos documents sont stockés de manière chiffrée et accessibles uniquement par les agents consulaires habilités."
+			"footer": "Vos documents sont stockés de manière chiffrée et accessibles uniquement par les agents consulaires habilités.",
+			"errorsSummary": "Veuillez fournir tous les documents requis avant de continuer."
 		},
 		"review": {
 			"title": "Vérifiez et soumettez",
@@ -4081,7 +4139,100 @@
 			"docNotProvided": "Non fourni",
 			"consent": "Je certifie sur l'honneur l'exactitude des informations fournies et j'accepte les conditions générales d'utilisation.",
 			"submitting": "Soumission en cours…",
-			"submit": "Soumettre mon dossier"
+			"submit": "Soumettre mon dossier",
+			"incompleteTitle": "Certaines étapes sont incomplètes",
+			"editAction": "Modifier"
+		},
+		"errors": {
+			"name": {
+				"firstName": { "min": "Le prénom doit comporter au moins 2 caractères." },
+				"lastName": { "min": "Le nom doit comporter au moins 2 caractères." }
+			},
+			"contact": {
+				"email": { "invalid": "Adresse email invalide." },
+				"phone": { "invalid": "Numéro de téléphone invalide." }
+			},
+			"password": {
+				"password": {
+					"min": "Le mot de passe doit comporter au moins 8 caractères.",
+					"upper": "Le mot de passe doit contenir au moins une majuscule.",
+					"lower": "Le mot de passe doit contenir au moins une minuscule.",
+					"digit": "Le mot de passe doit contenir au moins un chiffre."
+				},
+				"passwordConfirm": {
+					"required": "Veuillez confirmer votre mot de passe.",
+					"mismatch": "Les mots de passe ne correspondent pas."
+				}
+			},
+			"otp": {
+				"code": { "invalid": "Le code doit comporter 6 chiffres." }
+			},
+			"pin": {
+				"pin": { "invalid": "Le code PIN doit comporter 6 chiffres." },
+				"pinConfirm": {
+					"required": "Veuillez confirmer votre code PIN.",
+					"mismatch": "Les codes PIN ne correspondent pas."
+				}
+			},
+			"birth": {
+				"birthDate": {
+					"required": "Date de naissance requise.",
+					"inPast": "La date de naissance doit être dans le passé.",
+					"adult": "Vous devez être majeur (18 ans et plus)."
+				},
+				"birthPlace": { "min": "Lieu de naissance requis." },
+				"birthCountry": { "required": "Pays de naissance requis." },
+				"gender": { "required": "Genre requis." },
+				"nationality": { "required": "Nationalité requise." },
+				"nationalityAcquisition": { "required": "Mode d'acquisition requis." }
+			},
+			"passport": {
+				"number": { "min": "Numéro de passeport invalide (5 caractères minimum)." },
+				"issuing": { "min": "Autorité émettrice requise." },
+				"issueDate": {
+					"required": "Date de délivrance requise.",
+					"inPast": "La date de délivrance doit être dans le passé."
+				},
+				"expiryDate": {
+					"required": "Date d'expiration requise.",
+					"inFuture": "La date d'expiration doit être dans le futur.",
+					"afterIssue": "La date d'expiration doit être postérieure à la délivrance."
+				}
+			},
+			"family": {
+				"maritalStatus": { "required": "Statut marital requis." },
+				"spouseFirstName": { "required": "Prénom du conjoint requis." },
+				"spouseLastName": { "required": "Nom du conjoint requis." }
+			},
+			"address": {
+				"street": { "min": "Adresse trop courte." },
+				"city": { "min": "Ville requise." },
+				"postalCode": { "required": "Code postal requis." },
+				"country": { "required": "Pays requis." }
+			},
+			"emergency": {
+				"firstName": { "min": "Prénom requis." },
+				"lastName": { "min": "Nom requis." },
+				"phone": { "invalid": "Téléphone invalide." },
+				"email": { "invalid": "Email invalide." }
+			},
+			"emergencyContacts": {
+				"atLeastOne": "Au moins un contact d'urgence est requis."
+			},
+			"profession": {
+				"workStatus": { "required": "Situation professionnelle requise." },
+				"workTitle": { "required": "Intitulé du poste requis." },
+				"workEmployer": { "required": "Employeur requis." }
+			},
+			"documents": {
+				"identityPhoto": { "required": "Photo d'identité requise." },
+				"passport": { "required": "Passeport requis." },
+				"birthCertificate": { "required": "Acte de naissance requis." },
+				"addressProof": { "required": "Justificatif de domicile requis." }
+			},
+			"review": {
+				"accepted": { "required": "Vous devez accepter les conditions." }
+			}
 		}
 	},
 	"zod": {

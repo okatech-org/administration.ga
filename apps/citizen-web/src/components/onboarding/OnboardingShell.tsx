@@ -9,7 +9,7 @@ import { PublicUserType } from "@convex/lib/constants"
 import { useConvex } from "convex/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   captureEvent,
@@ -23,6 +23,7 @@ import {
   type IdentityPhase,
   type OnboardingStepKey,
 } from "./lib/onboardingFlow"
+import type { StepHandle } from "./lib/stepHandle"
 import { submitRegistration } from "./lib/submitRegistration"
 import { OnboardingMobileActionBar } from "./MobileActionBar"
 import { OnboardingMobileHeader } from "./MobileHeader"
@@ -122,6 +123,7 @@ export function OnboardingShell() {
   const [userType, setUserType] = useState<PublicUserType | null>(initialType)
   const [stepIndex, setStepIndex] = useState(0)
   const [data, setData] = useState<OnboardingData>({})
+  const [draftLoaded, setDraftLoaded] = useState(!initialType)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   // Fichiers en mémoire — non persistés (File n'est pas sérialisable).
   // Si l'utilisateur recharge la page, il devra re-téléverser.
@@ -154,19 +156,27 @@ export function OnboardingShell() {
     }
   }, [userType, router, searchParams])
 
-  // Load draft on userType change
+  // Load draft on userType change. We reset `draftLoaded` first so that the
+  // step bodies don't mount with empty defaults while waiting for the read.
   useEffect(() => {
-    if (!userType) return
+    if (!userType) {
+      setDraftLoaded(true)
+      return
+    }
+    setDraftLoaded(false)
     const draft = loadDraft(userType)
     setData(draft)
+    setDraftLoaded(true)
   }, [userType])
 
-  // Autosave draft on data change (without sensitive fields)
+  // Autosave draft on data change (without sensitive fields).
+  // Skip until the draft has been loaded — otherwise the initial empty `data`
+  // overwrites the persisted draft before we get a chance to read it.
   useEffect(() => {
-    if (!userType) return
+    if (!userType || !draftLoaded) return
     saveDraft(userType, data)
     setLastSavedAt(new Date())
-  }, [userType, data])
+  }, [userType, data, draftLoaded])
 
   const updateData = useCallback((patch: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...patch }))
@@ -246,7 +256,14 @@ export function OnboardingShell() {
     [analytics]
   )
 
-  const handleNext = useCallback(() => {
+  const stepHandleRef = useRef<StepHandle | null>(null)
+
+  const handleNext = useCallback(async () => {
+    const handle = stepHandleRef.current
+    if (handle) {
+      const ok = await handle.validateAndNext()
+      if (!ok) return
+    }
     analytics.trackStepCompleted()
     setStepIndex((i) => Math.min(i + 1, steps.length - 1))
   }, [analytics, steps.length])
@@ -318,11 +335,15 @@ export function OnboardingShell() {
 
   if (isSubmitted) {
     return (
-      <div className="onboarding-root">
-        <SubmittedScreen
-          reference={submittedRef || undefined}
-          onRestart={handleRestart}
-        />
+      <div className="onboarding-root flex min-h-svh flex-col">
+        <Header />
+        <main className="flex-1">
+          <SubmittedScreen
+            reference={submittedRef || undefined}
+            onRestart={handleRestart}
+          />
+        </main>
+        <Footer />
       </div>
     )
   }
@@ -351,6 +372,16 @@ export function OnboardingShell() {
 
   const stepBody = (() => {
     if (!currentStep) return null
+    // Wait for the draft to be read from localStorage before mounting the
+    // step component — otherwise useForm captures empty defaultValues and
+    // wipes out the persisted data on the user's first interaction.
+    if (!draftLoaded) {
+      return (
+        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+          <span suppressHydrationWarning>…</span>
+        </div>
+      )
+    }
     switch (currentStep.key) {
       case "identity":
         return (
@@ -367,20 +398,34 @@ export function OnboardingShell() {
           />
         )
       case "family":
-        return <FamilyStep data={data} updateData={updateData} />
+        return (
+          <FamilyStep
+            ref={stepHandleRef}
+            data={data}
+            updateData={updateData}
+          />
+        )
       case "contacts":
         return (
           <ContactsStep
+            ref={stepHandleRef}
             data={data}
             updateData={updateData}
             userType={userType}
           />
         )
       case "profession":
-        return <ProfessionStep data={data} updateData={updateData} />
+        return (
+          <ProfessionStep
+            ref={stepHandleRef}
+            data={data}
+            updateData={updateData}
+          />
+        )
       case "documents":
         return (
           <DocumentsStep
+            ref={stepHandleRef}
             data={data}
             updateData={updateData}
             userType={userType}
@@ -395,6 +440,7 @@ export function OnboardingShell() {
           <ReviewStep
             data={data}
             userType={userType}
+            files={files}
             onJump={handleJumpByKey}
             onSubmit={handleSubmit}
             submitting={submitting}

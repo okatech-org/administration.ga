@@ -16,16 +16,15 @@ import { BirthPhase } from "./phases/BirthPhase";
 import { ContactPhase } from "./phases/ContactPhase";
 import { NamePhase } from "./phases/NamePhase";
 import { OtpPhase } from "./phases/OtpPhase";
-import { PasswordPhase } from "./phases/PasswordPhase";
 import { PassportPhase } from "./phases/PassportPhase";
 import { PinPhase } from "./phases/PinPhase";
 
 /**
- * IdentityStep coordonne les 7 sous-phases du mini-typeform :
- * name → contact → password → otp → pin → birth → passport.
+ * IdentityStep coordonne les sous-phases du mini-typeform :
+ * name → contact → otp → pin → birth → passport.
  *
- * - Quand `_authState === "verified"`, on saute les phases auth (password/otp)
- *   au mount (= reprise d'un draft où l'utilisateur a déjà signup+vérifié).
+ * - Quand `_authState === "verified"`, on saute la phase `otp` au mount
+ *   (= reprise d'un draft où l'utilisateur a déjà signup+vérifié).
  *   Le PIN n'est PAS sauté car il peut être manqué côté serveur.
  * - `_identityPhase` est persisté dans `data` pour reprendre à la bonne phase.
  *   La persistance se fait inline dans handleNext/handlePrev (pas via useEffect)
@@ -65,10 +64,7 @@ export function IdentityStep({
 		const stored = data._identityPhase;
 		if (
 			verified &&
-			(stored === "name" ||
-				stored === "contact" ||
-				stored === "password" ||
-				stored === "otp")
+			(stored === "name" || stored === "contact" || stored === "otp")
 		) {
 			return "pin";
 		}
@@ -102,7 +98,7 @@ export function IdentityStep({
 			let nextIdx = i + 1;
 			while (
 				verified &&
-				(phases[nextIdx] === "password" || phases[nextIdx] === "otp") &&
+				phases[nextIdx] === "otp" &&
 				nextIdx < phases.length - 1
 			) {
 				nextIdx++;
@@ -121,7 +117,7 @@ export function IdentityStep({
 			let prevIdx = i - 1;
 			while (
 				verified &&
-				(phases[prevIdx] === "password" || phases[prevIdx] === "otp") &&
+				phases[prevIdx] === "otp" &&
 				prevIdx > 0
 			) {
 				prevIdx--;
@@ -175,14 +171,6 @@ export function IdentityStep({
 			)}
 			{phase === "contact" && (
 				<ContactPhase
-					data={data}
-					updateData={updateData}
-					onNext={handleNext}
-					onPrev={handlePrev}
-				/>
-			)}
-			{phase === "password" && (
-				<PasswordPhase
 					data={data}
 					updateData={updateData}
 					onNext={handleNext}

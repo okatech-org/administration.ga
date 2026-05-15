@@ -1,29 +1,65 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { api } from "@convex/_generated/api";
+import { normalizePhone } from "@convex/lib/phone";
+import { useConvex } from "convex/react";
 import {
-	ArrowLeft,
-	KeyRound,
-	Lock,
+	ArrowRight,
 	Loader2,
 	Mail,
-	Smartphone,
+	Phone,
+	Shield,
+	Sparkles,
 } from "lucide-react";
-import { Suspense, useEffect, useId, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AuthLayout } from "@/components/auth/AuthLayout";
-import { IDNSignInButton } from "@/components/auth/IDNSignInButton";
+import { InitialsAvatar } from "@/components/auth/InitialsAvatar";
+import { MethodButton } from "@/components/auth/MethodButton";
+import { PinEntryInline } from "@/components/auth/PinEntryInline";
+import { SignInLayout } from "@/components/auth/SignInLayout";
+import { OtpInput } from "@/components/onboarding/ui/OtpInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { captureEvent } from "@/lib/analytics";
 import { authClient } from "@/lib/auth-client";
-import { normalizePhone } from "@convex/lib/phone";
+import { cn } from "@/lib/utils";
 
-type SignInStep = "identifier" | "pin" | "password" | "otp-code";
-type LoginMode = "email" | "phone";
+type Screen =
+	| "identify"
+	| "method_pin"
+	| "method_legacy"
+	| "pin_entry"
+	| "otp"
+	| "connected";
 
-/** Map Better Auth English errors -> FR translation keys */
+type Channel = "email" | "sms";
+type IdentifierMode = "email" | "phone";
+
+const EMAIL_RE = /.+@.+\..+/;
+const PHONE_RE = /^[\d\s+().-]{6,}$/;
+
+const isEmail = (s: string) => EMAIL_RE.test(s.trim());
+const isPhone = (s: string) =>
+	PHONE_RE.test(s.trim()) && /\d/.test(s) && !s.includes("@");
+
+function maskEmail(email: string): string {
+	const [local, domain] = email.split("@");
+	if (!domain) return email;
+	const head = local.slice(0, 1);
+	const tail = local.slice(-1);
+	return `${head}${"•".repeat(Math.max(3, local.length - 2))}${tail}@${domain}`;
+}
+
+function maskPhone(phone: string): string {
+	const digits = phone.replace(/\D/g, "");
+	if (digits.length < 4) return phone;
+	const last2 = digits.slice(-2);
+	return `${phone.slice(0, 3)} •• •• •• ${last2}`;
+}
+
+/** Error mapping (Better Auth EN → i18n keys) */
 const AUTH_ERROR_MAP: Record<string, string> = {
 	"otp expired": "errors.auth.otp.expired",
 	"invalid otp": "errors.auth.otp.invalidCode",
@@ -31,611 +67,622 @@ const AUTH_ERROR_MAP: Record<string, string> = {
 	"invalid code": "errors.auth.otp.invalidCode",
 	"user not found": "errors.auth.otp.phoneNotFound",
 	"phone number not found": "errors.auth.otp.phoneNotFound",
-	"invalid email or password": "errors.auth.invalidCredentials",
 };
 
 function SignInPageContent() {
 	const { t } = useTranslation();
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const convex = useConvex();
 	const formId = useId();
-	const searchStr = searchParams.toString() ? `?${searchParams.toString()}` : "";
-	const redirectTo = searchParams.get("redirect") || "/my-space";
 
-	/** Translate a Better Auth error to French */
-	const translateAuthError = (message: string | undefined, fallbackKey: string) => {
-		if (!message) return t(fallbackKey);
+	const searchStr = searchParams.toString() ? `?${searchParams.toString()}` : "";
+	const redirectTo = searchParams.get("redirect") || "/post-login-redirect";
+
+	const translateAuthError = (message: string | undefined, fallback: string) => {
+		if (!message) return t(fallback);
 		const key = AUTH_ERROR_MAP[message.toLowerCase()];
-		return key ? t(key) : t(fallbackKey);
+		return key ? t(key) : t(fallback);
 	};
 
-	const [step, setStep] = useState<SignInStep>("identifier");
-	const [loginMode, setLoginMode] = useState<LoginMode>("email");
-	const [email, setEmail] = useState("");
-	const [phone, setPhone] = useState("");
-	const [password, setPassword] = useState("");
+	const [screen, setScreen] = useState<Screen>("identify");
+	const [identifierMode, setIdentifierMode] = useState<IdentifierMode>("email");
+	const [emailValue, setEmailValue] = useState("");
+	const [phoneValue, setPhoneValue] = useState("");
+	const [channel, setChannel] = useState<Channel>("email");
 	const [otpCode, setOtpCode] = useState("");
 	const [pinCode, setPinCode] = useState("");
-	const [pinAttemptsRemaining, setPinAttemptsRemaining] = useState(3);
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
-	const [otpSent, setOtpSent] = useState(false);
-	const otpInputRef = useRef<HTMLInputElement>(null);
-	const pinInputRef = useRef<HTMLInputElement>(null);
 
-	const identifier = loginMode === "email" ? email : phone;
-
-	useEffect(() => {
-		if (step === "otp-code" && otpInputRef.current) {
-			otpInputRef.current.focus();
+	const identifier = identifierMode === "email" ? emailValue : phoneValue;
+	const identifierKind: IdentifierMode | null = useMemo(() => {
+		if (identifierMode === "email") {
+			return emailValue && isEmail(emailValue) ? "email" : null;
 		}
-		if (step === "pin" && pinInputRef.current) {
-			pinInputRef.current.focus();
-		}
-	}, [step]);
+		return phoneValue && isPhone(phoneValue) ? "phone" : null;
+	}, [identifierMode, emailValue, phoneValue]);
 
-	// -- Check PIN before sending OTP ----------------------------------------
-	const handleIdentifierSubmit = async () => {
-		if (!identifier) return;
+	const valid = identifierKind !== null;
+	const maskedIdentifier =
+		identifierKind === "email"
+			? maskEmail(emailValue)
+			: identifierKind === "phone"
+				? maskPhone(phoneValue)
+				: identifier;
+
+	const normalizedPhone =
+		identifierKind === "phone"
+			? normalizePhone(phoneValue) ?? phoneValue.trim()
+			: undefined;
+	const normalizedEmail =
+		identifierKind === "email" ? emailValue.trim().toLowerCase() : undefined;
+
+	// ── Step 1: identify ────────────────────────────────────────
+	const handleIdentify = useCallback(async () => {
+		if (!valid) return;
 		setError(null);
 		setLoading(true);
-
 		try {
-			// Verify if user has a PIN
-			const pinStatus = await fetch(
-				`${process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".convex.cloud", ".convex.site") ?? ""}/api/auth/pin-status?email=${encodeURIComponent(loginMode === "email" ? email : "")}&phone=${encodeURIComponent(loginMode === "phone" ? phone : "")}`,
-			).then((r) => r.ok ? r.json() : null).catch(() => null);
-
-			if (pinStatus?.hasPin && !pinStatus?.locked && !pinStatus?.otpRequired) {
-				// User has a valid PIN -> show PIN keyboard
-				setPinCode("");
-				setPinAttemptsRemaining(3);
-				setStep("pin");
-				setLoading(false);
-				return;
-			}
-
-			if (pinStatus?.locked) {
-				setError("Compte verrouille. Connexion par code OTP requise.");
-			}
-			if (pinStatus?.otpRequired) {
-				setError("Verification periodique requise. Un code OTP va vous etre envoye.");
-			}
-		} catch {
-			// If PIN check fails, continue with normal OTP
-		}
-
-		// No PIN or PIN locked/expired -> send OTP
-		setLoading(false);
-		await handleSendOtp();
-	};
-
-	// -- Verify PIN -----------------------------------------------------------
-	const handleVerifyPin = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (pinCode.length !== 6 || !identifier) return;
-		setError(null);
-		setLoading(true);
-
-		try {
-			const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".convex.cloud", ".convex.site") ?? "";
-			const response = await fetch(`${convexSiteUrl}/api/auth/pin-session`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({
-					email: loginMode === "email" ? email : undefined,
-					phone: loginMode === "phone" ? phone : undefined,
-					pin: pinCode,
-				}),
+			const pinStatus = await convex.query(api.functions.pin.checkPinStatus, {
+				email: normalizedEmail,
+				phone: normalizedPhone,
 			});
 
-			if (response.ok) {
-				const data = await response.json();
-				// Use tempPassword to complete auth via Better Auth
+			if (pinStatus.hasPin && !pinStatus.locked && !pinStatus.otpRequired) {
+				setPinCode("");
+				setScreen("method_pin");
+			} else {
+				setScreen("method_legacy");
+				// Default channel hint based on identifier type
+				setChannel(identifierKind === "phone" ? "sms" : "email");
+			}
+		} catch (err) {
+			console.error("checkPinStatus error:", err);
+			// Fail-open to legacy method picker — OTP works for everyone
+			setScreen("method_legacy");
+			setChannel(identifierKind === "phone" ? "sms" : "email");
+		} finally {
+			setLoading(false);
+		}
+	}, [valid, convex, normalizedEmail, normalizedPhone, identifierKind]);
+
+	// ── Send OTP ─────────────────────────────────────────────────
+	const sendOtp = useCallback(
+		async (selectedChannel: Channel) => {
+			setError(null);
+			setLoading(true);
+			setOtpCode("");
+			try {
+				if (selectedChannel === "sms") {
+					if (!normalizedPhone) {
+						setError(t("errors.auth.otp.phoneNotFound"));
+						return;
+					}
+					const res = await authClient.phoneNumber.sendOtp({
+						phoneNumber: normalizedPhone,
+					});
+					if (res.error) {
+						setError(
+							translateAuthError(res.error.message, "errors.auth.otp.sendFailed"),
+						);
+						return;
+					}
+				} else {
+					if (!normalizedEmail) {
+						setError(t("errors.auth.otp.phoneNotFound"));
+						return;
+					}
+					const res = await authClient.emailOtp.sendVerificationOtp({
+						email: normalizedEmail,
+						type: "sign-in",
+					});
+					if (res.error) {
+						setError(
+							translateAuthError(res.error.message, "errors.auth.otp.sendFailed"),
+						);
+						return;
+					}
+				}
+				setChannel(selectedChannel);
+				setScreen("otp");
+			} catch {
+				setError(t("errors.auth.otp.sendFailed"));
+			} finally {
+				setLoading(false);
+			}
+		},
+		[normalizedEmail, normalizedPhone, t],
+	);
+
+	// ── Verify OTP ───────────────────────────────────────────────
+	const handleVerifyOtp = useCallback(
+		async (e: React.FormEvent) => {
+			e.preventDefault();
+			if (otpCode.length !== 6) return;
+			setError(null);
+			setLoading(true);
+			try {
+				if (channel === "sms" && normalizedPhone) {
+					const res = await authClient.phoneNumber.verify({
+						phoneNumber: normalizedPhone,
+						code: otpCode,
+					});
+					if (res.error) {
+						setError(
+							translateAuthError(res.error.message, "errors.auth.otp.invalidCode"),
+						);
+						return;
+					}
+					captureEvent("user_logged_in", { method: "sms_otp" });
+				} else if (channel === "email" && normalizedEmail) {
+					const res = await authClient.signIn.emailOtp({
+						email: normalizedEmail,
+						otp: otpCode,
+					});
+					if (res.error) {
+						setError(
+							translateAuthError(res.error.message, "errors.auth.otp.invalidCode"),
+						);
+						return;
+					}
+					captureEvent("user_logged_in", { method: "email_otp" });
+				}
+				router.replace(redirectTo);
+			} catch {
+				setError(t("errors.auth.otp.invalidCode"));
+			} finally {
+				setLoading(false);
+			}
+		},
+		[otpCode, channel, normalizedEmail, normalizedPhone, router, redirectTo, t],
+	);
+
+	// ── Verify PIN ───────────────────────────────────────────────
+	const verifyPin = useCallback(
+		async (pin: string) => {
+			if (pin.length !== 6) return;
+			setError(null);
+			setLoading(true);
+			try {
+				const convexSiteUrl =
+					process.env.NEXT_PUBLIC_CONVEX_URL?.replace(
+						".convex.cloud",
+						".convex.site",
+					) ?? "";
+				const response = await fetch(`${convexSiteUrl}/api/auth/pin-session`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({
+						email: normalizedEmail,
+						phone: normalizedPhone,
+						pin,
+					}),
+				});
+
+				if (!response.ok) {
+					const data = await response.json().catch(() => ({}) as any);
+					if (data.error === "PIN_LOCKED") {
+						setError(t("errors.auth.signIn.pinLocked"));
+						setPinCode("");
+						// Auto-switch to OTP after lock
+						setTimeout(() => sendOtp(channel), 1200);
+					} else {
+						const remaining = data.attemptsRemaining;
+						setPinCode("");
+						setError(
+							typeof remaining === "number"
+								? t("errors.auth.signIn.attemptsRemaining", {
+										count: remaining,
+									})
+								: t("errors.auth.signIn.pinInvalid"),
+						);
+					}
+					return;
+				}
+
+				const data = (await response.json()) as {
+					email: string;
+					tempPassword: string;
+				};
 				const signInResult = await authClient.signIn.email({
 					email: data.email,
 					password: data.tempPassword,
 				});
 				if (signInResult.error) {
-					setError("Erreur lors de la creation de la session");
-				} else {
-					captureEvent("user_logged_in", { method: "pin" as any });
-					await new Promise((r) => setTimeout(r, 500));
-					router.push(redirectTo);
+					setError(t("errors.auth.signInFailed"));
+					return;
 				}
-			} else {
-				const errorData = await response.json().catch(() => ({}));
-				if (errorData.error === "PIN_LOCKED") {
-					setError("Code PIN verrouille. Connexion par OTP requise.");
-					setStep("identifier");
-					await handleSendOtp();
-				} else {
-					const remaining = errorData.attemptsRemaining ?? 0;
-					setPinAttemptsRemaining(remaining);
-					setError(`Code incorrect. ${remaining} tentative${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""}.`);
-					setPinCode("");
-				}
+				captureEvent("user_logged_in", { method: "pin" as any });
+				router.replace(redirectTo);
+			} catch (err) {
+				console.error("verifyPin error:", err);
+				setError(t("errors.auth.signInFailed"));
+			} finally {
+				setLoading(false);
 			}
-		} catch {
-			setError("Erreur de connexion. Veuillez reessayer.");
-		} finally {
-			setLoading(false);
-		}
-	};
+		},
+		[normalizedEmail, normalizedPhone, t, router, redirectTo, channel, sendOtp],
+	);
 
-	// -- Send OTP -------------------------------------------------------------
-	const handleSendOtp = async () => {
-		if (!identifier) return;
-		setError(null);
-		setLoading(true);
-
-		try {
-			if (loginMode === "phone") {
-				const cleanPhone = normalizePhone(phone) ?? phone.trim();
-				const result = await authClient.phoneNumber.sendOtp({
-					phoneNumber: cleanPhone,
-				});
-				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.sendFailed"));
-				} else {
-					setOtpSent(true);
-					setStep("otp-code");
-				}
-			} else {
-				const result = await authClient.emailOtp.sendVerificationOtp({
-					email,
-					type: "sign-in",
-				});
-				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.sendFailed"));
-				} else {
-					setOtpSent(true);
-					setStep("otp-code");
-				}
-			}
-		} catch {
-			setError(t("errors.auth.otp.sendFailed"));
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	// -- Verify OTP -----------------------------------------------------------
-	const handleVerifyOtp = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!otpCode || !identifier) return;
-		setError(null);
-		setLoading(true);
-
-		try {
-			if (loginMode === "phone") {
-				const cleanPhone = normalizePhone(phone) ?? phone.trim();
-				const result = await authClient.phoneNumber.verify({
-					phoneNumber: cleanPhone,
-					code: otpCode,
-				});
-				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
-				} else {
-					captureEvent("user_logged_in", { method: "sms_otp" });
-					router.push(redirectTo);
-				}
-			} else {
-				const result = await authClient.signIn.emailOtp({
-					email,
-					otp: otpCode,
-				});
-				if (result.error) {
-					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
-				} else {
-					captureEvent("user_logged_in", { method: "email_otp" });
-					router.push(redirectTo);
-				}
-			}
-		} catch {
-			setError(t("errors.auth.otp.invalidCode"));
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	// -- Password sign-in -----------------------------------------------------
-	const handlePasswordSignIn = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError(null);
-		setLoading(true);
-
-		try {
-			const result = await authClient.signIn.email({
-				email,
-				password,
-			});
-			if (result.error) {
-				setError(translateAuthError(result.error.message, "errors.auth.signInFailed"));
-			} else {
-				captureEvent("user_logged_in", { method: "password" });
-				await new Promise((r) => setTimeout(r, 500));
-				router.push(redirectTo);
-			}
-		} catch {
-			setError(t("errors.auth.signInFailed"));
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleBack = () => {
-		setStep("identifier");
+	const resetToIdentify = () => {
+		setScreen("identify");
 		setError(null);
 		setOtpCode("");
-		setPassword("");
-		setOtpSent(false);
+		setPinCode("");
 	};
 
-	return (
-		<AuthLayout
-			headerButton={{
-				label: t("header.nav.signUp"),
-				href: "/register",
-			}}
-		>
-			<div className="mb-8 space-y-2">
-				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-					{t("errors.auth.welcomeBack")}
-				</h1>
-				<p className="text-muted-foreground">
-					{t("errors.auth.accessAccount")}
-				</p>
-			</div>
+	// ─── Render ──────────────────────────────────────────────────
 
-			<div className="w-full space-y-6">
-				{error && (
-					<div className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-						{error}
+	if (screen === "identify") {
+		return (
+			<SignInLayout
+				title={t("errors.auth.signIn.identifyTitle")}
+				subtitle={t("errors.auth.signIn.identifySubtitle")}
+				footer={
+					<div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+						<span className="text-muted-foreground">
+							{t("errors.auth.noAccount")}
+						</span>
+						<a
+							href={`/register${searchStr}`}
+							className="inline-flex items-center gap-1 font-medium text-gabon-blue hover:underline"
+						>
+							{t("errors.auth.createAccount")}
+							<ArrowRight className="size-3.5" />
+						</a>
 					</div>
-				)}
+				}
+			>
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						if (valid) handleIdentify();
+					}}
+					className="flex flex-col gap-4"
+				>
+					{/* Toggle Email / Téléphone */}
+					<div
+						className="flex overflow-hidden rounded-lg border"
+						style={{ borderColor: "var(--border-strong, var(--border))" }}
+						role="tablist"
+					>
+						<button
+							type="button"
+							role="tab"
+							aria-selected={identifierMode === "email"}
+							onClick={() => {
+								setIdentifierMode("email");
+								setError(null);
+							}}
+							className={cn(
+								"flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+								identifierMode === "email"
+									? "bg-gabon-blue text-white"
+									: "bg-muted/40 text-muted-foreground hover:text-foreground",
+							)}
+						>
+							<Mail className="size-4" />
+							{t("common.email")}
+						</button>
+						<button
+							type="button"
+							role="tab"
+							aria-selected={identifierMode === "phone"}
+							onClick={() => {
+								setIdentifierMode("phone");
+								setError(null);
+							}}
+							className={cn(
+								"flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+								identifierMode === "phone"
+									? "bg-gabon-blue text-white"
+									: "bg-muted/40 text-muted-foreground hover:text-foreground",
+							)}
+						>
+							<Phone className="size-4" />
+							{t("profile.fields.phone")}
+						</button>
+					</div>
 
-				{/* Step 1: Identifier */}
-				{step === "identifier" && (
-					<div className="space-y-4">
-						{/* Toggle Email / Phone */}
-						<div className="flex rounded-lg border border-border/50 overflow-hidden">
-							<button
-								type="button"
-								onClick={() => setLoginMode("email")}
-								className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
-									loginMode === "email"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted/30 text-muted-foreground hover:text-foreground"
-								}`}
-							>
-								<Mail className="h-4 w-4" />
+					{identifierMode === "email" ? (
+						<div className="flex flex-col gap-1.5">
+							<Label htmlFor={`${formId}-email`} className="font-medium">
 								{t("common.email")}
-							</button>
-							<button
-								type="button"
-								onClick={() => setLoginMode("phone")}
-								className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
-									loginMode === "phone"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted/30 text-muted-foreground hover:text-foreground"
-								}`}
-							>
-								<Smartphone className="h-4 w-4" />
-								{t("profile.fields.phone")}
-							</button>
-						</div>
-
-						{/* Input field */}
-						<div className="space-y-2">
-							<Label
-								htmlFor={`${formId}-identifier`}
-								className="text-foreground font-medium"
-							>
-								{loginMode === "email" ? t("common.email") : t("profile.fields.phone")}
 							</Label>
-							{loginMode === "email" ? (
+							<div className="relative">
+								<span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-muted-foreground">
+									<Mail className="size-4" />
+								</span>
 								<Input
-									id={`${formId}-identifier`}
+									id={`${formId}-email`}
 									type="email"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									placeholder="email@exemple.com"
-									required
+									value={emailValue}
+									onChange={(e) => setEmailValue(e.target.value)}
+									placeholder="vous@exemple.com"
 									autoComplete="email"
 									enterKeyHint="next"
-									className="h-12 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-primary/20"
-									onKeyDown={(e) => {
-										if (e.key === "Enter" && email) {
-											e.preventDefault();
-											handleSendOtp();
-										}
-									}}
+									autoFocus
+									className="h-12 pl-10 md:pl-10"
 								/>
-							) : (
+							</div>
+						</div>
+					) : (
+						<div className="flex flex-col gap-1.5">
+							<Label htmlFor={`${formId}-phone`} className="font-medium">
+								{t("profile.fields.phone")}
+							</Label>
+							<div className="relative">
+								<span className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-muted-foreground">
+									<Phone className="size-4" />
+								</span>
 								<Input
-									id={`${formId}-identifier`}
+									id={`${formId}-phone`}
 									type="tel"
-									value={phone}
-									onChange={(e) => setPhone(e.target.value)}
+									value={phoneValue}
+									onChange={(e) => setPhoneValue(e.target.value)}
 									placeholder="+33 6 12 34 56 78"
-									required
 									autoComplete="tel"
 									enterKeyHint="next"
-									className="h-12 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-primary/20"
-									onKeyDown={(e) => {
-										if (e.key === "Enter" && phone) {
-											e.preventDefault();
-											handleSendOtp();
-										}
-									}}
+									autoFocus
+									className="h-12 pl-10 md:pl-10"
 								/>
-							)}
+							</div>
 						</div>
+					)}
 
-						{/* Primary action: send OTP */}
-						<Button
-							type="button"
-							size="lg"
-							className="w-full font-medium"
-							disabled={loading || !identifier}
-							onClick={handleIdentifierSubmit}
-						>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-							{loginMode === "phone" ? (
-								<>
-									<Smartphone className="mr-2 h-5 w-5" />
-									{t("errors.auth.otp.sendCodeBySms")}
-								</>
-							) : (
-								<>
-									<Mail className="mr-2 h-5 w-5" />
-									{t("errors.auth.otp.sendCode")}
-								</>
-							)}
-						</Button>
+					<Button
+						type="submit"
+						size="lg"
+						className="h-12 w-full"
+						disabled={!valid || loading}
+					>
+						{loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+						{t("errors.auth.signIn.continue")}
+						<ArrowRight className="ml-1.5 size-4" />
+					</Button>
 
-						{/* Password option -- email mode only */}
-						{loginMode === "email" && (
-							<>
-								<div className="relative py-2">
-									<div className="absolute inset-0 flex items-center">
-										<div className="w-full border-t border-border/50" />
-									</div>
-									<div className="relative flex justify-center text-xs uppercase">
-										<span className="bg-background px-4 text-muted-foreground">
-											{t("errors.auth.orDivider")}
-										</span>
-									</div>
-								</div>
+					{error && (
+						<p className="text-sm text-destructive" role="alert">
+							{error}
+						</p>
+					)}
 
-								<Button
-									type="button"
-									variant="outline"
-									size="lg"
-									className="w-full font-medium"
-									disabled={!email}
-									onClick={() => {
-										if (email) setStep("password");
-									}}
-								>
-									<KeyRound className="mr-2 h-5 w-5" />
-									{t("errors.auth.otp.signInWithPassword")}
-								</Button>
-							</>
-						)}
+					<div
+						className="flex items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground"
+						style={{ borderColor: "var(--border)" }}
+					>
+						<Shield className="mt-0.5 size-4 shrink-0" />
+						<span>{t("errors.auth.signIn.securityNote")}</span>
+					</div>
+				</form>
+			</SignInLayout>
+		);
+	}
 
-						<div className="text-center text-sm text-muted-foreground pt-4">
-							{t("errors.auth.noAccount")}{" "}
-							<a
-								href={`/register${searchStr}`}
-								className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
-							>
-								{t("errors.auth.createAccount")}
-							</a>
+	if (screen === "method_pin") {
+		return (
+			<SignInLayout
+				onBack={resetToIdentify}
+				title={t("errors.auth.signIn.greetingGeneric")}
+				subtitle={t("errors.auth.signIn.pinPrompt")}
+			>
+				<div className="flex items-center gap-3.5 rounded-2xl border bg-muted/40 p-3.5">
+					<InitialsAvatar size={40} />
+					<div className="min-w-0 flex-1">
+						<div className="truncate text-sm font-medium">
+							{maskedIdentifier}
+						</div>
+						<div className="text-xs text-muted-foreground">
+							{t("errors.auth.signIn.usingPin")}
 						</div>
 					</div>
-				)}
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={resetToIdentify}
+						className="text-muted-foreground"
+					>
+						{t("errors.auth.signIn.change")}
+					</Button>
+				</div>
 
-				{/* Step 2a: Password */}
-				{step === "password" && (
-					<form onSubmit={handlePasswordSignIn} className="space-y-4">
-						<button
-							type="button"
-							onClick={handleBack}
-							className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
-						>
-							<ArrowLeft className="mr-1 h-4 w-4" />
-							{email}
-						</button>
+				<PinEntryInline
+					value={pinCode}
+					onChange={setPinCode}
+					onSubmit={verifyPin}
+					loading={loading}
+					error={error}
+					label={t("errors.auth.signIn.pinLabel")}
+				/>
 
-						<div className="space-y-2">
-							<div className="flex items-center justify-between">
-								<Label
-									htmlFor={`${formId}-password`}
-									className="text-foreground font-medium"
-								>
-									{t("common.password")}
-								</Label>
-								<button
-									type="button"
-									onClick={handleSendOtp}
-									className="text-sm font-medium text-muted-foreground hover:text-primary hover:underline transition-colors"
-									disabled={loading || !email}
-								>
-									{t("errors.auth.otp.forgotPassword")}
-								</button>
-							</div>
-							<Input
-								id={`${formId}-password`}
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								required
-								autoComplete="current-password"
-								enterKeyHint="done"
-								autoFocus
-								className="h-12 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:ring-primary/20"
-							/>
-						</div>
+				<div className="flex items-center gap-3 text-xs text-muted-foreground">
+					<span className="h-px flex-1 bg-border" />
+					<span>{t("errors.auth.signIn.otherMethods")}</span>
+					<span className="h-px flex-1 bg-border" />
+				</div>
 
-						<Button
-							type="submit"
-							size="lg"
-							className="w-full font-medium mt-4"
+				<div className="flex flex-col gap-2">
+					{normalizedEmail && (
+						<MethodButton
+							icon={Mail}
+							title={t("errors.auth.signIn.methodEmail")}
+							subtitle={maskEmail(normalizedEmail)}
+							onClick={() => sendOtp("email")}
 							disabled={loading}
-						>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-							{t("header.nav.signIn")}
-						</Button>
-					</form>
-				)}
-
-				{/* Step 2c: PIN Code */}
-				{step === "pin" && (
-					<form onSubmit={handleVerifyPin} className="space-y-4">
-						<button
-							type="button"
-							onClick={() => { setStep("identifier"); setPinCode(""); setError(null); }}
-							className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-						>
-							<ArrowLeft className="h-4 w-4" />
-							{identifier}
-						</button>
-
-						<div className="text-center space-y-2 py-2">
-							<div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-								<Lock className="h-6 w-6 text-primary" />
-							</div>
-							<h3 className="text-lg font-semibold">Entrez votre code PIN</h3>
-							<p className="text-sm text-muted-foreground">
-								6 chiffres pour vous connecter rapidement
-							</p>
-						</div>
-
-						<div className="space-y-2">
-							<Input
-								ref={pinInputRef}
-								type="password"
-								inputMode="numeric"
-								maxLength={6}
-								pattern="[0-9]*"
-								value={pinCode}
-								onChange={(e) => setPinCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-								placeholder="• • • • • •"
-								className="h-14 text-2xl tracking-[0.5em] font-mono text-center"
-								autoComplete="off"
-								disabled={loading}
-							/>
-						</div>
-
-						{error && (
-							<p className="text-sm text-destructive text-center">{error}</p>
-						)}
-
-						<Button
-							type="submit"
-							size="lg"
-							className="w-full font-medium"
-							disabled={loading || pinCode.length !== 6}
-						>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-							<KeyRound className="mr-2 h-5 w-5" />
-							Connexion
-						</Button>
-
-						<div className="text-center">
-							<button
-								type="button"
-								onClick={() => { setStep("identifier"); handleSendOtp(); }}
-								className="text-sm text-primary hover:underline"
-							>
-								Recevoir un code OTP a la place
-							</button>
-						</div>
-					</form>
-				)}
-
-				{/* Step 2b: OTP Code */}
-				{step === "otp-code" && (
-					<form onSubmit={handleVerifyOtp} className="space-y-4">
-						<button
-							type="button"
-							onClick={handleBack}
-							className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
-						>
-							<ArrowLeft className="mr-1 h-4 w-4" />
-							{identifier}
-						</button>
-
-						{otpSent && (
-							<div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm text-foreground mb-4">
-								{loginMode === "phone" ? (
-									<>
-										<Smartphone className="inline mr-1.5 h-4 w-4 text-primary" />
-										{t("errors.auth.otp.smsCodeSent")}{" "}
-										<strong>{phone}</strong>
-									</>
-								) : (
-									<>
-										<Mail className="inline mr-1.5 h-4 w-4 text-primary" />
-										{t("errors.auth.otp.codeSent")}{" "}
-										<strong>{email}</strong>
-									</>
-								)}
-							</div>
-						)}
-
-						<div className="space-y-2">
-							<Label
-								htmlFor={`${formId}-otp`}
-								className="text-foreground font-medium"
-							>
-								{t("errors.auth.otp.codeLabel")}
-							</Label>
-							<Input
-								ref={otpInputRef}
-								id={`${formId}-otp`}
-								type="text"
-								inputMode="numeric"
-								pattern="[0-9]*"
-								maxLength={6}
-								value={otpCode}
-								onChange={(e) =>
-									setOtpCode(e.target.value.replace(/\D/g, ""))
-								}
-								placeholder="000000"
-								required
-								autoComplete="one-time-code"
-								enterKeyHint="done"
-								className="h-16 border-transparent focus:ring-2 bg-muted/50 focus:bg-background focus:ring-primary/20 text-center text-3xl tracking-[0.5em] font-mono"
-							/>
-						</div>
-
-						<Button
-							type="submit"
-							size="lg"
-							className="w-full font-medium mt-6"
-							disabled={loading || otpCode.length !== 6}
-						>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-							{t("header.nav.signIn")}
-						</Button>
-
-						<button
-							type="button"
-							onClick={handleSendOtp}
+						/>
+					)}
+					{normalizedPhone && (
+						<MethodButton
+							icon={Phone}
+							title={t("errors.auth.signIn.methodSms")}
+							subtitle={maskPhone(normalizedPhone)}
+							onClick={() => sendOtp("sms")}
 							disabled={loading}
-							className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 mt-4"
+						/>
+					)}
+				</div>
+
+				<div className="text-center text-xs">
+					<button
+						type="button"
+						onClick={() => sendOtp(identifierKind === "phone" ? "sms" : "email")}
+						className="font-medium text-gabon-blue hover:underline"
+					>
+						{t("errors.auth.signIn.pinForgotten")}
+					</button>
+				</div>
+			</SignInLayout>
+		);
+	}
+
+	if (screen === "method_legacy") {
+		return (
+			<SignInLayout
+				onBack={resetToIdentify}
+				eyebrow={
+					<div className="flex items-center gap-3.5">
+						<InitialsAvatar size={48} />
+						<div>
+							<div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+								{t("errors.auth.signIn.welcomeBack")}
+							</div>
+							<div className="mt-0.5 text-base font-semibold">
+								{maskedIdentifier}
+							</div>
+						</div>
+					</div>
+				}
+				title={t("errors.auth.signIn.legacyTitle")}
+				subtitle={t("errors.auth.signIn.legacySubtitle")}
+			>
+				<div className="flex flex-col gap-2.5">
+					{normalizedEmail && (
+						<MethodButton
+							icon={Mail}
+							title={t("errors.auth.signIn.methodEmail")}
+							subtitle={maskEmail(normalizedEmail)}
+							onClick={() => sendOtp("email")}
+							accent="blue"
+							recommended
+							recommendedLabel={t("errors.auth.signIn.recommended")}
+							disabled={loading}
+						/>
+					)}
+					{normalizedPhone && (
+						<MethodButton
+							icon={Phone}
+							title={t("errors.auth.signIn.methodSms")}
+							subtitle={maskPhone(normalizedPhone)}
+							onClick={() => sendOtp("sms")}
+							accent={normalizedEmail ? "neutral" : "blue"}
+							recommended={!normalizedEmail}
+							recommendedLabel={t("errors.auth.signIn.recommended")}
+							disabled={loading}
+						/>
+					)}
+				</div>
+
+				<div className="flex items-start gap-2 rounded-lg border bg-gabon-blue-tint px-3 py-2.5 text-xs text-foreground">
+					<Sparkles className="mt-0.5 size-4 shrink-0 text-gabon-blue" />
+					<span>
+						<strong>{t("errors.auth.signIn.legacyHintLabel")}</strong>{" "}
+						{t("errors.auth.signIn.legacyHint")}
+					</span>
+				</div>
+
+				{error && (
+					<p className="text-sm text-destructive" role="alert">
+						{error}
+					</p>
+				)}
+			</SignInLayout>
+		);
+	}
+
+	if (screen === "otp") {
+		return (
+			<SignInLayout
+				onBack={() => {
+					setScreen("method_legacy");
+					setOtpCode("");
+					setError(null);
+				}}
+				eyebrow={
+					<div
+						className="grid size-12 place-items-center rounded-2xl bg-gabon-blue-tint text-gabon-blue"
+					>
+						{channel === "sms" ? (
+							<Phone className="size-5" />
+						) : (
+							<Mail className="size-5" />
+						)}
+					</div>
+				}
+				title={t("errors.auth.signIn.otpTitle")}
+				subtitle={
+					<>
+						{t("errors.auth.signIn.otpSubtitle", {
+							channel:
+								channel === "sms"
+									? t("errors.auth.signIn.channelSms")
+									: t("errors.auth.signIn.channelEmail"),
+						})}{" "}
+						<strong className="text-foreground">
+							{channel === "sms"
+								? maskPhone(normalizedPhone ?? identifier)
+								: maskEmail(normalizedEmail ?? identifier)}
+						</strong>
+						.
+					</>
+				}
+			>
+				<form onSubmit={handleVerifyOtp} className="flex flex-col gap-5">
+					<div className="flex justify-center">
+						<OtpInput
+							value={otpCode}
+							onChange={setOtpCode}
+							length={6}
+							autoFocus
+							disabled={loading}
+						/>
+					</div>
+
+					{error && (
+						<p className="text-center text-sm text-destructive" role="alert">
+							{error}
+						</p>
+					)}
+
+					<Button
+						type="submit"
+						size="lg"
+						className="h-12 w-full"
+						disabled={loading || otpCode.length !== 6}
+					>
+						{loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+						{t("header.nav.signIn")}
+						<ArrowRight className="ml-1.5 size-4" />
+					</Button>
+
+					<div className="text-center">
+						<button
+							type="button"
+							onClick={() => sendOtp(channel)}
+							disabled={loading}
+							className="text-sm text-muted-foreground hover:text-gabon-blue disabled:opacity-50"
 						>
 							{t("errors.auth.otp.resendCode")}
 						</button>
-					</form>
-				)}
-			</div>
-		</AuthLayout>
-	);
+					</div>
+				</form>
+			</SignInLayout>
+		);
+	}
+
+	return null;
 }
 
 export default function SignInPage() {

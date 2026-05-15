@@ -549,10 +549,10 @@
 			"signUpFailed": "Sign up failed. Please try again.",
 			"noAccount": "Don't have an account yet?",
 			"alreadyHaveAccount": "Already have an account?",
-			"signIn": "Sign in",
 			"signUp": "Sign up",
 			"orDivider": "or",
 			"signInWithIDN": "Sign in with Identite.ga",
+			"emailOrPhone": "Email or phone",
 			"otp": {
 				"sendCode": "Receive a code by email",
 				"sendCodeBySms": "Receive a code by SMS",
@@ -570,7 +570,62 @@
 			},
 			"invalidCredentials": "Invalid email or password.",
 			"emailAlreadyExists": "An account already exists with this email.",
-			"phoneAlreadyExists": "This phone number is already associated with an account."
+			"phoneAlreadyExists": "This phone number is already associated with an account.",
+			"signIn": {
+				"identifyTitle": "Sign in to your account",
+				"identifySubtitle": "Enter your email or phone number. We'll adapt the sign-in options to your account.",
+				"continue": "Continue",
+				"securityNote": "Sign-in is encrypted. We never store your credentials in plain text.",
+				"greetingGeneric": "Welcome back",
+				"pinPrompt": "Enter your PIN code to open your account.",
+				"usingPin": "Signing in with PIN code",
+				"change": "Change",
+				"pinLabel": "6-digit PIN code",
+				"otherMethods": "other methods",
+				"methodEmail": "Receive a code by email",
+				"methodSms": "Receive a code by SMS",
+				"pinForgotten": "Forgot your PIN?",
+				"welcomeBack": "Welcome back",
+				"legacyTitle": "How would you like to sign in?",
+				"legacySubtitle": "No PIN code has been set up on your account yet. Pick a method to continue — you'll activate the PIN right after.",
+				"legacyHintLabel": "New:",
+				"legacyHint": "activate a PIN code to sign in in seconds on your next visits.",
+				"recommended": "Recommended",
+				"attemptsRemaining_one": "Incorrect code. {{count}} attempt left.",
+				"attemptsRemaining_other": "Incorrect code. {{count}} attempts left.",
+				"pinLocked": "PIN temporarily locked. One-time code sign-in required.",
+				"pinInvalid": "Incorrect PIN.",
+				"otpTitle": "Enter the code you received",
+				"otpSubtitle": "A 6-digit code has been sent {{channel}}",
+				"channelEmail": "to your email",
+				"channelSms": "to your number"
+			},
+			"setupPin": {
+				"title": "Secure your account with a PIN code",
+				"subtitle": "To finalize your sign-in, choose a 6-digit PIN code. It will let you return to your space in seconds on your next visits.",
+				"eyebrowRequired": "Required step · 1 time",
+				"cta": "Set up my PIN code",
+				"benefitFastTitle": "Fast sign-in",
+				"benefitFastSubtitle": "No more waiting for an email on every visit.",
+				"benefitLocalTitle": "Stays on your device",
+				"benefitLocalSubtitle": "The PIN never leaves your phone or browser.",
+				"benefitFallbackTitle": "Fallback always available",
+				"benefitFallbackSubtitle": "You can always use an email or SMS code if needed.",
+				"step1of2": "STEP 1 / 2",
+				"step2of2": "STEP 2 / 2",
+				"createTitle": "Choose a PIN code",
+				"createSubtitle": "6 digits. Avoid birth dates and obvious sequences (123456, 000000…).",
+				"confirmTitle": "Confirm your PIN code",
+				"confirmSubtitle": "Enter the same 6 digits again.",
+				"mismatch": "The codes do not match.",
+				"info": "This code stays local to your device and does not replace email codes — it's a quick access shortcut for your next sign-ins.",
+				"restart": "Restart",
+				"successTitle": "PIN code set up",
+				"successSubtitle": "You'll now sign in faster on your next visits.",
+				"redirecting": "Redirecting…",
+				"otpRequired": "Email verification required. Sign in again with a one-time code first.",
+				"genericError": "An error occurred while setting up the PIN."
+			}
 		},
 		"appointments": {
 			"notFound": "Appointment not found",
@@ -2364,6 +2419,7 @@
 		"confirm": "Confirm",
 		"close": "Close",
 		"loading": "Loading...",
+		"verifying": "Verifying…",
 		"notFound": {
 			"title": "404",
 			"heading": "Page not found",
@@ -3306,7 +3362,7 @@
 			"admin_services": "Administrative services"
 		},
 		"submitted": {
-			"title": "File submitted",
+			"title": "File sent",
 			"description": "Your file has been transmitted to the consular service. You will receive an email notification as soon as it is processed.",
 			"refLabel": "File reference",
 			"refHelp": "Keep this reference to track the progress of your application in your personal space.",
@@ -3472,6 +3528,8 @@
 				"resendImpossible": "Resend failed.",
 				"syncingTitle": "Creating your space…",
 				"syncingDescription": "We are syncing your account. This will only take a few seconds.",
+				"preparingTitle": "Preparing your account…",
+				"preparingDescription": "We're creating your consular account and sending you an email verification code.",
 				"resendIn": "Resend code in",
 				"sending": "Sending…",
 				"resend": "Resend code",
@@ -3647,7 +3705,8 @@
 			"formatLine": "{{formats}} · max {{max}}",
 			"formatLineWithHint": "{{formats}} · max {{max}} · {{hint}}",
 			"tooLarge": "The file exceeds the maximum size ({{max}}).",
-			"footer": "Your documents are stored encrypted and accessible only by authorised consular agents."
+			"footer": "Your documents are stored encrypted and accessible only by authorised consular agents.",
+			"errorsSummary": "Please provide all required documents before continuing."
 		},
 		"review": {
 			"title": "Review and submit",
@@ -3715,7 +3774,100 @@
 			"docNotProvided": "Not provided",
 			"consent": "I certify on my honour that the information provided is accurate and I accept the general terms of use.",
 			"submitting": "Submitting…",
-			"submit": "Submit my file"
+			"submit": "Submit my file",
+			"incompleteTitle": "Some steps are incomplete",
+			"editAction": "Edit"
+		},
+		"errors": {
+			"name": {
+				"firstName": { "min": "First name must be at least 2 characters." },
+				"lastName": { "min": "Last name must be at least 2 characters." }
+			},
+			"contact": {
+				"email": { "invalid": "Invalid email address." },
+				"phone": { "invalid": "Invalid phone number." }
+			},
+			"password": {
+				"password": {
+					"min": "Password must be at least 8 characters.",
+					"upper": "Password must contain at least one uppercase letter.",
+					"lower": "Password must contain at least one lowercase letter.",
+					"digit": "Password must contain at least one digit."
+				},
+				"passwordConfirm": {
+					"required": "Please confirm your password.",
+					"mismatch": "Passwords do not match."
+				}
+			},
+			"otp": {
+				"code": { "invalid": "The code must be 6 digits." }
+			},
+			"pin": {
+				"pin": { "invalid": "The PIN must be 6 digits." },
+				"pinConfirm": {
+					"required": "Please confirm your PIN.",
+					"mismatch": "PINs do not match."
+				}
+			},
+			"birth": {
+				"birthDate": {
+					"required": "Date of birth is required.",
+					"inPast": "Date of birth must be in the past.",
+					"adult": "You must be at least 18 years old."
+				},
+				"birthPlace": { "min": "Place of birth required." },
+				"birthCountry": { "required": "Country of birth required." },
+				"gender": { "required": "Gender required." },
+				"nationality": { "required": "Nationality required." },
+				"nationalityAcquisition": { "required": "Acquisition mode required." }
+			},
+			"passport": {
+				"number": { "min": "Invalid passport number (min 5 characters)." },
+				"issuing": { "min": "Issuing authority required." },
+				"issueDate": {
+					"required": "Issue date required.",
+					"inPast": "Issue date must be in the past."
+				},
+				"expiryDate": {
+					"required": "Expiry date required.",
+					"inFuture": "Expiry date must be in the future.",
+					"afterIssue": "Expiry date must be after issue date."
+				}
+			},
+			"family": {
+				"maritalStatus": { "required": "Marital status required." },
+				"spouseFirstName": { "required": "Spouse first name required." },
+				"spouseLastName": { "required": "Spouse last name required." }
+			},
+			"address": {
+				"street": { "min": "Address too short." },
+				"city": { "min": "City required." },
+				"postalCode": { "required": "Postal code required." },
+				"country": { "required": "Country required." }
+			},
+			"emergency": {
+				"firstName": { "min": "First name required." },
+				"lastName": { "min": "Last name required." },
+				"phone": { "invalid": "Invalid phone." },
+				"email": { "invalid": "Invalid email." }
+			},
+			"emergencyContacts": {
+				"atLeastOne": "At least one emergency contact is required."
+			},
+			"profession": {
+				"workStatus": { "required": "Work status required." },
+				"workTitle": { "required": "Job title required." },
+				"workEmployer": { "required": "Employer required." }
+			},
+			"documents": {
+				"identityPhoto": { "required": "Identity photo required." },
+				"passport": { "required": "Passport required." },
+				"birthCertificate": { "required": "Birth certificate required." },
+				"addressProof": { "required": "Proof of address required." }
+			},
+			"review": {
+				"accepted": { "required": "You must accept the terms." }
+			}
 		}
 	},
 	"documents": {
