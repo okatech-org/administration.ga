@@ -1085,6 +1085,11 @@ export enum TutorialCategory {
   Entrepreneurship = "entrepreneuriat",
   Travel = "voyage",
   PracticalLife = "vie_pratique",
+  ConsularProcedures = "demarches_consulaires",
+  CivilStatus = "etat_civil",
+  EducationGrants = "education_bourses",
+  Taxation = "fiscalite",
+  ReturnGabon = "retour_gabon",
 }
 
 export enum TutorialType {

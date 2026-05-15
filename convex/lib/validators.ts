@@ -1530,3 +1530,31 @@ export const packageEventValidator = v.object({
   description: v.string(),
   timestamp: v.number(),
 });
+
+// ─── Profession taxonomy (used by AI enrichment migrations) ───────────────
+// Stub exports pour débloquer le codegen Convex tant que la migration
+// d'enrichissement IA des profils n'est pas finalisée. À remplacer par
+// les valeurs définitives quand le schéma profession aura été arrêté.
+export const PROFESSION_CATEGORY_VALUES = [
+  "tech",
+  "health",
+  "education",
+  "agriculture",
+  "finance",
+  "trades",
+  "public_service",
+  "arts_culture",
+  "transport",
+  "tourism_hospitality",
+  "consulting_services",
+  "legal",
+  "industry",
+  "other",
+] as const;
+
+export type ProfessionCategoryValue =
+  (typeof PROFESSION_CATEGORY_VALUES)[number];
+
+export const ProfessionCategory = Object.fromEntries(
+  PROFESSION_CATEGORY_VALUES.map((c) => [c, c]),
+) as { [K in ProfessionCategoryValue]: K };
