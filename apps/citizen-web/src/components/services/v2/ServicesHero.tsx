@@ -61,12 +61,12 @@ export function ServicesHero({
               {t("services.hero.kicker", "Nos services")}
             </span>
             <h1 className="mt-5 font-semibold leading-[1.02] tracking-[-0.025em] text-[var(--pub-text)] text-[clamp(44px,5.4vw,68px)]">
-              {t("services.hero.titlePart1", "Vingt-huit services")}
+              {t("services.hero.titlePart1", "Toutes vos démarches")}
               <br />
               <em className="not-italic text-[var(--pub-gabon-blue)]">
-                {t("services.hero.titleEm", "au service")}
+                {t("services.hero.titleEm", "consulaires")}
               </em>{" "}
-              {t("services.hero.titlePart2", "des Gabonais.")}
+              {t("services.hero.titlePart2", "en un seul endroit.")}
             </h1>
             <p className="mt-6 max-w-[540px] text-[18px] leading-[1.55] text-[var(--pub-text-muted)]">
               {t(

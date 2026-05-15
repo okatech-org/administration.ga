@@ -40,10 +40,7 @@ export function ServicesFilterBand({
   ] as const
 
   return (
-    <div
-      className="sticky z-20 border-b border-[var(--pub-border)] bg-[var(--pub-bg)]/95 backdrop-blur-sm"
-      style={{ top: "64px" }}
-    >
+    <div className="sticky top-0 z-20 border-b border-[var(--pub-border)] bg-[var(--pub-bg)]/95 backdrop-blur-sm">
       <div className="mx-auto max-w-[1280px] px-8 pt-7 pb-5">
         <div className="flex items-center gap-3 border-b border-[var(--pub-border)] pb-2">
           <Search
