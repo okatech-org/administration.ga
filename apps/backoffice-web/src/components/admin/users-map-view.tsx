@@ -8,8 +8,10 @@
  *  - Profils enfants (héritent des coordonnées du parent)
  *  - Agents du corps diplomatique (positionnés sur la capitale de leur org.country)
  *
- * Filtres : population (citoyens/agents), genre (H/F), âge (adultes/enfants),
- *           continent, pays.
+ * Données : 1 query agrégée côté serveur (api.functions.admin.listMapPoints)
+ * qui applique les filtres (population/genre/âge/continent/pays) avant de
+ * renvoyer la liste plate des points. Compteurs des dropdowns via
+ * `getMapFacets`. État des filtres dans l'URL via `router.replace`.
  */
 
 import * as mapboxgl from "mapbox-gl";
@@ -19,22 +21,19 @@ import type { Id } from "@convex/_generated/dataModel";
 import i18n from "i18next";
 import { Loader2, MapPin, MapPinOff, Shield, Users } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "convex/react";
 import { getLocalizedValue } from "@/lib/i18n-utils";
 import { MAPBOX_CONFIG } from "@/config/mapbox";
 import { getCapitalCoords } from "@/lib/country-capitals";
 import {
 	type Continent,
 	CONTINENT_META,
-	getActiveContinents,
 	getContinent,
 	getCountryFlag,
 	getCountryName,
 } from "@/lib/country-utils";
-import {
-	useAuthenticatedConvexQuery,
-	useAuthenticatedPaginatedQuery,
-} from "@/integrations/convex/hooks";
 import {
 	Combobox,
 	type ComboboxOption,
@@ -51,6 +50,9 @@ import { cn } from "@/lib/utils";
 // ─── Types ─────────────────────────────────────────────────
 type PointKind = "citizen_adult" | "citizen_child" | "agent";
 type Gender = "male" | "female" | "unknown";
+type PopulationFilter = "all" | "citizens" | "agents";
+type GenderFilter = "all" | "male" | "female";
+type AgeFilter = "all" | "adults" | "children";
 
 interface MapPoint {
 	id: string;
@@ -63,19 +65,16 @@ interface MapPoint {
 	userId?: string;
 }
 
-// ─── Helpers ───────────────────────────────────────────────
-const ADULT_AGE_MS = 18 * 365.25 * 24 * 60 * 60 * 1000;
+// ─── URL params ─────────────────────────────────────────────
+const P = {
+	pop: "pop",
+	gender: "gender",
+	age: "age",
+	continent: "continent",
+	country: "country",
+} as const;
 
-function isMinor(birthDate?: number | null): boolean {
-	if (!birthDate) return false;
-	return Date.now() - birthDate < ADULT_AGE_MS;
-}
-
-function normalizeGender(g?: string | null): Gender {
-	if (g === "male" || g === "female") return g;
-	return "unknown";
-}
-
+// ─── Display helpers ───────────────────────────────────────
 const KIND_COLORS: Record<PointKind, string> = {
 	citizen_adult: "#3b82f6", // blue
 	citizen_child: "#f59e0b", // amber
@@ -103,19 +102,23 @@ function escapeHtml(s: string | null | undefined): string {
 		.replace(/"/g, "&quot;");
 }
 
+function normalizeGender(g?: string | null): Gender {
+	if (g === "male" || g === "female") return g;
+	return "unknown";
+}
+
 // ─── Component ─────────────────────────────────────────────
 export function UsersMapView() {
 	const { theme } = useTheme();
 	const { isSuperAdmin } = useCurrentAdminRole();
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const mapContainer = useRef<HTMLDivElement>(null);
 	const map = useRef<mapboxgl.Map | null>(null);
-	const markersRef = useRef<mapboxgl.Marker[]>([]);
 	const popupRef = useRef<mapboxgl.Popup | null>(null);
 	const [mapReady, setMapReady] = useState(false);
 
-	// Pour la variante "controlled" de SuperAdminCallTrigger : on conserve la
-	// dernière cible cliquée + un nonce qui force le re-déclenchement de l'effet
-	// même si l'utilisateur clique deux fois sur le même point.
+	// Controlled call trigger — see original component for the rationale.
 	const [pendingCallTarget, setPendingCallTarget] = useState<{
 		user: SuperAdminCallTargetUser;
 		mediaType: ActiveCallMediaType;
@@ -123,159 +126,122 @@ export function UsersMapView() {
 	} | null>(null);
 	const callNonceRef = useRef(0);
 
-	// Filters
-	const [populationFilter, setPopulationFilter] = useState<"all" | "citizens" | "agents">("all");
-	const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female">("all");
-	const [ageFilter, setAgeFilter] = useState<"all" | "adults" | "children">("all");
-	const [activeContinent, setActiveContinent] = useState<Continent | null>(null);
-	const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+	// ── URL is the source of truth for every filter. ──
+	const populationFilter =
+		(searchParams.get(P.pop) as PopulationFilter | null) ?? "all";
+	const genderFilter =
+		(searchParams.get(P.gender) as GenderFilter | null) ?? "all";
+	const ageFilter = (searchParams.get(P.age) as AgeFilter | null) ?? "all";
+	const activeContinent =
+		(searchParams.get(P.continent) as Continent | null) ?? null;
+	const selectedCountry = searchParams.get(P.country) ?? null;
 
-	// Data
-	const {
-		results: profiles,
-		status: profilesStatus,
-		loadMore,
-	} = useAuthenticatedPaginatedQuery(
-		api.functions.profiles.searchProfiles,
-		{ searchTerm: "" },
-		{ initialNumItems: 200 },
+	const updateParams = useCallback(
+		(updates: Record<string, string | null>) => {
+			const params = new URLSearchParams(searchParams.toString());
+			for (const [k, v] of Object.entries(updates)) {
+				if (v === null || v === "" || v === "all") params.delete(k);
+				else params.set(k, v);
+			}
+			const qs = params.toString();
+			router.replace(qs ? `/users?${qs}` : "/users", { scroll: false });
+		},
+		[router, searchParams],
 	);
 
-	const { data: childProfiles = [] } = useAuthenticatedConvexQuery(
-		api.functions.admin.listChildProfilesForMap,
-		{},
+	// Filter payload sent to the server. Stable identity so the Convex query
+	// doesn't churn on unrelated renders.
+	const filters = useMemo(
+		() => ({
+			population: populationFilter,
+			gender: genderFilter,
+			age: ageFilter,
+			continent: activeContinent ?? undefined,
+			country: selectedCountry ?? undefined,
+		}),
+		[populationFilter, genderFilter, ageFilter, activeContinent, selectedCountry],
 	);
 
-	const { data: agents = [] } = useAuthenticatedConvexQuery(
-		api.functions.admin.listDiplomaticMembers,
-		{},
-	);
+	// ── Data: 1 filtered list + 1 facets query. The server applies every
+	// filter before sending, so the payload shrinks with the selection. ──
+	const serverPoints = useQuery(api.functions.admin.listMapPoints, { filters });
+	const facets = useQuery(api.functions.admin.getMapFacets, {});
 
-	useEffect(() => {
-		if (profilesStatus === "CanLoadMore") loadMore(200);
-	}, [profilesStatus, loadMore]);
-
-	// ── Build raw point list (before filters) ──
-	const allPoints = useMemo<MapPoint[]>(() => {
-		const points: MapPoint[] = [];
-
-		for (const p of profiles as any[]) {
-			const coords =
-				p.addresses?.residence?.coordinates ??
-				p.addresses?.homeland?.coordinates ??
-				null;
-			if (!coords?.lat || !coords?.lng) continue;
-			const minor = isMinor(p.identity?.birthDate);
-			points.push({
-				id: `profile_${p._id}`,
-				kind: minor ? "citizen_child" : "citizen_adult",
-				gender: normalizeGender(p.identity?.gender),
-				name:
-					`${p.identity?.firstName ?? ""} ${p.identity?.lastName ?? ""}`.trim() ||
-					(p.user?.name ?? "Profil"),
-				subtitle: p.user?.email,
-				coords: [coords.lng, coords.lat],
-				country: p.countryOfResidence ?? p.addresses?.residence?.country,
-				userId: p.userId,
-			});
-		}
-
-		for (const c of childProfiles as any[]) {
-			if (!c.coordinates?.lat || !c.coordinates?.lng) continue;
-			points.push({
-				id: `child_${c._id}`,
-				kind: "citizen_child",
-				gender: normalizeGender(c.gender),
-				name: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || "Enfant",
-				subtitle: c.countryOfResidence ? getCountryName(c.countryOfResidence) : undefined,
-				coords: [c.coordinates.lng, c.coordinates.lat],
-				country: c.countryOfResidence,
-				userId: c.authorUserId,
-			});
-		}
-
-		for (const a of agents as any[]) {
-			const country = a.org?.country;
-			if (!country) continue;
-			const capital = getCapitalCoords(country);
-			if (!capital) continue;
-			const fullName =
-				`${a.user?.firstName ?? ""} ${a.user?.lastName ?? ""}`.trim();
-			// position.title is a LocalizedString ({fr,en}); resolve it before display.
-			const positionLabel = a.position?.title
-				? getLocalizedValue(a.position.title, i18n.language)
-				: undefined;
-			points.push({
-				id: `agent_${a.membershipId}`,
-				kind: "agent",
-				gender: normalizeGender(a.diplomaticProfile?.gender ?? a.user?.gender),
-				name: fullName || a.user?.name || "Agent",
-				subtitle: positionLabel || a.org?.name || undefined,
-				coords: capital,
-				country,
-				userId: a.user?._id,
-			});
-		}
-
-		return points;
-	}, [profiles, childProfiles, agents]);
-
-	const continents = useMemo<Continent[]>(() => {
-		const codes = allPoints.map((p) => p.country).filter(Boolean) as string[];
-		return getActiveContinents(codes);
-	}, [allPoints]);
-
-	const countryOptions = useMemo(() => {
-		const map = new Map<string, { code: string; label: string; count: number }>();
-		for (const p of allPoints) {
-			if (!p.country) continue;
-			if (activeContinent && getContinent(p.country) !== activeContinent) continue;
-			if (!map.has(p.country)) {
-				map.set(p.country, {
-					code: p.country,
-					label: `${getCountryFlag(p.country)} ${getCountryName(p.country)}`,
-					count: 0,
+	// Resolve agent capital coords client-side (capital table lives in the
+	// front-end so we don't duplicate it in Convex). Agents whose country has
+	// no known capital are silently skipped.
+	const points = useMemo<MapPoint[]>(() => {
+		if (!serverPoints) return [];
+		const resolved: MapPoint[] = [];
+		for (const p of serverPoints) {
+			if (p.kind === "agent") {
+				const cap = p.country ? getCapitalCoords(p.country) : null;
+				if (!cap) continue;
+				const positionLabel = p.positionTitle
+					? getLocalizedValue(p.positionTitle as any, i18n.language)
+					: undefined;
+				resolved.push({
+					id: p.id,
+					kind: p.kind,
+					gender: normalizeGender(p.gender),
+					name: p.name,
+					subtitle: positionLabel || p.orgName || p.subtitle || undefined,
+					coords: cap,
+					country: p.country ?? undefined,
+					userId: p.userId ?? undefined,
+				});
+			} else {
+				resolved.push({
+					id: p.id,
+					kind: p.kind,
+					gender: normalizeGender(p.gender),
+					name: p.name,
+					subtitle: p.subtitle ?? undefined,
+					coords: p.coords,
+					country: p.country ?? undefined,
+					userId: p.userId ?? undefined,
 				});
 			}
-			map.get(p.country)!.count++;
 		}
-		return [...map.values()].sort((a, b) => a.label.localeCompare(b.label));
-	}, [allPoints, activeContinent]);
+		return resolved;
+	}, [serverPoints]);
 
-	useEffect(() => setSelectedCountry(null), [activeContinent]);
+	// Keep the previous set visible while a new query is in flight so the
+	// map doesn't briefly empty out on every filter change.
+	const lastPointsRef = useRef<MapPoint[]>([]);
+	if (serverPoints !== undefined) {
+		lastPointsRef.current = points;
+	}
+	const renderedPoints = lastPointsRef.current;
 
-	const filteredPoints = useMemo<MapPoint[]>(() => {
-		return allPoints.filter((p) => {
-			if (populationFilter === "citizens" && p.kind === "agent") return false;
-			if (populationFilter === "agents" && p.kind !== "agent") return false;
-			if (genderFilter !== "all" && p.gender !== genderFilter) return false;
-			if (ageFilter === "adults" && p.kind === "citizen_child") return false;
-			if (ageFilter === "children" && p.kind !== "citizen_child") return false;
-			if (activeContinent) {
-				if (!p.country || getContinent(p.country) !== activeContinent) return false;
-			}
-			if (selectedCountry && p.country !== selectedCountry) return false;
-			return true;
-		});
-	}, [allPoints, populationFilter, genderFilter, ageFilter, activeContinent, selectedCountry]);
+	// ── Setters (write through URL). Country resets if it falls outside
+	// the newly selected continent — same UX as the Comptes view. ──
+	const setPopulation = (v: PopulationFilter) =>
+		updateParams({ [P.pop]: v });
+	const setGender = (v: GenderFilter) => updateParams({ [P.gender]: v });
+	const setAge = (v: AgeFilter) => updateParams({ [P.age]: v });
+	const setContinent = (v: Continent | null) => {
+		const updates: Record<string, string | null> = { [P.continent]: v };
+		if (selectedCountry && v && getContinent(selectedCountry) !== v) {
+			updates[P.country] = null;
+		}
+		updateParams(updates);
+	};
+	const setCountry = (v: string | null) => updateParams({ [P.country]: v });
 
-	const stats = useMemo(() => {
-		const filtered = filteredPoints;
-		const profilesWithoutGps =
-			(profiles as any[]).filter(
-				(p) =>
-					!(p.addresses?.residence?.coordinates?.lat) &&
-					!(p.addresses?.homeland?.coordinates?.lat),
-			).length +
-			(childProfiles as any[]).filter((c) => !c.coordinates?.lat).length;
+	const hasActiveFilter =
+		populationFilter !== "all" ||
+		genderFilter !== "all" ||
+		ageFilter !== "all" ||
+		activeContinent !== null ||
+		selectedCountry !== null;
 
-		return {
-			total: filtered.length,
-			citizens: filtered.filter((p) => p.kind !== "agent").length,
-			agents: filtered.filter((p) => p.kind === "agent").length,
-			withoutGps: profilesWithoutGps,
-		};
-	}, [filteredPoints, profiles, childProfiles]);
+	const resetFilters = () => {
+		const params = new URLSearchParams();
+		const view = searchParams.get("view");
+		if (view) params.set("view", view);
+		router.replace(`/users?${params.toString()}`, { scroll: false });
+	};
 
 	// ── Initialize map (mirrors apps/citizen-web/src/components/home/WorldMapSection.tsx) ──
 	useEffect(() => {
@@ -308,8 +274,6 @@ export function UsersMapView() {
 		});
 
 		return () => {
-			markersRef.current.forEach((m) => m.remove());
-			markersRef.current = [];
 			popupRef.current?.remove();
 			map.current?.remove();
 			map.current = null;
@@ -317,69 +281,185 @@ export function UsersMapView() {
 		};
 	}, [theme]);
 
-	// ── Refresh markers when data or filters change ──
+	// ── Clustered GeoJSON source + 3 layers ──
+	// One DOM marker per point becomes ONE source: Mapbox handles fusion
+	// natively via `cluster: true`. Layers:
+	//   - `users-clusters`        : circle per cluster, sized by count
+	//   - `users-cluster-count`   : numeric label on top of each cluster
+	//   - `users-unclustered`     : circle per individual point (kind-colored)
+	// See https://docs.mapbox.com/mapbox-gl-js/example/cluster/ for the
+	// canonical pattern this implementation follows.
+	const SOURCE_ID = "users-map-source";
+	const LAYER_CLUSTERS = "users-clusters";
+	const LAYER_CLUSTER_COUNT = "users-cluster-count";
+	const LAYER_UNCLUSTERED = "users-unclustered";
+
+	const sourceReadyRef = useRef(false);
+
+	// Set up source + layers + click handlers once the map style is loaded.
+	// On theme change the map is destroyed and recreated, so `mapReady`
+	// flips back to false and this effect re-runs cleanly.
 	useEffect(() => {
 		if (!map.current || !mapReady) return;
 		const m = map.current;
 
-		markersRef.current.forEach((mk) => mk.remove());
-		markersRef.current = [];
+		if (m.getSource(SOURCE_ID)) return; // already set up after a hot-reload
 
-		for (const point of filteredPoints) {
-			const color = KIND_COLORS[point.kind];
-			const glyph = GENDER_GLYPH[point.gender];
+		m.addSource(SOURCE_ID, {
+			type: "geojson",
+			data: { type: "FeatureCollection", features: [] },
+			cluster: true,
+			clusterMaxZoom: 12,
+			clusterRadius: 50,
+		});
 
-			const el = document.createElement("div");
-			el.className = "users-map-marker";
-			el.style.cursor = "pointer";
-			el.innerHTML = `
-				<div style="position: relative; width: 28px; height: 28px;">
-					<div style="position: absolute; inset: 0; border-radius: 9999px; background-color: ${color}; opacity: 0.25; animation: ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></div>
-					<div style="position: relative; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: ${color}; color: #ffffff; font-weight: 700; font-size: 13px; border: 2px solid #ffffff; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">${glyph}</div>
-				</div>
-			`;
+		m.addLayer({
+			id: LAYER_CLUSTERS,
+			type: "circle",
+			source: SOURCE_ID,
+			filter: ["has", "point_count"],
+			paint: {
+				// Color + size step in three tiers (10 → 50 → 200+). Slate-blue
+				// halo keeps clusters distinct from the per-point kind colors.
+				"circle-color": [
+					"step",
+					["get", "point_count"],
+					"rgba(59, 130, 246, 0.55)", 10,
+					"rgba(59, 130, 246, 0.7)", 50,
+					"rgba(37, 99, 235, 0.8)",
+				],
+				"circle-radius": [
+					"step",
+					["get", "point_count"],
+					14, 10,
+					18, 50,
+					24,
+				],
+				"circle-stroke-color": "rgba(255, 255, 255, 0.6)",
+				"circle-stroke-width": 1.5,
+			},
+		});
 
-			const detailUrl = point.userId ? `/users/${point.userId}` : null;
-			const callButtonsHtml =
-				isSuperAdmin && point.userId
-					? `<div style="display: flex; gap: 6px; padding-top: 8px; margin-top: 8px; border-top: 1px solid #1e293b;">
-							<button type="button" data-call-action="audio" data-user-id="${escapeHtml(point.userId)}" data-call-name="${escapeHtml(point.name)}" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: #10b981; background-color: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 6px; padding: 5px 8px; cursor: pointer;">📞 Audio</button>
-							<button type="button" data-call-action="video" data-user-id="${escapeHtml(point.userId)}" data-call-name="${escapeHtml(point.name)}" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: #3b82f6; background-color: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 6px; padding: 5px 8px; cursor: pointer;">🎥 Vidéo</button>
-						</div>`
-					: "";
-			// Wrapper has its own opaque background (slate-950) + border so the
-			// popup is readable on top of the dark Mapbox globe — same pattern
-			// as apps/citizen-web/src/components/home/WorldMapSection.tsx:174.
+		m.addLayer({
+			id: LAYER_CLUSTER_COUNT,
+			type: "symbol",
+			source: SOURCE_ID,
+			filter: ["has", "point_count"],
+			layout: {
+				"text-field": ["get", "point_count_abbreviated"],
+				"text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+				"text-size": 12,
+			},
+			paint: { "text-color": "#ffffff" },
+		});
+
+		m.addLayer({
+			id: LAYER_UNCLUSTERED,
+			type: "circle",
+			source: SOURCE_ID,
+			filter: ["!", ["has", "point_count"]],
+			paint: {
+				"circle-color": ["get", "color"],
+				"circle-radius": 6,
+				"circle-stroke-color": "rgba(255, 255, 255, 0.85)",
+				"circle-stroke-width": 1,
+				"circle-opacity": 0.85,
+			},
+		});
+
+		// Cluster click → zoom in to the level where the cluster expands.
+		const onClusterClick = (e: mapboxgl.MapMouseEvent & { features?: any[] }) => {
+			const features = m.queryRenderedFeatures(e.point, {
+				layers: [LAYER_CLUSTERS],
+			});
+			const clusterId = features[0]?.properties?.cluster_id;
+			const source = m.getSource(SOURCE_ID) as any;
+			if (clusterId == null || !source?.getClusterExpansionZoom) return;
+			source.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
+				if (err) return;
+				m.easeTo({
+					center: (features[0].geometry as any).coordinates,
+					zoom,
+				});
+			});
+		};
+
+		// Unclustered point click → build & open the existing rich popup.
+		const onPointClick = (e: mapboxgl.MapMouseEvent & { features?: any[] }) => {
+			const f = e.features?.[0];
+			if (!f) return;
+			const props = f.properties as Record<string, string>;
+			const coords = (f.geometry as any).coordinates.slice() as [number, number];
 			const popup = new mapboxgl.Popup({
-				offset: 18,
+				offset: 12,
 				closeButton: true,
 				className: "users-map-popup",
-			}).setHTML(
-				`<div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden;">
-					<div style="padding: 10px 14px; border-bottom: 1px solid #1e293b;">
-						<span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #ffffff; background-color: ${color}; padding: 2px 8px; border-radius: 9999px;">${KIND_LABEL[point.kind]}${point.gender !== "unknown" ? ` &middot; ${glyph}` : ""}</span>
-					</div>
-					<div style="padding: 12px 14px;">
-						<div style="font-weight: 600; font-size: 14px; color: #f8fafc; margin-bottom: 4px; line-height: 1.3;">${escapeHtml(point.name)}</div>
-						${point.subtitle ? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">${escapeHtml(point.subtitle)}</div>` : ""}
-						${detailUrl ? `<a href="${detailUrl}" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: ${color}; text-decoration: none; padding-top: 4px;">Voir la fiche &rarr;</a>` : ""}
-						${callButtonsHtml}
-					</div>
-				</div>`,
-			);
-
-			const marker = new mapboxgl.Marker({ element: el })
-				.setLngLat(point.coords)
-				.setPopup(popup)
+			})
+				.setLngLat(coords)
+				.setHTML(buildPopupHtml(props, isSuperAdmin))
 				.addTo(m);
+			popupRef.current = popup;
+		};
 
-			markersRef.current.push(marker);
-		}
-	}, [mapReady, filteredPoints, isSuperAdmin]);
+		const onClusterEnter = () => (m.getCanvas().style.cursor = "pointer");
+		const onClusterLeave = () => (m.getCanvas().style.cursor = "");
+
+		m.on("click", LAYER_CLUSTERS, onClusterClick);
+		m.on("click", LAYER_UNCLUSTERED, onPointClick);
+		m.on("mouseenter", LAYER_CLUSTERS, onClusterEnter);
+		m.on("mouseleave", LAYER_CLUSTERS, onClusterLeave);
+		m.on("mouseenter", LAYER_UNCLUSTERED, onClusterEnter);
+		m.on("mouseleave", LAYER_UNCLUSTERED, onClusterLeave);
+
+		sourceReadyRef.current = true;
+
+		return () => {
+			sourceReadyRef.current = false;
+			try {
+				m.off("click", LAYER_CLUSTERS, onClusterClick);
+				m.off("click", LAYER_UNCLUSTERED, onPointClick);
+				m.off("mouseenter", LAYER_CLUSTERS, onClusterEnter);
+				m.off("mouseleave", LAYER_CLUSTERS, onClusterLeave);
+				m.off("mouseenter", LAYER_UNCLUSTERED, onClusterEnter);
+				m.off("mouseleave", LAYER_UNCLUSTERED, onClusterLeave);
+				if (m.getLayer(LAYER_CLUSTER_COUNT)) m.removeLayer(LAYER_CLUSTER_COUNT);
+				if (m.getLayer(LAYER_CLUSTERS)) m.removeLayer(LAYER_CLUSTERS);
+				if (m.getLayer(LAYER_UNCLUSTERED)) m.removeLayer(LAYER_UNCLUSTERED);
+				if (m.getSource(SOURCE_ID)) m.removeSource(SOURCE_ID);
+			} catch {
+				// Map already torn down on theme change — nothing to clean.
+			}
+		};
+	}, [mapReady, isSuperAdmin]);
+
+	// Push the current point set to the source whenever it changes. The
+	// effect above guarantees the source exists before this runs (gated on
+	// `sourceReadyRef`).
+	useEffect(() => {
+		if (!map.current || !mapReady || !sourceReadyRef.current) return;
+		const source = map.current.getSource(SOURCE_ID) as any;
+		if (!source?.setData) return;
+		source.setData({
+			type: "FeatureCollection",
+			features: renderedPoints.map((p) => ({
+				type: "Feature",
+				geometry: { type: "Point", coordinates: p.coords },
+				properties: {
+					id: p.id,
+					kind: p.kind,
+					gender: p.gender,
+					color: KIND_COLORS[p.kind],
+					name: p.name,
+					subtitle: p.subtitle ?? "",
+					country: p.country ?? "",
+					userId: p.userId ?? "",
+				},
+			})),
+		});
+	}, [mapReady, renderedPoints]);
 
 	// Event delegation : capture les clics sur les boutons d'appel injectés
-	// dans les popups Mapbox (rendus en innerHTML). Stocke la cible cliquée
-	// pour que `<SuperAdminCallTrigger variant="controlled">` lance l'appel.
+	// dans les popups Mapbox (rendus en innerHTML).
 	useEffect(() => {
 		if (!isSuperAdmin) return;
 		const handler = (e: MouseEvent) => {
@@ -414,17 +494,20 @@ export function UsersMapView() {
 		if (selectedCountry) {
 			const c = getCapitalCoords(selectedCountry);
 			if (c) map.current.flyTo({ center: c, zoom: 4 });
-		} else if (activeContinent && filteredPoints.length > 0) {
-			const avgLng = filteredPoints.reduce((s, p) => s + p.coords[0], 0) / filteredPoints.length;
-			const avgLat = filteredPoints.reduce((s, p) => s + p.coords[1], 0) / filteredPoints.length;
+		} else if (activeContinent && renderedPoints.length > 0) {
+			const avgLng =
+				renderedPoints.reduce((s, p) => s + p.coords[0], 0) /
+				renderedPoints.length;
+			const avgLat =
+				renderedPoints.reduce((s, p) => s + p.coords[1], 0) /
+				renderedPoints.length;
 			map.current.flyTo({ center: [avgLng, avgLat], zoom: 2.5 });
 		} else {
 			map.current.flyTo({ center: [20, 20], zoom: 1.6 });
 		}
-	}, [selectedCountry, activeContinent, mapReady, filteredPoints]);
+	}, [selectedCountry, activeContinent, mapReady, renderedPoints]);
 
-	const isDataLoading =
-		profilesStatus === "LoadingFirstPage" || profilesStatus === "LoadingMore";
+	const isDataLoading = serverPoints === undefined;
 
 	// ── Render ──
 	if (!MAPBOX_CONFIG.accessToken) {
@@ -443,83 +526,82 @@ export function UsersMapView() {
 		);
 	}
 
-	// ── Filter dropdown options (with counts) — single Combobox primitive
-	//    used everywhere for visual consistency with the Comptes view.
 	const POP_ALL = "__all__";
+
+	// Continent codes that have at least one point — sorted by display order.
+	const activeContinents: Continent[] = facets
+		? (Object.keys(facets.continents) as Continent[]).sort(
+				(a, b) =>
+					(CONTINENT_META[a]?.order ?? 99) - (CONTINENT_META[b]?.order ?? 99),
+			)
+		: [];
+
+	const countryOptionsFromFacets = facets
+		? Object.entries(facets.countries)
+				.filter(([code]) =>
+					activeContinent ? getContinent(code) === activeContinent : true,
+				)
+				.map(([code, count]) => ({
+					code,
+					label: `${getCountryFlag(code)} ${getCountryName(code)}`,
+					count,
+				}))
+				.sort((a, b) => a.label.localeCompare(b.label))
+		: [];
+
 	const populationDropdownOptions: ComboboxOption[] = [
-		{ value: POP_ALL, label: `Tous (${allPoints.length})` },
+		{ value: POP_ALL, label: `Tous (${facets?.total ?? 0})` },
 		{
 			value: "citizens",
-			label: `Citoyens (${allPoints.filter((p) => p.kind !== "agent").length})`,
+			label: `Citoyens (${facets?.populations.citizens ?? 0})`,
 		},
-		{
-			value: "agents",
-			label: `Agents (${allPoints.filter((p) => p.kind === "agent").length})`,
-		},
+		{ value: "agents", label: `Agents (${facets?.populations.agents ?? 0})` },
 	];
 
 	const genderDropdownOptions: ComboboxOption[] = [
-		{ value: POP_ALL, label: `Tous (${allPoints.length})` },
-		{
-			value: "male",
-			label: `♂ Hommes (${allPoints.filter((p) => p.gender === "male").length})`,
-		},
-		{
-			value: "female",
-			label: `♀ Femmes (${allPoints.filter((p) => p.gender === "female").length})`,
-		},
+		{ value: POP_ALL, label: `Tous (${facets?.total ?? 0})` },
+		{ value: "male", label: `♂ Hommes (${facets?.genders.male ?? 0})` },
+		{ value: "female", label: `♀ Femmes (${facets?.genders.female ?? 0})` },
 	];
 
 	const ageDropdownOptions: ComboboxOption[] = [
-		{ value: POP_ALL, label: `Tous (${allPoints.length})` },
-		{
-			value: "adults",
-			label: `Adultes (${allPoints.filter((p) => p.kind !== "citizen_child").length})`,
-		},
-		{
-			value: "children",
-			label: `Enfants (${allPoints.filter((p) => p.kind === "citizen_child").length})`,
-		},
+		{ value: POP_ALL, label: `Tous (${facets?.total ?? 0})` },
+		{ value: "adults", label: `Adultes (${facets?.ages.adults ?? 0})` },
+		{ value: "children", label: `Enfants (${facets?.ages.children ?? 0})` },
 	];
 
 	const continentDropdownOptions: ComboboxOption[] = [
 		{ value: POP_ALL, label: "Tous les continents" },
-		...continents.map((c) => ({
+		...activeContinents.map((c) => ({
 			value: c,
-			label: `${CONTINENT_META[c].label} (${
-				allPoints.filter((p) => p.country && getContinent(p.country) === c).length
-			})`,
+			label: `${CONTINENT_META[c].label} (${facets?.continents[c] ?? 0})`,
 		})),
 	];
 
 	const countryDropdownOptions: ComboboxOption[] = [
 		{ value: POP_ALL, label: "Tous les pays" },
-		...countryOptions.map((opt) => ({
+		...countryOptionsFromFacets.map((opt) => ({
 			value: opt.code,
 			label: `${opt.label} (${opt.count})`,
 		})),
 	];
 
-	const hasActiveFilter =
-		populationFilter !== "all" ||
-		genderFilter !== "all" ||
-		ageFilter !== "all" ||
-		activeContinent !== null ||
-		selectedCountry !== null;
+	const stats = {
+		total: renderedPoints.length,
+		citizens: renderedPoints.filter((p) => p.kind !== "agent").length,
+		agents: renderedPoints.filter((p) => p.kind === "agent").length,
+		withoutGps: facets?.withoutGps ?? 0,
+	};
 
 	return (
 		<div className="flex flex-1 flex-col gap-3 p-4 pt-4">
-			{/* Filter row — single Combobox primitive for all 5 filters,
-			    same visual treatment as the Comptes view. */}
 			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
 				<MapFilterField label="Population">
 					<Combobox
 						options={populationDropdownOptions}
 						value={populationFilter === "all" ? POP_ALL : populationFilter}
 						onValueChange={(v) =>
-							setPopulationFilter(
-								v === POP_ALL ? "all" : (v as "citizens" | "agents"),
-							)
+							setPopulation(v === POP_ALL ? "all" : (v as PopulationFilter))
 						}
 						placeholder="Population"
 						searchPlaceholder="Filtrer…"
@@ -533,9 +615,7 @@ export function UsersMapView() {
 						options={genderDropdownOptions}
 						value={genderFilter === "all" ? POP_ALL : genderFilter}
 						onValueChange={(v) =>
-							setGenderFilter(
-								v === POP_ALL ? "all" : (v as "male" | "female"),
-							)
+							setGender(v === POP_ALL ? "all" : (v as GenderFilter))
 						}
 						placeholder="Genre"
 						searchPlaceholder="Filtrer…"
@@ -549,9 +629,7 @@ export function UsersMapView() {
 						options={ageDropdownOptions}
 						value={ageFilter === "all" ? POP_ALL : ageFilter}
 						onValueChange={(v) =>
-							setAgeFilter(
-								v === POP_ALL ? "all" : (v as "adults" | "children"),
-							)
+							setAge(v === POP_ALL ? "all" : (v as AgeFilter))
 						}
 						placeholder="Âge"
 						searchPlaceholder="Filtrer…"
@@ -565,7 +643,7 @@ export function UsersMapView() {
 						options={continentDropdownOptions}
 						value={activeContinent ?? POP_ALL}
 						onValueChange={(v) =>
-							setActiveContinent(v === POP_ALL ? null : (v as Continent))
+							setContinent(v === POP_ALL ? null : (v as Continent))
 						}
 						placeholder="Tous les continents"
 						searchPlaceholder="Filtrer…"
@@ -578,9 +656,7 @@ export function UsersMapView() {
 					<Combobox
 						options={countryDropdownOptions}
 						value={selectedCountry ?? POP_ALL}
-						onValueChange={(v) =>
-							setSelectedCountry(v === POP_ALL ? null : v)
-						}
+						onValueChange={(v) => setCountry(v === POP_ALL ? null : v)}
 						placeholder="Tous les pays"
 						searchPlaceholder="Rechercher un pays…"
 						emptyText="Aucun pays."
@@ -594,13 +670,7 @@ export function UsersMapView() {
 						size="sm"
 						className="h-9 w-full font-normal"
 						disabled={!hasActiveFilter}
-						onClick={() => {
-							setPopulationFilter("all");
-							setGenderFilter("all");
-							setAgeFilter("all");
-							setActiveContinent(null);
-							setSelectedCountry(null);
-						}}
+						onClick={resetFilters}
 					>
 						Réinitialiser
 					</Button>
@@ -637,12 +707,9 @@ export function UsersMapView() {
 					`,
 				}}
 			/>
-			{/* Map — fixed height container, same pattern as
-			    apps/citizen-web/src/components/home/WorldMapSection.tsx:357 */}
 			<div className="relative h-[600px] w-full overflow-hidden rounded-xl border bg-muted/20">
 				<div ref={mapContainer} className="absolute inset-0 h-full w-full" />
 
-				{/* Compact stats overlay (top-right) — replaces the page header. */}
 				<div className="absolute right-4 top-4 z-10 flex flex-wrap items-center gap-1.5 rounded-lg border bg-background/95 px-2 py-1.5 text-xs shadow-lg backdrop-blur">
 					<StatChip icon={MapPin} label="affichés" value={stats.total} />
 					<StatChip icon={Users} label="citoyens" value={stats.citizens} />
@@ -671,8 +738,7 @@ export function UsersMapView() {
 				</div>
 			</div>
 
-			{/* Chips toggle population — synchronisé avec les filtres
-			    Population + Âge ci-dessus. Reclic = remet « Tous ». */}
+			{/* Affichage rapide chips — synchros avec les dropdowns ci-dessus. */}
 			<div className="flex flex-wrap items-center gap-2">
 				<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mr-1">
 					Affichage rapide
@@ -686,25 +752,22 @@ export function UsersMapView() {
 					color="text-foreground"
 					icon={MapPin}
 					label="Tous"
-					count={allPoints.length}
-					onClick={() => {
-						setPopulationFilter("all");
-						setAgeFilter("all");
-					}}
+					count={facets?.total ?? 0}
+					onClick={() => updateParams({ [P.pop]: null, [P.age]: null, [P.gender]: null })}
 				/>
 				<KindChip
 					active={populationFilter === "citizens" && ageFilter === "adults"}
 					color={KIND_COLORS.citizen_adult}
 					icon={Users}
 					label="Citoyen adulte"
-					count={
-						allPoints.filter((p) => p.kind === "citizen_adult").length
-					}
+					count={facets?.ages.adults ?? 0}
 					onClick={() => {
 						const isActive =
 							populationFilter === "citizens" && ageFilter === "adults";
-						setPopulationFilter(isActive ? "all" : "citizens");
-						setAgeFilter(isActive ? "all" : "adults");
+						updateParams({
+							[P.pop]: isActive ? null : "citizens",
+							[P.age]: isActive ? null : "adults",
+						});
 					}}
 				/>
 				<KindChip
@@ -712,13 +775,13 @@ export function UsersMapView() {
 					color={KIND_COLORS.citizen_child}
 					icon={MapPinOff}
 					label="Mineur"
-					count={
-						allPoints.filter((p) => p.kind === "citizen_child").length
-					}
+					count={facets?.ages.children ?? 0}
 					onClick={() => {
 						const isActive = ageFilter === "children";
-						setPopulationFilter(isActive ? "all" : "citizens");
-						setAgeFilter(isActive ? "all" : "children");
+						updateParams({
+							[P.pop]: isActive ? null : "citizens",
+							[P.age]: isActive ? null : "children",
+						});
 					}}
 				/>
 				<KindChip
@@ -726,18 +789,17 @@ export function UsersMapView() {
 					color={KIND_COLORS.agent}
 					icon={Shield}
 					label="Agent"
-					count={allPoints.filter((p) => p.kind === "agent").length}
+					count={facets?.populations.agents ?? 0}
 					onClick={() => {
 						const isActive = populationFilter === "agents";
-						setPopulationFilter(isActive ? "all" : "agents");
-						setAgeFilter("all");
+						updateParams({
+							[P.pop]: isActive ? null : "agents",
+							[P.age]: null,
+						});
 					}}
 				/>
 			</div>
 
-			{/* Pilote l'appel déclenché depuis le popup Mapbox (innerHTML).
-			    targetUser est remplacé à chaque clic sur un bouton "Audio"/"Vidéo"
-			    dans le popup ; le nonce force le re-déclenchement de l'effet. */}
 			{pendingCallTarget && (
 				<SuperAdminCallTrigger
 					key={pendingCallTarget.user._id}
@@ -856,4 +918,44 @@ function KindChip({
 			</span>
 		</button>
 	);
+}
+
+
+// ─── Popup HTML ─────────────────────────────────────────────
+// Builds the dark popup shown on click of an unclustered point. Mirrors the
+// previous per-marker template — same chrome, same call buttons, same
+// design — but reads from the feature properties dictionary instead of the
+// in-memory `MapPoint`. The wrapper opens its own opaque background so the
+// content is readable on top of the dark globe (same pattern as
+// apps/citizen-web/src/components/home/WorldMapSection.tsx:174).
+function buildPopupHtml(
+	props: Record<string, string>,
+	isSuperAdmin: boolean,
+): string {
+	const kind = (props.kind || "citizen_adult") as PointKind;
+	const gender = (props.gender || "unknown") as Gender;
+	const color = KIND_COLORS[kind] ?? KIND_COLORS.citizen_adult;
+	const glyph = GENDER_GLYPH[gender] ?? "";
+	const name = props.name || "";
+	const subtitle = props.subtitle || "";
+	const userId = props.userId || "";
+	const detailUrl = userId ? `/users/${userId}` : null;
+	const callButtonsHtml =
+		isSuperAdmin && userId
+			? `<div style="display: flex; gap: 6px; padding-top: 8px; margin-top: 8px; border-top: 1px solid #1e293b;">
+					<button type="button" data-call-action="audio" data-user-id="${escapeHtml(userId)}" data-call-name="${escapeHtml(name)}" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: #10b981; background-color: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 6px; padding: 5px 8px; cursor: pointer;">📞 Audio</button>
+					<button type="button" data-call-action="video" data-user-id="${escapeHtml(userId)}" data-call-name="${escapeHtml(name)}" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 500; color: #3b82f6; background-color: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 6px; padding: 5px 8px; cursor: pointer;">🎥 Vidéo</button>
+				</div>`
+			: "";
+	return `<div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden;">
+		<div style="padding: 10px 14px; border-bottom: 1px solid #1e293b;">
+			<span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #ffffff; background-color: ${color}; padding: 2px 8px; border-radius: 9999px;">${KIND_LABEL[kind]}${gender !== "unknown" ? ` &middot; ${glyph}` : ""}</span>
+		</div>
+		<div style="padding: 12px 14px;">
+			<div style="font-weight: 600; font-size: 14px; color: #f8fafc; margin-bottom: 4px; line-height: 1.3;">${escapeHtml(name)}</div>
+			${subtitle ? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">${escapeHtml(subtitle)}</div>` : ""}
+			${detailUrl ? `<a href="${detailUrl}" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: ${color}; text-decoration: none; padding-top: 4px;">Voir la fiche &rarr;</a>` : ""}
+			${callButtonsHtml}
+		</div>
+	</div>`;
 }

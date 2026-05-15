@@ -2580,3 +2580,353 @@ export const listChildProfilesForMap = backofficeQuery({
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// /users?view=map — single bundled query for the world map.
+//
+// Replaces the previous three-query pattern:
+//   searchProfiles (with auto-loadMore-until-done, loading every profile and
+//                  every joined user / org / photo / childCount the map
+//                  doesn't even use)
+//   + listChildProfilesForMap
+//   + listDiplomaticMembers
+//
+// Returns a flat list of `MapPoint`s with only the fields the map needs:
+// coords, kind, gender, name, subtitle, country, userId. Filters are applied
+// server-side so the payload shrinks when the user narrows the view.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const mapFiltersValidator = v.object({
+  population: v.optional(
+    v.union(v.literal("all"), v.literal("citizens"), v.literal("agents")),
+  ),
+  gender: v.optional(
+    v.union(v.literal("all"), v.literal("male"), v.literal("female")),
+  ),
+  age: v.optional(
+    v.union(v.literal("all"), v.literal("adults"), v.literal("children")),
+  ),
+  continent: v.optional(v.string()),
+  country: v.optional(v.string()),
+});
+
+const ADULT_AGE_MS = 18 * 365.25 * 24 * 60 * 60 * 1000;
+function isMinorTs(birthDate?: number | null): boolean {
+  if (!birthDate) return false;
+  return Date.now() - birthDate < ADULT_AGE_MS;
+}
+function normalizeGenderTs(g?: string | null): "male" | "female" | "unknown" {
+  if (g === "male" || g === "female") return g;
+  return "unknown";
+}
+
+type ServerMapPoint = {
+  id: string;
+  kind: "citizen_adult" | "citizen_child" | "agent";
+  gender: "male" | "female" | "unknown";
+  name: string;
+  subtitle?: string | null;
+  // [lng, lat] — same convention as mapbox-gl.
+  coords: [number, number];
+  country?: string | null;
+  userId?: string | null;
+  // For agents only: localized position title is a LocalizedString. The
+  // client resolves to the active locale to keep this query language-neutral.
+  positionTitle?: { fr?: string | null; en?: string | null } | null;
+  orgName?: string | null;
+};
+
+/**
+ * Build the full list of map points for /users?view=map.
+ *
+ * Server-side filtering means we never ship rows the UI would throw away.
+ * Coords-less rows are excluded entirely — the map can't render them anyway,
+ * and the count is reported separately by `getMapFacets`.
+ *
+ * Bounded by the geo dataset (profiles + childProfiles + memberships with
+ * positions). For tens of thousands of points this would warrant moving to
+ * vector tiles or a paginated viewport-bounds query, but at the current
+ * scale shipping the full set is fine.
+ */
+export const listMapPoints = backofficeQuery({
+  args: {
+    filters: mapFiltersValidator,
+  },
+  handler: async (ctx, args) => {
+    const f = args.filters;
+    const wantCitizens = !f.population || f.population === "all" || f.population === "citizens";
+    const wantAgents = !f.population || f.population === "all" || f.population === "agents";
+
+    const points: ServerMapPoint[] = [];
+
+    // ── Citizen profiles (adults + minors with their own profile) ──
+    if (wantCitizens) {
+      const profiles = await ctx.db.query("profiles").collect();
+      // Bulk-load users for the names that fall back to user.name when
+      // identity firstName/lastName are blank.
+      const userIds = [...new Set(profiles.map((p: any) => p.userId).filter(Boolean))];
+      const users = await Promise.all(userIds.map((id) => ctx.db.get(id as any)));
+      const userMap = new Map<string, any>(
+        (users.filter(Boolean) as any[]).map((u) => [u._id, u]),
+      );
+
+      for (const p of profiles as any[]) {
+        const coords =
+          p.addresses?.residence?.coordinates ?? p.addresses?.homeland?.coordinates ?? null;
+        if (!coords?.lat || !coords?.lng) continue;
+        const minor = isMinorTs(p.identity?.birthDate);
+        if (f.age === "adults" && minor) continue;
+        if (f.age === "children" && !minor) continue;
+
+        const gender = normalizeGenderTs(p.identity?.gender);
+        if (f.gender && f.gender !== "all" && gender !== f.gender) continue;
+
+        const country = p.countryOfResidence ?? p.addresses?.residence?.country;
+        if (f.country && country !== f.country) continue;
+        if (f.continent) {
+          const c = country ? COUNTRY_CONTINENT_SERVER[String(country).toUpperCase()] : undefined;
+          if (c !== f.continent) continue;
+        }
+
+        const u = p.userId ? userMap.get(p.userId) : null;
+        const fullName = `${p.identity?.firstName ?? ""} ${p.identity?.lastName ?? ""}`.trim();
+        points.push({
+          id: `profile_${p._id}`,
+          kind: minor ? "citizen_child" : "citizen_adult",
+          gender,
+          name: fullName || u?.name || "Profil",
+          subtitle: u?.email ?? null,
+          coords: [coords.lng, coords.lat],
+          country,
+          userId: p.userId ?? null,
+        });
+      }
+
+      // ── Children (always tagged as minors) ──
+      if (f.age !== "adults") {
+        const children = await ctx.db.query("childProfiles").collect();
+        // Reuse parent coords via the by_user index on profiles.
+        const parentIds = [...new Set(children.map((c: any) => c.authorUserId))];
+        const parentProfiles = await Promise.all(
+          parentIds.map((uid) =>
+            ctx.db.query("profiles").withIndex("by_user", (q: any) => q.eq("userId", uid)).unique(),
+          ),
+        );
+        const coordsByParent = new Map<string, { lat: number; lng: number } | null>();
+        for (const p of parentProfiles) {
+          if (!p) continue;
+          const coords =
+            (p as any).addresses?.residence?.coordinates ??
+            (p as any).addresses?.homeland?.coordinates ??
+            null;
+          coordsByParent.set(String((p as any).userId), coords ?? null);
+        }
+
+        for (const c of children as any[]) {
+          const coords = coordsByParent.get(String(c.authorUserId)) ?? null;
+          if (!coords?.lat || !coords?.lng) continue;
+
+          const gender = normalizeGenderTs(c.identity?.gender);
+          if (f.gender && f.gender !== "all" && gender !== f.gender) continue;
+
+          const country = c.countryOfResidence;
+          if (f.country && country !== f.country) continue;
+          if (f.continent) {
+            const cc = country ? COUNTRY_CONTINENT_SERVER[String(country).toUpperCase()] : undefined;
+            if (cc !== f.continent) continue;
+          }
+
+          const fullName = `${c.identity?.firstName ?? ""} ${c.identity?.lastName ?? ""}`.trim();
+          points.push({
+            id: `child_${c._id}`,
+            kind: "citizen_child",
+            gender,
+            name: fullName || "Enfant",
+            subtitle: country ?? null,
+            coords: [coords.lng, coords.lat],
+            country: country ?? null,
+            userId: c.authorUserId ?? null,
+          });
+        }
+      }
+    }
+
+    // ── Diplomatic agents (positioned on the capital of their org country) ──
+    if (wantAgents) {
+      const memberships = (await ctx.db.query("memberships").collect()).filter(
+        (m: any) => !m.deletedAt && m.positionId,
+      );
+
+      const userIds = [...new Set(memberships.map((m: any) => m.userId))];
+      const positionIds = [...new Set(memberships.map((m: any) => m.positionId!))];
+      const orgIds = [...new Set(memberships.map((m: any) => m.orgId))];
+      const [users, positions, orgs] = await Promise.all([
+        Promise.all(userIds.map((id) => ctx.db.get(id as any))),
+        Promise.all(positionIds.map((id) => ctx.db.get(id as any))),
+        Promise.all(orgIds.map((id) => ctx.db.get(id as any))),
+      ]);
+      const uMap = new Map<string, any>(
+        (users.filter(Boolean) as any[]).map((u) => [u._id, u]),
+      );
+      const pMap = new Map<string, any>(
+        (positions.filter(Boolean) as any[]).map((p) => [p._id, p]),
+      );
+      const oMap = new Map<string, any>(
+        (orgs.filter(Boolean) as any[]).map((o) => [o._id, o]),
+      );
+
+      for (const m of memberships as any[]) {
+        const org = oMap.get(m.orgId);
+        const country = org?.country;
+        if (!country) continue;
+        if (f.country && country !== f.country) continue;
+        if (f.continent) {
+          const c = COUNTRY_CONTINENT_SERVER[String(country).toUpperCase()];
+          if (c !== f.continent) continue;
+        }
+
+        const u = uMap.get(m.userId);
+        const gender = normalizeGenderTs(m.diplomaticProfile?.gender ?? u?.gender);
+        if (f.gender && f.gender !== "all" && gender !== f.gender) continue;
+
+        // Age filter never matches agents (no birthDate concept here): skip
+        // agents entirely when the user is filtering to a specific age bucket.
+        if (f.age === "adults" || f.age === "children") continue;
+
+        const position = m.positionId ? pMap.get(m.positionId) : null;
+        const fullName = `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim();
+        points.push({
+          id: `agent_${m._id}`,
+          kind: "agent",
+          gender,
+          name: fullName || u?.name || "Agent",
+          subtitle: org?.name ?? null,
+          // Capital coords are resolved client-side from
+          // apps/backoffice-web/src/lib/country-capitals.ts to keep this
+          // query small and avoid duplicating the table server-side.
+          coords: [0, 0],
+          country,
+          userId: u?._id ?? null,
+          positionTitle: position?.title ?? null,
+          orgName: org?.name ?? null,
+        });
+      }
+    }
+
+    return points;
+  },
+});
+
+/**
+ * Aggregate counts for the map filter dropdowns. Same enrichment & filter
+ * boundaries as `listMapPoints` (only points with resolvable coords count
+ * for citizens; agents count when their org country resolves to a capital
+ * client-side, which we treat as "always" here — the client will silently
+ * skip any agent whose country lacks a capital).
+ *
+ * Also returns `withoutGps` — number of citizens with a profile but no
+ * usable coordinates, surfaced as a "sans GPS" stat chip in the UI.
+ */
+export const getMapFacets = backofficeQuery({
+  args: {},
+  handler: async (ctx) => {
+    const [profiles, children, memberships] = await Promise.all([
+      ctx.db.query("profiles").collect(),
+      ctx.db.query("childProfiles").collect(),
+      ctx.db.query("memberships").collect(),
+    ]);
+
+    // Pre-resolve parent coords for child profiles
+    const parentIds = [...new Set(children.map((c: any) => c.authorUserId))];
+    const parentProfiles = await Promise.all(
+      parentIds.map((uid) =>
+        ctx.db.query("profiles").withIndex("by_user", (q: any) => q.eq("userId", uid)).unique(),
+      ),
+    );
+    const coordsByParent = new Map<string, { lat: number; lng: number } | null>();
+    for (const p of parentProfiles) {
+      if (!p) continue;
+      const coords =
+        (p as any).addresses?.residence?.coordinates ??
+        (p as any).addresses?.homeland?.coordinates ??
+        null;
+      coordsByParent.set(String((p as any).userId), coords ?? null);
+    }
+
+    // Pre-resolve org countries for memberships with a position
+    const activeMembs = memberships.filter((m: any) => !m.deletedAt && m.positionId);
+    const orgIds = [...new Set(activeMembs.map((m: any) => m.orgId))];
+    const orgs = await Promise.all(orgIds.map((id) => ctx.db.get(id as any)));
+    const orgCountryById = new Map<string, string>();
+    for (const o of orgs) {
+      if (o && (o as any).country) orgCountryById.set((o as any)._id, (o as any).country);
+    }
+
+    const populations = { citizens: 0, agents: 0 };
+    const genders = { male: 0, female: 0 };
+    const ages = { adults: 0, children: 0 };
+    const continents: Record<string, number> = {};
+    const countries: Record<string, number> = {};
+    let withoutGps = 0;
+
+    const bump = (country: string | undefined | null) => {
+      if (!country) return;
+      const code = String(country).toUpperCase();
+      countries[code] = (countries[code] ?? 0) + 1;
+      const c = COUNTRY_CONTINENT_SERVER[code];
+      if (c) continents[c] = (continents[c] ?? 0) + 1;
+    };
+
+    for (const p of profiles as any[]) {
+      const coords =
+        p.addresses?.residence?.coordinates ?? p.addresses?.homeland?.coordinates ?? null;
+      if (!coords?.lat || !coords?.lng) {
+        withoutGps++;
+        continue;
+      }
+      populations.citizens++;
+      const minor = isMinorTs(p.identity?.birthDate);
+      if (minor) ages.children++;
+      else ages.adults++;
+      const g = normalizeGenderTs(p.identity?.gender);
+      if (g === "male") genders.male++;
+      if (g === "female") genders.female++;
+      bump(p.countryOfResidence ?? p.addresses?.residence?.country);
+    }
+
+    for (const c of children as any[]) {
+      const coords = coordsByParent.get(String(c.authorUserId)) ?? null;
+      if (!coords?.lat || !coords?.lng) {
+        withoutGps++;
+        continue;
+      }
+      populations.citizens++;
+      ages.children++;
+      const g = normalizeGenderTs(c.identity?.gender);
+      if (g === "male") genders.male++;
+      if (g === "female") genders.female++;
+      bump(c.countryOfResidence);
+    }
+
+    for (const m of activeMembs as any[]) {
+      const country = orgCountryById.get(m.orgId);
+      if (!country) continue;
+      populations.agents++;
+      const user = await ctx.db.get(m.userId);
+      const g = normalizeGenderTs(m.diplomaticProfile?.gender ?? (user as any)?.gender);
+      if (g === "male") genders.male++;
+      if (g === "female") genders.female++;
+      bump(country);
+    }
+
+    return {
+      total: populations.citizens + populations.agents,
+      populations,
+      genders,
+      ages,
+      continents,
+      countries,
+      withoutGps,
+    };
+  },
+});
+
