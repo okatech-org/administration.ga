@@ -521,13 +521,10 @@ html {
   scroll-behavior: auto !important;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   PUBLIC SHELL — Tokens warm-cream maquette « Consulat.ga »
-   Scope: pages publiques (/services, /reps, /news, /ressources…).
+/* PUBLIC SHELL - tokens warm-cream maquette Consulat.ga.
+   Scope: pages publiques (/services, /reps, /news, /ressources).
    N'impacte PAS /my-space (Citizen DS v3 reste en place).
-   Source: new-public-pages/project/shared/site.css
-   ══════════════════════════════════════════════════════════════ */
-
+   Source: new-public-pages/project/shared/site.css */
 [data-public-shell] {
   /* Surfaces */
   --pub-bg: #f7f6f2;

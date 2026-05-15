@@ -1093,6 +1093,13 @@ export enum TutorialType {
   Guide = "guide",
 }
 
+export enum TutorialBadge {
+  Updated = "updated",
+  Express = "express",
+  Essential = "essential",
+  New = "new",
+}
+
 export enum EventType {
   Request = "request",
   Profile = "profile",
