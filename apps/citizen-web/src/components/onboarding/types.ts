@@ -20,6 +20,30 @@ export type AddressData = {
 	lng?: string | number;
 };
 
+/**
+ * Composer un libellé d'adresse à afficher.
+ *
+ * `address.full` n'est renseigné que lorsque l'utilisateur passe par
+ * l'autocomplete Google Places (`formattedAddress`). Une saisie manuelle
+ * via l'AddressInput laisse `full` undefined ; on retombe sur les champs
+ * structurés pour ne pas afficher un champ "vide" en recap.
+ */
+export function formatAddressDisplay(
+	address: AddressData | undefined,
+): string | undefined {
+	if (!address) return undefined;
+	if (address.full && address.full.trim().length > 0) return address.full;
+	const composed = [
+		address.street,
+		[address.postalCode, address.city].filter(Boolean).join(" ").trim() ||
+			undefined,
+		address.country,
+	]
+		.filter((s): s is string => Boolean(s && s.trim().length > 0))
+		.join(", ");
+	return composed.length > 0 ? composed : undefined;
+}
+
 export type OnboardingData = {
 	// Internal flow markers
 	_identityPhase?: IdentityPhase;

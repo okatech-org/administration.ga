@@ -25,7 +25,7 @@ import {
 	passportSchema,
 	professionSchema,
 } from "../lib/schemas";
-import type { OnboardingData } from "../types";
+import { formatAddressDisplay, type OnboardingData } from "../types";
 import {
 	getDocsForUserType,
 	type RegistrationFiles,
@@ -295,10 +295,16 @@ export function ReviewStep({
 				editLabel={editLabel}
 				onEdit={() => onJump("contacts")}
 			>
-				<Row label={t("onboarding.review.fields.address")} value={data.address?.full} />
+				<Row
+					label={t("onboarding.review.fields.address")}
+					value={formatAddressDisplay(data.address)}
+				/>
 				<Row label={t("onboarding.review.fields.country")} value={data.address?.country} />
 				{isLongStay && (
-					<Row label={t("onboarding.review.fields.homeland")} value={data.homeland?.full} />
+					<Row
+						label={t("onboarding.review.fields.homeland")}
+						value={formatAddressDisplay(data.homeland)}
+					/>
 				)}
 				<Row
 					label={t("onboarding.review.fields.emergencyContacts")}

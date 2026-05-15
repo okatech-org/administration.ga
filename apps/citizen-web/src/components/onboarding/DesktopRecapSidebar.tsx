@@ -6,7 +6,7 @@ import { PublicUserType } from "@convex/lib/constants"
 import { Check, Info } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "react-i18next"
-import type { OnboardingData } from "./types"
+import { formatAddressDisplay, type OnboardingData } from "./types"
 import type { RegistrationFiles } from "./steps/DocumentsStep"
 
 function SidebarLine({
@@ -41,9 +41,7 @@ export function DesktopRecapSidebar({
 }) {
   const { t } = useTranslation()
   const fullName = [data.firstName, data.lastName].filter(Boolean).join(" ")
-  const addressFull =
-    data.address?.full ||
-    [data.address?.city, data.address?.country].filter(Boolean).join(", ")
+  const addressFull = formatAddressDisplay(data.address)
   const docCount = files ? Object.keys(files).length : 0
 
   return (
