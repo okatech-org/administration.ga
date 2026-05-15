@@ -1,7 +1,7 @@
 import { api } from "@convex/_generated/api";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useState } from "react";
-import { useConvexQuery } from "@/integrations/convex/hooks";
+import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
 const CACHE_KEY = "user_country_cache";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
@@ -23,8 +23,11 @@ interface CountryCache {
 export function useUserCountry() {
 	const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
 
-	// Query for user profile (only when authenticated)
-	const { data: profileData } = useConvexQuery(
+	// Query for user profile (only when authenticated) — skip while
+	// unauthenticated to avoid polluting the shared React Query cache with a
+	// "unauthenticated" result that other consumers (e.g. MySpaceProfileGate)
+	// would then read before the Convex auth handshake completes.
+	const { data: profileData } = useAuthenticatedConvexQuery(
 		api.functions.profiles.getMyProfileSafe,
 		{},
 	);
