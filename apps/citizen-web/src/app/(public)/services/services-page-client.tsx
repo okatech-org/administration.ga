@@ -2,8 +2,8 @@
 
 import { api } from "@convex/_generated/api"
 import { Search } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { usePreloadedQuery, type Preloaded } from "convex/react"
 import { Button } from "@/components/ui/button"
@@ -40,17 +40,21 @@ export function ServicesPageClient({
   preloadedFeatured: Preloaded<typeof api.functions.services.getFeaturedService>
 }) {
   const { t, i18n } = useTranslation()
-  const router = useRouter()
+  // useSearchParams() est lu UNE SEULE FOIS au mount pour hydrater l'état
+  // initial. Les updates suivants passent par window.history.replaceState
+  // pour éviter le re-render du Server Component (qui scroll-to-top).
   const searchParams = useSearchParams()
 
   const services = usePreloadedQuery(preloadedServices)
   const stats = usePreloadedQuery(preloadedStats)
   const featured = usePreloadedQuery(preloadedFeatured)
 
-  const searchQuery$ = searchParams.get("query") || ""
-  const selectedCategory = searchParams.get("category") || null
-
-  const [searchQuery, setSearchQuery] = useState(searchQuery$)
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("query") || "",
+  )
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    () => searchParams.get("category") || null,
+  )
   const [transverse, setTransverse] = useState<Set<TransverseFilter>>(
     () => new Set(),
   )
@@ -59,35 +63,29 @@ export function ServicesPageClient({
   const [page, setPage] = useState(1)
   const [chatOpen, setChatOpen] = useState(false)
 
-  const updateFilters = useCallback(
-    (updates: { query?: string; category?: string | null }) => {
-      const params = new URLSearchParams(searchParams.toString())
-      for (const [k, v] of Object.entries(updates)) {
-        if (v) params.set(k, v as string)
-        else params.delete(k)
-      }
-      const qs = params.toString()
-      router.replace(qs ? `/services?${qs}` : "/services")
-    },
-    [router, searchParams],
-  )
-
-  // Debounced search → URL
+  // Sync l'URL en mode "silencieux" (pas de routing Next, pas de scroll).
+  // Appelé en effet à chaque changement de query/category — debounced sur
+  // la query pour éviter de spammer l'historique pendant la frappe.
   useEffect(() => {
+    const params = new URLSearchParams()
+    if (searchQuery) params.set("query", searchQuery)
+    if (selectedCategory) params.set("category", selectedCategory)
+    const qs = params.toString()
+    const url = qs ? `/services?${qs}` : "/services"
+
+    // Debounce les writes URL pour la frappe rapide.
     const timer = setTimeout(() => {
-      if (searchQuery !== searchQuery$) {
-        updateFilters({
-          query: searchQuery || undefined,
-        })
+      if (typeof window !== "undefined" && window.location.pathname + window.location.search !== url) {
+        window.history.replaceState(null, "", url)
       }
-    }, 300)
+    }, 250)
     return () => clearTimeout(timer)
-  }, [searchQuery, searchQuery$, updateFilters])
+  }, [searchQuery, selectedCategory])
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1)
-  }, [searchQuery$, selectedCategory, transverse, sort])
+  }, [searchQuery, selectedCategory, transverse, sort])
 
   const toggleTransverse = (f: TransverseFilter) => {
     setTransverse((prev) => {
@@ -102,7 +100,7 @@ export function ServicesPageClient({
 
   const filtered = useMemo(() => {
     if (!services) return []
-    const q = searchQuery$.toLowerCase()
+    const q = searchQuery.toLowerCase()
     return services.filter((s) => {
       const name = getLocalizedValue(s.name, lang).toLowerCase()
       const desc = getLocalizedValue(s.description, lang).toLowerCase()
@@ -114,7 +112,7 @@ export function ServicesPageClient({
       // Backlogged: ajouter indicativePricing au schéma services.
       return true
     })
-  }, [services, lang, searchQuery$, selectedCategory, transverse])
+  }, [services, lang, searchQuery, selectedCategory, transverse])
 
   const sorted = useMemo(() => {
     const copy = [...filtered]
@@ -174,8 +172,8 @@ export function ServicesPageClient({
 
   const clearFilters = () => {
     setSearchQuery("")
+    setSelectedCategory(null)
     setTransverse(new Set())
-    updateFilters({ query: undefined, category: undefined })
   }
 
   return (
@@ -191,9 +189,7 @@ export function ServicesPageClient({
         search={searchQuery}
         onSearchChange={setSearchQuery}
         selectedCategory={selectedCategory}
-        onCategoryChange={(c) =>
-          updateFilters({ query: searchQuery$ || undefined, category: c })
-        }
+        onCategoryChange={setSelectedCategory}
         byCategory={stats?.byCategory ?? {}}
         total={stats?.total ?? services?.length ?? 0}
         transverse={transverse}

@@ -41,8 +41,8 @@ export function ServicesFilterBand({
 
   return (
     <div className="sticky top-0 z-20 border-b border-[var(--pub-border)] bg-[var(--pub-bg)]/95 backdrop-blur-sm">
-      <div className="mx-auto max-w-[1280px] px-8 pt-3 pb-2.5">
-        <div className="flex items-center gap-3 border-b border-[var(--pub-border)]">
+      <div className="mx-auto max-w-[1280px] px-8 py-3">
+        <div className="flex items-center gap-2.5 rounded-full border border-[var(--pub-border)] bg-[var(--pub-surface)] py-1.5 pr-1.5 pl-4">
           <Search
             className="size-[16px] shrink-0 text-[var(--pub-text-muted)]"
             aria-hidden="true"
@@ -55,11 +55,11 @@ export function ServicesFilterBand({
               "services.filterband.searchPlaceholder",
               "Rechercher un service — passeport, mariage, certification…",
             )}
-            className="flex-1 border-0 bg-transparent py-2 text-[14px] text-[var(--pub-text)] placeholder:text-[var(--pub-text-faint)] focus:outline-none"
+            className="flex-1 border-0 bg-transparent py-1.5 text-[14px] text-[var(--pub-text)] placeholder:text-[var(--pub-text-faint)] focus:outline-none"
           />
           <button
             type="button"
-            className="my-1 shrink-0 rounded-full bg-[var(--pub-gabon-blue)] px-4 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
+            className="shrink-0 rounded-full bg-[var(--pub-gabon-blue)] px-4 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
           >
             {t("services.filterband.searchCta", "Rechercher")}
           </button>
