@@ -36,6 +36,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { FaqTab } from "@/components/admin/services-editorial/FaqTab";
+import { PresentationTab } from "@/components/admin/services-editorial/PresentationTab";
+import { PricingAndModesTab } from "@/components/admin/services-editorial/PricingAndModesTab";
+import { StepsAndDocsTab } from "@/components/admin/services-editorial/StepsAndDocsTab";
 import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
@@ -206,6 +210,10 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 			<Tabs defaultValue="general" className="flex-1">
 				<TabsList className="mb-4">
 					<TabsTrigger value="general">Général</TabsTrigger>
+					<TabsTrigger value="presentation">Présentation</TabsTrigger>
+					<TabsTrigger value="steps-docs">Étapes &amp; Pièces</TabsTrigger>
+					<TabsTrigger value="pricing-modes">Tarifs &amp; Modes</TabsTrigger>
+					<TabsTrigger value="faq">FAQ</TabsTrigger>
 					<TabsTrigger value="form">Formulaire</TabsTrigger>
 				</TabsList>
 
@@ -637,6 +645,62 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 									? t("superadmin.organizations.form.saving")
 									: t("superadmin.services.form.save")}
 							</Button>
+						</div>
+					</FlatCard>
+				</TabsContent>
+
+				<TabsContent value="presentation">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<PresentationTab
+								service={service}
+								saving={isPending}
+								onSave={async (patch) => {
+									await updateService({ serviceId, ...patch } as never);
+								}}
+							/>
+						</div>
+					</FlatCard>
+				</TabsContent>
+
+				<TabsContent value="steps-docs">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<StepsAndDocsTab
+								service={service}
+								saving={isPending}
+								onSave={async (patch) => {
+									await updateService({ serviceId, ...patch } as never);
+								}}
+							/>
+						</div>
+					</FlatCard>
+				</TabsContent>
+
+				<TabsContent value="pricing-modes">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<PricingAndModesTab
+								service={service}
+								saving={isPending}
+								onSave={async (patch) => {
+									await updateService({ serviceId, ...patch } as never);
+								}}
+							/>
+						</div>
+					</FlatCard>
+				</TabsContent>
+
+				<TabsContent value="faq">
+					<FlatCard>
+						<div className="p-3 lg:p-4">
+							<FaqTab
+								service={service}
+								saving={isPending}
+								onSave={async (patch) => {
+									await updateService({ serviceId, ...patch } as never);
+								}}
+							/>
 						</div>
 					</FlatCard>
 				</TabsContent>
