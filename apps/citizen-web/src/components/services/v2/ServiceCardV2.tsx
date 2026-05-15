@@ -53,10 +53,7 @@ export function ServiceCardV2({ service }: { service: ServiceCardData }) {
         <service.icon className="size-5" aria-hidden="true" />
       </div>
       <div>
-        <span className="text-[12px] font-medium text-[var(--pub-text-muted)]">
-          {service.categoryLabel}
-        </span>
-        <h3 className="mt-1 text-[20px] font-semibold leading-[1.25] tracking-[-0.015em] text-[var(--pub-text)]">
+        <h3 className="text-[20px] font-semibold leading-[1.25] tracking-[-0.015em] text-[var(--pub-text)]">
           {service.name}
         </h3>
         <p className="mt-2 text-[14px] leading-[1.5] text-[var(--pub-text-muted)]">
@@ -64,17 +61,8 @@ export function ServiceCardV2({ service }: { service: ServiceCardData }) {
         </p>
       </div>
       <div className="mt-auto flex items-center justify-between border-t border-dashed border-[var(--pub-border)] pt-4 text-[13px] text-[var(--pub-text-muted)]">
-        <span className="inline-flex items-center gap-1.5">
-          <Clock
-            className="size-3.5 text-[var(--pub-text-faint)]"
-            aria-hidden="true"
-          />
-          <b className="font-medium text-[var(--pub-text)]">
-            {t("services.daysShort", {
-              count: service.estimatedDays,
-              defaultValue: "{{count}} j",
-            })}
-          </b>
+        <span className="font-medium text-[var(--pub-text)]">
+          {service.categoryLabel}
         </span>
         <span className="inline-flex items-center gap-1 text-[13px] font-medium text-[var(--pub-gabon-blue)]">
           {t("services.cardCta", "En savoir plus →")}

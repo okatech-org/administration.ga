@@ -182,7 +182,9 @@ export function ServicesPageClient({
         total={stats?.total ?? services?.length ?? 0}
         onlineCount={stats?.onlineCount ?? 0}
         avgDays={stats?.avgDays ?? 0}
-        satisfactionPct={stats?.satisfactionPct ?? 96}
+        timeSavedHoursPerOnlineRequest={
+          stats?.timeSavedHoursPerOnlineRequest ?? 4
+        }
       />
 
       <ServicesFilterBand
@@ -197,7 +199,11 @@ export function ServicesPageClient({
       />
 
       <div className="mx-auto max-w-[1280px] px-8 pb-24">
-        {featuredService && <FeaturedServiceCard service={featuredService} />}
+        {featuredService && (
+          <div className="hidden md:block">
+            <FeaturedServiceCard service={featuredService} />
+          </div>
+        )}
 
         <CatalogHeader
           totalCount={sorted.length}

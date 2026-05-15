@@ -10,12 +10,12 @@ export function ServicesHero({
   total,
   onlineCount,
   avgDays,
-  satisfactionPct,
+  timeSavedHoursPerOnlineRequest,
 }: {
   total: number
   onlineCount: number
   avgDays: number
-  satisfactionPct: number
+  timeSavedHoursPerOnlineRequest: number
 }) {
   const { t } = useTranslation()
 
@@ -44,10 +44,11 @@ export function ServicesHero({
       ),
     },
     {
-      value: `${satisfactionPct} %`,
+      value: `~${timeSavedHoursPerOnlineRequest}h`,
+      unit: t("services.hero.statTimeSavedUnit", "/ démarche"),
       label: t(
-        "services.hero.statSatisfactionLabel",
-        "Taux de satisfaction des usagers.",
+        "services.hero.statTimeSavedLabel",
+        "Temps gagné en moyenne pour une démarche en ligne.",
       ),
     },
   ]
@@ -75,21 +76,21 @@ export function ServicesHero({
               )}
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6">
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-[14px] border border-[var(--pub-border)] bg-[var(--pub-surface)] px-6 py-5"
+                className="rounded-[12px] border border-[var(--pub-border)] bg-[var(--pub-surface)] px-3.5 py-3 sm:rounded-[14px] sm:px-6 sm:py-5"
               >
-                <div className="flex items-baseline gap-1 text-[32px] font-semibold leading-none tracking-[-0.02em] text-[var(--pub-text)]">
+                <div className="flex items-baseline gap-1 text-[22px] font-semibold leading-none tracking-[-0.02em] text-[var(--pub-text)] sm:text-[32px]">
                   {s.value}
                   {s.unit && (
-                    <small className="text-[14px] font-medium text-[var(--pub-text-muted)]">
+                    <small className="text-[12px] font-medium text-[var(--pub-text-muted)] sm:text-[14px]">
                       {s.unit}
                     </small>
                   )}
                 </div>
-                <div className="mt-2.5 text-[13px] leading-[1.4] text-[var(--pub-text-muted)]">
+                <div className="mt-1.5 text-[12px] leading-[1.35] text-[var(--pub-text-muted)] sm:mt-2.5 sm:text-[13px] sm:leading-[1.4]">
                   {s.label}
                 </div>
               </div>

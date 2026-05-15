@@ -126,9 +126,18 @@ export const listCatalog = query({
 
 /**
  * Stats agrégées du catalogue public.
- * Utilisé par le hero de /services pour les KPIs (total, % en ligne, délai
- * moyen, satisfaction) et pour les compteurs de filter pills par catégorie.
+ * Utilisé par le hero de /services pour les 4 KPIs (total, en ligne,
+ * délai moyen, temps gagné théorique) et pour les compteurs de filter
+ * pills par catégorie.
+ *
+ * Le « temps gagné » est une estimation théorique du gain par démarche
+ * réalisée en ligne plutôt qu'en présentiel : on retient 4 heures
+ * (déplacement aller-retour + temps d'attente sur place + saisie
+ * accélérée du formulaire numérique). Multiplié par le nombre de
+ * services 100 % en ligne, on obtient un total cumulé pour le réseau.
  */
+const TIME_SAVED_HOURS_PER_ONLINE_REQUEST = 4;
+
 export const getCatalogStats = query({
   args: {},
   handler: async (ctx) => {
@@ -156,7 +165,8 @@ export const getCatalogStats = query({
       onlineCount,
       expressCount,
       avgDays,
-      satisfactionPct: 96, // TODO: brancher sur une vraie source de feedback
+      // Temps gagné théorique par démarche en ligne (en heures).
+      timeSavedHoursPerOnlineRequest: TIME_SAVED_HOURS_PER_ONLINE_REQUEST,
       byCategory,
     };
   },

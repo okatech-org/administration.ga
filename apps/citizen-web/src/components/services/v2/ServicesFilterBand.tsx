@@ -65,7 +65,7 @@ export function ServicesFilterBand({
           </button>
         </div>
 
-        <div className="mt-2.5 flex items-center gap-2 overflow-x-auto [scrollbar-width:thin]">
+        <div className="mt-2.5 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <FilterPill
             icon={LayoutGrid}
             label={t("services.allCategories", "Tous")}
