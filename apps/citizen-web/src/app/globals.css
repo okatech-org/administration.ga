@@ -38,6 +38,11 @@
   --gabon-yellow: 45 87% 57%;
   --gabon-blue: 203 100% 36%;
 
+  /* Tints Gabon — fonds doux pour pills, cards info, badges */
+  --gabon-blue-tint: #e7eff9;
+  --gabon-green-tint: #e3f3e9;
+  --gabon-yellow-tint: #fbf2cf;
+
   /* Statuts — versions Consulat */
   --status-success: #157a3d;
   --status-success-tint: #e3f1e8;
@@ -127,6 +132,17 @@
   --gabon-blue-deep: #4b8cd9;
   --gabon-green-hex: #2eb05f;
   --gabon-yellow-hex: #f5d048;
+
+  /* Tints en dark — fonds translucides foncés pour préserver la lisibilité
+     du texte clair (--foreground) au-dessus. */
+  --gabon-blue-tint: rgba(46, 124, 214, 0.15);
+  --gabon-green-tint: rgba(46, 176, 95, 0.15);
+  --gabon-yellow-tint: rgba(245, 208, 72, 0.15);
+
+  /* Tints statut en dark */
+  --status-success-tint: rgba(46, 176, 95, 0.18);
+  --status-warning-tint: rgba(245, 208, 72, 0.18);
+  --status-danger-tint: rgba(179, 38, 30, 0.22);
 
   /* Surfaces citizen en dark */
   --citizen-surface-s1: oklch(0.2 0.005 70);
