@@ -16,7 +16,10 @@ const HOP_BY_HOP = new Set([
 async function proxyToConvex(req: NextRequest): Promise<NextResponse> {
   if (!CONVEX_SITE_URL) {
     return NextResponse.json(
-      { error: "CONVEX_SITE_URL not configured" },
+      {
+        error: "CONVEX_SITE_URL not configured",
+        hint: "Ajoutez CONVEX_SITE_URL=http://127.0.0.1:3211 à apps/backoffice-web/.env.local puis redémarrez Next.",
+      },
       { status: 500 }
     )
   }
@@ -77,6 +80,18 @@ async function proxyToConvex(req: NextRequest): Promise<NextResponse> {
     })
   } catch (error) {
     console.error("[auth] proxy error:", error)
+    const cause = String((error as { cause?: unknown }).cause ?? error)
+    const isUpstreamDown =
+      error instanceof TypeError && /ECONNREFUSED|fetch failed/i.test(cause)
+    if (isUpstreamDown) {
+      return NextResponse.json(
+        {
+          error: "Convex backend unreachable",
+          hint: `${CONVEX_SITE_URL} ne répond pas. Lancez le backend local avec « bun run dev:convex » depuis la racine du monorepo.`,
+        },
+        { status: 503 }
+      )
+    }
     return NextResponse.json({ error: "Internal auth error" }, { status: 502 })
   }
 }

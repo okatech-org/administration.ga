@@ -3,7 +3,7 @@
 import { useConvexAuth } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, ShieldX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -19,15 +19,24 @@ export function SuperadminGuard({ children }: SuperadminGuardProps) {
 	const { userData, isBackOffice, isPending } = useSuperAdminData();
 	const router = useRouter();
 
-	// Redirect to sign-in when not authenticated (after auth finishes loading)
+	// Sticky auth — `useConvexAuth` peut briefly retourner (isLoading=false,
+	// isAuthenticated=false) avant que le JWT Convex soit fetché, ce qui
+	// déclencherait un redirect prématuré vers /sign-in.
+	const [resolvedAuth, setResolvedAuth] = useState<boolean | null>(null);
 	useEffect(() => {
-		if (!isAuthLoading && !isAuthenticated) {
+		if (isAuthLoading) return;
+		if (isAuthenticated) setResolvedAuth(true);
+		else if (resolvedAuth === null) setResolvedAuth(false);
+	}, [isAuthLoading, isAuthenticated, resolvedAuth]);
+
+	useEffect(() => {
+		if (resolvedAuth === false) {
 			router.push("/sign-in");
 		}
-	}, [isAuthLoading, isAuthenticated, router]);
+	}, [resolvedAuth, router]);
 
 	// Show loading state while checking auth or permissions
-	if (isAuthLoading || (!isAuthenticated) || isPending) {
+	if (resolvedAuth !== true || isPending) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
 				<div className="text-center space-y-4">

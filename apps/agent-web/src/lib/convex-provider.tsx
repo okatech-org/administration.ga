@@ -15,6 +15,11 @@ if (!CONVEX_URL) {
 
 const convexQueryClient = new ConvexQueryClient(CONVEX_URL)
 
+// Flag module-level : `convexQueryClient` est singleton, donc l'état "connecté"
+// doit l'être aussi. Un ref de composant est reset à chaque remount StrictMode,
+// ce qui rappelle `connect()` sur un client déjà abonné et fait throw.
+let hasConnected = false
+
 export { convexQueryClient }
 
 function AuthSync({
@@ -67,14 +72,13 @@ export default function AppConvexProvider({
   )
 
   useEffect(() => {
+    if (hasConnected) return
     try {
       convexQueryClient.connect(queryClient)
-    } catch (e) {
-      console.warn(
-        "Convex query client connection error (likely strict mode double-invoke):",
-        e
-      )
+    } catch {
+      // Si throw "already subscribed", le client est de fait connecté.
     }
+    hasConnected = true
   }, [queryClient])
 
   return (

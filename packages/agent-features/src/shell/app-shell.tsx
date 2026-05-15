@@ -98,14 +98,22 @@ export function AppShell(props: AppShellProps) {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth()
   const consularThemeValue = useConsularThemeState()
 
-  const [hasResolved, setHasResolved] = useState(false)
+  // `useConvexAuth` peut transiter par (isLoading=false, isAuthenticated=false)
+  // pendant que le JWT Better Auth est fetché et appliqué au WebSocket — sans
+  // sticky state, l'utilisateur voit brièvement `renderSignedOut()` après chaque
+  // reload, puis l'app, ce qui ressemble à une déconnexion/redirection oscillante.
+  // On retient le dernier état authentifié résolu pour rester stable.
+  const [resolvedAuth, setResolvedAuth] = useState<boolean | null>(null)
   useEffect(() => {
-    if (!isAuthLoading && !hasResolved) {
-      setHasResolved(true)
+    if (isAuthLoading) return
+    if (isAuthenticated) {
+      setResolvedAuth(true)
+    } else if (resolvedAuth === null) {
+      setResolvedAuth(false)
     }
-  }, [isAuthLoading, hasResolved])
+  }, [isAuthLoading, isAuthenticated, resolvedAuth])
 
-  if (isAuthLoading && !hasResolved) {
+  if (resolvedAuth === null) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -113,7 +121,7 @@ export function AppShell(props: AppShellProps) {
     )
   }
 
-  if (!isAuthenticated) {
+  if (!resolvedAuth) {
     return <>{props.renderSignedOut()}</>
   }
 

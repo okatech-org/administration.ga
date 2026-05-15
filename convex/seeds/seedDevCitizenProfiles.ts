@@ -48,6 +48,30 @@ const yearsAgo = (years: number): number =>
 
 const CITIZEN_PROFILES: CitizenSeed[] = [
 	{
+		email: "iasted@me.com",
+		userType: PublicUserType.LongStay,
+		identity: {
+			firstName: "Gueylord",
+			lastName: "PELLEN-LAKOUMBA Asted",
+			gender: Gender.Male,
+			nationality: CountryCode.GA,
+			birthDate: yearsAgo(34),
+			birthPlace: "Libreville",
+			birthCountry: CountryCode.GA,
+		},
+		countryOfResidence: CountryCode.FR,
+		managedByOrgSlug: "fr-consulat-paris",
+		phone: "+33 6 00 00 00 01",
+		addresses: {
+			residence: {
+				street: "1 rue de Vaugirard",
+				city: "Paris",
+				postalCode: "75006",
+				country: CountryCode.FR,
+			},
+		},
+	},
+	{
 		email: "pellen-lakoumba.gueylord@yopmail.com",
 		userType: PublicUserType.LongStay,
 		identity: {

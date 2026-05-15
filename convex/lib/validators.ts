@@ -1093,6 +1093,10 @@ export const orgBrandingValidator = v.object({
   signerName: v.optional(v.string()), // ex : "Jean-Pierre NZOGHE-NGUEMA"
   signerTitle: v.optional(v.string()), // ex : "Conseiller chargé des Affaires Consulaires"
   cityName: v.optional(v.string()), // ex : "Paris" → remplace "Madrid" hérité
+  accessInfo: v.optional(v.object({
+    accessibilityNotesFr: v.optional(v.string()),
+    transportFr: v.optional(v.string()),
+  })),
 });
 
 export type OrgBranding = Infer<typeof orgBrandingValidator>;

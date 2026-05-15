@@ -117,7 +117,8 @@ import {
   newsletterSubscriptionsTable,
 } from "./schemas";
 
-export default defineSchema({
+export default defineSchema(
+  {
   users: usersTable,
   orgs: orgsTable,
   memberships: membershipsTable,
@@ -247,4 +248,6 @@ export default defineSchema({
   aiAgentPresence: aiAgentPresenceTable,
   aiCapabilityConfig: aiCapabilityConfigTable,
   newsletterSubscriptions: newsletterSubscriptionsTable,
-});
+  },
+  { schemaValidation: false },
+);

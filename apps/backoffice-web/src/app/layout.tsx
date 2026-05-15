@@ -34,7 +34,7 @@ export default function RootLayout({
   // useQuery de @tanstack/react-query — sans QueryClient ancestor, tout
   // composant utilisant cette hook (ex: SuperadminGuard) plante en SSR.
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/* Polices diplomatiques — 7 pour titres + 7 pour corps (voir
             HEADING_FONTS / BODY_FONTS dans @workspace/document-editor). */}

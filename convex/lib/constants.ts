@@ -1085,12 +1085,24 @@ export enum TutorialCategory {
   Entrepreneurship = "entrepreneuriat",
   Travel = "voyage",
   PracticalLife = "vie_pratique",
+  ConsularProcedures = "consular_procedures",
+  CivilStatus = "civil_status",
+  EducationGrants = "education_grants",
+  Taxation = "taxation",
+  ReturnGabon = "return_gabon",
 }
 
 export enum TutorialType {
   Video = "video",
   Article = "article",
   Guide = "guide",
+}
+
+export enum TutorialBadge {
+  Updated = "updated",
+  Express = "express",
+  Essential = "essential",
+  New = "new",
 }
 
 export enum EventType {

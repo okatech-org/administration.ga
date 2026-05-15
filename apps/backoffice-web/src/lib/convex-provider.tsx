@@ -4,25 +4,40 @@ import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
 import { ConvexQueryClient } from "@convex-dev/react-query"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useConvexAuth, useMutation } from "convex/react"
+import type { FunctionReference } from "convex/server"
 import { useEffect, useMemo, useRef } from "react"
 import { authClient } from "./auth-client"
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL
 
 if (!CONVEX_URL) {
-  console.error("missing envar NEXT_PUBLIC_CONVEX_URL")
+  // Fail-fast plutôt que construire un ConvexQueryClient(undefined) qui
+  // casserait useMutation plus loin avec un message trompeur.
+  throw new Error(
+    "NEXT_PUBLIC_CONVEX_URL est absent. " +
+      "Ajoutez-le à apps/backoffice-web/.env.local " +
+      "(ex. NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210 pour le dev local) " +
+      "puis redémarrez le serveur Next."
+  )
 }
 
 const convexQueryClient = new ConvexQueryClient(CONVEX_URL)
 
+// Flag module-level : `convexQueryClient` est singleton, donc l'état "connecté"
+// doit l'être aussi. Un ref de composant est reset à chaque remount StrictMode,
+// ce qui rappelle `connect()` sur un client déjà abonné et fait throw.
+let hasConnected = false
+
 export { convexQueryClient }
+
+type EnsureUserMutation = FunctionReference<"mutation", "public">
 
 function AuthSync({
   children,
   ensureUserMutation,
 }: {
   children: React.ReactNode
-  ensureUserMutation: any
+  ensureUserMutation: EnsureUserMutation
 }) {
   const { isAuthenticated } = useConvexAuth()
   const ensureUser = useMutation(ensureUserMutation)
@@ -48,7 +63,7 @@ export default function AppConvexProvider({
   ensureUserMutation,
 }: {
   children: React.ReactNode
-  ensureUserMutation: any
+  ensureUserMutation: EnsureUserMutation
 }) {
   const queryClient = useMemo(
     () =>
@@ -67,14 +82,13 @@ export default function AppConvexProvider({
   )
 
   useEffect(() => {
+    if (hasConnected) return
     try {
       convexQueryClient.connect(queryClient)
-    } catch (e) {
-      console.warn(
-        "Convex query client connection error (likely strict mode double-invoke):",
-        e
-      )
+    } catch {
+      // Si throw "already subscribed", le client est de fait connecté.
     }
+    hasConnected = true
   }, [queryClient])
 
   return (
