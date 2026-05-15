@@ -689,7 +689,7 @@ export function OrgDetailClient({
           {/* SIDEBAR */}
           <aside className="space-y-4">
             <CallWidget callAvail={callAvail} phoneMain={phoneMain} />
-            <InviteCard />
+            {!isAuthenticated && <InviteCard />}
             {orgStats && <QuickStats stats={orgStats} />}
             {documents && documents.length > 0 && (
               <DocumentsList docs={documents} />
