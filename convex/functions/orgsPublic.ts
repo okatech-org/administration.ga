@@ -166,6 +166,82 @@ export const callAvailability = query({
 });
 
 /**
+ * Lignes d'appel publiques d'une org (type "org" uniquement, pas les
+ * lignes personnelles). Retourne pour chaque ligne :
+ *  - identité + label + description + couleur/icone
+ *  - état temps-réel : nombre d'agents en ligne (présents sur cette
+ *    ligne ET avec presence "online"), basé sur agentPresence.
+ */
+export const publicCallLines = query({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.orgId);
+    if (!org || isIntelligenceAgency(org)) return [];
+
+    const lines = await ctx.db
+      .query("callLines")
+      .withIndex("by_org_active", (q) =>
+        q.eq("orgId", args.orgId).eq("isActive", true),
+      )
+      .collect();
+
+    // On ne montre que les lignes "org" (les lignes personnelles sont
+    // privées par défaut côté page publique).
+    const orgLines = lines.filter((l) => l.type === "org");
+
+    // Récupère les présences "online" pour l'org en un seul lookup.
+    const now = Date.now();
+    const FIVE_MIN = 5 * 60 * 1000;
+    let presences: Array<{ userId: string; lastHeartbeat: number }> = [];
+    try {
+      const raw = await ctx.db
+        .query("agentPresence")
+        .withIndex("by_org_and_status", (q) =>
+          q.eq("orgId", args.orgId).eq("status", "online"),
+        )
+        .collect();
+      presences = raw.filter((p) => now - p.lastHeartbeat < FIVE_MIN);
+    } catch {
+      // schéma indispo — pas de présence
+    }
+    const onlineUserIds = new Set(presences.map((p) => p.userId));
+
+    // Pour chaque ligne, compte les agents online assignés.
+    const enriched = await Promise.all(
+      orgLines.map(async (line) => {
+        let onlineCount = 0;
+        for (const membershipId of line.membershipIds) {
+          const m = await ctx.db.get(membershipId);
+          if (!m || m.deletedAt) continue;
+          if (onlineUserIds.has(m.userId as unknown as string)) {
+            onlineCount++;
+          }
+        }
+        return {
+          _id: line._id,
+          label: line.label,
+          description: line.description ?? null,
+          icon: line.icon ?? null,
+          color: line.color ?? null,
+          priority: line.priority,
+          isDefault: line.isDefault === true,
+          totalAgents: line.membershipIds.length,
+          agentsOnline: onlineCount,
+        };
+      }),
+    );
+
+    // Tri : isDefault d'abord, puis priority asc, puis label
+    return enriched.sort((a, b) => {
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return a.label.localeCompare(b.label);
+    });
+  },
+});
+
+/**
  * Documents publics téléchargeables.
  */
 export const publicDocuments = query({

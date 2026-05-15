@@ -359,6 +359,10 @@ export function OrgDetailClient({
     api.functions.orgsPublic.subRepresentations,
     orgIdArg as { orgId: Id<"orgs"> },
   )
+  const callLines = useQuery(
+    api.functions.orgsPublic.publicCallLines,
+    orgIdArg as { orgId: Id<"orgs"> },
+  )
   const orgPosts = useQuery(
     api.functions.posts.listByOrg,
     org
@@ -552,12 +556,46 @@ export function OrgDetailClient({
               icon={<Phone className="w-4 h-4" strokeWidth={2} />}
               label={t("orgs.detail.callOnline", "Appeler en ligne")}
               suffix={
-                callAvail?.estimatedWaitMinutes != null
-                  ? `~ ${callAvail.estimatedWaitMinutes} min`
-                  : undefined
+                !isAuthenticated
+                  ? undefined
+                  : callAvail?.status === "offline"
+                    ? t("orgs.detail.noAgent", "0 en ligne")
+                    : callAvail?.estimatedWaitMinutes != null
+                      ? `~ ${callAvail.estimatedWaitMinutes} min`
+                      : undefined
               }
-              disabled={!isAuthenticated}
+              disabled={
+                !isAuthenticated || callAvail?.status === "offline"
+              }
               authRequired={!isAuthenticated}
+              onClick={() => {
+                // Scroll vers le call widget en sidebar (où l'utilisateur
+                // choisit la ligne à appeler).
+                const target = document.getElementById("call-widget")
+                if (!target) return
+                const scrollContainer =
+                  document.getElementById("main-scrollable-area") ??
+                  document.documentElement
+                const containerRect = scrollContainer.getBoundingClientRect()
+                const targetRect = target.getBoundingClientRect()
+                const offsetTop =
+                  scrollContainer.scrollTop +
+                  targetRect.top -
+                  containerRect.top -
+                  96
+                if (
+                  scrollContainer === document.documentElement ||
+                  scrollContainer === document.scrollingElement
+                ) {
+                  window.scrollTo({ top: offsetTop, behavior: "smooth" })
+                } else {
+                  ;(scrollContainer as HTMLElement).scrollTop = offsetTop
+                  ;(scrollContainer as HTMLElement).scrollTo?.({
+                    top: offsetTop,
+                    behavior: "smooth",
+                  })
+                }
+              }}
             />
             <ActionBtn
               icon={
@@ -688,7 +726,12 @@ export function OrgDetailClient({
 
           {/* SIDEBAR */}
           <aside className="space-y-4">
-            <CallWidget callAvail={callAvail} phoneMain={phoneMain} />
+            <CallWidget
+              callAvail={callAvail}
+              phoneMain={phoneMain}
+              lines={callLines}
+              isAuthenticated={isAuthenticated}
+            />
             {!isAuthenticated && <InviteCard />}
             {orgStats && <QuickStats stats={orgStats} />}
             {documents && documents.length > 0 && (
@@ -745,6 +788,7 @@ function ActionBtn({
   href,
   disabled,
   authRequired,
+  onClick,
 }: {
   icon: React.ReactNode
   label: string
@@ -753,6 +797,7 @@ function ActionBtn({
   href?: string
   disabled?: boolean
   authRequired?: boolean
+  onClick?: () => void
 }) {
   const isDisabled = disabled === true
   const isAnchor = href?.startsWith("#")
@@ -833,7 +878,12 @@ function ActionBtn({
     )
   }
   return (
-    <button type="button" disabled={isDisabled} className={className}>
+    <button
+      type="button"
+      disabled={isDisabled}
+      onClick={onClick}
+      className={className}
+    >
       {content}
     </button>
   )
@@ -1301,6 +1351,8 @@ function LocalNewsList({
 function CallWidget({
   callAvail,
   phoneMain,
+  lines,
+  isAuthenticated,
 }: {
   callAvail:
     | {
@@ -1310,13 +1362,26 @@ function CallWidget({
       }
     | undefined
   phoneMain?: string
+  lines:
+    | Array<{
+        _id: string
+        label: string
+        description: string | null
+        agentsOnline: number
+        totalAgents: number
+        isDefault: boolean
+      }>
+    | undefined
+  isAuthenticated: boolean
 }) {
   const isOnline = callAvail?.status === "available"
   const isBusy = callAvail?.status === "busy"
+  const hasLines = Array.isArray(lines) && lines.length > 0
 
   return (
     <div
-      className="relative rounded-2xl p-5 text-white overflow-hidden"
+      id="call-widget"
+      className="relative rounded-2xl p-5 text-white overflow-hidden scroll-mt-24"
       style={{
         background:
           "linear-gradient(135deg, var(--gabon-blue-hex) 0%, var(--gabon-blue-deep,_#005a94) 100%)",
@@ -1357,39 +1422,100 @@ function CallWidget({
           {isOnline ? "Disponible" : isBusy ? "Occupé" : "Hors ligne"}
         </span>
       </div>
-      <h3 className="relative z-10 text-[20px] font-semibold tracking-[-0.01em] leading-[1.2]">
-        Joignez le standard depuis votre navigateur.
+      <h3 className="relative z-10 text-[18px] font-semibold tracking-[-0.01em] leading-[1.25]">
+        {hasLines
+          ? "Choisissez une ligne à appeler."
+          : "Aucune ligne d'appel disponible."}
       </h3>
       {callAvail && (
-        <div className="relative z-10 mt-3 flex flex-wrap gap-3.5 text-[13px] text-white/75">
+        <div className="relative z-10 mt-2.5 text-[13px] text-white/75 inline-flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5" strokeWidth={2} />
+          <strong className="text-white font-medium">
+            {callAvail.agentsOnline}
+          </strong>{" "}
+          agent{callAvail.agentsOnline > 1 ? "s" : ""} en ligne
           {callAvail.estimatedWaitMinutes != null && (
-            <span className="inline-flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" strokeWidth={2} />
-              Attente{" "}
-              <strong className="text-white font-medium">
-                ~ {callAvail.estimatedWaitMinutes} min
-              </strong>
+            <span className="text-white/60">
+              {" "}
+              · attente ~ {callAvail.estimatedWaitMinutes} min
             </span>
           )}
-          <span className="inline-flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" strokeWidth={2} />
-            <strong className="text-white font-medium">
-              {callAvail.agentsOnline}
-            </strong>{" "}
-            agent{callAvail.agentsOnline > 1 ? "s" : ""} en ligne
-          </span>
         </div>
       )}
-      <div className="relative z-10 mt-5 flex gap-2">
-        <button
-          type="button"
-          disabled={!isOnline}
-          className="w-full inline-flex items-center justify-center gap-2 bg-white text-[var(--gabon-blue-hex)] rounded-full px-5 py-3.5 text-[15px] font-semibold hover:bg-[#fcfaf2] disabled:opacity-60 disabled:cursor-not-allowed transition"
-        >
-          <Phone className="w-4 h-4" strokeWidth={2} />
-          Lancer l'appel
-        </button>
-      </div>
+
+      {/* Liste des lignes */}
+      {hasLines && (
+        <ul className="relative z-10 mt-4 flex flex-col gap-1.5">
+          {lines!.map((line) => {
+            const canCall = isAuthenticated && line.agentsOnline > 0
+            return (
+              <li key={line._id}>
+                <button
+                  type="button"
+                  disabled={!canCall}
+                  title={
+                    !isAuthenticated
+                      ? "Connexion requise"
+                      : line.agentsOnline === 0
+                        ? "Aucun agent en ligne sur cette ligne"
+                        : undefined
+                  }
+                  className={cn(
+                    "w-full inline-flex items-center gap-3 rounded-xl px-3.5 py-3 text-left text-[14px] font-medium transition",
+                    canCall
+                      ? "bg-white/12 hover:bg-white/20 text-white border border-white/20"
+                      : "bg-white/5 text-white/60 border border-white/10 cursor-not-allowed",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "w-2 h-2 rounded-full shrink-0",
+                      line.agentsOnline > 0 ? "bg-[#4cc47a]" : "bg-white/40",
+                    )}
+                    style={
+                      line.agentsOnline > 0
+                        ? { boxShadow: "0 0 0 3px rgba(76,196,122,.3)" }
+                        : undefined
+                    }
+                  />
+                  <span className="flex-1 min-w-0">
+                    <span className="block truncate">
+                      {line.label}
+                      {line.isDefault && (
+                        <span className="ml-2 text-[10px] uppercase tracking-[0.08em] text-white/60 font-normal">
+                          défaut
+                        </span>
+                      )}
+                    </span>
+                    {line.description && (
+                      <span className="block text-[12px] text-white/60 font-normal truncate">
+                        {line.description}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-[11px] font-mono text-white/70 shrink-0">
+                    {line.agentsOnline}/{line.totalAgents}
+                  </span>
+                  <Phone
+                    className={cn(
+                      "w-4 h-4 shrink-0",
+                      canCall ? "text-white" : "text-white/40",
+                    )}
+                    strokeWidth={2}
+                  />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      {!hasLines && lines !== undefined && (
+        <p className="relative z-10 mt-3 text-[12px] text-white/60 leading-[1.5]">
+          Cette représentation n'a pas encore configuré de lignes d'appel
+          publiques.
+        </p>
+      )}
       <div className="relative z-10 mt-3.5 pt-3.5 border-t border-white/15 text-[11px] text-white/60 leading-[1.45] flex items-start gap-2">
         <Shield
           className="w-3.5 h-3.5 mt-0.5 shrink-0 text-white/60"
