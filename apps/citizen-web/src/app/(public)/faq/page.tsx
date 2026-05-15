@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { JsonLd } from "@/components/seo/JsonLd"
-import { faqPageSchema } from "@/lib/json-ld"
+import { breadcrumbSchema, faqPageSchema } from "@/lib/json-ld"
 import { buildMetadata } from "@/lib/seo"
 import { faqItems } from "./faq-items"
 import FAQPageClient from "./faq-page-client"
@@ -16,6 +16,12 @@ export default function FAQPage() {
   return (
     <>
       <JsonLd data={faqPageSchema(faqItems)} />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Accueil", path: "/" },
+          { name: "Foire aux questions", path: "/faq" },
+        ])}
+      />
       <FAQPageClient />
     </>
   )

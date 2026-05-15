@@ -25,10 +25,10 @@ export default function FAQPage() {
             <Accordion type="single" collapsible className="w-full stagger-children">
               {faqItems.map((item, index) => (
                 <AccordionItem key={index} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left font-medium text-lg">
+                  <AccordionTrigger className="faq-question text-left font-medium text-lg">
                     {item.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground leading-relaxed">
+                  <AccordionContent className="faq-answer text-muted-foreground leading-relaxed">
                     {item.answer}
                   </AccordionContent>
                 </AccordionItem>

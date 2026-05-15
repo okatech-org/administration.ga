@@ -10,6 +10,7 @@ type Route = {
   changeFrequency?: MetadataRoute.Sitemap[number]["changeFrequency"]
   priority?: number
   lastModified?: Date
+  images?: string[]
 }
 
 const STATIC_ROUTES: Route[] = [
@@ -24,6 +25,9 @@ const STATIC_ROUTES: Route[] = [
   { path: "/faq", changeFrequency: "monthly", priority: 0.7 },
   { path: "/tarifs", changeFrequency: "monthly", priority: 0.7 },
   { path: "/formulaires", changeFrequency: "monthly", priority: 0.6 },
+  { path: "/mentions-legales", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/confidentialite", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/accessibilite", changeFrequency: "yearly", priority: 0.3 },
 ]
 
 function toUrl(route: Route): MetadataRoute.Sitemap[number] {
@@ -32,13 +36,15 @@ function toUrl(route: Route): MetadataRoute.Sitemap[number] {
     lastModified: route.lastModified ?? new Date(),
     changeFrequency: route.changeFrequency,
     priority: route.priority,
+    ...(route.images?.length ? { images: route.images } : {}),
   }
 }
 
 type Entry = { slug: string; updatedAt: number }
+type PostEntry = Entry & { coverImageUrl?: string | null }
 type SitemapEntries = {
   services: Entry[]
-  posts: Entry[]
+  posts: PostEntry[]
   orgs: Entry[]
   tutorials: Entry[]
 }
@@ -64,11 +70,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
       lastModified: new Date(s.updatedAt),
     })),
-    ...entries.posts.map((p: Entry) => ({
+    ...entries.posts.map((p: PostEntry) => ({
       path: `/news/${p.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.6,
       lastModified: new Date(p.updatedAt),
+      ...(p.coverImageUrl ? { images: [p.coverImageUrl] } : {}),
     })),
     ...entries.orgs.map((o: Entry) => ({
       path: `/reps/${o.slug}`,

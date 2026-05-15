@@ -132,7 +132,7 @@ export function StepsSection({
   return (
     <PCard id="etapes" label={t("services.toc.steps", "Étapes de la procédure")}>
       <h2 className="text-[22px] font-semibold tracking-[-0.015em] text-[var(--pub-text)]">
-        {t("services.detail.stepsTitle", "Étapes de la procédure")}
+        {t("services.detail.stepsTitle", "Comment effectuer la démarche ?")}
       </h2>
       {intro && (
         <p className="mt-2 max-w-[70ch] text-[15px] leading-[1.55] text-[var(--pub-text-muted)]">
@@ -224,7 +224,7 @@ export function DocumentsSection({
   return (
     <PCard id="pieces" label={t("services.toc.docs", "Pièces à fournir")}>
       <h2 className="text-[22px] font-semibold tracking-[-0.015em] text-[var(--pub-text)]">
-        {t("services.detail.docsTitle", "Pièces à fournir")}
+        {t("services.detail.docsTitle", "Quelles pièces justificatives fournir ?")}
       </h2>
       <p className="mt-2 max-w-[70ch] text-[15px] leading-[1.55] text-[var(--pub-text-muted)]">
         {t(
@@ -348,7 +348,7 @@ export function PricingSection({
   return (
     <PCard id="tarifs" label={t("services.toc.pricing", "Tarifs & délais")}>
       <h2 className="text-[22px] font-semibold tracking-[-0.015em] text-[var(--pub-text)]">
-        {t("services.detail.pricingTitle", "Tarifs & délais")}
+        {t("services.detail.pricingTitle", "Combien ça coûte et quel est le délai ?")}
       </h2>
       {legalReference && (
         <p className="mt-2 max-w-[70ch] text-[15px] leading-[1.55] text-[var(--pub-text-muted)]">

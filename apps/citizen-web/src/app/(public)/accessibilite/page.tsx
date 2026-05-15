@@ -6,7 +6,6 @@ export const metadata: Metadata = buildMetadata({
   description:
     "Déclaration d'accessibilité du site Consulat.ga — conformité WCAG 2.1 / RGAA 4.1, fonctionnalités d'assistance et contact dédié.",
   path: "/accessibilite",
-  noindex: true,
 })
 
 export default function AccessibilityPage() {

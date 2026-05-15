@@ -11,6 +11,18 @@ type PageProps = {
   params: Promise<{ slug: string }>
 }
 
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  try {
+    const entries = await fetchQuery(api.functions.seo.getSitemapEntries, {})
+    return entries.posts.slice(0, 100).map((p) => ({ slug: p.slug }))
+  } catch (error) {
+    console.error("[news/[slug]] generateStaticParams failed", error)
+    return []
+  }
+}
+
 function pickFr(value: unknown): string {
   if (typeof value === "string") return value
   if (value && typeof value === "object" && "fr" in value) {
@@ -73,6 +85,11 @@ export default async function PostDetailPage({ params }: PageProps) {
           image: post.coverImageUrl ?? undefined,
           publishedAt: post.publishedAt,
           updatedAt: post._creationTime,
+          articleSection: (post as { category?: string }).category,
+          keywords: (post as { tags?: string[] }).tags,
+          authorName:
+            (post as { authorName?: string }).authorName ?? undefined,
+          speakable: true,
         })}
       />
       <JsonLd

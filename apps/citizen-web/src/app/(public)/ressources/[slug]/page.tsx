@@ -2,12 +2,24 @@ import { fetchQuery } from "convex/nextjs"
 import type { Metadata } from "next"
 import { api } from "@convex/_generated/api"
 import { JsonLd } from "@/components/seo/JsonLd"
-import { breadcrumbSchema } from "@/lib/json-ld"
+import { articleSchema, breadcrumbSchema } from "@/lib/json-ld"
 import { buildMetadata } from "@/lib/seo"
 import { TutorialDetailClient } from "./tutorial-detail-client"
 
 type PageProps = {
   params: Promise<{ slug: string }>
+}
+
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  try {
+    const entries = await fetchQuery(api.functions.seo.getSitemapEntries, {})
+    return entries.tutorials.slice(0, 100).map((t) => ({ slug: t.slug }))
+  } catch (error) {
+    console.error("[ressources/[slug]] generateStaticParams failed", error)
+    return []
+  }
 }
 
 function pickFr(value: unknown): string {
@@ -53,21 +65,43 @@ export default async function TutorialDetailPage({ params }: PageProps) {
     slug,
   })
 
+  const title = tutorial?.titleI18n
+    ? pickFr(tutorial.titleI18n)
+    : tutorial?.title ?? ""
+  const description = tutorial?.excerptI18n
+    ? pickFr(tutorial.excerptI18n)
+    : tutorial?.excerpt ?? ""
+
   return (
     <>
       {tutorial && (
-        <JsonLd
-          data={breadcrumbSchema([
-            { name: "Accueil", path: "/" },
-            { name: "Ressources", path: "/ressources" },
-            {
-              name: tutorial.titleI18n
-                ? pickFr(tutorial.titleI18n)
-                : tutorial.title,
-              path: `/ressources/${slug}`,
-            },
-          ])}
-        />
+        <>
+          <JsonLd
+            data={articleSchema({
+              title,
+              description,
+              slug,
+              basePath: "/ressources",
+              image: tutorial.coverImageUrl ?? undefined,
+              publishedAt: tutorial.publishedAt,
+              updatedAt:
+                (tutorial as { updatedAt?: number }).updatedAt ??
+                tutorial._creationTime,
+              articleSection:
+                (tutorial as { category?: string }).category,
+              keywords: (tutorial as { tags?: string[] }).tags,
+              techArticle: true,
+              speakable: true,
+            })}
+          />
+          <JsonLd
+            data={breadcrumbSchema([
+              { name: "Accueil", path: "/" },
+              { name: "Ressources", path: "/ressources" },
+              { name: title, path: `/ressources/${slug}` },
+            ])}
+          />
+        </>
       )}
       <TutorialDetailClient />
     </>

@@ -6,7 +6,6 @@ export const metadata: Metadata = buildMetadata({
   description:
     "Mentions légales du site Consulat.ga — éditeur, hébergeur, propriété intellectuelle et coordonnées du Ministère des Affaires Étrangères de la République Gabonaise.",
   path: "/mentions-legales",
-  noindex: true,
 })
 
 export default function LegalPage() {

@@ -16,12 +16,32 @@ export function organizationSchema() {
     "@type": "GovernmentOrganization",
     "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
-    alternateName: "Consulat République Gabonaise",
+    alternateName: [
+      "Consulat République Gabonaise",
+      "Ministère des Affaires Étrangères du Gabon",
+      "MAE Gabon",
+    ],
     url: SITE_URL,
     logo: `${SITE_URL}/icons/apple-icon-180x180.png`,
     description:
-      "Plateforme officielle des services consulaires de la République Gabonaise.",
-    sameAs: [],
+      "Plateforme officielle des services consulaires de la République Gabonaise. Demandes en ligne de passeport, visa, état civil, inscription consulaire et légalisation pour la diaspora gabonaise.",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Boulevard Triomphal Omar Bongo",
+      addressLocality: "Libreville",
+      addressCountry: "GA",
+    },
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        areaServed: "Worldwide",
+        availableLanguage: ["French", "English"],
+      },
+    ],
+    areaServed: { "@type": "Country", name: "Gabon" },
+    // Comptes officiels MAE Gabon — à valider/compléter avec le client
+    sameAs: ["https://www.diplomatie.gouv.ga"],
   }
 }
 
@@ -32,7 +52,7 @@ export function websiteSchema() {
     "@id": `${SITE_URL}/#website`,
     name: SITE_NAME,
     url: SITE_URL,
-    inLanguage: ["fr-FR", "en-US"],
+    inLanguage: "fr-FR",
     publisher: { "@id": `${SITE_URL}/#organization` },
     potentialAction: {
       "@type": "SearchAction",
@@ -64,21 +84,33 @@ type ArticleInput = {
   title: string
   description: string
   slug: string
+  basePath?: string // default "/news"
   image?: string
   publishedAt?: string | number | Date
   updatedAt?: string | number | Date
   authorName?: string
+  articleSection?: string
+  keywords?: string[] | string
+  wordCount?: number
+  inLanguage?: string
+  speakable?: boolean
+  techArticle?: boolean
 }
 
 export function articleSchema(input: ArticleInput) {
-  const url = `${SITE_URL}/news/${input.slug}`
+  const basePath = input.basePath ?? "/news"
+  const url = `${SITE_URL}${basePath}/${input.slug}`
+  const keywordsStr = Array.isArray(input.keywords)
+    ? input.keywords.join(", ")
+    : input.keywords
   return {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": input.techArticle ? ["Article", "TechArticle"] : "Article",
     headline: input.title,
     description: input.description,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     url,
+    inLanguage: input.inLanguage ?? "fr-FR",
     ...(input.image ? { image: [input.image] } : {}),
     ...(input.publishedAt
       ? { datePublished: new Date(input.publishedAt).toISOString() }
@@ -86,10 +118,21 @@ export function articleSchema(input: ArticleInput) {
     ...(input.updatedAt
       ? { dateModified: new Date(input.updatedAt).toISOString() }
       : {}),
+    ...(input.articleSection ? { articleSection: input.articleSection } : {}),
+    ...(keywordsStr ? { keywords: keywordsStr } : {}),
+    ...(input.wordCount ? { wordCount: input.wordCount } : {}),
     author: input.authorName
       ? { "@type": "Person", name: input.authorName }
       : PUBLISHER,
     publisher: PUBLISHER,
+    ...(input.speakable
+      ? {
+          speakable: {
+            "@type": "SpeakableSpecification",
+            cssSelector: [".article-headline", ".article-summary"],
+          },
+        }
+      : {}),
   }
 }
 
@@ -100,19 +143,32 @@ type ServiceInput = {
   price?: number
   currency?: string
   category?: string
+  serviceType?: string
 }
 
 export function serviceSchema(input: ServiceInput) {
   const url = `${SITE_URL}/services/${input.slug}`
   return {
     "@context": "https://schema.org",
-    "@type": "Service",
+    "@type": "GovernmentService",
     name: input.name,
     description: input.description,
     url,
     provider: { "@id": `${SITE_URL}/#organization` },
+    serviceOperator: { "@id": `${SITE_URL}/#organization` },
     areaServed: { "@type": "Country", name: "Gabon" },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Gabonese citizens and residents abroad",
+    },
+    availableChannel: {
+      "@type": "ServiceChannel",
+      serviceUrl: url,
+      availableLanguage: ["fr-FR", "en-US"],
+    },
+    inLanguage: "fr-FR",
     ...(input.category ? { category: input.category } : {}),
+    ...(input.serviceType ? { serviceType: input.serviceType } : {}),
     ...(input.price !== undefined
       ? {
           offers: {
@@ -185,6 +241,7 @@ export function faqPageSchema(items: FaqItem[]) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    inLanguage: "fr-FR",
     mainEntity: items.map((item) => ({
       "@type": "Question",
       name: item.question,
@@ -193,5 +250,111 @@ export function faqPageSchema(items: FaqItem[]) {
         text: item.answer,
       },
     })),
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: [".faq-question", ".faq-answer"],
+    },
+  }
+}
+
+type HowToStep = {
+  name: string
+  text: string
+  url?: string
+  image?: string
+}
+
+type HowToInput = {
+  name: string
+  description: string
+  path: string
+  steps: HowToStep[]
+  totalTime?: string // ISO 8601 duration (ex "P15D", "PT2H")
+  estimatedCost?: { currency: string; value: number }
+  image?: string
+  supply?: string[]
+  tool?: string[]
+}
+
+export function howToSchema(input: HowToInput) {
+  const url = `${SITE_URL}${input.path.startsWith("/") ? input.path : `/${input.path}`}`
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: input.name,
+    description: input.description,
+    url,
+    inLanguage: "fr-FR",
+    ...(input.image ? { image: input.image } : {}),
+    ...(input.totalTime ? { totalTime: input.totalTime } : {}),
+    ...(input.estimatedCost
+      ? {
+          estimatedCost: {
+            "@type": "MonetaryAmount",
+            currency: input.estimatedCost.currency,
+            value: input.estimatedCost.value,
+          },
+        }
+      : {}),
+    ...(input.supply?.length
+      ? {
+          supply: input.supply.map((s) => ({ "@type": "HowToSupply", name: s })),
+        }
+      : {}),
+    ...(input.tool?.length
+      ? {
+          tool: input.tool.map((t) => ({ "@type": "HowToTool", name: t })),
+        }
+      : {}),
+    step: input.steps.map((s, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      name: s.name,
+      text: s.text,
+      ...(s.url ? { url: s.url } : {}),
+      ...(s.image ? { image: s.image } : {}),
+    })),
+    publisher: PUBLISHER,
+  }
+}
+
+type CollectionItem = {
+  name: string
+  url: string
+  description?: string
+}
+
+type CollectionPageInput = {
+  name: string
+  description: string
+  path: string
+  items: CollectionItem[]
+  itemListType?: string
+}
+
+export function collectionPageSchema(input: CollectionPageInput) {
+  const url = `${SITE_URL}${input.path.startsWith("/") ? input.path : `/${input.path}`}`
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": url,
+    name: input.name,
+    description: input.description,
+    url,
+    inLanguage: "fr-FR",
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    mainEntity: {
+      "@type": "ItemList",
+      ...(input.itemListType ? { itemListOrder: input.itemListType } : {}),
+      numberOfItems: input.items.length,
+      itemListElement: input.items.slice(0, 30).map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name,
+        url: item.url.startsWith("http") ? item.url : `${SITE_URL}${item.url}`,
+        ...(item.description ? { description: item.description } : {}),
+      })),
+    },
   }
 }

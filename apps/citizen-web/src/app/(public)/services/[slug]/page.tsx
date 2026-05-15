@@ -15,6 +15,18 @@ type PageProps = {
   params: Promise<{ slug: string }>
 }
 
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  try {
+    const entries = await fetchQuery(api.functions.seo.getSitemapEntries, {})
+    return entries.services.slice(0, 100).map((s) => ({ slug: s.slug }))
+  } catch (error) {
+    console.error("[services/[slug]] generateStaticParams failed", error)
+    return []
+  }
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -56,6 +68,9 @@ export default async function ServiceDetailPage({ params }: PageProps) {
           description,
           slug,
           category: service.category as string | undefined,
+          serviceType: (service as { serviceType?: string }).serviceType,
+          price: (service as { price?: number }).price,
+          currency: (service as { currency?: string }).currency,
         })}
       />
       <JsonLd
