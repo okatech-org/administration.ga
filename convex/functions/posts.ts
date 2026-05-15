@@ -137,6 +137,68 @@ export const getBySlug = query({
   },
 });
 
+/**
+ * Related posts for the « Suite a lire » section on the article detail page.
+ *
+ * Scoring (greedy):
+ *  - +3 si meme `subCategory`
+ *  - +2 si meme `region`
+ *  - +1 par tag commun
+ *  - fallback : meme `category`, ordres par publishedAt desc
+ */
+export const getRelated = query({
+  args: {
+    slug: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 3;
+
+    const current = await ctx.db
+      .query("posts")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+    if (!current) return [];
+
+    const published = await ctx.db
+      .query("posts")
+      .withIndex("by_published", (q) =>
+        q.eq("status", PostStatus.Published),
+      )
+      .order("desc")
+      .take(60);
+
+    const candidates = published.filter((p) => p._id !== current._id);
+
+    const currentTags = new Set(current.tags ?? []);
+    const scored = candidates.map((p) => {
+      let score = 0;
+      if (current.subCategory && p.subCategory === current.subCategory)
+        score += 3;
+      if (current.region && p.region === current.region) score += 2;
+      for (const t of p.tags ?? []) if (currentTags.has(t)) score += 1;
+      if (p.category === current.category) score += 0.5;
+      return { post: p, score };
+    });
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (b.post.publishedAt ?? 0) - (a.post.publishedAt ?? 0);
+    });
+
+    const top = scored.slice(0, limit).map((s) => s.post);
+
+    return Promise.all(
+      top.map(async (p) => ({
+        ...p,
+        coverImageUrl: p.coverImageStorageId
+          ? await ctx.storage.getUrl(p.coverImageStorageId)
+          : null,
+      })),
+    );
+  },
+});
+
 // ============================================================================
 // SUPERADMIN QUERIES
 // ============================================================================

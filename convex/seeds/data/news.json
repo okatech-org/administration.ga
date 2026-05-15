@@ -1,6 +1,46 @@
 [
   {
     "title": {
+      "fr": "Le Gabon ouvre son nouveau Consulat général à Houston, Texas",
+      "en": "Gabon opens its new Consulate-General in Houston, Texas"
+    },
+    "slug": "ouverture-consulat-houston-mai-2026",
+    "excerpt": {
+      "fr": "Inauguré le 11 mai 2026, le Consulat général à Houston couvre désormais 7 États du Sud des États-Unis et 4 200 ressortissants gabonais recensés dans la zone.",
+      "en": "Inaugurated on 11 May 2026, the Consulate-General in Houston now covers seven southern US states and 4,200 registered Gabonese nationals in the area."
+    },
+    "lede": {
+      "fr": "Avec l'ouverture du Consulat général à Houston, le Gabon densifie sa présence diplomatique sur le continent américain — première étape concrète du plan « Réseau 2030 » porté par le MAEAI.",
+      "en": "With the opening of the Consulate-General in Houston, Gabon densifies its diplomatic footprint in the Americas — the first concrete milestone of the MAEAI-led « Réseau 2030 » plan."
+    },
+    "content": {
+      "fr": "<p class=\"lead\">Inauguré le 11 mai 2026 par le Ministre des Affaires étrangères, le Consulat général à Houston marque l'aboutissement de dix-huit mois de préparation diplomatique, juridique et logistique. Ce nouveau poste devient le quatrième consulat gabonais sur le continent américain, après ceux de Washington, New York et Montréal.</p><h2 id=\"contexte\">Un ancrage économique stratégique</h2><p>Le choix de Houston répond à une double logique : la présence d'une diaspora gabonaise estimée à 4 200 personnes dans les 7 États couverts (Texas, Oklahoma, Louisiane, Arkansas, Tennessee, Mississippi, Alabama), et l'importance économique de la zone — premier hub énergétique des États-Unis et porte d'entrée vers le marché latino-américain.</p><h2 id=\"services\">Services consulaires disponibles dès l'ouverture</h2><p>Le poste offre dès son ouverture l'ensemble des services consulaires standards : passeport biométrique, état civil, légalisations, assistance aux ressortissants, visas. La prise de rendez-vous est ouverte sur Consulat.ga.</p><div data-variant=\"info\" class=\"callout\"><h4>Réaffectation de juridiction</h4><p>Les ressortissants des 7 États du Sud sont automatiquement rattachés à Houston depuis le 12 mai 2026.</p></div><h2 id=\"economie\">Un guichet économique intégré</h2><p>Au-delà des fonctions consulaires classiques, le poste héberge une antenne du Conseil Présidentiel d'Investissement, dont la vocation est d'accompagner les opérateurs économiques texans intéressés par les opportunités d'investissement au Gabon.</p><h2 id=\"suite\">Et après ?</h2><p>Le plan « Réseau 2030 » prévoit l'ouverture de trois autres postes consulaires d'ici la fin du quinquennat : Atlanta (2027), Vancouver (2028) et Mexico (2029).</p>",
+      "en": "<p class=\"lead\">Inaugurated on 11 May 2026 by the Minister of Foreign Affairs, the Consulate-General in Houston marks the culmination of eighteen months of diplomatic, legal and logistical preparation. The post becomes Gabon's fourth consulate in the Americas, after Washington, New York and Montreal.</p><h2 id=\"context\">A strategic economic anchor</h2><p>Houston was chosen for two reasons: a Gabonese diaspora estimated at 4,200 people in the 7 covered states (Texas, Oklahoma, Louisiana, Arkansas, Tennessee, Mississippi, Alabama), and the economic weight of the area — the leading energy hub of the United States and a gateway to the Latin American market.</p><h2 id=\"services\">Consular services available from day one</h2><p>The post offers from opening the full range of standard consular services: biometric passport, civil status, legalisations, citizen assistance, visas. Appointments can be booked on Consulat.ga.</p><div data-variant=\"info\" class=\"callout\"><h4>Jurisdiction reassignment</h4><p>Nationals from the 7 southern states are automatically attached to Houston as of 12 May 2026.</p></div><h2 id=\"economy\">An integrated economic counter</h2><p>Beyond classic consular functions, the post hosts an outpost of the Presidential Investment Council, tasked with supporting Texan operators interested in investing in Gabon.</p><h2 id=\"next\">What's next?</h2><p>The « Réseau 2030 » plan provides for three additional consular posts by the end of the term: Atlanta (2027), Vancouver (2028) and Mexico City (2029).</p>"
+    },
+    "category": "news",
+    "subCategory": { "fr": "Diplomatie", "en": "Diplomacy" },
+    "region": "AMERIQUES",
+    "location": "Houston, Texas",
+    "tags": ["diplomatie", "houston", "etats-unis", "reseau-2030", "economie"],
+    "heroImageCaption": {
+      "fr": "Le Ministre des Affaires étrangères, accompagné de la délégation diplomatique gabonaise, lors de la cérémonie d'inauguration du Consulat général de Houston, le 11 mai 2026.",
+      "en": "The Minister of Foreign Affairs and the Gabonese diplomatic delegation at the inauguration of the Consulate-General in Houston on 11 May 2026."
+    },
+    "heroImageCredit": "© MAEAI / Reuters",
+    "readingMinutes": 4,
+    "referenceNumber": "N° 2026-118",
+    "authorName": "Direction de la Communication",
+    "authorRole": "MAEAI · Bureau de presse",
+    "publishedAt": 1747353600000,
+    "createdAt": 1747353600000,
+    "sources": [
+      "https://www.maeai.ga/reseau-2030-feuille-de-route",
+      "https://www.union.sonapresse.com/fr/diplomatie-houston-inauguration"
+    ],
+    "status": "published"
+  },
+  {
+    "title": {
       "fr": "Brice Clotaire Oligui Nguema investi président de la République le 3 mai 2025",
       "en": "Brice Clotaire Oligui Nguema sworn in as President on 3 May 2025"
     },

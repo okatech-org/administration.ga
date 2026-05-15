@@ -59,7 +59,9 @@ export const list = query({
 });
 
 /**
- * Get a single tutorial by slug (public)
+ * Get a single tutorial by slug (public).
+ * Resolves cover image, author, and related service (for the « Commencer
+ * la demarche » CTA on guide detail pages).
  */
 export const getBySlug = query({
   args: { slug: v.string() },
@@ -81,11 +83,88 @@ export const getBySlug = query({
     // Get author info
     const author = await ctx.db.get(tutorial.authorId);
 
+    // Related service for guide CTA
+    let relatedService:
+      | { _id: string; slug: string; name: unknown; category?: string }
+      | null = null;
+    if (tutorial.relatedServiceId) {
+      const svc = await ctx.db.get(tutorial.relatedServiceId);
+      if (svc) {
+        relatedService = {
+          _id: svc._id,
+          slug: svc.slug,
+          name: svc.name,
+          category: svc.category,
+        };
+      }
+    }
+
     return {
       ...tutorial,
       coverImageUrl,
       authorName: author?.name ?? "Inconnu",
+      relatedService,
     };
+  },
+});
+
+/**
+ * Related tutorials for the « Guides complementaires » section.
+ *
+ * Strategy:
+ *  - same `category` first
+ *  - then same `countryCode` (or WORLD)
+ *  - fallback : latest published
+ */
+export const getRelated = query({
+  args: {
+    slug: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 3;
+    const current = await ctx.db
+      .query("tutorials")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!current) return [];
+
+    const published = await ctx.db
+      .query("tutorials")
+      .withIndex("by_published", (q) =>
+        q.eq("status", PostStatus.Published),
+      )
+      .order("desc")
+      .take(60);
+
+    const candidates = published.filter((t) => t._id !== current._id);
+
+    const scored = candidates.map((t) => {
+      let score = 0;
+      if (t.category === current.category) score += 3;
+      if (t.countryCode && current.countryCode) {
+        if (t.countryCode === current.countryCode) score += 2;
+        else if (t.countryCode === "WORLD") score += 1;
+      }
+      if (t.featured) score += 0.5;
+      return { tutorial: t, score };
+    });
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (b.tutorial.publishedAt ?? 0) - (a.tutorial.publishedAt ?? 0);
+    });
+
+    const top = scored.slice(0, limit).map((s) => s.tutorial);
+
+    return Promise.all(
+      top.map(async (t) => ({
+        ...t,
+        coverImageUrl: t.coverImageStorageId
+          ? await ctx.storage.getUrl(t.coverImageStorageId)
+          : null,
+      })),
+    );
   },
 });
 

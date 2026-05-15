@@ -10,6 +10,14 @@ type PageProps = {
   params: Promise<{ slug: string }>
 }
 
+function pickFr(value: unknown): string {
+  if (typeof value === "string") return value
+  if (value && typeof value === "object" && "fr" in value) {
+    return String((value as { fr: string }).fr ?? "")
+  }
+  return ""
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -22,9 +30,14 @@ export async function generateMetadata({
     return { title: "Ressource introuvable", robots: { index: false } }
   }
 
+  const title = tutorial.titleI18n ? pickFr(tutorial.titleI18n) : tutorial.title
+  const description = tutorial.excerptI18n
+    ? pickFr(tutorial.excerptI18n)
+    : tutorial.excerpt
+
   return buildMetadata({
-    title: tutorial.title,
-    description: tutorial.excerpt ?? tutorial.title,
+    title,
+    description,
     path: `/ressources/${slug}`,
     type: "article",
     image: tutorial.coverImageUrl ?? undefined,
@@ -47,7 +60,12 @@ export default async function TutorialDetailPage({ params }: PageProps) {
           data={breadcrumbSchema([
             { name: "Accueil", path: "/" },
             { name: "Ressources", path: "/ressources" },
-            { name: tutorial.title, path: `/ressources/${slug}` },
+            {
+              name: tutorial.titleI18n
+                ? pickFr(tutorial.titleI18n)
+                : tutorial.title,
+              path: `/ressources/${slug}`,
+            },
           ])}
         />
       )}

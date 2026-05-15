@@ -56,6 +56,19 @@ const pickFr = (x: unknown): string => {
   return "";
 };
 
+/**
+ * Extrait la variante I18n {fr, en} a partir d'un champ JSON qui peut etre :
+ *  - string monolingue → undefined (rien a stocker)
+ *  - { fr, en } → renvoye tel quel (avec fr garanti, en optionnel)
+ * Utilise pour les champs jumeaux `titleI18n`, `excerptI18n`, etc.
+ */
+const pickI18n = (x: unknown): Record<string, string> | undefined => {
+  if (!isLocalized(x)) return undefined;
+  const out: Record<string, string> = { fr: x.fr };
+  if (x.en) out.en = x.en;
+  return out;
+};
+
 /** Mapping des `joinedDocuments.type` inventés par l'agent vers l'enum officiel. */
 const DOC_TYPE_MAP: Record<string, string> = {
   accommodation: "hosting_certificate",
@@ -207,6 +220,9 @@ export const run = mutation({
     }
 
     // ── 2. NEWS / POSTS ───────────────────────────────────────────────
+    type RawArticleSource =
+      | string
+      | { label?: string; url: string };
     type RawPost = {
       title: unknown;
       slug: string;
@@ -219,6 +235,19 @@ export const run = mutation({
       eventEndAt?: number;
       eventLocation?: unknown;
       eventTicketUrl?: string;
+      // Champs editoriaux etendus (maquette Article.html)
+      lede?: unknown;
+      heroImageCaption?: unknown;
+      heroImageCredit?: string;
+      readingMinutes?: number;
+      location?: string;
+      subCategory?: unknown;
+      region?: string;
+      tags?: string[];
+      sources?: RawArticleSource[];
+      referenceNumber?: string;
+      authorName?: string;
+      authorRole?: string;
     };
     for (const raw of newsData as RawPost[]) {
       const existing = await ctx.db
@@ -229,11 +258,21 @@ export const run = mutation({
         report.news.skipped++;
         continue;
       }
+      const normalizedSources = raw.sources
+        ? raw.sources.map((s) =>
+            typeof s === "string"
+              ? { label: new URL(s).hostname.replace(/^www\./, ""), url: s }
+              : { label: s.label ?? s.url, url: s.url },
+          )
+        : undefined;
       await ctx.db.insert("posts", {
         title: pickFr(raw.title),
+        titleI18n: pickI18n(raw.title),
         slug: raw.slug,
         excerpt: pickFr(raw.excerpt),
+        excerptI18n: pickI18n(raw.excerpt),
         content: pickFr(raw.content),
+        contentI18n: pickI18n(raw.content),
         category: raw.category as PostCategory,
         status: PostStatus.Published,
         publishedAt: raw.publishedAt ?? now,
@@ -245,19 +284,73 @@ export const run = mutation({
         eventEndAt: raw.eventEndAt,
         eventLocation: raw.eventLocation ? pickFr(raw.eventLocation) : undefined,
         eventTicketUrl: raw.eventTicketUrl,
+        // Editorial extensions
+        lede: raw.lede ? pickFr(raw.lede) : undefined,
+        ledeI18n: pickI18n(raw.lede),
+        heroImageCaption: raw.heroImageCaption
+          ? pickFr(raw.heroImageCaption)
+          : undefined,
+        heroImageCaptionI18n: pickI18n(raw.heroImageCaption),
+        heroImageCredit: raw.heroImageCredit,
+        readingMinutes: raw.readingMinutes,
+        location: raw.location,
+        subCategory: raw.subCategory ? pickFr(raw.subCategory) : undefined,
+        subCategoryI18n: pickI18n(raw.subCategory),
+        region: raw.region,
+        tags: raw.tags,
+        sources: normalizedSources,
+        referenceNumber: raw.referenceNumber,
+        authorName: raw.authorName,
+        authorRole: raw.authorRole,
       });
       report.news.inserted++;
     }
 
     // ── 3. TUTORIALS ──────────────────────────────────────────────────
+    type RawLocalizedOrString = unknown;
+    type RawPrerequisite = {
+      title: RawLocalizedOrString;
+      description?: RawLocalizedOrString;
+      requirement: "required" | "optional" | "ifAvailable";
+    };
+    type RawStep = {
+      number: number;
+      title: RawLocalizedOrString;
+      durationLabel?: RawLocalizedOrString;
+      locationLabel?: RawLocalizedOrString;
+      body?: RawLocalizedOrString;
+    };
+    type RawFee = {
+      label: RawLocalizedOrString;
+      description?: RawLocalizedOrString;
+      delay?: RawLocalizedOrString;
+      amount: string;
+      badge?: string;
+    };
+    type RawDelay = {
+      region: string;
+      label: RawLocalizedOrString;
+      description: RawLocalizedOrString;
+      speed: "fast" | "standard" | "long";
+    };
+    type RawFaqItem = {
+      question: RawLocalizedOrString;
+      answer: RawLocalizedOrString;
+    };
+    type RawProcedureSummary = {
+      steps?: RawLocalizedOrString;
+      delay?: RawLocalizedOrString;
+      fees?: RawLocalizedOrString;
+      location?: RawLocalizedOrString;
+    };
     type RawTutorial = {
-      title: unknown;
+      title: RawLocalizedOrString;
       slug: string;
-      excerpt: unknown;
-      content: unknown;
+      excerpt: RawLocalizedOrString;
+      content: RawLocalizedOrString;
       category: string;
       type: string;
-      duration?: string;
+      duration?: RawLocalizedOrString;
       readingMinutes?: number;
       stepCount?: number;
       badges?: string[];
@@ -266,7 +359,105 @@ export const run = mutation({
       videoUrl?: string;
       publishedAt?: number;
       createdAt?: number;
+      // Champs etendus (maquette Guide.html)
+      lede?: RawLocalizedOrString;
+      procedureSummary?: RawProcedureSummary;
+      prerequisites?: RawPrerequisite[];
+      steps?: RawStep[];
+      fees?: RawFee[];
+      delays?: RawDelay[];
+      faqItems?: RawFaqItem[];
+      relatedServiceSlug?: string;
+      sources?: Array<string | { label?: string; url: string }>;
+      availableLocales?: string[];
     };
+
+    const mapLocalizedString = (x: RawLocalizedOrString) => ({
+      v: pickFr(x),
+      i18n: pickI18n(x),
+    });
+    const mapPrerequisite = (p: RawPrerequisite) => {
+      const t = mapLocalizedString(p.title);
+      const d = mapLocalizedString(p.description);
+      return {
+        title: t.v,
+        titleI18n: t.i18n,
+        description: p.description ? d.v : undefined,
+        descriptionI18n: d.i18n,
+        requirement: p.requirement,
+      };
+    };
+    const mapStep = (s: RawStep) => {
+      const t = mapLocalizedString(s.title);
+      const dur = mapLocalizedString(s.durationLabel);
+      const loc = mapLocalizedString(s.locationLabel);
+      const body = mapLocalizedString(s.body);
+      return {
+        number: s.number,
+        title: t.v,
+        titleI18n: t.i18n,
+        durationLabel: s.durationLabel ? dur.v : undefined,
+        durationLabelI18n: dur.i18n,
+        locationLabel: s.locationLabel ? loc.v : undefined,
+        locationLabelI18n: loc.i18n,
+        body: s.body ? body.v : undefined,
+        bodyI18n: body.i18n,
+      };
+    };
+    const mapFee = (f: RawFee) => {
+      const lab = mapLocalizedString(f.label);
+      const desc = mapLocalizedString(f.description);
+      const del = mapLocalizedString(f.delay);
+      return {
+        label: lab.v,
+        labelI18n: lab.i18n,
+        description: f.description ? desc.v : undefined,
+        descriptionI18n: desc.i18n,
+        delay: f.delay ? del.v : undefined,
+        delayI18n: del.i18n,
+        amount: f.amount,
+        badge: f.badge,
+      };
+    };
+    const mapDelay = (d: RawDelay) => {
+      const lab = mapLocalizedString(d.label);
+      const desc = mapLocalizedString(d.description);
+      return {
+        region: d.region,
+        label: lab.v,
+        labelI18n: lab.i18n,
+        description: desc.v,
+        descriptionI18n: desc.i18n,
+        speed: d.speed,
+      };
+    };
+    const mapFaqItem = (f: RawFaqItem) => {
+      const q = mapLocalizedString(f.question);
+      const a = mapLocalizedString(f.answer);
+      return {
+        question: q.v,
+        questionI18n: q.i18n,
+        answer: a.v,
+        answerI18n: a.i18n,
+      };
+    };
+    const mapProcedureSummary = (s: RawProcedureSummary) => {
+      const steps = mapLocalizedString(s.steps);
+      const delay = mapLocalizedString(s.delay);
+      const fees = mapLocalizedString(s.fees);
+      const location = mapLocalizedString(s.location);
+      return {
+        steps: s.steps ? steps.v : undefined,
+        stepsI18n: steps.i18n,
+        delay: s.delay ? delay.v : undefined,
+        delayI18n: delay.i18n,
+        fees: s.fees ? fees.v : undefined,
+        feesI18n: fees.i18n,
+        location: s.location ? location.v : undefined,
+        locationI18n: location.i18n,
+      };
+    };
+
     for (const raw of tutorialsData as RawTutorial[]) {
       const existing = await ctx.db
         .query("tutorials")
@@ -276,16 +467,44 @@ export const run = mutation({
         report.tutorials.skipped++;
         continue;
       }
+
+      // Resolve related service by slug → id
+      let relatedServiceId: string | undefined;
+      if (raw.relatedServiceSlug) {
+        const svc = await ctx.db
+          .query("services")
+          .withIndex("by_slug", (q) =>
+            q.eq("slug", raw.relatedServiceSlug as string),
+          )
+          .first();
+        if (svc) relatedServiceId = svc._id;
+      }
+
+      const normalizedSources = raw.sources
+        ? raw.sources.map((s) =>
+            typeof s === "string"
+              ? { label: new URL(s).hostname.replace(/^www\./, ""), url: s }
+              : { label: s.label ?? s.url, url: s.url },
+          )
+        : undefined;
+
+      const dur = mapLocalizedString(raw.duration);
+      const lede = mapLocalizedString(raw.lede);
+
       await ctx.db.insert("tutorials", {
         title: pickFr(raw.title),
+        titleI18n: pickI18n(raw.title),
         slug: raw.slug,
         excerpt: pickFr(raw.excerpt),
+        excerptI18n: pickI18n(raw.excerpt),
         content: pickFr(raw.content),
+        contentI18n: pickI18n(raw.content),
         category: raw.category as never,
         type: raw.type as never,
-        duration: raw.duration,
+        duration: raw.duration ? dur.v : undefined,
+        durationI18n: dur.i18n,
         readingMinutes: raw.readingMinutes,
-        stepCount: raw.stepCount,
+        stepCount: raw.stepCount ?? raw.steps?.length,
         badges: raw.badges as never,
         featured: raw.featured,
         countryCode: raw.countryCode,
@@ -295,6 +514,20 @@ export const run = mutation({
         createdAt: raw.createdAt ?? now,
         updatedAt: now,
         authorId: author._id,
+        // Editorial extensions
+        lede: raw.lede ? lede.v : undefined,
+        ledeI18n: lede.i18n,
+        procedureSummary: raw.procedureSummary
+          ? mapProcedureSummary(raw.procedureSummary)
+          : undefined,
+        prerequisites: raw.prerequisites?.map(mapPrerequisite),
+        steps: raw.steps?.map(mapStep),
+        fees: raw.fees?.map(mapFee),
+        delays: raw.delays?.map(mapDelay),
+        faqItems: raw.faqItems?.map(mapFaqItem),
+        relatedServiceId: relatedServiceId as never,
+        sources: normalizedSources,
+        availableLocales: raw.availableLocales,
       });
       report.tutorials.inserted++;
     }

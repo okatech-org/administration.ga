@@ -2,6 +2,236 @@
   {
     "status": "published",
     "type": "guide",
+    "countryCode": "WORLD",
+    "badges": ["essential", "updated"],
+    "featured": true,
+    "title": {
+      "fr": "Renouveler un passeport biométrique",
+      "en": "Renewing a biometric passport"
+    },
+    "slug": "renouveler-passeport-biometrique",
+    "excerpt": {
+      "fr": "Procédure complète en 12 étapes pour renouveler son passeport biométrique gabonais depuis l'étranger — pièces, rendez-vous, délais, frais, retrait.",
+      "en": "Complete 12-step procedure to renew your Gabonese biometric passport from abroad — documents, appointment, delays, fees, collection."
+    },
+    "lede": {
+      "fr": "Le passeport biométrique gabonais est valable 5 ans. Sa procédure de renouvellement, désormais entièrement dématérialisée jusqu'à la prise de rendez-vous, peut être lancée jusqu'à 6 mois avant la date d'expiration.",
+      "en": "The Gabonese biometric passport is valid for 5 years. Its renewal procedure, now fully digital up to the appointment booking, can be launched up to 6 months before the expiry date."
+    },
+    "content": {
+      "fr": "<p>Ce guide détaille les 12 étapes de la procédure de renouvellement, de la préparation du dossier à la remise du nouveau passeport. La prise d'empreintes étant obligatoire, votre présence physique est requise lors du rendez-vous.</p>",
+      "en": "<p>This guide details the 12 steps of the renewal procedure, from file preparation to handover of the new passport. Since fingerprinting is mandatory, your physical presence is required at the appointment.</p>"
+    },
+    "category": "demarches_consulaires",
+    "readingMinutes": 12,
+    "duration": { "fr": "21 jours · 7 j. en express", "en": "21 days · 7 d. express" },
+    "stepCount": 12,
+    "relatedServiceSlug": "passeport-biometrique-renouvellement",
+    "availableLocales": ["fr", "en", "pt", "ar"],
+    "procedureSummary": {
+      "steps": { "fr": "12 étapes", "en": "12 steps" },
+      "delay": { "fr": "21 jours · 7 j. en express", "en": "21 days · 7 d. express" },
+      "fees": { "fr": "60 € · 120 € express", "en": "€60 · €120 express" },
+      "location": { "fr": "Consulat de rattachement", "en": "Your home consulate" }
+    },
+    "prerequisites": [
+      {
+        "title": { "fr": "Ancien passeport biométrique", "en": "Previous biometric passport" },
+        "description": { "fr": "Original, même expiré depuis moins de 5 ans", "en": "Original, even if expired less than 5 years ago" },
+        "requirement": "required"
+      },
+      {
+        "title": { "fr": "Acte de naissance", "en": "Birth certificate" },
+        "description": { "fr": "Copie intégrale, moins de 3 mois", "en": "Full copy, less than 3 months old" },
+        "requirement": "required"
+      },
+      {
+        "title": { "fr": "Justificatif de domicile", "en": "Proof of address" },
+        "description": { "fr": "Facture EDF / loyer / quittance, moins de 3 mois", "en": "Utility bill / rent receipt, less than 3 months old" },
+        "requirement": "required"
+      },
+      {
+        "title": { "fr": "2 photos d'identité ICAO", "en": "2 ICAO-compliant ID photos" },
+        "description": { "fr": "Format 35×45 mm, fond clair, moins de 6 mois", "en": "35×45 mm, light background, less than 6 months old" },
+        "requirement": "required"
+      },
+      {
+        "title": { "fr": "Carte consulaire", "en": "Consular card" },
+        "description": { "fr": "En cours de validité, sinon demande conjointe possible", "en": "Valid, otherwise joint application possible" },
+        "requirement": "ifAvailable"
+      },
+      {
+        "title": { "fr": "Procuration légalisée", "en": "Legalised power of attorney" },
+        "description": { "fr": "Uniquement en cas de retrait par un tiers", "en": "Only if collection by a third party" },
+        "requirement": "optional"
+      }
+    ],
+    "steps": [
+      {
+        "number": 1,
+        "title": { "fr": "Préparer son dossier en ligne", "en": "Prepare your file online" },
+        "durationLabel": { "fr": "≈ 20 min", "en": "≈ 20 min" },
+        "locationLabel": { "fr": "En ligne", "en": "Online" },
+        "body": { "fr": "<p>Connectez-vous à votre espace Consulat.ga et pré-remplissez le formulaire de demande.</p>", "en": "<p>Log into your Consulat.ga account and pre-fill the application form.</p>" }
+      },
+      {
+        "number": 2,
+        "title": { "fr": "Vérifier sa représentation consulaire de rattachement", "en": "Check your home consulate" },
+        "durationLabel": { "fr": "≈ 5 min", "en": "≈ 5 min" },
+        "locationLabel": { "fr": "En ligne", "en": "Online" }
+      },
+      {
+        "number": 3,
+        "title": { "fr": "Numériser les pièces justificatives", "en": "Scan supporting documents" },
+        "durationLabel": { "fr": "≈ 10 min", "en": "≈ 10 min" },
+        "locationLabel": { "fr": "PDF · 5 Mo max / fichier", "en": "PDF · 5 MB max / file" }
+      },
+      {
+        "number": 4,
+        "title": { "fr": "Prendre rendez-vous au consulat", "en": "Book a consulate appointment" },
+        "durationLabel": { "fr": "≈ 5 min", "en": "≈ 5 min" },
+        "locationLabel": { "fr": "En ligne", "en": "Online" },
+        "body": { "fr": "<p>Depuis votre espace Consulat.ga, accédez à la rubrique <a href=\"/services/passeport-biometrique-renouvellement\">Services → Passeport</a> et choisissez un créneau de rendez-vous dans votre consulat de rattachement.</p><div class=\"step-tip\"><b>Astuce.</b> Les créneaux du mardi et jeudi matin sont historiquement les moins demandés.</div><div data-variant=\"warn\" class=\"callout\"><b>Important.</b> Tout rendez-vous non honoré sans annulation préalable (minimum 48 h à l'avance) fait l'objet d'un délai de carence de 30 jours.</div>", "en": "<p>From your Consulat.ga area, navigate to <a href=\"/services/passeport-biometrique-renouvellement\">Services → Passport</a> and pick a slot at your home consulate.</p><div class=\"step-tip\"><b>Tip.</b> Tuesday and Thursday mornings are historically the least busy slots.</div><div data-variant=\"warn\" class=\"callout\"><b>Important.</b> Any no-show without 48h advance cancellation triggers a 30-day waiting period.</div>" }
+      },
+      {
+        "number": 5,
+        "title": { "fr": "Se présenter à la prise de données biométriques", "en": "Attend the biometric data capture" },
+        "durationLabel": { "fr": "≈ 30 min", "en": "≈ 30 min" },
+        "locationLabel": { "fr": "Sur place · empreintes & photo", "en": "On site · fingerprints & photo" }
+      },
+      {
+        "number": 6,
+        "title": { "fr": "Régler les frais de chancellerie", "en": "Pay the chancery fees" },
+        "durationLabel": { "fr": "≈ 5 min", "en": "≈ 5 min" },
+        "locationLabel": { "fr": "CB · espèces · virement", "en": "Card · cash · transfer" }
+      },
+      {
+        "number": 7,
+        "title": { "fr": "Réception du récépissé de demande", "en": "Receive the application receipt" },
+        "durationLabel": { "fr": "Immédiat", "en": "Immediate" }
+      },
+      {
+        "number": 8,
+        "title": { "fr": "Suivi du dossier en ligne", "en": "Track your file online" },
+        "durationLabel": { "fr": "Temps réel", "en": "Real-time" },
+        "locationLabel": { "fr": "Notifications par SMS & e-mail", "en": "SMS & email notifications" }
+      },
+      {
+        "number": 9,
+        "title": { "fr": "Production du passeport à Libreville", "en": "Passport production in Libreville" },
+        "durationLabel": { "fr": "14 à 18 jours", "en": "14 to 18 days" },
+        "locationLabel": { "fr": "DGDI", "en": "DGDI" }
+      },
+      {
+        "number": 10,
+        "title": { "fr": "Acheminement diplomatique sécurisé", "en": "Secure diplomatic shipment" },
+        "durationLabel": { "fr": "3 à 5 jours", "en": "3 to 5 days" },
+        "locationLabel": { "fr": "Valise diplomatique", "en": "Diplomatic pouch" }
+      },
+      {
+        "number": 11,
+        "title": { "fr": "Notification de mise à disposition", "en": "Pick-up notification" },
+        "durationLabel": { "fr": "Immédiat", "en": "Immediate" },
+        "locationLabel": { "fr": "SMS & e-mail", "en": "SMS & email" }
+      },
+      {
+        "number": 12,
+        "title": { "fr": "Retrait du passeport au consulat", "en": "Collect the passport at the consulate" },
+        "durationLabel": { "fr": "≈ 15 min", "en": "≈ 15 min" },
+        "locationLabel": { "fr": "Sur place · présence requise", "en": "On site · presence required" }
+      }
+    ],
+    "fees": [
+      {
+        "label": { "fr": "Renouvellement standard", "en": "Standard renewal" },
+        "description": { "fr": "Passeport biométrique 5 ans · 32 pages", "en": "5-year biometric passport · 32 pages" },
+        "delay": { "fr": "21 jours ouvrés", "en": "21 working days" },
+        "amount": "60 €"
+      },
+      {
+        "label": { "fr": "Circuit express", "en": "Express circuit" },
+        "description": { "fr": "Acheminement aérien prioritaire", "en": "Priority air shipment" },
+        "delay": { "fr": "7 jours ouvrés", "en": "7 working days" },
+        "amount": "120 €",
+        "badge": "Schengen"
+      },
+      {
+        "label": { "fr": "Passeport grand voyageur", "en": "Frequent-traveller passport" },
+        "description": { "fr": "64 pages · pour usage fréquent", "en": "64 pages · frequent use" },
+        "delay": { "fr": "+ 7 jours", "en": "+ 7 days" },
+        "amount": "85 €"
+      },
+      {
+        "label": { "fr": "Renouvellement enfant mineur", "en": "Minor renewal" },
+        "description": { "fr": "Moins de 18 ans · validité 5 ans", "en": "Under 18 · 5-year validity" },
+        "delay": { "fr": "21 jours", "en": "21 days" },
+        "amount": "30 €"
+      },
+      {
+        "label": { "fr": "Renouvellement après perte ou vol", "en": "Renewal after loss or theft" },
+        "description": { "fr": "Déclaration aux autorités locales requise", "en": "Local police report required" },
+        "delay": { "fr": "28 jours", "en": "28 days" },
+        "amount": "90 €"
+      }
+    ],
+    "delays": [
+      {
+        "region": "europe",
+        "label": { "fr": "Europe (Schengen)", "en": "Europe (Schengen)" },
+        "description": { "fr": "15 à 21 jours · express 7 jours disponible", "en": "15 to 21 days · 7-day express available" },
+        "speed": "fast"
+      },
+      {
+        "region": "afrique",
+        "label": { "fr": "Afrique", "en": "Africa" },
+        "description": { "fr": "21 à 28 jours · valise hebdomadaire", "en": "21 to 28 days · weekly pouch" },
+        "speed": "standard"
+      },
+      {
+        "region": "ameriques",
+        "label": { "fr": "Amériques", "en": "Americas" },
+        "description": { "fr": "28 à 35 jours · bi-mensuel", "en": "28 to 35 days · bi-monthly" },
+        "speed": "standard"
+      },
+      {
+        "region": "asie",
+        "label": { "fr": "Asie & Océanie", "en": "Asia & Oceania" },
+        "description": { "fr": "35 à 42 jours · valise mensuelle", "en": "35 to 42 days · monthly pouch" },
+        "speed": "long"
+      }
+    ],
+    "faqItems": [
+      {
+        "question": { "fr": "Puis-je voyager avec mon ancien passeport pendant la procédure ?", "en": "Can I travel with my old passport during the procedure?" },
+        "answer": { "fr": "Oui, tant qu'il est en cours de validité. L'ancien passeport vous est rendu lors du dépôt du dossier, perforé, et restitué de manière définitive lors du retrait du nouveau document.", "en": "Yes, as long as it is still valid. The old passport is returned to you at file deposit, perforated, and given back definitively at the new document collection." }
+      },
+      {
+        "question": { "fr": "Que faire si mon passeport est perdu ou volé à l'étranger ?", "en": "What if my passport is lost or stolen abroad?" },
+        "answer": { "fr": "Déclarez immédiatement la perte ou le vol auprès des autorités de police locales et obtenez un récépissé. Contactez votre représentation consulaire — un laissez-passer d'urgence pourra être délivré sous 48 h.", "en": "Immediately report the loss or theft to local police and obtain a receipt. Contact your consulate — an emergency laissez-passer can be issued within 48 hours." }
+      },
+      {
+        "question": { "fr": "Le circuit express est-il disponible partout ?", "en": "Is the express circuit available everywhere?" },
+        "answer": { "fr": "Depuis mai 2026, l'option express (7 jours) est disponible dans tous les consulats de l'espace Schengen. Elle sera étendue progressivement aux représentations d'Amérique du Nord à l'automne.", "en": "Since May 2026, the 7-day express option is available at all Schengen-zone consulates. It will roll out to North American posts in autumn." }
+      },
+      {
+        "question": { "fr": "Mon enfant doit-il être présent lors de la prise des empreintes ?", "en": "Does my child need to be present at fingerprinting?" },
+        "answer": { "fr": "Oui, à partir de 12 ans, l'enfant doit être physiquement présent. Pour les enfants de moins de 12 ans, seule la photo et la signature des parents sont requises.", "en": "Yes, from age 12, the child must be physically present. For children under 12, only the photo and parental signatures are required." }
+      },
+      {
+        "question": { "fr": "Un tiers peut-il retirer mon passeport pour moi ?", "en": "Can a third party collect my passport for me?" },
+        "answer": { "fr": "Uniquement sur procuration légalisée par le consulat ou un notaire, accompagnée d'une copie de votre pièce d'identité et de celle du mandataire.", "en": "Only with a power of attorney legalised by the consulate or a notary, accompanied by a copy of your ID and the agent's ID." }
+      }
+    ],
+    "sources": [
+      "https://www.dgdi.ga/passeport-biometrique",
+      "https://consulatdugabon.fr/services/passeport"
+    ],
+    "publishedAt": 1747094400000,
+    "createdAt": 1747094400000
+  },
+  {
+    "status": "published",
+    "type": "guide",
     "countryCode": "FR",
     "badges": [
       "essential"

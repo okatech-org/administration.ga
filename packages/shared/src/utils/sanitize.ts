@@ -15,11 +15,18 @@ export function sanitizeHtml(dirty: string): string {
       "blockquote", "pre", "code",
       "table", "thead", "tbody", "tr", "th", "td",
       "span", "div",
+      // Editorial blocks for Article.html / Guide.html mockups
+      // (keyFact, pullquote, callout, figure, details/summary)
+      "figure", "figcaption",
+      "details", "summary",
       "hr", "sub", "sup",
     ],
     ALLOWED_ATTR: [
       "href", "src", "alt", "title", "class", "target", "rel",
       "width", "height",
+      "id",              // anchor links for TOC
+      "open",            // <details open>
+      "data-variant",    // callout variants: info / ok / warn
     ],
     ALLOW_DATA_ATTR: false,
   });
