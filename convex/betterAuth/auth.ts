@@ -7,7 +7,7 @@ import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 // TRIGGER REBUILD GLOBAL PATCH ALL
 import authConfig from "../auth.config";
-import { components } from "../_generated/api";
+import { components, internal } from "../_generated/api";
 import { internalMutation, mutation, query } from "../_generated/server";
 import { resend } from "../functions/notifications";
 import { sendSms } from "../lib/bird";
@@ -156,6 +156,46 @@ const clientSessionPlugin = (): BetterAuthPlugin => ({
   },
 });
 
+// ============================================================================
+// OTP-verified plugin — replaces the legacy client-side `markOtpVerified` call.
+// ============================================================================
+//
+// Better Auth runs an `after` hook on the OTP session-creating endpoints, so we
+// can stamp `lastOtpVerifiedAt` (and reset the PIN lock state) at the moment
+// the session is created. This removes the previous race where the client
+// fired an authMutation before the Convex JWT was attached to the WebSocket.
+
+const OTP_VERIFIED_PATHS = new Set<string>([
+  "/sign-in/email-otp",
+  "/phone-number/verify",
+]);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- ctx wraps multiple Convex contexts
+const otpVerifiedPlugin = (ctx: any): BetterAuthPlugin => ({
+  id: "otp-verified",
+  hooks: {
+    after: [
+      {
+        matcher: (hookCtx) => OTP_VERIFIED_PATHS.has(hookCtx.path ?? ""),
+        handler: createAuthMiddleware(async (hookCtx) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const target: any = hookCtx.context.newSession ?? hookCtx.context.session;
+          const authId: string | undefined = target?.user?.id;
+          if (!authId) return;
+          try {
+            await ctx.runMutation(
+              internal.functions.pin.markOtpVerifiedByAuthId,
+              { authId },
+            );
+          } catch (err) {
+            console.error("[Auth OTP] markOtpVerifiedByAuthId failed:", err);
+          }
+        }),
+      },
+    ],
+  },
+});
+
 export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | null) => {
   const isDev = process.env.DEV_SIGNIN_ENABLED === "true";
 
@@ -267,6 +307,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>, requestOrigin?: string | 
 
       // ── Client-type session extension (Electron desktop → 30d) ─────
       clientSessionPlugin(),
+
+      // ── Mark OTP verified server-side (refreshes 90-day PIN timer) ──
+      // Fires after Better Auth has created the session for an OTP flow,
+      // so the user's identity is already available — no client-side race.
+      otpVerifiedPlugin(ctx),
 
       // ── Email OTP ──────────────────────────────────────────────────
       emailOTP({

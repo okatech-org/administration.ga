@@ -336,14 +336,22 @@ export const deletePin = authMutation({
 });
 
 /**
- * Marquer la dernière vérification OTP réussie.
- * Appelé après chaque connexion OTP pour rafraîchir le timer 90 jours.
- * Déverrouille aussi le PIN si verrouillé.
+ * Marquer la dernière vérification OTP réussie pour un utilisateur identifié
+ * par son `authId` Better Auth. Appelée par le hook serveur Better Auth après
+ * `/sign-in/email-otp` et `/phone-number/verify` — donc aucune identité à
+ * propager côté client. No-op si la ligne `users` n'existe pas encore
+ * (sign-up OTP : `ensureUser` ne s'est pas encore exécuté ; pas de PIN à
+ * gérer dans ce cas).
  */
-export const markOtpVerified = authMutation({
-  args: {},
-  handler: async (ctx) => {
-    await ctx.db.patch(ctx.user._id, {
+export const markOtpVerifiedByAuthId = internalMutation({
+  args: { authId: v.string() },
+  handler: async (ctx, { authId }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authId", (q) => q.eq("authId", authId))
+      .unique();
+    if (!user) return;
+    await ctx.db.patch(user._id, {
       lastOtpVerifiedAt: Date.now(),
       pinFailedAttempts: 0,
       pinLockedUntil: undefined,

@@ -1,8 +1,6 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "convex/react";
 import {
 	ArrowLeft,
 	KeyRound,
@@ -64,7 +62,6 @@ function SignInPageContent() {
 	const [otpSent, setOtpSent] = useState(false);
 	const otpInputRef = useRef<HTMLInputElement>(null);
 	const pinInputRef = useRef<HTMLInputElement>(null);
-	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
 
 	const identifier = loginMode === "email" ? email : phone;
 
@@ -222,9 +219,6 @@ function SignInPageContent() {
 					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
 				} else {
 					captureEvent("user_logged_in", { method: "sms_otp" });
-					// Mark OTP verified (for 90-day PIN timer)
-					try { await markOtpVerified({}); } catch { /* ignore if not connected */ }
-					await new Promise((r) => setTimeout(r, 500));
 					router.push(redirectTo);
 				}
 			} else {
@@ -236,8 +230,6 @@ function SignInPageContent() {
 					setError(translateAuthError(result.error.message, "errors.auth.otp.invalidCode"));
 				} else {
 					captureEvent("user_logged_in", { method: "email_otp" });
-					try { await markOtpVerified({}); } catch { /* ignore */ }
-					await new Promise((r) => setTimeout(r, 500));
 					router.push(redirectTo);
 				}
 			}
