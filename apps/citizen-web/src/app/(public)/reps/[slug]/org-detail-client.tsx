@@ -11,6 +11,7 @@ import {
   Copy,
   Download,
   FileText,
+  Loader2,
   MapPin,
   Phone,
   Route,
@@ -28,6 +29,7 @@ import {
 import { Lock } from "lucide-react"
 import { FlagIcon } from "@/components/ui/flag-icon"
 import type { CountryCode } from "@convex/lib/constants"
+import { useOrgCall } from "@/hooks/use-org-call"
 import { cn } from "@/lib/utils"
 
 const OrgLocationMap = dynamic(
@@ -363,6 +365,15 @@ export function OrgDetailClient({
     api.functions.orgsPublic.publicCallLines,
     orgIdArg as { orgId: Id<"orgs"> },
   )
+
+  // Logique d'appel : monte le LiveKit dialog quand l'usager clique sur
+  // une ligne. Sans org, ces appels ne sont pas atteignables (early-return
+  // plus bas si !org), mais on les évalue conditionnellement pour respecter
+  // l'ordre des hooks — on passe un ID factice non-utilisable.
+  const callSession = useOrgCall({
+    orgId: (org?._id ?? "" ) as Id<"orgs">,
+    orgName: org?.name ?? "",
+  })
   const orgPosts = useQuery(
     api.functions.posts.listByOrg,
     org
@@ -729,6 +740,10 @@ export function OrgDetailClient({
               phoneMain={phoneMain}
               lines={callLines}
               isAuthenticated={isAuthenticated}
+              onCallLine={(lineId) =>
+                callSession.initiateCall(lineId as Id<"callLines">)
+              }
+              isStartingCall={callSession.isStarting}
             />
             {!isAuthenticated && <InviteCard />}
             {orgStats && <QuickStats stats={orgStats} />}
@@ -739,6 +754,10 @@ export function OrgDetailClient({
           </aside>
         </div>
       </div>
+
+      {/* LiveKit call dialog/sheet — monté ici pour échapper aux containers
+          de scroll & se positionner en overlay portal */}
+      {callSession.callDialog}
     </div>
   )
 }
@@ -1351,6 +1370,8 @@ function CallWidget({
   phoneMain,
   lines,
   isAuthenticated,
+  onCallLine,
+  isStartingCall,
 }: {
   callAvail:
     | {
@@ -1369,6 +1390,8 @@ function CallWidget({
       }>
     | undefined
   isAuthenticated: boolean
+  onCallLine: (lineId: string) => void | Promise<void>
+  isStartingCall: boolean
 }) {
   const isOnline = callAvail?.status === "available"
   const hasLines = Array.isArray(lines) && lines.length > 0
@@ -1437,7 +1460,8 @@ function CallWidget({
               <li key={line._id}>
                 <button
                   type="button"
-                  disabled={!canCall}
+                  disabled={!canCall || isStartingCall}
+                  onClick={() => onCallLine(line._id)}
                   title={
                     !isAuthenticated
                       ? "Connexion requise"
@@ -1448,7 +1472,7 @@ function CallWidget({
                   className={cn(
                     "w-full inline-flex items-center gap-3 rounded-xl px-3.5 py-3 text-left text-[14px] font-medium transition",
                     canCall
-                      ? "bg-white/12 hover:bg-white/20 text-white border border-white/20"
+                      ? "bg-white/12 hover:bg-white/20 text-white border border-white/20 disabled:opacity-60 disabled:cursor-wait"
                       : "bg-white/5 text-white/60 border border-white/10 cursor-not-allowed",
                   )}
                 >
@@ -1478,13 +1502,20 @@ function CallWidget({
                       </span>
                     )}
                   </span>
-                  <Phone
-                    className={cn(
-                      "w-4 h-4 shrink-0",
-                      canCall ? "text-white" : "text-white/40",
-                    )}
-                    strokeWidth={2}
-                  />
+                  {isStartingCall ? (
+                    <Loader2
+                      className="w-4 h-4 shrink-0 text-white animate-spin"
+                      strokeWidth={2}
+                    />
+                  ) : (
+                    <Phone
+                      className={cn(
+                        "w-4 h-4 shrink-0",
+                        canCall ? "text-white" : "text-white/40",
+                      )}
+                      strokeWidth={2}
+                    />
+                  )}
                 </button>
               </li>
             )
