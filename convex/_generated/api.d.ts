@@ -393,6 +393,7 @@ import type * as seeds_listDevAccounts from "../seeds/listDevAccounts.js";
 import type * as seeds_roles from "../seeds/roles.js";
 import type * as seeds_seedDevAuthUsers from "../seeds/seedDevAuthUsers.js";
 import type * as seeds_seedDevCitizenProfiles from "../seeds/seedDevCitizenProfiles.js";
+import type * as seeds_seedFromJson from "../seeds/seedFromJson.js";
 import type * as seeds_seedOrgDetails from "../seeds/seedOrgDetails.js";
 import type * as seeds_seedOrgPublicDocs from "../seeds/seedOrgPublicDocs.js";
 import type * as seeds_seedPosts from "../seeds/seedPosts.js";
@@ -799,6 +800,7 @@ declare const fullApi: ApiFromModules<{
   "seeds/roles": typeof seeds_roles;
   "seeds/seedDevAuthUsers": typeof seeds_seedDevAuthUsers;
   "seeds/seedDevCitizenProfiles": typeof seeds_seedDevCitizenProfiles;
+  "seeds/seedFromJson": typeof seeds_seedFromJson;
   "seeds/seedOrgDetails": typeof seeds_seedOrgDetails;
   "seeds/seedOrgPublicDocs": typeof seeds_seedOrgPublicDocs;
   "seeds/seedPosts": typeof seeds_seedPosts;

@@ -1,0 +1,371 @@
+/**
+ * Seed depuis les JSON officiels — Consulat.ga
+ *
+ * Charge le contenu éditorial (services, news, tutoriels, FAQ, events
+ * communautaires) depuis les 5 fichiers JSON co-localisés dans `./data/`.
+ *
+ * Source : agent IA avec sourcing officiel (consulatdugabon.fr, dgdi.ga,
+ * diplomatie.gouv.ga, justice.gouv.ga, journal-officiel.ga). Voir
+ * `convex/seeds/data/SOURCES.md` pour la traçabilité complète.
+ *
+ * Le JSON produit par l'agent est bilingue ({fr, en}) sur tous les champs
+ * texte. Les tables `posts`, `tutorials`, `faqs`, `communityEvents` ont
+ * actuellement des champs `v.string()` brut → on aplatit au FR à
+ * l'injection (l'EN sera réintroduit le jour où les schémas seront
+ * migrés vers `localizedStringValidator`).
+ *
+ * Le JSON utilise aussi des `joinedDocuments.type` inventés (`photo`,
+ * `vaccination`, `ticket`…) qui ne sont pas dans l'enum
+ * `DetailedDocumentType` → mappés vers la valeur valide la plus proche
+ * (cf. DOC_TYPE_MAP) ou `other_official_document` en fallback.
+ *
+ * Usage dev   : bunx convex run seeds/seedFromJson:run
+ * Usage prod  : bunx convex run seeds/seedFromJson:run --prod
+ *
+ * Idempotent — re-exécution sûre :
+ *  - services : patch des champs éditoriaux uniquement (n'écrase pas les
+ *    données fonctionnelles existantes — name, description, formSchema…)
+ *  - news/tutos/events : skip si slug existe déjà
+ *  - faqs : skip si (category, question) existe déjà
+ */
+import { mutation } from "../_generated/server";
+import { PostCategory, PostStatus } from "../lib/constants";
+
+import servicesData from "./data/services.json";
+import newsData from "./data/news.json";
+import tutorialsData from "./data/tutorials.json";
+import faqsData from "./data/faqs.json";
+import eventsData from "./data/events.json";
+
+// ────────────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────────────
+
+type Localized = { fr: string; en?: string };
+
+const isLocalized = (x: unknown): x is Localized =>
+  typeof x === "object" && x !== null && "fr" in x && typeof (x as { fr: unknown }).fr === "string";
+
+/** Garde la structure {fr, en} (pour les champs services qui l'attendent). */
+const keepLocalized = <T,>(x: T): T => x;
+
+/** Aplatit {fr, en} → fr (pour les schémas qui veulent v.string()). */
+const pickFr = (x: unknown): string => {
+  if (typeof x === "string") return x;
+  if (isLocalized(x)) return x.fr;
+  return "";
+};
+
+/** Mapping des `joinedDocuments.type` inventés par l'agent vers l'enum officiel. */
+const DOC_TYPE_MAP: Record<string, string> = {
+  accommodation: "hosting_certificate",
+  address_attestation: "proof_of_address",
+  agent_id: "national_id_card",
+  authenticity_certificate: "other_official_document",
+  birth_certificates: "birth_certificate",
+  coffin_closure: "other_official_document",
+  consular_card: "other_official_document",
+  death_certificate_full: "death_certificate",
+  deceased_passport: "passport",
+  divorce_decree: "divorce_judgment",
+  documents: "other_official_document",
+  driving_license: "driver_license",
+  envelope: "other_official_document",
+  form: "cerfa_form",
+  form_marriage: "cerfa_form",
+  id_card: "national_id_card",
+  income: "pay_slip",
+  insurance: "other_official_document",
+  invitation: "other_official_document",
+  letter: "handwritten_request",
+  loss_declaration: "other_official_document",
+  mandate: "power_of_attorney",
+  matrimonial_regime: "other_official_document",
+  mission_order: "other_official_document",
+  naturalisation_decree: "naturalization_file",
+  parents_id: "national_id_card",
+  passport_copy: "passport",
+  passport_pages: "passport",
+  pension_document: "retirement_pension_certificate",
+  photo: "identity_photo",
+  previous_passport: "passport",
+  request_letter: "handwritten_request",
+  residence_proof: "proof_of_address",
+  scholarship_attestation: "other_official_document",
+  service_certificate: "other_official_document",
+  spouses_id: "national_id_card",
+  student_card: "school_certificate",
+  ticket: "other_official_document",
+  transport_authorisation: "other_official_document",
+  vaccination: "medical_certificate",
+  witnesses: "other_official_document",
+  witnesses_id: "national_id_card",
+  work_attestation: "work_certificate",
+  work_or_school: "work_certificate",
+};
+
+const normalizeDocType = (raw: string): string =>
+  DOC_TYPE_MAP[raw] ?? raw;
+
+// ────────────────────────────────────────────────────────────────────────
+// Mutation
+// ────────────────────────────────────────────────────────────────────────
+
+export const run = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const report = {
+      services: { patched: 0, missing: [] as string[], docTypeFallbacks: 0 },
+      news: { inserted: 0, skipped: 0 },
+      tutorials: { inserted: 0, skipped: 0 },
+      faqs: { inserted: 0, skipped: 0 },
+      events: { inserted: 0, skipped: 0 },
+    };
+
+    // Résolution auteur + org pour news/tutos/events
+    const superadmin = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isSuperadmin"), true))
+      .first();
+    const author = superadmin ?? (await ctx.db.query("users").first());
+    if (!author) {
+      throw new Error(
+        "Aucun utilisateur disponible — créer d'abord un compte (seeds/seedDevAuthUsers).",
+      );
+    }
+    const firstOrg = await ctx.db
+      .query("orgs")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .first();
+    const orgId = firstOrg?._id;
+    const now = Date.now();
+
+    // ── 1. SERVICES — patch des champs éditoriaux ─────────────────────
+    for (const raw of servicesData as Array<Record<string, unknown>>) {
+      const slug = raw.slug as string;
+      const service = await ctx.db
+        .query("services")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+      if (!service) {
+        report.services.missing.push(slug);
+        continue;
+      }
+
+      // Strip parasites + clés non patchables
+      const {
+        slug: _s,
+        category: _c,
+        status: _st,
+        isActive: _ia,
+        sources: _src,
+        joinedDocuments: rawDocs,
+        availableModes: rawModes,
+        ...editorial
+      } = raw as Record<string, unknown>;
+
+      // Normaliser les types de documents
+      const joinedDocuments = Array.isArray(rawDocs)
+        ? rawDocs.map((d) => {
+            const doc = d as Record<string, unknown>;
+            const original = doc.type as string;
+            const normalized = normalizeDocType(original);
+            if (normalized !== original) report.services.docTypeFallbacks++;
+            return { ...doc, type: normalized };
+          })
+        : undefined;
+
+      // `availableModes[].description` est requis par le schéma mais l'agent
+      // l'a parfois omis (46 entrées sur ~120) → fallback sur `title`, ou
+      // sur un texte générique dérivé du `mode` si `title` est aussi absent.
+      const MODE_FALLBACK_DESC: Record<string, Localized> = {
+        online: { fr: "Démarche en ligne", en: "Online procedure" },
+        in_person: { fr: "Dépôt en personne au consulat", en: "In-person submission at the consulate" },
+        postal: { fr: "Dossier par correspondance", en: "Postal application" },
+      };
+      const availableModes = Array.isArray(rawModes)
+        ? rawModes.map((m) => {
+            const mode = m as Record<string, unknown>;
+            if (mode.description) return mode;
+            const fallback =
+              (mode.title as Localized | undefined) ??
+              MODE_FALLBACK_DESC[mode.mode as string] ??
+              MODE_FALLBACK_DESC.in_person;
+            return { ...mode, description: fallback };
+          })
+        : undefined;
+
+      const patch: Record<string, unknown> = {
+        ...editorial,
+        updatedAt: now,
+      };
+      if (joinedDocuments) patch.joinedDocuments = joinedDocuments;
+      if (availableModes) patch.availableModes = availableModes;
+
+      await ctx.db.patch(service._id, patch);
+      report.services.patched++;
+    }
+
+    // ── 2. NEWS / POSTS ───────────────────────────────────────────────
+    type RawPost = {
+      title: unknown;
+      slug: string;
+      excerpt: unknown;
+      content: unknown;
+      category: string;
+      publishedAt?: number;
+      createdAt?: number;
+      eventStartAt?: number;
+      eventEndAt?: number;
+      eventLocation?: unknown;
+      eventTicketUrl?: string;
+    };
+    for (const raw of newsData as RawPost[]) {
+      const existing = await ctx.db
+        .query("posts")
+        .withIndex("by_slug", (q) => q.eq("slug", raw.slug))
+        .first();
+      if (existing) {
+        report.news.skipped++;
+        continue;
+      }
+      await ctx.db.insert("posts", {
+        title: pickFr(raw.title),
+        slug: raw.slug,
+        excerpt: pickFr(raw.excerpt),
+        content: pickFr(raw.content),
+        category: raw.category as PostCategory,
+        status: PostStatus.Published,
+        publishedAt: raw.publishedAt ?? now,
+        createdAt: raw.createdAt ?? now,
+        updatedAt: now,
+        authorId: author._id,
+        orgId,
+        eventStartAt: raw.eventStartAt,
+        eventEndAt: raw.eventEndAt,
+        eventLocation: raw.eventLocation ? pickFr(raw.eventLocation) : undefined,
+        eventTicketUrl: raw.eventTicketUrl,
+      });
+      report.news.inserted++;
+    }
+
+    // ── 3. TUTORIALS ──────────────────────────────────────────────────
+    type RawTutorial = {
+      title: unknown;
+      slug: string;
+      excerpt: unknown;
+      content: unknown;
+      category: string;
+      type: string;
+      duration?: string;
+      readingMinutes?: number;
+      stepCount?: number;
+      badges?: string[];
+      featured?: boolean;
+      countryCode?: string;
+      videoUrl?: string;
+      publishedAt?: number;
+      createdAt?: number;
+    };
+    for (const raw of tutorialsData as RawTutorial[]) {
+      const existing = await ctx.db
+        .query("tutorials")
+        .withIndex("by_slug", (q) => q.eq("slug", raw.slug))
+        .first();
+      if (existing) {
+        report.tutorials.skipped++;
+        continue;
+      }
+      await ctx.db.insert("tutorials", {
+        title: pickFr(raw.title),
+        slug: raw.slug,
+        excerpt: pickFr(raw.excerpt),
+        content: pickFr(raw.content),
+        category: raw.category as never,
+        type: raw.type as never,
+        duration: raw.duration,
+        readingMinutes: raw.readingMinutes,
+        stepCount: raw.stepCount,
+        badges: raw.badges as never,
+        featured: raw.featured,
+        countryCode: raw.countryCode,
+        videoUrl: raw.videoUrl,
+        status: PostStatus.Published as never,
+        publishedAt: raw.publishedAt ?? now,
+        createdAt: raw.createdAt ?? now,
+        updatedAt: now,
+        authorId: author._id,
+      });
+      report.tutorials.inserted++;
+    }
+
+    // ── 4. FAQ ────────────────────────────────────────────────────────
+    type RawFaq = {
+      question: unknown;
+      answer: unknown;
+      category: string;
+      order?: number;
+      featured?: boolean;
+      isActive?: boolean;
+      updatedAt?: number;
+    };
+    for (const raw of faqsData as RawFaq[]) {
+      const question = pickFr(raw.question);
+      const existing = await ctx.db
+        .query("faqs")
+        .withIndex("by_category_order", (q) => q.eq("category", raw.category as never))
+        .filter((q) => q.eq(q.field("question"), question))
+        .first();
+      if (existing) {
+        report.faqs.skipped++;
+        continue;
+      }
+      await ctx.db.insert("faqs", {
+        question,
+        answer: pickFr(raw.answer),
+        category: raw.category as never,
+        order: raw.order ?? 0,
+        featured: raw.featured ?? false,
+        isActive: raw.isActive ?? true,
+        updatedAt: raw.updatedAt ?? now,
+      });
+      report.faqs.inserted++;
+    }
+
+    // ── 5. COMMUNITY EVENTS ───────────────────────────────────────────
+    type RawEvent = {
+      title: unknown;
+      slug: string;
+      description?: unknown;
+      date: number;
+      location: unknown;
+      category: string;
+      status?: string;
+      createdAt?: number;
+    };
+    for (const raw of eventsData as RawEvent[]) {
+      const existing = await ctx.db
+        .query("communityEvents")
+        .withIndex("by_slug", (q) => q.eq("slug", raw.slug))
+        .first();
+      if (existing) {
+        report.events.skipped++;
+        continue;
+      }
+      await ctx.db.insert("communityEvents", {
+        title: pickFr(raw.title),
+        slug: raw.slug,
+        description: raw.description ? pickFr(raw.description) : undefined,
+        date: raw.date,
+        location: pickFr(raw.location),
+        category: raw.category,
+        status: (raw.status ?? "published") as never,
+        createdAt: raw.createdAt ?? now,
+        orgId,
+      });
+      report.events.inserted++;
+    }
+
+    return report;
+  },
+});

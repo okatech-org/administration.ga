@@ -1,0 +1,773 @@
+[
+  {
+    "question": {
+      "fr": "Combien coûte un passeport biométrique gabonais en Europe ?",
+      "en": "How much does a Gabonese biometric passport cost in Europe?"
+    },
+    "answer": {
+      "fr": "Le tarif exact du passeport biométrique gabonais délivré par la DGDI Paris n'est pas publié en ligne et peut évoluer. Le service est hébergé au 26 bis avenue Raphaël à Paris 16e, distinct du Consulat Général. Pour connaître le montant à jour, contactez directement la DGDI Paris (SMS au +33 6 08 03 20 29 ou email aedgdi.fr@gmail.com) ou consultez la page rendez-vous sur ae.dgdifrance.fr. Le paiement s'effectue au moment du dépôt du dossier sur rendez-vous obligatoire, du lundi au jeudi de 9h00 à 12h00. Pensez à prévoir, en plus du droit de chancellerie : le coût des photos biométriques conformes, l'éventuelle légalisation de l'acte de naissance gabonais, et le déplacement à Paris. Le retrait s'effectue le vendredi matin à la même adresse, sur présentation du récépissé de dépôt.",
+      "en": "The exact fee for the Gabonese biometric passport issued by DGDI Paris is not published online and may change. The service is hosted at 26 bis avenue Raphaël in Paris 16th, separate from the Consulate-General. For the up-to-date amount, contact DGDI Paris directly (SMS to +33 6 08 03 20 29 or email aedgdi.fr@gmail.com) or check the appointment page at ae.dgdifrance.fr. Payment is due when the file is submitted at the mandatory appointment, Monday to Thursday from 9 am to 12 pm. Budget also for: compliant biometric photos, any required legalisation of the Gabonese birth certificate, and travel to Paris. Collection takes place on Friday morning at the same address, on presentation of the deposit receipt."
+    },
+    "category": "demarches_consulaires",
+    "order": 1,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/services",
+      "https://ae.dgdifrance.fr/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Mon enfant né en France d'un parent gabonais est-il automatiquement gabonais ?",
+      "en": "Is my child born in France of a Gabonese parent automatically Gabonese?"
+    },
+    "answer": {
+      "fr": "Oui, en application du Code de la nationalité gabonaise (Loi n° 37/98 du 20 juillet 1999, modifié par l'Ordonnance n° 0004/PR/2026), un enfant acquiert la nationalité gabonaise à la naissance par filiation dès lors qu'au moins un de ses parents biologiques est de nationalité gabonaise. Cette nationalité est acquise de plein droit, indépendamment du lieu de naissance. Toutefois, pour qu'elle soit administrativement reconnue (passeport, bourses ANBG, héritage), il faut faire transcrire l'acte de naissance étranger au Consulat Général du Gabon de votre circonscription. La transcription n'a pas de délai légal, mais il est fortement recommandé de l'effectuer dans les premiers mois. L'enfant pourra cumuler la nationalité française et gabonaise : la double nationalité est tolérée dans les deux pays.",
+      "en": "Yes, under the Gabonese Nationality Code (Law no. 37/98 of 20 July 1999, amended by Ordinance no. 0004/PR/2026), a child acquires Gabonese nationality at birth by filiation as soon as at least one biological parent is Gabonese. This nationality is acquired automatically, regardless of place of birth. However, for it to be administratively recognised (passport, ANBG scholarships, inheritance), the foreign birth certificate must be transcribed at the Consulate-General of Gabon in your area. There is no legal deadline for transcription, but doing it within the first months is strongly recommended. The child may hold both French and Gabonese nationality: dual nationality is tolerated in both countries."
+    },
+    "category": "etat_civil",
+    "order": 1,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://journal-officiel.ga/code-de-la-nationalite",
+      "https://amba-france.ga/transcription-de-lacte-de-naissance/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Que faire en cas de perte ou de vol de mon passeport gabonais à l'étranger ?",
+      "en": "What should I do if my Gabonese passport is lost or stolen abroad?"
+    },
+    "answer": {
+      "fr": "Trois étapes successives : 1) Déclarez la perte ou le vol immédiatement aux autorités locales (en France, au commissariat ou en gendarmerie) et conservez le récépissé. 2) Contactez le Consulat Général du Gabon de votre circonscription. Pour rejoindre le Gabon en urgence, le Consulat peut délivrer un laissez-passer valable 30 jours sur présentation d'un formulaire, d'une copie de l'acte de naissance gabonais et de la déclaration de perte. Pour régulariser votre situation administrative sans urgence de voyage, il délivre un Tenant Lieu de Passeport. 3) Engagez la procédure de demande d'un nouveau passeport biométrique auprès de la DGDI Paris (26 bis avenue Raphaël, 75016). Conservez toujours une copie numérique de votre passeport sur un cloud sécurisé : cela facilite considérablement la régularisation.",
+      "en": "Three successive steps: 1) Report the loss or theft immediately to local authorities (in France, police or gendarmerie station) and keep the receipt. 2) Contact the Consulate-General of Gabon for your area. To return to Gabon urgently, the Consulate can issue a Laissez-passer valid for 30 days on submission of a form, a copy of the Gabonese birth certificate and the loss declaration. To regularise your administrative status without travel urgency, it issues a Tenant Lieu de Passeport. 3) Start the new biometric passport application at DGDI Paris (26 bis avenue Raphaël, 75016). Always keep a digital copy of your passport on a secure cloud: it makes regularisation much easier."
+    },
+    "category": "demarches_consulaires",
+    "order": 2,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://amba-france.ga/laissez-passer/",
+      "https://www.consulatgabonfrance.com/tenant-lieu-de-passeport/",
+      "https://consulatdugabon.fr/services"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Puis-je voter aux élections gabonaises depuis l'étranger ?",
+      "en": "Can I vote in Gabonese elections from abroad?"
+    },
+    "answer": {
+      "fr": "Oui. Le nouveau Code électoral (Loi n° 001/2025 du 19 janvier 2025) modernise le vote pour la diaspora. Pour la présidentielle et les référendums, la circonscription inclut le territoire national et les missions diplomatiques. Lors de la présidentielle 2025, dix bureaux de vote ont été ouverts en France (Paris, Bordeaux, Lyon, Toulouse, Strasbourg, Montpellier, Rennes, Nantes, Marseille, Lille), de 7h à 18h. Le Code prévoit aussi le vote par procuration (articles 146 à 150) et institue deux sièges parlementaires pour la diaspora. Pour voter, il faut être inscrit sur les listes électorales, ce qui est facilité par l'inscription consulaire préalable. Renseignez-vous auprès de votre Consulat sur les périodes d'inscription et de révision des listes.",
+      "en": "Yes. The new Electoral Code (Law no. 001/2025 of 19 January 2025) modernises voting for the diaspora. For the presidential election and referendums, the constituency includes the national territory and diplomatic missions. In the 2025 presidential election, ten polling stations were opened in France (Paris, Bordeaux, Lyon, Toulouse, Strasbourg, Montpellier, Rennes, Nantes, Marseille, Lille), from 7 am to 6 pm. The Code also provides for proxy voting (articles 146-150) and creates two parliamentary seats for the diaspora. To vote, you must be on the electoral roll, which is facilitated by prior consular registration. Ask your Consulate about registration and revision periods."
+    },
+    "category": "administratif",
+    "order": 1,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://journal-officiel.ga/21554-001-2025-/",
+      "https://info241.com/presidentielle-2025-10-bureaux-de-vote-en-france-pour-les,10188",
+      "https://www.interieur.gouv.ga/9-actualites/603-un-nouveau-code-electoral-pour-renforcer-la-democratie-/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quel est le délai pour obtenir un visa pour le Gabon ?",
+      "en": "How long does it take to get a visa for Gabon?"
+    },
+    "answer": {
+      "fr": "Le délai dépend du canal. Pour l'e-visa via la plateforme officielle edgdi.dgdi.ga, le traitement est d'environ 72 heures à partir du dossier complet. Pour une demande en consulat (DGDI Paris notamment), le délai standard est de 15 jours ouvrés, parfois plus. Le visa de long séjour peut nécessiter jusqu'à un mois. Pour éviter toute déconvenue, déposez votre demande au moins 3 semaines avant le départ. Pièces de base : passeport valide 6 mois après le retour, deux photos, formulaire signé, justificatif d'hébergement, billet aller-retour, certificat de vaccination fièvre jaune, justificatif de ressources. Pour un visa d'affaires, une lettre d'invitation d'une entreprise gabonaise est exigée.",
+      "en": "Processing time depends on the channel. For e-visa via the official edgdi.dgdi.ga portal, it takes about 72 hours from a complete file. For a consulate application (DGDI Paris in particular), the standard time is 15 working days, sometimes more. A long-stay visa may take up to a month. To avoid disappointment, file at least 3 weeks before departure. Basic documents: passport valid 6 months after return, two photos, signed form, accommodation proof, return ticket, yellow-fever vaccination certificate, proof of funds. A business visa also requires an invitation letter from a Gabonese company."
+    },
+    "category": "voyage",
+    "order": 1,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://www.dgdi.ga/aller-au-gabon/",
+      "https://www.diplomatie.gouv.ga/4-services-aux-usagers/244-visa/",
+      "https://edgdi.dgdi.ga/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quelle convention fiscale lie le Gabon et la France ?",
+      "en": "Which tax treaty links Gabon and France?"
+    },
+    "answer": {
+      "fr": "La convention en vigueur a été signée à Libreville le 20 septembre 1995. Elle remplace une convention plus ancienne du 21 avril 1966. Du côté français, elle a été autorisée par la loi n° 98-120 du 2 mars 1998 et publiée par le décret n° 2008-277 du 21 mars 2008. Elle est entrée en vigueur le 1er mars 2008. Le texte est disponible sur Légifrance et impots.gouv.fr. Inspirée du modèle OCDE, elle pose les règles de détermination de la résidence fiscale, le partage de l'imposition entre les deux États, le mécanisme du crédit d'impôt pour éliminer la double imposition, et l'échange d'informations entre administrations fiscales.",
+      "en": "The treaty in force was signed in Libreville on 20 September 1995, replacing an earlier treaty of 21 April 1966. On the French side, it was authorised by Law no. 98-120 of 2 March 1998 and published by Decree no. 2008-277 of 21 March 2008. It entered into force on 1 March 2008. The text is on Légifrance and impots.gouv.fr. Inspired by the OECD model, it sets rules for tax residence, division of taxation between the two States, the tax-credit mechanism to eliminate double taxation, and information exchange between tax administrations."
+    },
+    "category": "fiscalite",
+    "order": 1,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000018393010",
+      "https://www.impots.gouv.fr/sites/default/files/media/10_conventions/gabon/gabon_gabon-1995_fd_4673.pdf",
+      "https://www.senat.fr/rap/l97-002/l97-002.html"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "À quelle fréquence dois-je renouveler ma carte consulaire ?",
+      "en": "How often must I renew my consular card?"
+    },
+    "answer": {
+      "fr": "La carte consulaire a généralement une durée de validité indicative de 5 ans. À l'approche de l'expiration, demandez son renouvellement auprès du Consulat avec : formulaire d'inscription consulaire, photocopie du passeport gabonais en cours, acte de naissance, deux photos, justificatif de domicile de moins de 3 mois. Le renouvellement permet aussi de mettre à jour vos coordonnées dans le registre des Gabonais de l'étranger. Sa délivrance prend environ 25 jours. La carte est utile pour vous identifier auprès du Consulat dans toutes vos démarches (passeport, transcription, certificat de nationalité, vote). Elle ne remplace pas votre passeport ou votre CNI comme pièce d'identité officielle.",
+      "en": "The consular card has an indicative validity of 5 years. As expiry approaches, request renewal at the Consulate with: registration form, photocopy of the current Gabonese passport, birth certificate, two photos, proof of address less than 3 months old. Renewal also updates your contact details in the register of Gabonese abroad. Issuance takes about 25 days. The card is useful to identify yourself to the Consulate for any procedure (passport, transcription, nationality certificate, voting). It does not replace your passport or national ID as an official identity document."
+    },
+    "category": "demarches_consulaires",
+    "order": 3,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://www.consulatgabonfrance.com/demande-de-carte-consulaire/",
+      "https://amba-france.ga/formalites-carte-consulaire/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Le vaccin contre la fièvre jaune est-il obligatoire pour aller au Gabon ?",
+      "en": "Is the yellow fever vaccine required to travel to Gabon?"
+    },
+    "answer": {
+      "fr": "Oui. Le certificat international de vaccination contre la fièvre jaune (antiamarile) est obligatoire pour entrer au Gabon, pour tous les voyageurs âgés de 9 mois et plus, quelle que soit leur provenance. La vaccination doit être faite au moins 10 jours avant le départ dans un centre agréé. Depuis 2016, une dose unique confère une protection à vie chez l'adulte immunocompétent : le certificat n'a plus à être renouvelé tous les 10 ans. Des rappels peuvent être recommandés pour les personnes vaccinées avant 2 ans, immunodéprimées, ou les femmes enceintes vaccinées par exception. Sans certificat valide, l'entrée peut être refusée à Léon-Mba. Centres habilités en France : Institut Pasteur Paris et Lille, centres de vaccinations internationales agréés.",
+      "en": "Yes. The international yellow fever (antiamarile) vaccination certificate is mandatory to enter Gabon for all travellers aged 9 months and over, regardless of origin. Vaccination must be done at least 10 days before departure in an accredited centre. Since 2016, a single dose grants life-long protection in healthy adults: the certificate no longer needs renewal every 10 years. Boosters may be advised for people vaccinated before age 2, immunocompromised, or for pregnant women exceptionally vaccinated. Without a valid certificate, entry can be refused at Léon-Mba airport. Accredited centres in France: Institut Pasteur Paris and Lille, approved international vaccination centres."
+    },
+    "category": "voyage",
+    "order": 2,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://www.pasteur.fr/fr/centre-medical/preparer-son-voyage/gabon",
+      "https://pasteur-lille.fr/centre-prevention-sante-longevite/vaccins-et-voyages/preparer-ses-voyages/?pays=Gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quelle est la durée d'un vol direct Paris-Libreville ?",
+      "en": "How long is a direct Paris-Libreville flight?"
+    },
+    "answer": {
+      "fr": "Un vol direct Paris-CDG → Libreville (LBV) dure environ 7h30 à 7h55. Air France est l'opérateur principal avec environ 5 vols sans escale par semaine. Autres options avec escale : Royal Air Maroc via Casablanca, Ethiopian Airlines via Addis-Abeba, RwandAir via Kigali (11 à 18 heures au total). Tarifs : Air France à partir d'environ 1 000 € aller-retour, moyenne 1 100-1 350 €. Royal Air Maroc à partir d'environ 460 €, moyenne 1 060 €. Pour économiser, réservez 2 à 4 mois à l'avance, évitez les vacances scolaires françaises et fêtes de fin d'année, voyagez en milieu de semaine. Le Gabon est sur UTC+1 (pas de décalage avec la France en hiver, -1 h en été).",
+      "en": "A direct flight Paris-CDG → Libreville (LBV) takes about 7h30 to 7h55. Air France is the main operator with about 5 non-stop flights per week. Other options with stopover: Royal Air Maroc via Casablanca, Ethiopian Airlines via Addis Ababa, RwandAir via Kigali (11 to 18 hours total). Fares: Air France from about €1,000 round trip, average €1,100-1,350. Royal Air Maroc from about €460, average €1,060. To save money, book 2-4 months ahead, avoid French school holidays and end-of-year season, fly mid-week. Gabon is on UTC+1 (no time difference with France in winter, -1 h in summer)."
+    },
+    "category": "voyage",
+    "order": 3,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://wwws.airfrance.fr/fr-fr/vols-de-paris-a-libreville",
+      "https://www.kayak.fr/vols/Paris-PAR/Aeroport-Intl-Leon-Mba-de-Libreville-LBV"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment se faire rembourser des soins médicaux par la CNAMGS ?",
+      "en": "How do I get medical care reimbursed by CNAMGS?"
+    },
+    "answer": {
+      "fr": "La CNAMGS prend en charge ses assurés selon des taux établis : 80 % des frais médicaux pour maladie ordinaire, 90 % pour maladie de longue durée, 100 % pour certains actes (accouchement médicalisé, évacuations sanitaires des Gabonais Économiquement Faibles). Le tiers payant fonctionne dans les établissements conventionnés : présenter sa carte CNAMGS suffit, l'assuré n'avance que le ticket modérateur. Pour les soins hors convention, conservez factures et ordonnances et déposez un dossier de remboursement auprès du bureau CNAMGS compétent. Au retour de l'étranger sans inscription, souscrivez une assurance santé internationale (CFE, AXA, Allianz) pour les premières semaines.",
+      "en": "CNAMGS reimburses insured patients at: 80% for ordinary illness, 90% for long-term illness, 100% for certain procedures (supervised childbirth, medical evacuations for economically vulnerable Gabonese). In accredited facilities, third-party payment applies: showing the CNAMGS card is enough; the patient only pays the co-payment. For non-accredited care, keep invoices and prescriptions and file a reimbursement claim with the relevant CNAMGS office. On returning from abroad before registration is finalised, take out international health insurance (CFE, AXA, Allianz) for the first weeks."
+    },
+    "category": "vie_pratique",
+    "order": 1,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://cnamgs.ga/",
+      "https://www.cleiss.fr/docs/regimes/regime_gabon.html",
+      "https://famille.gouv.ga/271-ministere/305-organismes-sous-tutelles/358-caisse-nationale-dassurance-maladie-et-de-garantie-sociale-cnamgs-/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Combien coûte la création d'une SARL au Gabon via le GNI ?",
+      "en": "How much does setting up a SARL in Gabon via GNI cost?"
+    },
+    "answer": {
+      "fr": "La création d'une SARL via le Guichet Numérique de l'Investissement (GNI) de l'ANPI-Gabon coûte environ 85 000 FCFA tout compris, soit environ 130 €. Ce montant couvre les frais ANPI, l'immatriculation RCCM et la publication de l'annonce légale. Le paiement s'effectue en ligne par carte bancaire internationale, Moov Money ou Airtel Money. Après dépôt du dossier complet (statuts signés, pièces d'identité des associés, justificatif de domiciliation), la société est créée en 24 à 72 heures. Le RCCM et le NIF sont envoyés par email. Aucun passage chez un notaire n'est obligatoire pour ce type de structure. Le capital social minimum n'est pas légalement imposé mais 1 000 000 FCFA est recommandé pour la crédibilité bancaire.",
+      "en": "Setting up a SARL via the ANPI-Gabon Digital Investment Window (GNI) costs about XAF 85,000 all in, i.e. about €130. The amount covers ANPI fees, RCCM registration and legal notice publication. Payment is online by international bank card, Moov Money or Airtel Money. After full file submission (signed bylaws, partners' IDs, registered office proof), the company is created in 24 to 72 hours. RCCM and Tax ID (NIF) are emailed. No notary is needed for this type of entity. There is no legal minimum share capital, but XAF 1,000,000 is generally recommended for bank credibility."
+    },
+    "category": "entrepreneuriat",
+    "order": 1,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://www.gni-anpigabon.com/",
+      "https://www.gni-anpigabon.com/user-manual"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quels sont les critères d'éligibilité pour une bourse ANBG ?",
+      "en": "What are the eligibility criteria for an ANBG scholarship?"
+    },
+    "answer": {
+      "fr": "Critères pour nouveaux bacheliers : nationalité gabonaise (acte de naissance ou certificat de nationalité), demande dans les délais (juillet-août pour rentrée d'octobre), orientation par une entité compétente, titulaire du baccalauréat, moyenne annuelle ≥ 10/20 en terminale, 22 ans maximum pour bacs généraux/techniques (27 ans pour bacs professionnels). Demandes exclusivement en ligne sur anbg.online (plateforme eBourse). Pièces : photo conforme sur fond blanc, acte de naissance gabonais légalisé, certificat de nationalité ou jugement déclaratif, relevés de notes et attestation de réussite au bac, attestation d'inscription dans l'établissement. Photo non conforme = rejet automatique.",
+      "en": "Criteria for new graduates: Gabonese nationality (birth certificate or nationality certificate), application within the deadlines (July-August for October intake), guidance by a competent body, holder of the baccalaureate, annual average ≥ 10/20 in the final year, age limit 22 for general/technical baccalaureates (27 for vocational). Applications exclusively online on anbg.online (eBourse platform). Documents: compliant photo on white background, legalised Gabonese birth certificate, nationality certificate or declarative judgement, transcripts and pass certificate, enrolment attestation from the institution. A non-compliant photo triggers automatic rejection."
+    },
+    "category": "education_bourses",
+    "order": 1,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://www.anbg-ga.com/",
+      "https://www.anbg-ga.com/procedure-de-demande-de-bourse-en-ligne-2024-2025-baccalaureat-gabonais/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Qu'est-ce qu'une OQTF et que faire en cas de notification ?",
+      "en": "What is an OQTF and what should I do if I receive one?"
+    },
+    "answer": {
+      "fr": "L'OQTF (Obligation de Quitter le Territoire Français) est une décision préfectorale ordonnant à un étranger en situation irrégulière de quitter la France. Trois types : avec délai de départ volontaire (30 jours), sans délai (départ immédiat, recours sous 48 h), avec interdiction de retour (IRTF de 1 à 5 ans). NE JAMAIS ignorer une OQTF : conséquences aggravées (rétention, expulsion, IRTF). Priorité : engager un recours contentieux devant le Tribunal Administratif dans les délais (30 jours ou 48 heures), seul recours suspensif. Consultez immédiatement un avocat en droit des étrangers et demandez l'aide juridictionnelle. Le Consulat Général du Gabon peut vous accompagner. Si le retour est inévitable, l'OFII propose une aide au retour (billet, allocation jusqu'à 1 000 €, aide à la création d'entreprise jusqu'à 5 000 €).",
+      "en": "An OQTF (Obligation to Leave French Territory) is a prefectoral decision ordering an irregularly staying foreigner to leave France. Three types: with voluntary departure period (30 days), without delay (immediate, appeal within 48 hours), with re-entry ban (IRTF of 1-5 years). NEVER ignore an OQTF: consequences worsen (detention, deportation, IRTF). Priority: file a contentious appeal before the Administrative Court within the deadlines (30 days or 48 hours), the only suspensive remedy. Consult an immigration lawyer immediately and request legal aid. The Consulate-General of Gabon can support you. If return is unavoidable, OFII offers voluntary return aid (ticket, up to €1,000 allowance, business creation aid up to €5,000)."
+    },
+    "category": "administratif",
+    "order": 2,
+    "featured": true,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/venir-en-france",
+      "https://www.ofii.fr/procedure/retourner-dans-son-pays",
+      "https://www.lacimade.org"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Combien de temps pour faire transcrire un mariage célébré à l'étranger ?",
+      "en": "How long does it take to transcribe a marriage celebrated abroad?"
+    },
+    "answer": {
+      "fr": "Selon le Ministère des Affaires étrangères du Gabon, aucun délai légal n'est imposé pour transcrire un acte de mariage étranger dans les registres consulaires gabonais. Toutefois, il est fortement recommandé de procéder à la transcription dans l'année suivant le mariage, surtout en cas d'enfants à venir ou de retour au Gabon. La transcription est faite par le conjoint gabonais auprès du Consulat. Pièces : acte de mariage étranger original légalisé ou apostillé, actes de naissance des deux époux, justificatif de nationalité gabonaise, carte consulaire, photocopies des passeports. Le délai de traitement varie selon les services, comptez généralement plusieurs semaines. Une fois transcrit, le mariage est opposable au Gabon et un livret de famille gabonais est délivré.",
+      "en": "According to Gabon's Ministry of Foreign Affairs, no legal deadline is set to transcribe a foreign marriage certificate into the Gabonese consular registers. However, transcription within the first year after the marriage is strongly recommended, especially if children or a return to Gabon are planned. Transcription is done by the Gabonese spouse at the Consulate. Documents: original legalised or apostilled foreign marriage certificate, both spouses' birth certificates, proof of Gabonese nationality, consular card, copies of passports. Processing time varies; usually several weeks. Once transcribed, the marriage is enforceable in Gabon and a Gabonese family record book is issued."
+    },
+    "category": "etat_civil",
+    "order": 2,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.affaires-etrangeres.gouv.ga/etatcivil",
+      "https://diplomatie.gouv.ga/4-services-aux-usagers/597-etat-civil/344-la-transcription/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quel est le délai pour qu'un tribunal délivre un certificat de nationalité gabonaise ?",
+      "en": "How long does a court take to issue a Gabonese nationality certificate?"
+    },
+    "answer": {
+      "fr": "Selon le Code de la nationalité gabonaise, le Président du Tribunal de Première Instance dispose d'un délai de trois mois à compter de sa saisine pour statuer. Passé ce délai sans réponse, la nationalité gabonaise est réputée acquise au postulant. En cas de refus explicite, le demandeur peut saisir la Cour d'appel judiciaire. Pièces : demande manuscrite au Président du Tribunal, copie légalisée de l'acte de naissance, copie légalisée des pièces du parent gabonais (CNI, acte de naissance ou passeport), frais de procédure d'environ 10 000 FCFA. Depuis l'étranger, le Consulat peut servir d'intermédiaire pour transmettre votre dossier au tribunal compétent au Gabon, ce qui allonge les délais cumulés à 6-9 mois.",
+      "en": "Under the Gabonese Nationality Code, the President of the Court of First Instance has three months from filing to rule. If no decision is made within this period, Gabonese nationality is deemed acquired. In case of explicit refusal, the applicant may appeal to the judicial Court of Appeal. Documents: handwritten request to the President of the Court, legalised birth certificate, legalised documents of the Gabonese parent (ID, birth certificate or passport), procedural fee of about XAF 10,000. From abroad, the Consulate can forward the file to the competent court in Gabon, extending total time to 6-9 months."
+    },
+    "category": "demarches_consulaires",
+    "order": 4,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://justice.gouv.ga/certificat-de-nationalite/",
+      "https://www.justice.gouv.ga/4-services-aux-usagers/213-connaitre-mes-droits-et-mes-devoirs-etat-des-personnes/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment ouvrir un compte bancaire en France quand on arrive du Gabon ?",
+      "en": "How do I open a French bank account when arriving from Gabon?"
+    },
+    "answer": {
+      "fr": "L'ouverture d'un compte bancaire est l'une des premières démarches en France. La Banque Postale est souvent la plus accessible pour les primo-arrivants. Documents : passeport ou titre de séjour, justificatif de domicile (quittance, attestation d'hébergement), justificatif de revenus ou de scolarité, parfois un dépôt initial. Si une banque refuse, la Banque de France peut vous désigner d'office un établissement dans le cadre du droit au compte (toute personne résidant en France a ce droit). Pour les étudiants, des comptes gratuits adaptés existent (Boursorama, Hello Bank, banques en ligne). Conservez plusieurs photocopies de votre RIB. Évitez les arnaques : ne communiquez jamais vos codes par email ou téléphone.",
+      "en": "Opening a bank account is one of the first steps in France. La Banque Postale is often the easiest for newcomers. Documents: passport or residence permit, proof of address (rent receipt, hosting certificate), proof of income or schooling, sometimes an initial deposit. If a bank refuses, the Banque de France can designate an institution under the right-to-account scheme (every resident in France has this right). Students can use suitable free accounts (Boursorama, Hello Bank, online banks). Keep several copies of your account details. Avoid scams: never share your codes via email or phone."
+    },
+    "category": "vie_pratique",
+    "order": 2,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/venir-en-france",
+      "https://www.banque-france.fr/fr/a-votre-service/particulier/droit-au-compte"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Puis-je travailler en France avec un titre de séjour étudiant ?",
+      "en": "Can I work in France with a student residence permit?"
+    },
+    "answer": {
+      "fr": "Oui, dans la limite de 964 heures par an, soit environ 60 % de la durée légale du travail. Ce plafond est strictement contrôlé : tout dépassement peut entraîner un refus de renouvellement du titre étudiant. Tout type de contrat est possible (CDD, CDI, intérim, stage rémunéré) à condition de respecter la durée maximale. Cotisations sociales identiques aux salariés français. Pour passer de statut étudiant à statut salarié à la fin des études : Autorisation Provisoire de Séjour (APS) après Master ou doctorat (9 mois renouvelable une fois), passeport talent, salarié en mission, ou changement de statut classique sur la base d'un CDI ou CDD long.",
+      "en": "Yes, up to 964 hours per year, i.e. about 60% of the legal working time. The cap is strictly monitored: exceeding it can lead to refusal of renewal of the student permit. Any type of contract is possible (fixed-term, permanent, temporary, paid internship) as long as the maximum duration is respected. Social contributions are the same as for French employees. To move from student to employee status at the end of studies: temporary residence permit (APS) after Master's or PhD (9 months renewable once), Talent passport, mission employee, or standard status change on the basis of a permanent or long fixed-term contract."
+    },
+    "category": "administratif",
+    "order": 3,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/venir-en-france",
+      "https://www.service-public.fr/particuliers/vosdroits/F17319"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quels sont les transports en commun à Paris pour un étudiant gabonais ?",
+      "en": "What public transport is available in Paris for a Gabonese student?"
+    },
+    "answer": {
+      "fr": "L'Île-de-France dispose d'un réseau dense (RATP) : métro (16 lignes), RER, bus, tramway. Le pass Navigo est rentable dès 3 trajets quotidiens (abonnement mensuel autour de 88 €, annuel environ 880 €). Étudiant -26 ans : tarif réduit Imagine R (environ 380 €/an). Apps utiles : Citymapper, Bonjour RATP. En province : Lyon TCL, Toulouse Tisséo, Marseille RTM. Trains longue distance sur SNCF Connect (TGV, Intercités), carte Avantage Jeune (49 €/an, jusqu'à 30 % de réduction). Amende sans titre valide : 50 € (180 € si majorée). RSA : gratuité partielle en Île-de-France. Vélib' en libre-service 24h/24.",
+      "en": "Île-de-France has a dense network (RATP): metro (16 lines), RER, bus, tram. The Navigo pass pays off from 3 daily trips (monthly subscription about €88, annual about €880). Students under 26: Imagine R reduced fare (about €380/year). Useful apps: Citymapper, Bonjour RATP. In the regions: Lyon TCL, Toulouse Tisséo, Marseille RTM. Long-distance trains on SNCF Connect (TGV, Intercités), Avantage Jeune card (€49/year, up to 30% off). Fine without a valid ticket: €50 (€180 if raised). RSA recipients have partial free travel in Île-de-France. Vélib' bikes available 24/7."
+    },
+    "category": "vie_pratique",
+    "order": 3,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/venir-en-france",
+      "https://www.ratp.fr",
+      "https://www.sncf-connect.com"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Dois-je déclarer mes revenus en France si je n'ai aucun revenu ?",
+      "en": "Should I file a tax return in France even with no income?"
+    },
+    "answer": {
+      "fr": "Oui, vivement recommandé. Toute personne résidente fiscale en France doit déposer une déclaration annuelle, même sans revenus. L'avis d'imposition (ou de non-imposition) est exigé pour de nombreuses démarches : APL, CSS, bourses CROUS, logement social, certaines aides CAF. Sans avis, vous ne pouvez ni demander ni renouveler ces aides. La déclaration se fait en ligne sur impots.gouv.fr ; la première année, parfois un dépôt papier au centre des impôts. Vous y déclarez situation familiale, adresse, et même un revenu nul. Conservez les avis pendant au moins 3 ans (délai de contrôle). En cas de difficulté, le centre des impôts peut accorder un délai de paiement gratuit.",
+      "en": "Yes, strongly recommended. Every French tax resident must file an annual return, even with no income. The tax assessment (or non-taxation) is required for many procedures: housing benefit (APL), Complementary Health (CSS), CROUS scholarships, social housing, certain CAF benefits. Without it, you cannot apply or renew. Filing is online at impots.gouv.fr; the first year, a paper return at the tax office may be needed. Declare family status, address, and even nil income. Keep notices for at least 3 years (audit period). If in difficulty, the tax office can grant a free payment extension."
+    },
+    "category": "fiscalite",
+    "order": 2,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/vie-en-france",
+      "https://www.impots.gouv.fr"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Qu'est-ce que la garantie Visale et qui peut en bénéficier ?",
+      "en": "What is the Visale guarantee and who can benefit from it?"
+    },
+    "answer": {
+      "fr": "Visale est une garantie locative gratuite proposée par Action Logement. Elle remplace un garant physique pour : tous les jeunes de 18 à 30 ans (étudiants, alternants, jeunes actifs, demandeurs d'emploi), les salariés de +30 ans en mobilité (CDD, mission, intermittence) dans les 6 mois suivant la prise de fonction, et les ménages en intermédiation locative. Elle couvre les loyers et charges impayés jusqu'à 36 mois (60 mois en bail mobilité) et les dégradations locatives. Pour les Gabonais arrivant en France sans garant familial, c'est la solution la plus accessible : demande en ligne sur visale.fr, obtention en quelques jours. Le propriétaire doit accepter Visale, ce que la plupart font car la garantie est sécurisante et gratuite pour lui aussi.",
+      "en": "Visale is a free rental guarantee from Action Logement. It replaces a physical guarantor for: all young people aged 18-30 (students, apprentices, young workers, jobseekers), employees aged 30+ in mobility (fixed-term, mission, intermittent work) within 6 months of taking up a position, and households in intermediated leases. It covers unpaid rent and charges up to 36 months (60 in mobility lease) and rental damages. For Gabonese arriving in France without a family guarantor, it is the most accessible solution: online application at visale.fr, granted within a few days. The landlord must accept Visale, which most do as the guarantee is reassuring and free for them too."
+    },
+    "category": "vie_pratique",
+    "order": 4,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/vie-en-france",
+      "https://www.visale.fr"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Mon enfant doit-il être scolarisé même sans titre de séjour ?",
+      "en": "Must my child be enrolled in school even without a residence permit?"
+    },
+    "answer": {
+      "fr": "Oui. En France, l'instruction est obligatoire de 3 à 16 ans pour TOUS les enfants résidant sur le territoire, quelle que soit la situation administrative des parents. La mairie ne peut pas refuser l'inscription pour ce motif. Pour scolariser : présentez-vous à la mairie avec un justificatif d'adresse, le carnet de santé/vaccinations, l'acte de naissance et la pièce d'identité de l'enfant. Si arrivée en cours d'année, la scolarisation doit être organisée sans délai. Les enfants non-francophones bénéficient d'unités pédagogiques (UPE2A). Les frais de cantine et de transport peuvent être pris en charge sous condition de ressources via la CAF. En cas de refus, contactez le Défenseur des droits ou une association comme la Cimade.",
+      "en": "Yes. In France, schooling is compulsory from age 3 to 16 for ALL children residing in the territory, whatever the parents' immigration status. The town hall cannot refuse enrolment on that ground. To enrol: come to the town hall with proof of address, vaccination and health records, the child's birth certificate and ID. If arriving mid-year, enrolment must be organised without delay. Non-French-speaking children benefit from pedagogic units (UPE2A). Canteen and transport costs may be covered by CAF under means-testing. In case of refusal, contact the Defender of Rights or an association like La Cimade."
+    },
+    "category": "administratif",
+    "order": 4,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/vie-en-france",
+      "https://www.defenseurdesdroits.fr"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment souscrire à la Caisse des Français de l'Étranger (CFE) au retour au Gabon ?",
+      "en": "How do I subscribe to the Caisse des Français de l'Étranger (CFE) when returning to Gabon?"
+    },
+    "answer": {
+      "fr": "La CFE est un organisme français proposant aux personnes résidant hors de France une couverture santé maintenant les droits de la Sécurité sociale française. Pour les binationaux franco-gabonais ou les conjoints français de Gabonais s'installant au Gabon, la CFE complète utilement la CNAMGS : elle couvre les soins en France (lors de retours ponctuels) et offre un remboursement supplémentaire pour les soins au Gabon. Adhésion volontaire individuelle ou familiale sur cfe.fr. Cotisations selon âge et revenu : environ 80 à 180 € par mois pour un adulte. Avantages : pas de questionnaire médical à l'adhésion (sous conditions), maintien du numéro de Sécurité sociale français, cumulable avec une complémentaire. À souscrire AVANT le départ pour une couverture continue.",
+      "en": "CFE is a French body offering health coverage to people living outside France that maintains French Social Security rights. For Franco-Gabonese dual nationals or French spouses of Gabonese settling in Gabon, CFE usefully complements CNAMGS: it covers care in France (during occasional returns) and adds reimbursement for care in Gabon. Voluntary individual or family enrolment at cfe.fr. Contributions depend on age and income: about €80 to €180 monthly for an adult. Advantages: no medical questionnaire on entry (under conditions), retention of the French social security number, combinable with supplementary insurance. Subscribe BEFORE departure for continuous coverage."
+    },
+    "category": "retour_gabon",
+    "order": 1,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.cfe.fr",
+      "https://consulatdugabon.fr/retour-au-gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quelles sont les exonérations fiscales pour les investisseurs au Gabon ?",
+      "en": "What tax exemptions exist for investors in Gabon?"
+    },
+    "answer": {
+      "fr": "L'ANPI facilite l'accès aux régimes prévus par la Charte des Investissements gabonaise. Les entreprises nouvellement créées dans des secteurs prioritaires (transformation locale, agriculture, agro-industrie, technologies, énergies renouvelables, tourisme) peuvent bénéficier d'exonérations partielles ou totales d'impôt sur les sociétés pendant les premières années, d'exonérations de droits de douane sur les équipements importés, et d'allègements fiscaux locaux. Les conditions varient selon le montant investi, le nombre d'emplois créés, la localisation et le secteur. Pour la diaspora, l'ANPI propose un accompagnement spécifique. Renseignez-vous directement auprès de l'ANPI (anpi.ga) en amont de la création : la demande d'avantages doit généralement être déposée AVANT le démarrage de l'activité.",
+      "en": "ANPI facilitates access to the regimes set out in Gabon's Investment Charter. New companies in priority sectors (local processing, agriculture, agribusiness, technology, renewable energy, tourism) may receive partial or total exemptions from corporate tax for the first years, customs-duty exemptions on imported equipment, and local tax relief. Conditions vary by investment amount, jobs created, location and sector. For the diaspora, ANPI offers tailored support. Ask ANPI (anpi.ga) directly upfront: applications for benefits must usually be filed BEFORE the activity starts."
+    },
+    "category": "entrepreneuriat",
+    "order": 2,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.investingabon.ga/",
+      "https://consulatdugabon.fr/retour-au-gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment apostiller un diplôme français avant de partir au Gabon ?",
+      "en": "How do I apostille a French diploma before moving to Gabon?"
+    },
+    "answer": {
+      "fr": "L'apostille est une certification officielle qui authentifie un document pour qu'il soit reconnu dans un autre pays signataire de la Convention de La Haye. Au Gabon, l'apostille délivrée en France permet la reconnaissance de votre diplôme sans formalité supplémentaire. Procédure en France : adressez-vous au service apostille de la Cour d'appel du lieu de délivrance du document, ou utilisez la plateforme en ligne du Ministère de la Justice. La démarche est gratuite. Documents acceptés : diplômes, relevés de notes, actes d'état civil français, certificats divers. Délai indicatif : 2 à 4 semaines. Anticipez : faites apostiller TOUS vos documents importants AVANT le départ. Une fois au Gabon, faire revenir un diplôme en France pour apostille est très chronophage. Conservez aussi une copie numérique sur un cloud sécurisé.",
+      "en": "The apostille is an official certification authenticating a document for recognition in another Hague Convention country. In Gabon, a French apostille means your diploma is recognised without further formalities. Procedure in France: apply to the apostille office of the Court of Appeal where the document was issued, or use the Ministry of Justice's online platform. The procedure is free. Accepted documents: diplomas, transcripts, French civil-status records, various certificates. Indicative time: 2 to 4 weeks. Plan ahead: apostille ALL your important documents BEFORE departure. Once in Gabon, sending a diploma back to France for apostille is very time-consuming. Also keep a digital copy on a secure cloud."
+    },
+    "category": "retour_gabon",
+    "order": 2,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/retour-au-gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quelles sont les options de fret pour expédier ses meubles au Gabon ?",
+      "en": "What freight options exist to ship furniture to Gabon?"
+    },
+    "answer": {
+      "fr": "Deux options principales : 1) Fret maritime : la solution la plus économique, transport en conteneur (20 ou 40 pieds, partagé ou complet), 6 à 10 semaines de transit. Idéal pour les déménagements complets. 2) Fret aérien : rapide (quelques jours), coûteux, à réserver pour les biens urgents ou de valeur. La douane gabonaise applique des franchises et exonérations partielles pour les biens personnels d'un Gabonais qui rentre s'installer définitivement (sous conditions). Les véhicules sont soumis à droits de douane et exigent une mise aux normes. Comparer au moins 3 devis (Bolloré, AGS Movers, SDV-Mobilités). Envoyer les biens 2 à 3 mois avant l'arrivée. Inventaire détaillé avec photos. Articles interdits : armes, contrefaçons, médicaments sans ordonnance. Contactez les Douanes gabonaises pour les modalités exactes.",
+      "en": "Two main options: 1) Sea freight: the most economical, container transport (20- or 40-foot, shared or full), 6-10 weeks transit. Ideal for full relocations. 2) Air freight: fast (a few days), expensive, reserved for urgent or valuable goods. Gabonese customs apply partial duty-free allowances for personal goods of Gabonese permanently relocating (subject to conditions). Vehicles face duties and standards-compliance requirements. Compare at least 3 quotes (Bolloré, AGS Movers, SDV-Mobilités). Send goods 2-3 months ahead. Detailed inventory with photos. Prohibited: weapons, counterfeits, certain unprescribed medicines. Contact Gabonese Customs for exact procedures."
+    },
+    "category": "retour_gabon",
+    "order": 3,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/retour-au-gabon",
+      "https://www.douanes.ga"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Existe-t-il une école française à Libreville pour mon enfant ?",
+      "en": "Is there a French school in Libreville for my child?"
+    },
+    "answer": {
+      "fr": "Oui. Le Lycée français Blaise Pascal de Libreville accueille les élèves de la 6e à la terminale, conventionné avec l'AEFE, programme conforme à l'Éducation nationale française (brevet et baccalauréat français). Il existe aussi un Lycée Victor Hugo à Port-Gentil. Pour le primaire, les Écoles publiques conventionnées (EPC) sont gérées dans le cadre d'un accord franco-gabonais : 4 à Libreville, 1 à Port-Gentil, 1 à Franceville. Les élèves des EPC peuvent rejoindre Blaise Pascal ou Victor Hugo sans test d'entrée. Inscription au Lycée Blaise Pascal en ligne via EDUKA. Frais d'inscription indicatifs : 350 000 FCFA (environ 533 €), plus frais de scolarité annuels selon le cycle. Anticipez plusieurs mois à l'avance : les places sont très demandées.",
+      "en": "Yes. The French Lycée Blaise Pascal in Libreville welcomes students from Year 7 to final year, AEFE-conventioned, with the French Education curriculum (French brevet and baccalauréat). There is also a Lycée Victor Hugo in Port-Gentil. For primary, public Conventioned Schools (EPC) are managed under a Franco-Gabonese agreement: 4 in Libreville, 1 in Port-Gentil, 1 in Franceville. EPC students may move to Blaise Pascal or Victor Hugo without an entry test. Enrolment at Lycée Blaise Pascal online via EDUKA. Indicative registration fee: XAF 350,000 (about €533), plus annual tuition by cycle. Plan months ahead: places are highly sought after."
+    },
+    "category": "retour_gabon",
+    "order": 4,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.lyceefrancaislibreville.org/",
+      "https://ga.ambafrance.org/Education"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment maintenir mes droits à la retraite française si je rentre au Gabon ?",
+      "en": "How do I keep my French pension rights if I move back to Gabon?"
+    },
+    "answer": {
+      "fr": "Vos droits à la retraite française acquis par cotisations restent acquis à vie : ils ne se perdent pas si vous partez vivre au Gabon. Vous pourrez les liquider à l'âge légal de départ français (62-64 ans selon votre génération), même résidant à l'étranger. La pension est versée sur un compte bancaire français ou au Gabon (virement international). Préparation : 1) Avant le départ, demandez votre relevé de carrière sur lassuranceretraite.fr pour vérifier qu'aucune période n'est manquante. 2) Conservez vos bulletins de salaire et contrats des dernières années. 3) Conservez votre numéro de sécurité sociale français (actif à vie). 4) Vérifiez les éventuels accords franco-gabonais permettant la totalisation des périodes cotisées. La convention fiscale Gabon-France régit l'imposition de la pension.",
+      "en": "Your French pension rights acquired through contributions are vested for life: they are not lost if you move to Gabon. You can claim them at the French legal retirement age (62-64 depending on your generation), even when living abroad. The pension is paid into a French bank account or directly to Gabon (international transfer). Preparation: 1) Before departure, request your career statement on lassuranceretraite.fr to confirm no missing periods. 2) Keep your payslips and contracts from recent years. 3) Keep your French social security number (active for life). 4) Check any Franco-Gabonese agreements allowing totalisation of contribution periods. The Gabon-France tax treaty governs pension taxation."
+    },
+    "category": "retour_gabon",
+    "order": 5,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.lassuranceretraite.fr",
+      "https://consulatdugabon.fr/retour-au-gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Le Gabon admet-il la double nationalité ?",
+      "en": "Does Gabon allow dual nationality?"
+    },
+    "answer": {
+      "fr": "Le Code de la nationalité gabonaise n'interdit pas explicitement la double nationalité et, en pratique, de nombreux Gabonais sont aussi Français, Canadiens, Américains ou autres. La double nationalité est donc tolérée. La nationalité gabonaise s'acquiert principalement par filiation (jus sanguinis) : un enfant né d'au moins un parent gabonais l'est de plein droit. Conséquences pratiques : voyagez toujours avec le passeport du pays d'entrée. Inscrivez-vous aux deux registres consulaires. Fiscalement, la résidence (et non la nationalité) détermine l'imposition, sous réserve de la convention fiscale Gabon-France de 1995. L'Ordonnance n° 0004/PR/2026 a réformé le Code, vérifiez son impact sur votre situation.",
+      "en": "The Gabonese Nationality Code does not explicitly prohibit dual nationality and, in practice, many Gabonese are also French, Canadian, American or other nationals. Dual nationality is thus tolerated. Gabonese nationality is acquired mainly by filiation (jus sanguinis): a child born to at least one Gabonese parent acquires it by right. Practical consequences: always travel with the passport of the country you are entering. Register with both consulates. Tax-wise, residence (not nationality) determines taxation, subject to the 1995 Gabon-France tax treaty. Ordinance no. 0004/PR/2026 reformed the Code: check its impact on your situation."
+    },
+    "category": "administratif",
+    "order": 5,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://journal-officiel.ga/code-de-la-nationalite",
+      "https://consulatdugabon.fr/vie-en-france"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quelle est la procédure pour les binationaux franco-gabonais lors d'un voyage ?",
+      "en": "What is the procedure for Franco-Gabonese dual nationals when travelling?"
+    },
+    "answer": {
+      "fr": "Les binationaux doivent voyager avec le passeport du pays d'entrée : passeport gabonais pour entrer au Gabon, passeport français pour entrer en France ou dans l'espace Schengen. À l'entrée au Gabon : passeport gabonais en cours de validité, certificat international de vaccination contre la fièvre jaune (obligatoire). À l'entrée en France : passeport français valide. Pour les correspondances dans des pays tiers, présentez le passeport demandant le moins de formalités. Conservez les deux passeports dans des poches distinctes. Pour les enfants binationaux, mêmes règles. Si l'un des passeports est expiré, faites-le renouveler avant le départ (DGDI Paris pour le gabonais, préfecture/consulat français pour l'autre). En cas de problème, contactez le consulat du pays d'entrée.",
+      "en": "Dual nationals must travel with the passport of the country of entry: Gabonese passport to enter Gabon, French passport to enter France or the Schengen area. On entry to Gabon: valid Gabonese passport, international yellow-fever certificate (mandatory). On entry to France: valid French passport. For transit in third countries, present the passport with the fewest formalities. Keep both passports in separate pockets. Same rules for dual-national children. If a passport is expired, renew it before departure (DGDI Paris for the Gabonese one, French prefecture/consulate for the French one). In case of issues, contact the consulate of the entry country."
+    },
+    "category": "voyage",
+    "order": 4,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/vie-en-france",
+      "https://consulatdugabon.fr/venir-en-france"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Que couvre la garantie sociale CNAMGS pour les Gabonais Économiquement Faibles ?",
+      "en": "What does CNAMGS social cover provide for economically weak Gabonese?"
+    },
+    "answer": {
+      "fr": "Les Gabonais Économiquement Faibles (GEF) bénéficient d'une prise en charge spécifique par la CNAMGS. Couverture : remboursement des soins ordinaires à 80 %, longue durée à 90 %, certains actes à 100 % (accouchement médicalisé, évacuations sanitaires à l'étranger). Le fonds GEF est financé notamment par une redevance de 10 % sur le chiffre d'affaires des sociétés de téléphonie mobile au Gabon, et une taxe de 1,5 % sur les transferts d'argent sortants hors zone CEMAC. Cette seconde source signifie qu'une partie de ce que la diaspora envoie au Gabon (taxe payée à la sortie) contribue à financer la couverture santé des plus vulnérables. Statut GEF : inscription spécifique avec justificatifs de ressources. Évacuations sanitaires organisées par la CNAMGS pour pathologies non traitables localement.",
+      "en": "Economically Weak Gabonese (GEF) benefit from specific CNAMGS coverage. Coverage: 80% for ordinary care, 90% for long-term illness, 100% for certain procedures (supervised childbirth, medical evacuations abroad). The GEF fund is financed notably by a 10% levy on the turnover of mobile telephony companies in Gabon, and a 1.5% tax on outbound money transfers outside the CEMAC zone. This second source means part of what the diaspora sends to Gabon (tax paid on outbound flows) contributes to financing health coverage for the most vulnerable. GEF status: specific registration with resource documentation. Medical evacuations organised by CNAMGS for conditions not treatable locally."
+    },
+    "category": "vie_pratique",
+    "order": 5,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://cnamgs.ga/",
+      "https://famille.gouv.ga/271-ministere/305-organismes-sous-tutelles/358-caisse-nationale-dassurance-maladie-et-de-garantie-sociale-cnamgs-/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment fonctionne le régime des impatriés pour un Gabonais venant travailler en France ?",
+      "en": "How does the impatriate regime work for a Gabonese coming to work in France?"
+    },
+    "answer": {
+      "fr": "Le régime des impatriés (article 155 B du CGI) permet à un salarié appelé par une entreprise française depuis l'étranger de bénéficier d'avantages fiscaux temporaires. Conditions : ne pas avoir été résident fiscal français pendant les 5 années précédentes, résider en France dans le cadre d'une activité professionnelle. Avantages : exonération de la prime d'impatriation, possibilité d'exonération à hauteur de 50 % des revenus de valeurs mobilières et placements étrangers, exonération de certains jours travaillés à l'étranger. Durée : jusqu'à 8 ans suivant l'année d'installation. Pratique : remplir la rubrique « revenus de valeurs mobilières étrangères » sur le formulaire 2047 (annexe à la 2042) en indiquant 50 % du montant. Régime complexe : consultez le SIPNR ou un fiscaliste.",
+      "en": "The impatriate regime (article 155 B of the French CGI) allows an employee called to a French company from abroad to benefit from temporary tax advantages. Conditions: not have been a French tax resident in the 5 preceding years, and reside in France for a professional activity. Benefits: exemption on the impatriation premium, possible exemption up to 50% of foreign securities and investment income, exemption for certain workdays abroad. Duration: up to 8 years following the year of installation. In practice: fill in the 'foreign securities income' section on form 2047 (annex to 2042) indicating 50% of the amount. The regime is complex: consult the SIPNR or a tax advisor."
+    },
+    "category": "fiscalite",
+    "order": 3,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.impots.gouv.fr",
+      "https://alliancesolidaire.org/2024/05/07/non-residents-comment-remplir-sa-declaration-dimpot-en-2024/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quelle est la procédure pour passer du statut étudiant à salarié en France ?",
+      "en": "What is the process to change from student to employee status in France?"
+    },
+    "answer": {
+      "fr": "Plusieurs voies existent. 1) Autorisation Provisoire de Séjour (APS) post-master : pour les diplômés de Master ou Doctorat, validité 9 mois renouvelable une fois, permet de rechercher un emploi correspondant au niveau d'études. 2) Changement de statut « étudiant → salarié » : nécessite un contrat (CDI ou CDD long) en rapport avec votre formation, demande sur le portail ANEF, autorisation de travail délivrée par la DREETS. 3) Passeport talent : pour jeunes diplômés à haute qualification, salaire minimum requis (environ 1,8 SMIC). Conservez tous vos diplômes, relevés de notes, attestations et bulletins de salaire des stages. Anticipez la démarche 3 mois avant l'expiration du titre étudiant.",
+      "en": "Several paths exist. 1) Post-master temporary residence permit (APS): for Master's or PhD graduates, valid 9 months renewable once, allows job search at the qualification level. 2) Status change 'student → employee': requires a permanent or long fixed-term contract relevant to your training, application on the ANEF portal, work authorisation issued by the DREETS. 3) Talent passport: for highly skilled new graduates, with a minimum salary (about 1.8x the SMIC). Keep all diplomas, transcripts, attestations and internship payslips. Plan the procedure 3 months before the student permit expires."
+    },
+    "category": "administratif",
+    "order": 6,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/venir-en-france",
+      "https://administration-etrangers-en-france.interieur.gouv.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F17319"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quels services consulaires sont disponibles à Paris pour les Gabonais ?",
+      "en": "Which consular services are available in Paris for Gabonese nationals?"
+    },
+    "answer": {
+      "fr": "Le Consulat Général du Gabon en France (26 bis avenue Raphaël, 75016 Paris) propose : identité (inscription consulaire, carte consulaire), état civil (naissances, mariages, décès), transcription d'actes étrangers, certification et légalisation de documents, assistance consulaire (urgences), titre de voyage (laissez-passer, Tenant Lieu de Passeport). Les services passeport et visa sont gérés par l'antenne extérieure DGDI à la même adresse mais avec un fonctionnement distinct : passeports lundi-jeudi 9h-12h (retrait vendredi), visas lundi-jeudi 9h-12h. Rendez-vous obligatoire pour tous les services. Horaires : Lun-Ven 9h-16h. Urgences consulaires 24h/24 : +33 7 44 23 95 84. Email : contact@consulatdugabon.fr.",
+      "en": "The Consulate-General of Gabon in France (26 bis avenue Raphaël, 75016 Paris) provides: identity (consular registration, consular card), civil status (births, marriages, deaths), foreign-act transcription, document certification and legalisation, consular assistance (emergencies), travel documents (laissez-passer, Tenant Lieu de Passeport). Passport and visa services are run by the DGDI external office at the same address but operate separately: passports Monday-Thursday 9-12 (collection Friday), visas Monday-Thursday 9-12. Appointment mandatory for all services. Opening hours: Mon-Fri 9-16. Emergency consular hotline 24/7: +33 7 44 23 95 84. Email: contact@consulatdugabon.fr."
+    },
+    "category": "demarches_consulaires",
+    "order": 5,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/services",
+      "https://consulatdugabon.fr/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment déclarer un décès survenu à l'étranger au consulat gabonais ?",
+      "en": "How do I declare a death abroad to the Gabonese consulate?"
+    },
+    "answer": {
+      "fr": "Deux démarches parallèles : 1) Déclarer le décès aux autorités locales (en France, mairie du lieu de décès dans les 24 heures, qui établit l'acte de décès). 2) Demander la transcription de l'acte de décès étranger dans les registres consulaires gabonais. Pièces : acte de décès original légalisé ou apostillé, photocopie certifiée conforme, pièce d'identité gabonaise du défunt, acte de naissance gabonais, livret de famille. Le Consulat délivre alors un acte de décès gabonais. Pour le rapatriement du corps : contacter le Consulat dès que possible pour coordination (autorisation de transport international, pompes funèbres). Documents souvent exigés : certificat de non-épidémie, certificat d'embaumement, autorisation de transport, autorisation d'inhumation au Gabon.",
+      "en": "Two parallel steps: 1) Declare the death to the local authorities (in France, the town hall of the place of death within 24 hours, which issues the death certificate). 2) Request transcription of the foreign death certificate into the Gabonese consular registers. Documents: original death certificate legalised or apostilled, certified copy, Gabonese ID of the deceased, Gabonese birth certificate, family record book. The Consulate then issues a Gabonese death certificate. For body repatriation: contact the Consulate as soon as possible for coordination (international transport authorisation, funeral services). Documents often required: non-epidemic certificate, embalming certificate, transport authorisation, burial authorisation in Gabon."
+    },
+    "category": "etat_civil",
+    "order": 3,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.affaires-etrangeres.gouv.ga/etatcivil",
+      "https://consulatdugabon.fr/services"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Comment obtenir un permis de conduire international avant le retour au Gabon ?",
+      "en": "How do I get an international driving licence before returning to Gabon?"
+    },
+    "answer": {
+      "fr": "Avant de quitter la France, demandez un permis de conduire international auprès de l'Agence Nationale des Titres Sécurisés (ANTS). Demande en ligne sur ants.gouv.fr, gratuite. Pièces : copie du permis français valide, justificatif d'identité, photo numérique, justificatif de domicile. Délai : 2 à 6 semaines. Le permis international est valable 3 ans à partir de sa délivrance et complète (sans remplacer) votre permis français. Au Gabon, il vous permet de conduire pendant 1 an. Au-delà, échangez votre permis français contre un permis gabonais auprès de la Police nationale ou demandez un nouveau permis local. Si vous prévoyez de conduire dès l'arrivée, prévoyez aussi : copie du permis français, attestation d'assurance internationale, certificat international d'immatriculation si vous expédiez un véhicule.",
+      "en": "Before leaving France, request an international driving permit from the National Agency for Secure Titles (ANTS). Online application at ants.gouv.fr, free. Documents: copy of valid French licence, ID, digital photo, proof of address. Time: 2-6 weeks. The international permit is valid 3 years from issuance and complements (does not replace) your French licence. In Gabon, it allows driving for 1 year. Beyond that, exchange your French licence for a Gabonese one with the National Police, or apply for a new local licence. If you plan to drive on arrival, also prepare: copy of French licence, international insurance certificate, international registration certificate if shipping a vehicle."
+    },
+    "category": "retour_gabon",
+    "order": 6,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://ants.gouv.fr",
+      "https://consulatdugabon.fr/retour-au-gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Existe-t-il une aide au retour volontaire pour les Gabonais en France ?",
+      "en": "Is there voluntary return assistance for Gabonese nationals in France?"
+    },
+    "answer": {
+      "fr": "Oui. L'Office Français de l'Immigration et de l'Intégration (OFII) propose l'Aide au Retour Volontaire (ARV) pour les ressortissants étrangers sans titre de séjour, ou sous OQTF. Composantes : billet d'avion pris en charge, allocation forfaitaire jusqu'à 1 000 € par adulte (650 € par enfant), accompagnement administratif et social, accompagnement à la réinstallation. Une Aide à la Réinsertion Économique (ARE) peut atteindre 5 000 € pour un projet de création d'entreprise au Gabon, en partenariat avec l'ANPI-Gabon. Demande : rendez-vous avec une direction territoriale de l'OFII. Avantages : préservation des droits futurs (pas d'IRTF si retour volontaire), évitement de la procédure forcée. Le Consulat Général du Gabon peut accompagner et délivrer les documents nécessaires (laissez-passer si pas de passeport).",
+      "en": "Yes. The French Office for Immigration and Integration (OFII) offers Voluntary Return Aid (ARV) for foreign nationals without a residence permit or under OQTF. Components: paid airline ticket, lump-sum allowance up to €1,000 per adult (€650 per child), administrative and social support, resettlement support. An Economic Reintegration Aid (ARE) can reach €5,000 for a business project in Gabon, with ANPI-Gabon. Application: appointment at a regional OFII office. Advantages: future rights preserved (no IRTF if voluntary), avoidance of forced procedure. The Consulate-General of Gabon can support and issue the necessary documents (laissez-passer if no passport)."
+    },
+    "category": "retour_gabon",
+    "order": 7,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.ofii.fr/procedure/retourner-dans-son-pays",
+      "https://consulatdugabon.fr/retour-au-gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quels organismes peuvent m'aider à créer mon entreprise au Gabon depuis l'étranger ?",
+      "en": "Which organisations can help me create my business in Gabon from abroad?"
+    },
+    "answer": {
+      "fr": "Acteurs mobilisables : 1) ANPI-Gabon : guichet unique pour la formalisation via la plateforme GNI (gni-anpigabon.com), 100 % en ligne, 24-72h. 2) ONE (Office National de l'Emploi) : informations sur le marché du travail gabonais. 3) Business France : opportunités d'affaires France-Gabon, accompagnement entrepreneurs français ou binationaux. 4) Forum des Créateurs d'Avenir (FCA Gabon) et réseaux d'entrepreneurs gabonais. 5) Banques pour compte professionnel : BGFI, UBA, BICIG, Ecobank. 6) Cabinets juridiques locaux pour contrats. 7) Pour les retours OFII : l'Aide à la Réinsertion Économique finance jusqu'à 5 000 €. Conseil : se rendre une fois sur place pour valider le projet, rencontrer les contacts et choisir une domiciliation.",
+      "en": "Available stakeholders: 1) ANPI-Gabon: one-stop window for incorporation via GNI (gni-anpigabon.com), 100% online, 24-72h. 2) ONE (National Employment Office): info on the Gabonese labour market. 3) Business France: France-Gabon business opportunities, support for French or dual-national entrepreneurs. 4) Forum des Créateurs d'Avenir (FCA Gabon) and Gabonese entrepreneurs' networks. 5) Banks for business accounts: BGFI, UBA, BICIG, Ecobank. 6) Local law firms for contracts. 7) For OFII returnees: Economic Reintegration Aid up to €5,000. Tip: visit once to validate the project, meet contacts and choose a registered office."
+    },
+    "category": "entrepreneuriat",
+    "order": 3,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.gni-anpigabon.com/",
+      "https://www.investingabon.ga/",
+      "https://consulatdugabon.fr/retour-au-gabon"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quel est le coût indicatif d'envoi d'un colis ou d'argent au Gabon ?",
+      "en": "What is the indicative cost of sending a parcel or money to Gabon?"
+    },
+    "answer": {
+      "fr": "Pour l'argent depuis la France vers le Gabon, les coûts varient : Western Union en ligne facture environ 0,2 % du montant (hors marge sur le taux de change). Wise propose des frais réduits avec le taux interbancaire (avantageux pour les gros montants). Le virement bancaire SWIFT coûte 15-40 € fixes plus commission destinataire. Pour les colis, La Poste (Colissimo International, Chronopost) : 80-180 € pour 5-10 kg vers le Gabon, délai 5-15 jours. Les transitaires (DHL, FedEx) sont plus rapides mais plus chers. Déclarez le contenu en douane et respectez les interdictions (médicaments, contrefaçons, valeurs sans déclaration). Les transferts sortants du Gabon hors CEMAC sont soumis à une taxe CNAMGS de 1,5 %, mais cela ne concerne pas les transferts entrants au Gabon.",
+      "en": "For money sent from France to Gabon, costs vary: Western Union online charges about 0.2% of the amount (excluding FX margin). Wise offers low fees with the interbank rate (better for larger amounts). SWIFT bank transfer costs €15-40 fixed plus the receiving bank's commission. For parcels, La Poste (Colissimo International, Chronopost): €80-180 for 5-10 kg to Gabon, 5-15 days. Couriers (DHL, FedEx) are faster but pricier. Declare contents at customs and respect bans (medicines, counterfeits, undeclared valuables). Outbound transfers from Gabon outside CEMAC are subject to a 1.5% CNAMGS tax — this does NOT affect inbound transfers to Gabon."
+    },
+    "category": "vie_pratique",
+    "order": 6,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://www.westernunion.com/fr/fr/send-money-to-gabon.html",
+      "https://www.monito.com/send-money-to/gabon",
+      "https://wise.com/fr/blog/western-union-virement-international"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quelles formations sont proposées par l'Université Omar Bongo ?",
+      "en": "What courses does Omar Bongo University offer?"
+    },
+    "answer": {
+      "fr": "L'Université Omar Bongo (UOB), à Libreville, principale université publique gabonaise, regroupe plusieurs facultés et instituts : FLSH (Lettres et Sciences Humaines), FDSE (Droit et Sciences Économiques), INSG (Institut National des Sciences de Gestion), IRSH (Institut de Recherche en Sciences Humaines), ENS (École Normale Supérieure), IUSO. Filières : sciences humaines (histoire, géographie, philosophie, sociologie), langues (français, anglais, espagnol, langues africaines), droit, sciences économiques, sciences de gestion, sciences de l'éducation, sciences de la communication. Diplômes : Licence (3 ans), Master (2 ans), Doctorat. Préinscriptions 2025-2026 en ligne sur preinscription-uob.univuob.org. Option spécifique pour nouveaux bacheliers hors Gabon et étudiants étrangers. L'équivalence des diplômes étrangers est obligatoire avant l'inscription définitive.",
+      "en": "Omar Bongo University (UOB) in Libreville, Gabon's main public university, combines several faculties and institutes: FLSH (Letters and Human Sciences), FDSE (Law and Economic Sciences), INSG (National Institute of Management Sciences), IRSH (Institute of Research in Human Sciences), ENS (Higher Normal School), IUSO. Programmes: humanities (history, geography, philosophy, sociology), languages (French, English, Spanish, African languages), law, economic sciences, management, education, communication. Degrees: Licence (3 years), Master (2 years), Doctorate. 2025-2026 pre-registrations online at preinscription-uob.univuob.org. Specific option for new graduates outside Gabon and foreign students. Foreign diploma equivalence is required before final enrolment."
+    },
+    "category": "education_bourses",
+    "order": 2,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://univuob.org/",
+      "https://univuob.org/offres-de-formations/",
+      "https://preinscription-uob.univuob.org/"
+    ],
+    "updatedAt": 1747300000000
+  },
+  {
+    "question": {
+      "fr": "Quels numéros d'urgence dois-je connaître en France et au Gabon ?",
+      "en": "What emergency numbers should I know in France and Gabon?"
+    },
+    "answer": {
+      "fr": "En France : 15 (SAMU - urgences médicales), 17 (Police - secours), 18 (Pompiers), 112 (numéro européen, valable depuis tout téléphone), 114 (urgences par SMS), 3919 (violences faites aux femmes), 119 (enfance en danger). Côté gabonais : contact@consulatdugabon.fr, urgence consulaire 24h/24 +33 7 44 23 95 84, OFII +33 1 53 69 53 70. Au Gabon : 1300 ou 1488 (SAMU selon région), 1730 (Police), 18 (Pompiers), Douanes +241 01 72 13 26, ANPI +241 01 79 52 52, ONE +241 01 76 01 11, CNAMGS +241 01 76 26 52, Ambassade de France à Libreville +241 01 79 70 00. Enregistrez ces numéros AVANT le départ. En cas d'arrestation à l'étranger, vous avez le droit de contacter le consulat de votre pays (Convention de Vienne, art. 36).",
+      "en": "In France: 15 (SAMU - medical emergencies), 17 (Police - rescue), 18 (Fire brigade), 112 (European number, works from any phone), 114 (SMS emergencies), 3919 (violence against women), 119 (children in danger). Gabonese side: contact@consulatdugabon.fr, 24/7 consular emergency +33 7 44 23 95 84, OFII +33 1 53 69 53 70. In Gabon: 1300 or 1488 (SAMU by region), 1730 (Police), 18 (Fire brigade), Customs +241 01 72 13 26, ANPI +241 01 79 52 52, ONE +241 01 76 01 11, CNAMGS +241 01 76 26 52, French Embassy in Libreville +241 01 79 70 00. Save these numbers BEFORE departure. In case of arrest abroad, you have the right to contact your country's consulate (Vienna Convention, art. 36)."
+    },
+    "category": "administratif",
+    "order": 7,
+    "featured": false,
+    "isActive": true,
+    "sources": [
+      "https://consulatdugabon.fr/venir-en-france",
+      "https://consulatdugabon.fr/retour-au-gabon",
+      "https://consulatdugabon.fr/"
+    ],
+    "updatedAt": 1747300000000
+  }
+]
