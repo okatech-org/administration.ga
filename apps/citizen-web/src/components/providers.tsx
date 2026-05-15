@@ -8,6 +8,7 @@ import AppConvexProvider from "@/lib/convex-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { PostHogProvider } from "@/integrations/posthog/provider"
 import { DevAccountSwitcher } from "@/components/auth/DevAccountSwitcher"
+import { LocationProvider } from "@/contexts/LocationContext"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +16,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AppConvexProvider ensureUserMutation={api.functions.users.ensureUser}>
         <PostHogProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
+            <LocationProvider>
+              {children}
+            </LocationProvider>
             <Toaster richColors />
             <DevAccountSwitcher />
           </ThemeProvider>
