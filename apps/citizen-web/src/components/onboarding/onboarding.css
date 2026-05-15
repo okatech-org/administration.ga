@@ -36,11 +36,14 @@
 	}
 }
 
-/* Footer de phase Identity sur mobile : sticky en bas, dans le flux desktop. */
+/* Footer de phase Identity sur mobile : sticky en bas, dans le flux desktop.
+   Le `justify-content` est volontairement laissé aux consommateurs (Tailwind
+   `justify-end` / `justify-between`) puisque certaines phases n'ont qu'un
+   bouton (Name) et d'autres deux (Contact, Pin, Birth, Passport, Otp). */
 .onboarding-root .phase-footer {
 	display: flex;
-	justify-content: flex-end;
 	gap: 0.75rem;
+	margin-top: auto;
 }
 @media (max-width: 767px) {
 	.onboarding-root .phase-footer {
@@ -59,4 +62,20 @@
 		height: 2.75rem;
 		font-size: 1rem;
 	}
+	.onboarding-root .phase-footer .btn-prev {
+		height: 2.75rem;
+		flex-shrink: 0;
+	}
+}
+
+/* Champs de formulaire plus généreux dans le wizard d'inscription :
+   meilleure lisibilité, cible tactile à 48 px et prévention du zoom
+   iOS sur focus (déclenché en dessous de 16 px de font-size). Scopé via
+   `data-slot="input"` (posé par le composant `Input` partagé) pour ne pas
+   affecter les cellules de l'OtpInput qui restent en `size-11` (44 px). */
+.onboarding-root input[data-slot="input"],
+.onboarding-root textarea,
+.onboarding-root [data-slot="select-trigger"] {
+	min-height: 3rem;
+	font-size: 1rem;
 }

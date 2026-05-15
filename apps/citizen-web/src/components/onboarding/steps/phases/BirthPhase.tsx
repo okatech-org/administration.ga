@@ -57,7 +57,10 @@ export function BirthPhase({
 	});
 
 	return (
-		<form onSubmit={onSubmit} className="flex flex-col gap-6">
+		<form
+			onSubmit={onSubmit}
+			className="flex min-h-[calc(100svh-260px)] flex-col gap-6 md:min-h-0"
+		>
 			<header className="flex flex-col gap-2">
 				<h1
 					className="text-2xl font-semibold tracking-tight md:text-3xl"
@@ -284,14 +287,23 @@ export function BirthPhase({
 				/>
 			</FieldGroup>
 
-			<div className="flex justify-between">
-				<Button type="button" variant="outline" onClick={onPrev}>
+			<div className="phase-footer justify-between">
+				<Button
+					type="button"
+					variant="outline"
+					onClick={onPrev}
+					className="btn-prev"
+				>
 					<ArrowLeft className="mr-1 size-4" />
 					<span suppressHydrationWarning>
 						{t("onboarding.identity.birth.back")}
 					</span>
 				</Button>
-				<Button type="submit" disabled={form.formState.isSubmitting}>
+				<Button
+					type="submit"
+					disabled={form.formState.isSubmitting}
+					className="btn-next"
+				>
 					<span suppressHydrationWarning>
 						{t("onboarding.identity.birth.continue")}
 					</span>

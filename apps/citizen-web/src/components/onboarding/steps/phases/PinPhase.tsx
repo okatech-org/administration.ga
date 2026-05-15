@@ -174,7 +174,10 @@ export function PinPhase({
 	}
 
 	return (
-		<form onSubmit={handleSubmit} className="flex flex-col gap-6">
+		<form
+			onSubmit={handleSubmit}
+			className="flex min-h-[calc(100svh-260px)] flex-col gap-6 md:min-h-0"
+		>
 			<header className="flex flex-col gap-2">
 				<h1
 					className="text-2xl font-semibold tracking-tight md:text-3xl"
@@ -266,17 +269,22 @@ export function PinPhase({
 				</div>
 			)}
 
-			<div className="flex justify-between">
+			<div className="phase-footer justify-between">
 				<Button
 					type="button"
 					variant="outline"
 					onClick={handleBack}
 					disabled={submitting}
+					className="btn-prev"
 				>
 					<ArrowLeft className="mr-1 size-4" />
 					<span suppressHydrationWarning>{t("onboarding.identity.pin.back")}</span>
 				</Button>
-				<Button type="submit" disabled={!match || submitting}>
+				<Button
+					type="submit"
+					disabled={!match || submitting}
+					className="btn-next"
+				>
 					{submitting ? (
 						<>
 							<Loader2 className="mr-1 size-4 animate-spin" />

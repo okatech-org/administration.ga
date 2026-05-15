@@ -169,7 +169,7 @@ export function NamePhase({
 				onScanFailed={onScanFailed}
 			/>
 
-			<div className="phase-footer mt-auto">
+			<div className="phase-footer justify-end">
 				<Button
 					type="submit"
 					disabled={form.formState.isSubmitting}

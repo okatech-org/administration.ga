@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 export function SubmittedScreen({
@@ -14,6 +15,13 @@ export function SubmittedScreen({
 }) {
 	const router = useRouter();
 	const { t } = useTranslation();
+
+	// La page précédente (wizard) laisse le scroll position en bas (footer du
+	// formulaire) ; sur mobile cela cache totalement le héro de confirmation.
+	// On force un retour en haut au mount.
+	useEffect(() => {
+		window.scrollTo({ top: 0, behavior: "auto" });
+	}, []);
 	return (
 		<div className="mx-auto flex w-full max-w-md flex-col items-center gap-5 px-6 py-12 text-center md:py-20">
 			<div className="flex size-[72px] items-center justify-center rounded-full bg-gabon-green-tint text-gabon-green">
