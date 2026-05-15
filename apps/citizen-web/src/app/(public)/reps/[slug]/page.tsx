@@ -49,7 +49,7 @@ export default async function OrgDetailPage({ params }: PageProps) {
 
   const [org, preloaded] = await Promise.all([
     fetchQuery(api.functions.orgs.getBySlug, { slug }),
-    preloadQuery(api.functions.orgs.getBySlug, { slug }),
+    preloadQuery(api.functions.orgsPublic.publicDetails, { slug }),
   ])
 
   if (!org) notFound()
