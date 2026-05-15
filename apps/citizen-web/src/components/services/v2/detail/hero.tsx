@@ -1,9 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Calendar, CheckCircle2 } from "lucide-react"
+import { ArrowRight, Calendar, CheckCircle2, Info, LogIn } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
+
+export type ServiceCtaState =
+  | { kind: "loading" }
+  | { kind: "eligible"; href: string }
+  | { kind: "unauthenticated"; href: string }
+  | { kind: "not_offered" }
+  | { kind: "no_attached_org" }
 
 export function ServiceHero({
   pills,
@@ -15,7 +22,7 @@ export function ServiceHero({
   audience,
   ctaTitle,
   ctaDescription,
-  ctaHref,
+  cta,
   secondaryCtaHref,
   isResumable,
 }: {
@@ -28,7 +35,7 @@ export function ServiceHero({
   audience?: string
   ctaTitle: string
   ctaDescription: string
-  ctaHref: string
+  cta: ServiceCtaState
   secondaryCtaHref?: string
   isResumable?: boolean
 }) {
@@ -95,13 +102,52 @@ export function ServiceHero({
         <p className="text-[13px] leading-[1.5] text-[var(--pub-text-muted)]">
           {ctaDescription}
         </p>
-        <Link
-          href={ctaHref}
-          className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--pub-gabon-blue)] px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
-        >
-          {t("services.detail.heroCtaPrimary", "Démarrer la démarche")}
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </Link>
+        {cta.kind === "eligible" && (
+          <Link
+            href={cta.href}
+            className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--pub-gabon-blue)] px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
+          >
+            {t("services.detail.heroCtaPrimary", "Démarrer la démarche")}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        )}
+        {cta.kind === "unauthenticated" && (
+          <Link
+            href={cta.href}
+            className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--pub-gabon-blue)] px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
+          >
+            <LogIn className="size-4" aria-hidden="true" />
+            {t(
+              "services.detail.heroCtaSignIn",
+              "Se connecter pour démarrer",
+            )}
+          </Link>
+        )}
+        {(cta.kind === "not_offered" || cta.kind === "no_attached_org") && (
+          <div className="flex items-start gap-2 rounded-[10px] border border-[var(--pub-border)] bg-[var(--pub-surface-2)] px-4 py-3.5 text-[13px] leading-[1.5] text-[var(--pub-text-muted)]">
+            <Info
+              className="mt-0.5 size-4 shrink-0 text-[var(--pub-warning)]"
+              aria-hidden="true"
+            />
+            <span>
+              {cta.kind === "no_attached_org"
+                ? t(
+                    "services.detail.heroCtaNoOrg",
+                    "Vous devez d'abord vous immatriculer auprès d'un organisme consulaire pour démarrer cette démarche.",
+                  )
+                : t(
+                    "services.detail.heroCtaNotOffered",
+                    "Cette démarche n'est pas proposée par votre organisme de rattachement.",
+                  )}
+            </span>
+          </div>
+        )}
+        {cta.kind === "loading" && (
+          <div
+            aria-hidden="true"
+            className="min-h-[50px] w-full animate-pulse rounded-[10px] bg-[var(--pub-surface-2)]"
+          />
+        )}
         {secondaryCtaHref && (
           <Link
             href={secondaryCtaHref}
@@ -111,7 +157,7 @@ export function ServiceHero({
             {t("services.detail.heroCtaSecondary", "Prendre rendez-vous au consulat")}
           </Link>
         )}
-        {isResumable && (
+        {isResumable && cta.kind === "eligible" && (
           <div className="flex items-center gap-2 border-t border-dashed border-[var(--pub-border)] pt-3 text-[12px] text-[var(--pub-text-muted)]">
             <CheckCircle2
               className="size-3.5 text-[var(--pub-success)]"
@@ -119,7 +165,7 @@ export function ServiceHero({
             />
             {t("services.detail.resumePrefix", "Vous avez déjà commencé ?")}
             <Link
-              href={ctaHref}
+              href={cta.href}
               className="ml-auto font-medium text-[var(--pub-gabon-blue)] hover:underline"
             >
               {t("services.detail.resumeCta", "Reprendre")}
