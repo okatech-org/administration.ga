@@ -1,0 +1,38 @@
+/**
+ * Styles minimaux pour ClusteredMap.
+ *
+ * Strippe la chrome par défaut du popup Mapbox (fond blanc, padding, ombre)
+ * pour que le HTML que tu renvoies depuis `renderPopup` contrôle 100% du
+ * look — utile pour des popups sombres ou des cards custom. La classe
+ * `clustered-map-popup` est appliquée par `ClusteredMap` au popup ouvert.
+ *
+ * À importer une fois côté app, après `mapbox-gl/dist/mapbox-gl.css` :
+ *
+ *   import "mapbox-gl/dist/mapbox-gl.css";
+ *   import "@workspace/map/styles.css";
+ */
+
+.mapboxgl-popup.clustered-map-popup .mapboxgl-popup-content {
+	background: transparent !important;
+	padding: 0 !important;
+	box-shadow: none !important;
+	border-radius: 12px;
+}
+
+.mapboxgl-popup.clustered-map-popup .mapboxgl-popup-tip {
+	border-top-color: #020617 !important;
+	border-bottom-color: #020617 !important;
+}
+
+.mapboxgl-popup.clustered-map-popup .mapboxgl-popup-close-button {
+	color: #94a3b8;
+	font-size: 18px;
+	padding: 4px 8px;
+	right: 4px;
+	top: 4px;
+}
+
+.mapboxgl-popup.clustered-map-popup .mapboxgl-popup-close-button:hover {
+	color: #f8fafc;
+	background: transparent;
+}
