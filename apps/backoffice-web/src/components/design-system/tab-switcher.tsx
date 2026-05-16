@@ -44,8 +44,8 @@ export function TabSwitcher({
 						className={cn(
 							"flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center active:scale-[0.97] whitespace-nowrap",
 							isActive
-								? "bg-primary text-primary-foreground"
-								: "text-muted-foreground hover:text-foreground hover:bg-[#EBE6DC]/50 dark:hover:bg-[#383633]/50",
+								? "bg-background text-foreground"
+								: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
 						)}
 					>
 						{Icon && <Icon className="h-4 w-4 shrink-0" />}
@@ -56,7 +56,7 @@ export function TabSwitcher({
 								className={cn(
 									"ml-1 h-5 min-w-5 px-1.5 text-[10px] font-semibold",
 									isActive
-										? "bg-primary-foreground/20 text-primary-foreground border-0"
+										? "bg-foreground/10 text-foreground border-0"
 										: "text-muted-foreground",
 								)}
 							>

@@ -15,10 +15,10 @@
   --border-strong: #d2cdbf;
   --border-soft: #efebe0;
 
-  /* Texte */
-  --text: #14130f;
-  --text-muted: #6a665b;
-  --text-faint: #9a9588;
+  /* Texte — achromatique aligné sur agent-web (packages/ui globals.css). */
+  --text: oklch(0.10 0 0);
+  --text-muted: oklch(0.40 0 0);
+  --text-faint: oklch(0.55 0 0);
 
   /* ── Bridge des tokens shadcn / Tailwind v4 ────────────────────────
      Les composants shadcn (Button, Card, Input, Badge…) consomment ces
@@ -115,9 +115,9 @@
   --border-strong: #3a3528;
   --border-soft: #221f18;
 
-  --text: #f4f1e8;
-  --text-muted: #aaa493;
-  --text-faint: #7a7363;
+  --text: oklch(0.98 0 0);
+  --text-muted: oklch(0.65 0 0);
+  --text-faint: oklch(0.50 0 0);
 
   --gabon-blue-v2: #5b9bdf;
   --gabon-blue-v2-deep: #4080c9;
