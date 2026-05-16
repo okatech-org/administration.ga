@@ -255,6 +255,16 @@
   position: relative; overflow: hidden;
   flex-shrink: 0;
 }
+/* Le logo doit rester sombre dans les deux modes (identité de marque).
+   En dark mode, `--ink-900` s'inverse pour le pattern `btn-dark` (devient
+   beige clair), ce qui rend le logo blanc-sur-blanc. On rebascule via
+   `--bg-deep` qui vaut `#0a0907` en dark — équivalent visuel à `--ink-900`
+   du light mode. */
+.dark .dash-v2 .logo-mark,
+.dash-v2.dark .logo-mark {
+  background: var(--bg-deep);
+  color: #fff;
+}
 .dash-v2 .logo-mark::after {
   content: "";
   position: absolute;
