@@ -203,155 +203,95 @@ export function DiplomaticProfilesView() {
 		);
 	}
 
-	const hasActiveFilters = activeContinent || selectedCountry || selectedOrg || gradeFilter || statusFilter || search.trim();
+	const hasActiveFilters = !!(activeContinent || selectedCountry || selectedOrg || gradeFilter || statusFilter || search.trim());
 
 	return (
-		<div className="space-y-4">
-			{/* ── Stats par grade (cliquables) ── */}
-			<div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-				{Object.entries(GRADE_CONFIG).map(([key, { label, color }]) => (
-					<button
-						key={key}
-						type="button"
-						onClick={() => setGradeFilter(gradeFilter === key ? null : key)}
-						className={cn(
-							"rounded-lg border p-3 text-center transition-all cursor-pointer",
-							gradeFilter === key ? "border-primary bg-primary/5" : "hover:bg-muted/30",
-						)}
-					>
-						<div className={cn("text-xl font-bold", color)}>{gradeDistribution[key] ?? 0}</div>
-						<div className="text-[10px] text-muted-foreground">{label}</div>
-					</button>
-				))}
-			</div>
-
-			{/* ── Continents ── */}
-			{continentData.continents.length > 1 && (
-				<div className="flex flex-wrap items-center gap-1.5">
-					<button
-						type="button"
-						onClick={() => { setActiveContinent(null); setSelectedCountry(null); setSelectedOrg(null); }}
-						className={cn(
-							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-							!activeContinent ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-background/50",
-						)}
-					>
-						Tous
-						<Badge variant="secondary" className={cn("h-5 min-w-[20px] px-1.5 text-[10px]", !activeContinent && "bg-primary/10 text-primary")}>
-							{allMembers.length}
-						</Badge>
-					</button>
-					{continentData.continents.map((cont) => {
-						const meta = CONTINENT_META[cont];
-						const isActive = activeContinent === cont;
-						return (
-							<button
-								key={cont}
-								type="button"
-								onClick={() => { setActiveContinent(isActive ? null : cont); setSelectedCountry(null); setSelectedOrg(null); }}
-								className={cn(
-									"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-									isActive ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-background/50",
-								)}
-							>
-								{meta?.label ?? cont}
-								<Badge variant="secondary" className={cn("h-5 min-w-[20px] px-1.5 text-[10px]", isActive && "bg-primary/10 text-primary")}>
-									{continentData.counts.get(cont) ?? 0}
-								</Badge>
-							</button>
-						);
-					})}
-				</div>
-			)}
-
-			{/* ── Pays (si continent sélectionné ou peu de pays) ── */}
-			{(activeContinent || countryData.length <= 10) && countryData.length > 1 && (
-				<div className="flex flex-wrap items-center gap-1">
-					<button
-						type="button"
-						onClick={() => { setSelectedCountry(null); setSelectedOrg(null); }}
-						className={cn(
-							"flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-							!selectedCountry ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-						)}
-					>
-						Tous les pays
-					</button>
-					{countryData.map(({ code, name, flag, count }) => (
-						<button
-							key={code}
-							type="button"
-							onClick={() => { setSelectedCountry(selectedCountry === code ? null : code); setSelectedOrg(null); }}
-							className={cn(
-								"flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-								selectedCountry === code ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-							)}
-						>
-							{flag} {name}
-							<span className="text-[10px] opacity-70">{count}</span>
-						</button>
-					))}
-				</div>
-			)}
-
-			{/* ── Représentations (si pays sélectionné ou peu d'orgs) ── */}
-			{(selectedCountry || orgData.length <= 6) && orgData.length > 1 && (
-				<div className="flex flex-wrap items-center gap-1">
-					<button
-						type="button"
-						onClick={() => setSelectedOrg(null)}
-						className={cn(
-							"flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-							!selectedOrg ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-						)}
-					>
-						<Building2 className="h-3 w-3" /> Toutes
-					</button>
-					{orgData.map(({ id, name, count }) => (
-						<button
-							key={id}
-							type="button"
-							onClick={() => setSelectedOrg(selectedOrg === id ? null : id)}
-							className={cn(
-								"flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-								selectedOrg === id ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-							)}
-						>
-							{name}
-							<span className="text-[10px] opacity-70">{count}</span>
-						</button>
-					))}
-				</div>
-			)}
-
-			{/* ── Recherche + Statuts ── */}
+		<div className="space-y-3">
+			{/* ── Barre de filtres compacte : 1 ligne de selects + search ── */}
 			<div className="flex items-center gap-2 flex-wrap">
-				<div className="relative flex-1 min-w-[200px]">
+				<div className="relative flex-1 min-w-[220px]">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						placeholder="Rechercher par nom, poste ou organisation..."
-						className="pl-9"
+						className="pl-9 h-9"
 					/>
 				</div>
-				<div className="flex items-center gap-1 flex-wrap">
-					{Object.entries(STATUS_CONFIG).map(([key, { label, bg, color }]) => (
-						<button
-							key={key}
-							type="button"
-							onClick={() => setStatusFilter(statusFilter === key ? null : key)}
-							className={cn(
-								"text-[10px] rounded-full px-2.5 py-1 border transition-colors",
-								statusFilter === key
-									? "bg-primary text-primary-foreground border-primary"
-									: cn("border-transparent", bg, color, "hover:opacity-80"),
-							)}
-						>
-							{label}
-						</button>
+				{continentData.continents.length > 1 && (
+					<select
+						value={activeContinent ?? ""}
+						onChange={(e) => {
+							const v = e.target.value;
+							setActiveContinent((v || null) as Continent | null);
+							setSelectedCountry(null);
+							setSelectedOrg(null);
+						}}
+						className="h-9 rounded-md border border-input bg-card px-2.5 text-sm text-foreground"
+					>
+						<option value="">Tous les continents ({allMembers.length})</option>
+						{continentData.continents.map((cont) => (
+							<option key={cont} value={cont}>
+								{CONTINENT_META[cont]?.label ?? cont} ({continentData.counts.get(cont) ?? 0})
+							</option>
+						))}
+					</select>
+				)}
+				{countryData.length > 1 && (
+					<select
+						value={selectedCountry ?? ""}
+						onChange={(e) => {
+							setSelectedCountry(e.target.value || null);
+							setSelectedOrg(null);
+						}}
+						className="h-9 rounded-md border border-input bg-card px-2.5 text-sm text-foreground"
+					>
+						<option value="">Tous les pays</option>
+						{countryData.map(({ code, name, flag, count }) => (
+							<option key={code} value={code}>
+								{flag} {name} ({count})
+							</option>
+						))}
+					</select>
+				)}
+				{orgData.length > 1 && (
+					<select
+						value={selectedOrg ?? ""}
+						onChange={(e) => setSelectedOrg(e.target.value || null)}
+						className="h-9 rounded-md border border-input bg-card px-2.5 text-sm text-foreground"
+					>
+						<option value="">Toutes les représentations</option>
+						{orgData.map(({ id, name, count }) => (
+							<option key={id} value={id}>
+								{name} ({count})
+							</option>
+						))}
+					</select>
+				)}
+				<select
+					value={gradeFilter ?? ""}
+					onChange={(e) => setGradeFilter(e.target.value || null)}
+					className="h-9 rounded-md border border-input bg-card px-2.5 text-sm text-foreground"
+				>
+					<option value="">Tous les grades</option>
+					{Object.entries(GRADE_CONFIG).map(([key, { label }]) => (
+						<option key={key} value={key}>
+							{label} ({gradeDistribution[key] ?? 0})
+						</option>
 					))}
-				</div>
+				</select>
+				<select
+					value={statusFilter ?? ""}
+					onChange={(e) => setStatusFilter(e.target.value || null)}
+					className="h-9 rounded-md border border-input bg-card px-2.5 text-sm text-foreground"
+				>
+					<option value="">Tous les statuts</option>
+					{Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
+						<option key={key} value={key}>
+							{label}
+						</option>
+					))}
+				</select>
 			</div>
 
 			{/* ── Résultats ── */}
@@ -359,25 +299,28 @@ export function DiplomaticProfilesView() {
 				<span className="text-xs text-muted-foreground">
 					{filtered.length} membre{filtered.length !== 1 ? "s" : ""}
 					{hasActiveFilters && (
-						<button type="button" onClick={resetFilters} className="ml-2 text-primary hover:underline">
+						<button
+							type="button"
+							onClick={resetFilters}
+							className="ml-2 text-primary hover:underline"
+						>
 							Réinitialiser les filtres
 						</button>
 					)}
 				</span>
 			</div>
 
-			<ScrollArea className="h-[calc(100vh-480px)]">
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-					{filtered.map((member: any) => (
-						<DiplomaticMemberCard key={member.membershipId} member={member} />
-					))}
-					{filtered.length === 0 && (
-						<div className="col-span-full text-center py-12 text-muted-foreground text-sm">
-							Aucun membre trouvé
-						</div>
-					)}
-				</div>
-			</ScrollArea>
+			{/* ── Liste des cartes (scroll naturel de la page) ── */}
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+				{filtered.map((member: any) => (
+					<DiplomaticMemberCard key={member.membershipId} member={member} />
+				))}
+				{filtered.length === 0 && (
+					<div className="col-span-full text-center py-12 text-muted-foreground text-sm">
+						Aucun membre trouvé
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

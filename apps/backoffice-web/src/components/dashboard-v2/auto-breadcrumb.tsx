@@ -101,7 +101,9 @@ export function AutoBreadcrumb() {
 	// Même à la racine on veut la cloche → render toujours, mais sans crumb
 	// si on est sur `/`.
 	const effectiveCrumbs: CrumbItem[] =
-		crumbs.length === 0 ? [{ label: "Tableau de bord" }] : crumbs;
+		crumbs.length === 0
+			? [{ label: "Back-office", href: "/" }, { label: "Centre de Commandement" }]
+			: crumbs;
 
 	return (
 		<DashboardToolbar

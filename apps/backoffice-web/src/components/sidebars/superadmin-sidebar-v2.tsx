@@ -23,6 +23,7 @@ import {
 	Palette,
 	ScrollText,
 	Settings,
+	Shield,
 	Sun,
 	Users,
 } from "lucide-react";
@@ -112,15 +113,15 @@ export function SuperadminSidebarV2() {
 					moduleCode: "team",
 				},
 				{
+					title: "Corps Diplomatique",
+					url: "/corps-diplomatique",
+					icon: Shield,
+					moduleCode: "team",
+				},
+				{
 					title: t("superadmin.nav.skills", "Compétences & Métiers"),
 					url: "/skills",
 					icon: Award,
-				},
-				{
-					title: t("superadmin.nav.support", "Support & Tickets"),
-					url: "/support",
-					icon: LifeBuoy,
-					moduleCode: "calendar",
 				},
 			],
 		},
@@ -151,35 +152,6 @@ export function SuperadminSidebarV2() {
 					icon: Calendar,
 					moduleCode: "calendar",
 				},
-				{
-					title: t("superadmin.nav.appointments", "Rendez-vous"),
-					url: "/appointments",
-					icon: Calendar,
-					moduleCode: "calendar",
-				},
-			],
-		},
-		{
-			label: "Sécurité & Système",
-			items: [
-				{
-					title: t("superadmin.nav.auditLogs", "Journaux d'audit"),
-					url: "/audit-logs",
-					icon: ScrollText,
-					moduleCode: "statistics",
-				},
-				{
-					title: t("superadmin.nav.monitoring", "Monitoring"),
-					url: "/monitoring",
-					icon: Activity,
-					moduleCode: "statistics",
-				},
-				{
-					title: t("superadmin.nav.settings", "Paramètres"),
-					url: "/settings",
-					icon: Settings,
-					moduleCode: "settings",
-				},
 			],
 		},
 		{
@@ -202,6 +174,29 @@ export function SuperadminSidebarV2() {
 					url: "/events",
 					icon: BookOpen,
 					moduleCode: "community",
+				},
+			],
+		},
+		{
+			label: "Sécurité & Système",
+			items: [
+				{
+					title: t("superadmin.nav.auditLogs", "Journaux d'audit"),
+					url: "/audit-logs",
+					icon: ScrollText,
+					moduleCode: "statistics",
+				},
+				{
+					title: t("superadmin.nav.monitoring", "Monitoring"),
+					url: "/monitoring",
+					icon: Activity,
+					moduleCode: "statistics",
+				},
+				{
+					title: t("superadmin.nav.support", "Support & Tickets"),
+					url: "/support",
+					icon: LifeBuoy,
+					moduleCode: "calendar",
 				},
 			],
 		},
@@ -303,18 +298,28 @@ export function SuperadminSidebarV2() {
 						</span>
 						<ChevronDown size={12} style={{ color: "var(--text-muted)" }} />
 					</button>
-					<button
-						type="button"
-						className="sa-icon-btn"
-						aria-label={
-							theme === "dark"
-								? t("theme.light", "Mode clair")
-								: t("theme.dark", "Mode sombre")
-						}
-						onClick={toggleTheme}
-					>
-						{theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-					</button>
+					<div className="row items-center" style={{ gap: 4 }}>
+						<Link
+							href="/settings"
+							className="sa-icon-btn"
+							aria-label={t("superadmin.nav.settings", "Paramètres")}
+							title={t("superadmin.nav.settings", "Paramètres")}
+						>
+							<Settings size={14} />
+						</Link>
+						<button
+							type="button"
+							className="sa-icon-btn"
+							aria-label={
+								theme === "dark"
+									? t("theme.light", "Mode clair")
+									: t("theme.dark", "Mode sombre")
+							}
+							onClick={toggleTheme}
+						>
+							{theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+						</button>
+					</div>
 				</div>
 				<div className="sa-user">
 					<div
