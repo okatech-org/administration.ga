@@ -37,13 +37,18 @@ const TONE_VAR: Record<Tone, { color: string; tint: string }> = {
 	muted: { color: "var(--text-faint)", tint: "var(--surface-3)" },
 };
 
-type PeriodId = "24h" | "7j" | "30j" | "90j" | "year";
-const PERIODS: { id: PeriodId; label: string; ms: number }[] = [
-	{ id: "24h", label: "24 h", ms: 24 * 60 * 60 * 1000 },
-	{ id: "7j", label: "7 j", ms: 7 * 24 * 60 * 60 * 1000 },
-	{ id: "30j", label: "30 j", ms: 30 * 24 * 60 * 60 * 1000 },
-	{ id: "90j", label: "90 j", ms: 90 * 24 * 60 * 60 * 1000 },
-	{ id: "year", label: "Année", ms: 365 * 24 * 60 * 60 * 1000 },
+type PeriodId = "total" | "24h" | "7j" | "30j" | "90j" | "year";
+// Pour l'instant seul "Total" est actif — les fenêtres temporelles s'appuient
+// sur des agrégats encore non backfillés (cf. plan), elles seront ré-activées
+// une fois le backfill effectué. Les libellés restent visibles à titre
+// indicatif pour communiquer la feature à venir.
+const PERIODS: { id: PeriodId; label: string; ms: number; enabled: boolean }[] = [
+	{ id: "total", label: "Total", ms: 0, enabled: true },
+	{ id: "24h", label: "24 h", ms: 24 * 60 * 60 * 1000, enabled: false },
+	{ id: "7j", label: "7 j", ms: 7 * 24 * 60 * 60 * 1000, enabled: false },
+	{ id: "30j", label: "30 j", ms: 30 * 24 * 60 * 60 * 1000, enabled: false },
+	{ id: "90j", label: "90 j", ms: 90 * 24 * 60 * 60 * 1000, enabled: false },
+	{ id: "year", label: "Année", ms: 365 * 24 * 60 * 60 * 1000, enabled: false },
 ];
 
 const ORG_TYPE_LABELS: Record<string, string> = {
@@ -203,22 +208,41 @@ function PeriodFilter({
 		>
 			{PERIODS.map((p) => {
 				const active = p.id === value;
+				const disabled = !p.enabled;
 				return (
 					<button
 						key={p.id}
 						type="button"
-						onClick={() => onChange(p.id)}
+						disabled={disabled}
+						aria-disabled={disabled}
+						title={
+							disabled
+								? "Bientôt disponible — pour l'instant, seul le total est affiché."
+								: undefined
+						}
+						onClick={() => {
+							if (!disabled) onChange(p.id);
+						}}
 						style={{
 							appearance: "none",
 							background: active ? "var(--ink-900)" : "transparent",
-							color: active ? "#fff" : "var(--text-muted)",
+							// `--ink-900` s'inverse en dark mode (devient beige clair) ; le
+							// texte doit s'inverser en miroir → `var(--bg)` (≈ blanc en
+							// light, ≈ noir en dark). Hardcoder `#fff` ferait blanc-sur-
+							// beige-clair en dark mode.
+							color: active
+								? "var(--bg)"
+								: disabled
+									? "var(--text-faint)"
+									: "var(--text-muted)",
 							border: "none",
 							borderRadius: 100,
 							padding: "6px 14px",
 							fontSize: 12,
 							fontWeight: 500,
-							cursor: "pointer",
+							cursor: disabled ? "not-allowed" : "pointer",
 							letterSpacing: "-0.005em",
+							opacity: disabled ? 0.5 : 1,
 						}}
 					>
 						{p.label}
@@ -390,7 +414,10 @@ function WelcomeBanner({
 						className="btn btn-sm"
 						style={{
 							background: "#fff",
-							color: "var(--gabon-blue-v2)",
+							// Fond du hero verrouillé en bleu foncé (gradient hardcodé) →
+							// on ne s'appuie pas sur `--gabon-blue-v2` qui devient bleu
+							// clair en dark mode et passe blanc-sur-blanc.
+							color: "#0b4f9c",
 							border: "1px solid #fff",
 							fontWeight: 600,
 						}}
@@ -1082,7 +1109,7 @@ function Donut({
 // ════════════════════════════════════════════════════════════════════════════
 
 export default function SuperadminDashboard() {
-	const [period, setPeriod] = useState<PeriodId>("30j");
+	const [period, setPeriod] = useState<PeriodId>("total");
 	const [showWelcome, setShowWelcome] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 
@@ -1115,13 +1142,15 @@ export default function SuperadminDashboard() {
 	) as { data: any; isPending: boolean };
 
 	const periodMs = useMemo(
-		() => PERIODS.find((p) => p.id === period)?.ms ?? 30 * 24 * 60 * 60 * 1000,
+		() => PERIODS.find((p) => p.id === period)?.ms ?? 0,
 		[period],
 	);
 
+	// "Total" = pas de fenêtre temporelle → on skippe la query delta. Les
+	// KPI affichent alors la valeur globale sans pill delta.
 	const { data: deltas } = useAuthenticatedConvexQuery(
 		api.functions.admin.getStatsDelta,
-		{ sinceMs: periodMs },
+		period === "total" ? "skip" : { sinceMs: periodMs },
 	) as {
 		data:
 			| {
@@ -1996,7 +2025,13 @@ export default function SuperadminDashboard() {
 											>
 												<div
 													className="avatar sm"
-													style={{ background: t.color, color: "#fff" }}
+													// Tint + couleur tonale → contraste OK en clair ET en sombre
+													// (les tokens v2 inversent en dark mode, donc `var(--xxx-v2)`
+													// devient clair et serait illisible sur fond blanc).
+													style={{
+														background: t.tint,
+														color: t.color,
+													}}
 												>
 													{initials}
 												</div>
