@@ -344,11 +344,19 @@
   text-decoration: none;
 }
 .dash-v2 .sa-item:hover { background: var(--surface-2); color: var(--text); }
+/* Item actif : même pattern que la sidebar agent-web (tinted-bg + bold +
+   colored-text), porté ici sur les tokens `--gabon-blue-v2-*` du back-office.
+   Plus de fond solide bleu — on garde le contraste mais en plus discret,
+   coherent avec les autres pills `.pill-info`. */
 .dash-v2 .sa-item.is-active {
-  background: var(--gabon-blue-v2);
-  color: #fff;
+  background: var(--gabon-blue-v2-tint);
+  color: var(--gabon-blue-v2);
+  font-weight: 700;
 }
-.dash-v2 .sa-item.is-active:hover { background: var(--gabon-blue-v2-deep); color: #fff; }
+.dash-v2 .sa-item.is-active:hover {
+  background: var(--gabon-blue-v2-tint);
+  color: var(--gabon-blue-v2);
+}
 .dash-v2 .sa-item-label {
   flex: 1; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -356,9 +364,6 @@
 .dash-v2 .sa-item-badge {
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em;
   padding: 2px 6px; border-radius: 100px;
-  background: rgba(255, 255, 255, 0.22); color: #fff;
-}
-.dash-v2 .sa-item:not(.is-active) .sa-item-badge {
   background: var(--purple-v2-tint); color: var(--purple-v2);
 }
 .dash-v2 .sa-item-count {
@@ -367,7 +372,8 @@
   padding: 1px 7px; border-radius: 100px; font-weight: 600;
 }
 .dash-v2 .sa-item.is-active .sa-item-count {
-  background: rgba(255, 255, 255, 0.22); color: #fff;
+  background: var(--surface);
+  color: var(--gabon-blue-v2);
 }
 
 .dash-v2 .sa-footer {
