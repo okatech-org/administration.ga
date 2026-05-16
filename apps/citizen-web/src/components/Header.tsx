@@ -265,7 +265,7 @@ export default function Header() {
 							onClick={() => setIsOpen(false)}
 							className={cn(
 								"mb-1 flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-secondary",
-								isActive(link.href) &&
+								isActive(link.href, link.exact) &&
 									"bg-gabon-blue-tint text-gabon-blue",
 							)}
 						>
