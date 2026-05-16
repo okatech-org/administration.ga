@@ -16,9 +16,12 @@
  * ensuite via DataChannel — c'est l'établissement initial qui est limité.
  */
 
-// Pas de `"use node"` : on reste dans le runtime Convex V8 isolate, qui
-// supporte `fetch` natif et l'accès à `process.env`. Cela évite la
-// dépendance Node.js sur le deployment local et accélère le démarrage.
+// Runtime Node.js requis : iSGEN/mairie.ga ont prouvé que le fetch vers
+// `/v1/realtime/sessions` doit s'exécuter dans le runtime Node.js, pas dans
+// le V8 isolate de Convex. Le V8 isolate sérialise différemment les headers
+// ou le body, ce qui faisait répondre OpenAI avec `beta_api_shape_disabled`
+// même quand la clé OpenAI était valide.
+"use node";
 
 import { v } from "convex/values";
 import { action } from "../_generated/server";
@@ -32,7 +35,9 @@ import type { RealtimeSessionResponse, RealtimeVoice } from "./realtimeTypes";
 // le « beta_api_shape_disabled » côté gabon-diplomatie vient probablement
 // d'une politique côté COMPTE/CLÉ OpenAI (pas du code). On conserve le shape
 // historique tant que la clé OpenAI utilisée ne supporte pas la GA.
-const DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
+// Modèle GA (Aug 2025), remplace `gpt-4o-realtime-preview-*` déprécié.
+// DOIT correspondre au DEFAULT_MODEL du hook client (packages/iasted/.../use-realtime-voice.ts).
+const DEFAULT_MODEL = "gpt-realtime";
 const DEFAULT_VOICE: RealtimeVoice = "ash";
 const SUPPORTED_VOICES: ReadonlySet<RealtimeVoice> = new Set<RealtimeVoice>([
 	"alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse",
@@ -215,6 +220,24 @@ export const create = action({
 				? new Date(expiresAtTs * 1000).toISOString()
 				: undefined;
 
+			// ── 10. Persiste la session côté Convex (supervision + coût) ──
+			try {
+				await ctx.runMutation(
+					internal.ai.realtimeSessions.insertActiveInternal,
+					{
+						externalSessionId: sessionId,
+						userId: user._id as Id<"users">,
+						orgId: args.orgId,
+						surface: args.surface,
+						model: DEFAULT_MODEL,
+						voice,
+					},
+				);
+			} catch (sessionErr) {
+				// Logging only — ne bloque pas la création de session si tracking KO.
+				console.warn("[realtimeToken] session tracking insert failed:", sessionErr);
+			}
+
 			return {
 				available: true,
 				ephemeralKey,
@@ -235,3 +258,4 @@ export const create = action({
 		}
 	},
 });
+

@@ -90,6 +90,24 @@ export interface UseRealtimeVoiceOptions {
 	onConnected?: () => void;
 	/** Callback appelé en cas d'erreur de connexion. */
 	onError?: (error: Error) => void;
+	/**
+	 * Mode accessibilité — session persistante + cues audio non-vocaux.
+	 * Quand `true`, des bips signalent les transitions d'état au-delà de la
+	 * voix synthétisée (utile pour les utilisateurs malvoyants ou avec
+	 * troubles cognitifs auditifs).
+	 */
+	accessibilityMode?: boolean;
+	/**
+	 * Callback invoqué à la fermeture de la session (cleanup) avec les
+	 * métriques d'usage. Le consumer (host hook) le branche sur l'action
+	 * Convex `ai.realtimeSessions.recordSessionEnd` pour le tracking coût.
+	 */
+	onSessionEnd?: (metrics: {
+		externalSessionId: string;
+		durationSeconds: number;
+		toolCallCount: number;
+		endReason?: string;
+	}) => void | Promise<void>;
 }
 
 export interface UseRealtimeVoiceResult {
@@ -126,10 +144,12 @@ export interface UseRealtimeVoiceResult {
 // Constantes
 // ─────────────────────────────────────────────────────────────
 
-// OpenAI Realtime GA (août 2025) :
-//   - endpoint client SDP exchange : `POST /v1/realtime/calls?model=...`
+// OpenAI Realtime GA :
+//   - endpoint client SDP exchange : `POST /v1/realtime?model=...`
 //   - modèle : `gpt-realtime` (remplace `gpt-4o-realtime-preview-*` déprécié).
-const OPENAI_REALTIME_BASE_URL = "https://api.openai.com/v1/realtime/calls";
+// Note historique : `/v1/realtime/calls` est l'API SIP/PSTN (Calls API),
+// distincte du flux WebRTC navigateur — ce dernier reste sur `/v1/realtime`.
+const OPENAI_REALTIME_BASE_URL = "https://api.openai.com/v1/realtime";
 const DEFAULT_MODEL = "gpt-realtime";
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_BACKOFF_MS = [1000, 2500, 5000];
@@ -144,6 +164,8 @@ export function useRealtimeVoice({
 	autoGreet = true,
 	onConnected,
 	onError,
+	accessibilityMode = false,
+	onSessionEnd,
 }: UseRealtimeVoiceOptions = {}): UseRealtimeVoiceResult {
 	const [voiceState, setVoiceState] = useState<VoiceState>("idle");
 	const [messages, setMessages] = useState<RealtimeMessage[]>([]);
@@ -154,6 +176,63 @@ export function useRealtimeVoice({
 	const pcRef = useRef<RTCPeerConnection | null>(null);
 	const dcRef = useRef<RTCDataChannel | null>(null);
 	const audioElRef = useRef<HTMLAudioElement | null>(null);
+	const cueCtxRef = useRef<AudioContext | null>(null);
+	const accessibilityRef = useRef<boolean>(accessibilityMode);
+	useEffect(() => {
+		accessibilityRef.current = accessibilityMode;
+	}, [accessibilityMode]);
+
+	// ── Audio cues non-vocaux (accessibilité) ──
+	// Génère un bip simple via WebAudio — pas de fichier asset.
+	const playCue = useCallback(
+		(kind: "listen" | "thinking" | "executed" | "error") => {
+			if (!accessibilityRef.current) return;
+			try {
+				if (!cueCtxRef.current) {
+					cueCtxRef.current = new (window.AudioContext ||
+						(window as any).webkitAudioContext)();
+				}
+				const ctx = cueCtxRef.current;
+				const now = ctx.currentTime;
+				const beep = (freq: number, durMs: number, delayMs: number = 0) => {
+					const osc = ctx.createOscillator();
+					const gain = ctx.createGain();
+					osc.type = "sine";
+					osc.frequency.value = freq;
+					osc.connect(gain);
+					gain.connect(ctx.destination);
+					const start = now + delayMs / 1000;
+					const end = start + durMs / 1000;
+					gain.gain.setValueAtTime(0, start);
+					gain.gain.linearRampToValueAtTime(0.15, start + 0.01);
+					gain.gain.linearRampToValueAtTime(0, end);
+					osc.start(start);
+					osc.stop(end + 0.02);
+				};
+				switch (kind) {
+					case "listen":
+						beep(880, 80);
+						break;
+					case "thinking":
+						beep(660, 60);
+						break;
+					case "executed":
+						beep(440, 100);
+						break;
+					case "error":
+						beep(220, 150);
+						beep(220, 150, 200);
+						break;
+				}
+				window.dispatchEvent(
+					new CustomEvent("iasted:audio-cue", { detail: { kind } }),
+				);
+			} catch (err) {
+				console.warn("[iAsted] audio cue failed:", err);
+			}
+		},
+		[],
+	);
 	const recorderRef = useRef<AudioRecorder | null>(null);
 	const analyserRef = useRef<AnalyserNode | null>(null);
 	const analyserContextRef = useRef<AudioContext | null>(null);
@@ -172,6 +251,12 @@ export function useRealtimeVoice({
 	const onToolCallRef = useRef<RealtimeToolHandler | undefined>(onToolCall);
 	const onErrorRef = useRef<typeof onError>(onError);
 	const onConnectedRef = useRef<typeof onConnected>(onConnected);
+	const onSessionEndRef = useRef<typeof onSessionEnd>(onSessionEnd);
+
+	// Compteurs de session pour reporting (coût + audit)
+	const sessionStartTsRef = useRef<number | null>(null);
+	const toolCallCountRef = useRef<number>(0);
+	const externalSessionIdRef = useRef<string | null>(null);
 
 	// Maintenir les refs à jour sans déclencher les callbacks dépendants
 	useEffect(() => {
@@ -183,6 +268,9 @@ export function useRealtimeVoice({
 	useEffect(() => {
 		onConnectedRef.current = onConnected;
 	}, [onConnected]);
+	useEffect(() => {
+		onSessionEndRef.current = onSessionEnd;
+	}, [onSessionEnd]);
 
 	// ── Speech rate : appliqué dynamiquement à l'élément audio ──
 	const applyPlaybackRate = useCallback((rate: number) => {
@@ -241,6 +329,32 @@ export function useRealtimeVoice({
 
 	// ── Cleanup complet ─────────────────────────────────────────
 	const cleanup = useCallback(() => {
+		// Émettre le tracking de fin de session AVANT de tout nettoyer
+		// (le sessionId et la durée sont calculés ici).
+		const externalSessionId = externalSessionIdRef.current;
+		const startTs = sessionStartTsRef.current;
+		if (externalSessionId && startTs && onSessionEndRef.current) {
+			const durationSeconds = Math.max(0, Math.round((Date.now() - startTs) / 1000));
+			const cb = onSessionEndRef.current;
+			try {
+				void Promise.resolve(
+					cb({
+						externalSessionId,
+						durationSeconds,
+						toolCallCount: toolCallCountRef.current,
+						endReason: "normal",
+					}),
+				).catch((err) => {
+					console.warn("[iAsted] onSessionEnd reporting failed:", err);
+				});
+			} catch (err) {
+				console.warn("[iAsted] onSessionEnd threw:", err);
+			}
+		}
+		externalSessionIdRef.current = null;
+		sessionStartTsRef.current = null;
+		toolCallCountRef.current = 0;
+
 		recorderRef.current?.stop();
 		recorderRef.current = null;
 		dcRef.current?.close();
@@ -250,6 +364,8 @@ export function useRealtimeVoice({
 		if (audioElRef.current) {
 			audioElRef.current.pause();
 			audioElRef.current.srcObject = null;
+			audioElRef.current.remove();
+			audioElRef.current = null;
 		}
 		stopAudioAnalysis();
 		currentTranscriptRef.current = "";
@@ -311,6 +427,7 @@ export function useRealtimeVoice({
 			switch (data.type) {
 				case "session.created":
 					setVoiceState("listening");
+					playCue("listen");
 					break;
 
 				case "input_audio_buffer.speech_started":
@@ -319,6 +436,7 @@ export function useRealtimeVoice({
 
 				case "input_audio_buffer.speech_stopped":
 					setVoiceState("thinking");
+					playCue("thinking");
 					break;
 
 				case "conversation.item.input_audio_transcription.completed": {
@@ -372,6 +490,7 @@ export function useRealtimeVoice({
 
 				case "response.function_call_arguments.done": {
 					const name = data.name as string;
+					toolCallCountRef.current += 1;
 					let args: Record<string, unknown> = {};
 					try {
 						args = JSON.parse(data.arguments ?? "{}");
@@ -398,6 +517,7 @@ export function useRealtimeVoice({
 							result = { success: false, message };
 						}
 					}
+					playCue(result.success ? "executed" : "error");
 
 					// Renvoyer le résultat au modèle
 					dcRef.current?.send(
@@ -416,12 +536,13 @@ export function useRealtimeVoice({
 
 				case "error": {
 					const message = data.error?.message ?? "Erreur OpenAI Realtime";
+					playCue("error");
 					onErrorRef.current?.(new Error(message));
 					break;
 				}
 			}
 		},
-		[cleanup],
+		[cleanup, playCue],
 	);
 
 	// ── Connexion ──────────────────────────────────────────────
@@ -431,6 +552,10 @@ export function useRealtimeVoice({
 
 			isConnectingRef.current = true;
 			sessionInitRef.current = init;
+			// Track de session pour onSessionEnd (coût + audit)
+			externalSessionIdRef.current = init.sessionId || null;
+			sessionStartTsRef.current = Date.now();
+			toolCallCountRef.current = 0;
 			setVoiceState("connecting");
 
 			try {
@@ -439,17 +564,46 @@ export function useRealtimeVoice({
 				pcRef.current = pc;
 
 				// 2. Audio distant
+				// L'élément doit être attaché au DOM ET play() doit être appelé
+				// explicitement : un <audio> détaché avec srcObject MediaStream
+				// + autoplay n'est PAS fiable (Safari ne joue jamais ; Chrome
+				// dépend de la fraîcheur du user-activation après les await).
 				if (!audioElRef.current) {
-					audioElRef.current = document.createElement("audio");
-					audioElRef.current.autoplay = true;
+					const el = document.createElement("audio");
+					el.autoplay = true;
+					// iOS Safari : property + attribute pour autoriser la lecture
+					// inline sans bascule fullscreen.
+					el.playsInline = true;
+					el.setAttribute("playsinline", "true");
+					// Invisible mais présent dans <body> — requis pour la lecture
+					// fiable d'un srcObject MediaStream.
+					el.style.position = "fixed";
+					el.style.width = "0";
+					el.style.height = "0";
+					el.style.opacity = "0";
+					el.style.pointerEvents = "none";
+					document.body.appendChild(el);
+					audioElRef.current = el;
 				}
 				pc.ontrack = (e) => {
 					const remoteStream = e.streams[0];
-					if (audioElRef.current && remoteStream) {
-						audioElRef.current.srcObject = remoteStream;
-						applyPlaybackRate(speechRateRef.current);
-						setTimeout(() => applyPlaybackRate(speechRateRef.current), 100);
-					}
+					const el = audioElRef.current;
+					if (!el || !remoteStream) return;
+					el.srcObject = remoteStream;
+					applyPlaybackRate(speechRateRef.current);
+					setTimeout(() => applyPlaybackRate(speechRateRef.current), 100);
+					// `autoplay` seul ne suffit pas pour un srcObject MediaStream
+					// dans tous les navigateurs. Le clic sur la sphère a bénit le
+					// document, donc play() doit résoudre ; en cas d'échec on
+					// remonte l'erreur via onError pour un toast explicite.
+					void el.play().catch((err) => {
+						console.warn("[iAsted] audio.play() rejected:", err);
+						onErrorRef.current?.(
+							new Error(
+								"Lecture audio bloquée par le navigateur. Cliquez à nouveau sur la sphère ou autorisez l'autoplay.",
+							),
+						);
+					});
 				};
 
 				// 3. Audio local (microphone)
@@ -508,7 +662,17 @@ export function useRealtimeVoice({
 				});
 
 				if (!sdpResponse.ok) {
-					throw new Error(`OpenAI connection failed: ${sdpResponse.status}`);
+					// Log le body complet pour diagnostiquer la cause exacte
+					// (model invalide, ephemeral key expiré, SDP malformé, etc.).
+					const errorBody = await sdpResponse.text().catch(() => "");
+					console.error(
+						"[iAsted] OpenAI SDP exchange failed:",
+						sdpResponse.status,
+						errorBody,
+					);
+					throw new Error(
+						`OpenAI connection failed: ${sdpResponse.status} ${errorBody.slice(0, 300)}`,
+					);
 				}
 
 				const answer: RTCSessionDescriptionInit = {
@@ -547,6 +711,10 @@ export function useRealtimeVoice({
 				onErrorRef.current?.(err);
 				cleanup();
 				isConnectingRef.current = false;
+				// Re-throw pour que les consumers (activateVoice) puissent
+				// afficher un message d'erreur précis et nettoyer leur état
+				// (ex : dismiss le toast "Connexion…").
+				throw err;
 			}
 		},
 		[handleDataChannelMessage, startAudioAnalysis, cleanup, applyPlaybackRate, autoGreet, sendSessionUpdate],

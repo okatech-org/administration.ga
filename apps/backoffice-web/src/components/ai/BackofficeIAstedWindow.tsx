@@ -29,12 +29,18 @@ import {
 	IAstedCursor,
 	IAstedFanMenu,
 	IAstedVoiceContext,
+	formatPageContextForVoice,
 	VoiceTab,
 	WindowShell,
 	backofficePreset,
 	type IAstedFanMenuItem,
 	type IAstedTabId,
 } from "@workspace/iasted";
+import {
+	useFieldDescriptorsSnapshot,
+	usePageContextSnapshot,
+	useShellContextSnapshot,
+} from "@workspace/agent-features/stores";
 import { useOrgSelector } from "@/hooks/use-org-selector";
 import { useSuperAdminData } from "@/hooks/use-superadmin-data";
 import { useBackofficeAIChat } from "@/hooks/useBackofficeAIChat";
@@ -124,6 +130,37 @@ export function BackofficeIAstedWindow() {
 		window.addEventListener("iasted:open", handler);
 		return () => window.removeEventListener("iasted:open", handler);
 	}, [openWithTab]);
+
+	// ── Synchronisation contexte page → session vocale (P1.9) ──
+	// Mirror du flux agent-web : à chaque changement de page/fields/shell,
+	// pousse le bloc texte au modèle via `updatePageContext` si la session
+	// vocale est active. Debounce 150ms pour absorber les transitions.
+	const pageSnapshot = usePageContextSnapshot();
+	const shellSnapshot = useShellContextSnapshot();
+	const fieldsSnapshot = useFieldDescriptorsSnapshot();
+	useEffect(() => {
+		if (!voiceController.isConnected) return;
+		if (!voiceController.capabilities.pageContextUpdate) return;
+		if (!voiceController.updatePageContext) return;
+		const update = voiceController.updatePageContext;
+		const timer = setTimeout(() => {
+			update(
+				formatPageContextForVoice({
+					page: pageSnapshot,
+					shell: shellSnapshot,
+					fields: fieldsSnapshot,
+				}),
+			);
+		}, 150);
+		return () => clearTimeout(timer);
+	}, [
+		pageSnapshot,
+		shellSnapshot,
+		fieldsSnapshot,
+		voiceController.isConnected,
+		voiceController.capabilities.pageContextUpdate,
+		voiceController.updatePageContext,
+	]);
 
 	// Items de l'éventail iAsted — 6 fonctions séparées qui rayonnent
 	// autour du bouton central. Chaque item correspond à un onglet de

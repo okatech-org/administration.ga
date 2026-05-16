@@ -37,6 +37,20 @@ export const voicePrefsValidator = v.object({
   preferredLocale: v.optional(v.string()),
   /** Exiger confirmation orale explicite avant chaque action mutative. */
   requireConfirmation: v.boolean(),
+  /**
+   * Mode accessibilité — session vocale persistante + cues audio non-vocaux
+   * pour les utilisateurs sans clavier/écran. Quand `mode === true` :
+   *   - La session reste ouverte indéfiniment (pas d'auto-disconnect).
+   *   - Le raccourci clavier `Option+Space` toggle la session.
+   *   - Cues audio (bips) signalent : écoute / réflexion / exécuté / erreur.
+   */
+  accessibility: v.optional(
+    v.object({
+      mode: v.boolean(),
+      audioCues: v.boolean(),
+      keyboardShortcut: v.optional(v.string()),
+    }),
+  ),
 });
 
 export const userIastedVoicePrefsTable = defineTable({

@@ -20,6 +20,7 @@ import {
 import { useVoiceProvider } from "./use-voice-provider";
 import { RawGeminiVoiceProvider } from "@workspace/agent-features/components/iasted-host";
 import {
+	useFieldDescriptorsSnapshot,
 	usePageContextSnapshot,
 	useShellContextSnapshot,
 } from "@workspace/agent-features/stores";
@@ -85,6 +86,7 @@ function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
 	// pour absorber les republications transitoires lors d'une navigation.
 	const pageSnapshot = usePageContextSnapshot();
 	const shellSnapshot = useShellContextSnapshot();
+	const fieldsSnapshot = useFieldDescriptorsSnapshot();
 	useEffect(() => {
 		if (!controller.isConnected) return;
 		if (!controller.capabilities.pageContextUpdate) return;
@@ -95,6 +97,7 @@ function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
 				formatPageContextForVoice({
 					page: pageSnapshot,
 					shell: shellSnapshot,
+					fields: fieldsSnapshot,
 				}),
 			);
 		}, 150);
@@ -102,6 +105,7 @@ function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
 	}, [
 		pageSnapshot,
 		shellSnapshot,
+		fieldsSnapshot,
 		controller.isConnected,
 		controller.capabilities.pageContextUpdate,
 		controller.updatePageContext,

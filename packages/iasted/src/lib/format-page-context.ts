@@ -44,6 +44,20 @@ export interface ShellContextLike {
 	availableActions: PageActionLike[];
 }
 
+/**
+ * Description sérialisable d'un champ de formulaire pilotable par la voix.
+ * Mirror du résultat de `pageContextStore.getFieldDescriptors()`.
+ */
+export interface FormFieldLike {
+	id: string;
+	type: string;
+	label: string;
+	formId?: string;
+	required?: boolean;
+	currentValue?: unknown;
+	options?: Array<{ value: string; label: string }>;
+}
+
 const NO_CONTEXT = `## CONTEXTE PAGE COURANT
 Aucune page applicative active. Si l'utilisateur fait référence à un écran,
 demandez-lui d'ouvrir le module concerné ou proposez une navigation via
@@ -62,9 +76,13 @@ export function formatPageContextForVoice(
 		| PageContextLike
 		| null
 		| undefined
-		| { page?: PageContextLike | null; shell?: ShellContextLike | null },
+		| {
+				page?: PageContextLike | null;
+				shell?: ShellContextLike | null;
+				fields?: FormFieldLike[] | null;
+		  },
 ): string {
-	const { page, shell } = normalizeInput(input);
+	const { page, shell, fields } = normalizeInput(input);
 
 	const lines: string[] = [];
 
@@ -142,7 +160,53 @@ export function formatPageContextForVoice(
 		);
 	}
 
+	// ── Bloc CHAMPS DE FORMULAIRE (dictée vocale) ──
+	if (fields && fields.length > 0) {
+		lines.push("");
+		lines.push("## CHAMPS DE FORMULAIRE (dictée vocale)");
+		lines.push(
+			"Vous pouvez remplir ces champs à la voix via `fill_form_field(fieldId, value)`. " +
+				"Pour les selects/radios, le système fait du fuzzy-match sur le `label` des options. " +
+				"Soumettez via `submit_form(formId?)`. Effacez via `clear_form_field(fieldId)`.",
+		);
+		// Grouper par formId
+		const byForm = new Map<string, FormFieldLike[]>();
+		for (const f of fields) {
+			const fid = f.formId ?? "default";
+			if (!byForm.has(fid)) byForm.set(fid, []);
+			byForm.get(fid)!.push(f);
+		}
+		for (const [formId, list] of byForm) {
+			lines.push(`\nFormulaire « ${formId} » (${list.length} champs) :`);
+			for (const f of list) {
+				const req = f.required ? " [obligatoire]" : "";
+				const cur =
+					f.currentValue !== undefined && f.currentValue !== "" && f.currentValue !== null
+						? ` (actuel : ${formatFieldValue(f.currentValue)})`
+						: "";
+				const opts =
+					f.options && f.options.length > 0
+						? ` — options : ${f.options
+								.slice(0, 8)
+								.map((o) => o.label)
+								.join(", ")}${f.options.length > 8 ? "…" : ""}`
+						: "";
+				lines.push(
+					`- ${f.id} [${f.type}] « ${f.label} »${req}${cur}${opts}`,
+				);
+			}
+		}
+	}
+
 	return lines.join("\n");
+}
+
+function formatFieldValue(v: unknown): string {
+	if (v === null || v === undefined) return "—";
+	if (typeof v === "string") return v.length > 80 ? v.slice(0, 79) + "…" : v;
+	if (typeof v === "number" || typeof v === "boolean") return String(v);
+	if (Array.isArray(v)) return `[${v.length} valeur(s)]`;
+	return "{objet}";
 }
 
 function normalizeInput(
@@ -150,16 +214,32 @@ function normalizeInput(
 		| PageContextLike
 		| null
 		| undefined
-		| { page?: PageContextLike | null; shell?: ShellContextLike | null },
-): { page: PageContextLike | null; shell: ShellContextLike | null } {
-	if (!input) return { page: null, shell: null };
-	// Discrimine la forme { page, shell } de la forme PageContextLike directe :
-	// PageContextLike a forcément un `module` (string), { page, shell } non.
+		| {
+				page?: PageContextLike | null;
+				shell?: ShellContextLike | null;
+				fields?: FormFieldLike[] | null;
+		  },
+): {
+	page: PageContextLike | null;
+	shell: ShellContextLike | null;
+	fields: FormFieldLike[] | null;
+} {
+	if (!input) return { page: null, shell: null, fields: null };
+	// Discrimine la forme { page, shell, fields } de la forme PageContextLike directe :
+	// PageContextLike a forcément un `module` (string), { page, ... } non.
 	if (typeof (input as PageContextLike).module === "string") {
-		return { page: input as PageContextLike, shell: null };
+		return { page: input as PageContextLike, shell: null, fields: null };
 	}
-	const obj = input as { page?: PageContextLike | null; shell?: ShellContextLike | null };
-	return { page: obj.page ?? null, shell: obj.shell ?? null };
+	const obj = input as {
+		page?: PageContextLike | null;
+		shell?: ShellContextLike | null;
+		fields?: FormFieldLike[] | null;
+	};
+	return {
+		page: obj.page ?? null,
+		shell: obj.shell ?? null,
+		fields: obj.fields ?? null,
+	};
 }
 
 function formatEntityData(data: Record<string, unknown> | undefined): string {

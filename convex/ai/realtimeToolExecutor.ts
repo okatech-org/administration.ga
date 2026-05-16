@@ -21,10 +21,43 @@
 
 import { v } from "convex/values";
 import { action } from "../_generated/server";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import type { RealtimeToolResult } from "./realtimeTypes";
 import { BUSINESS_TOOL_INDEX, UI_TOOL_NAMES } from "./realtimeTools";
 import { isSuperAdmin } from "../lib/permissions";
+import { rateLimiter } from "./rateLimiter";
+
+// Tools considérés comme mutations (passent par le budget journalier strict).
+// Tout le reste est read-only ou UI uniquement.
+const MUTATIVE_TOOLS = new Set([
+	// communication
+	"launch_call_with_contact",
+	"create_instant_meeting",
+	"schedule_meeting",
+	"send_quick_message",
+	"hangup_active_call",
+	"add_participant_to_active_call",
+	"decline_incoming_call",
+	"recall_missed_call",
+	// admin
+	"assign_role_to_user",
+	"suspend_user",
+	"reactivate_user",
+	"update_user_modules",
+	// traitement
+	"approve_request",
+	"reject_request",
+	"request_more_info",
+	"advance_correspondance_status",
+	"archive_correspondance",
+	"cancel_meeting",
+	"reschedule_meeting",
+	"cancel_request",
+	// brouillons / docs
+	"draft_correspondence",
+	"generate_document",
+	"escalate_to_supervisor",
+]);
 
 // ─────────────────────────────────────────────────────────────
 // Action principale
@@ -42,18 +75,52 @@ export const executeRealtimeTool = action({
 		),
 	},
 	handler: async (ctx, { toolName, toolArgs, orgId, surface }): Promise<RealtimeToolResult> => {
+		const startTs = Date.now();
+
 		// ── 1. Auth ───────────────────────────────────────────────
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) {
 			return { success: false, message: "Non authentifié" };
 		}
 
-		// ── 2. Tool UI : dispatch côté client ─────────────────────
-		if (UI_TOOL_NAMES.has(toolName)) {
+		// ── 2. Rate limit per-tool (P0.3 — garde-fou anti-boucle) ──
+		// Compte les invocations TOUS tools confondus par utilisateur.
+		// Bypass pour les tools UI purs (pas de coût backend).
+		const isUITool = UI_TOOL_NAMES.has(toolName);
+		if (!isUITool) {
+			const { ok: okCall, retryAfter: retryAfterCall } = await rateLimiter.limit(
+				ctx,
+				"aiRealtimeToolCall",
+				{ key: identity.subject },
+			);
+			if (!okCall) {
+				const wait = Math.ceil((retryAfterCall ?? 0) / 1000);
+				return {
+					success: false,
+					message: `Cadence trop élevée. Patientez ${wait} seconde(s) avant la prochaine action.`,
+				};
+			}
+			// Budget journalier strict pour les actions mutatives
+			if (MUTATIVE_TOOLS.has(toolName)) {
+				const { ok: okMut } = await rateLimiter.limit(ctx, "aiRealtimeMutation", {
+					key: identity.subject,
+				});
+				if (!okMut) {
+					return {
+						success: false,
+						message:
+							"Budget quotidien d'actions mutatives atteint. Réessayez demain ou contactez un administrateur.",
+					};
+				}
+			}
+		}
+
+		// ── 3. Tool UI : dispatch côté client ─────────────────────
+		if (isUITool) {
 			return handleUITool(toolName, toolArgs);
 		}
 
-		// ── 3. Tool métier : re-vérification permission ────────────
+		// ── 4. Tool métier : re-vérification permission ────────────
 		const gated = BUSINESS_TOOL_INDEX.get(toolName);
 		if (!gated) {
 			return { success: false, message: `Outil inconnu : ${toolName}` };
@@ -86,14 +153,42 @@ export const executeRealtimeTool = action({
 			// `checkTaskForUser({ userId, orgId, taskCode })` ici.
 		}
 
-		// ── 4. Dispatch des tools métier ─────────────────────────
+		// ── 5. Dispatch des tools métier (+ audit log) ────────────
+		let result: RealtimeToolResult;
 		try {
-			return await dispatchBusinessTool(ctx, toolName, toolArgs, { orgId, surface });
+			result = await dispatchBusinessTool(ctx, toolName, toolArgs, { orgId, surface });
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Erreur d'exécution";
 			console.error(`[realtimeToolExecutor] ${toolName} failed:`, message);
-			return { success: false, message: `Échec : ${message}` };
+			result = { success: false, message: `Échec : ${message}` };
 		}
+
+		// ── 6. Audit log (P0.1 — toute action vocale tracée) ──────
+		// Skip si pas d'org (citizen surface) — `appendLogInternal` exige orgId.
+		// Pour les citoyens, les actions sont auto-only (track_my_request,
+		// submit_consular_request_intent) — low risk, pas de log à ce stade.
+		if (orgId) {
+			try {
+				await ctx.runMutation(internal.ai.activityLog.appendLogInternal, {
+					orgId: orgId as any,
+					userId: user._id,
+					capabilityCode: `voice.${toolName}`,
+					action: result.success ? "auto_applied" : "errored",
+					latencyMs: Date.now() - startTs,
+					error: result.success ? undefined : result.message,
+					metadata: {
+						toolArgs,
+						surface,
+						uiActionType: result.uiAction?.type,
+					},
+				});
+			} catch (logErr) {
+				// Ne JAMAIS bloquer une action métier sur un échec de logging.
+				console.warn("[realtimeToolExecutor] audit log failed:", logErr);
+			}
+		}
+
+		return result;
 	},
 });
 
@@ -156,6 +251,159 @@ function handleUITool(toolName: string, args: any): RealtimeToolResult {
 				uiAction: { type: "execute_page_action", payload: { actionId, params } },
 			};
 		}
+		case "open_app_menu":
+			return {
+				success: true,
+				message: "Ouverture de l'éventail iAsted.",
+				uiAction: { type: "open_app_menu" },
+			};
+		case "open_iasted_tab": {
+			const allowed = new Set([
+				"ichat",
+				"icontact",
+				"icall",
+				"imeeting",
+				"ivocal",
+				"isettings",
+			]);
+			const tab = typeof args.tab === "string" ? args.tab : "";
+			if (!allowed.has(tab)) {
+				return {
+					success: false,
+					message: `Onglet inconnu : ${tab}. Onglets disponibles : ichat, icontact, icall, imeeting, ivocal, isettings.`,
+				};
+			}
+			const labels: Record<string, string> = {
+				ichat: "iChat",
+				icontact: "iContact",
+				icall: "iAppel",
+				imeeting: "iRéunion",
+				ivocal: "transcription vocale",
+				isettings: "réglages",
+			};
+			return {
+				success: true,
+				message: `Ouverture de ${labels[tab]}.`,
+				uiAction: { type: "open_iasted_tab", payload: { tab } },
+			};
+		}
+		case "toggle_mic_in_call":
+			return {
+				success: true,
+				message:
+					typeof args.enabled === "boolean"
+						? args.enabled
+							? "Microphone activé."
+							: "Microphone coupé."
+						: "Microphone basculé.",
+				uiAction: {
+					type: "livekit_control",
+					payload: {
+						action: "set_mic",
+						enabled: typeof args.enabled === "boolean" ? args.enabled : undefined,
+					},
+				},
+			};
+		case "toggle_camera_in_call":
+			return {
+				success: true,
+				message:
+					typeof args.enabled === "boolean"
+						? args.enabled
+							? "Caméra activée."
+							: "Caméra coupée."
+						: "Caméra basculée.",
+				uiAction: {
+					type: "livekit_control",
+					payload: {
+						action: "set_camera",
+						enabled: typeof args.enabled === "boolean" ? args.enabled : undefined,
+					},
+				},
+			};
+		case "toggle_screen_share":
+			return {
+				success: true,
+				message:
+					typeof args.enabled === "boolean"
+						? args.enabled
+							? "Partage d'écran démarré."
+							: "Partage d'écran arrêté."
+						: "Partage d'écran basculé.",
+				uiAction: {
+					type: "livekit_control",
+					payload: {
+						action: "set_screen_share",
+						enabled: typeof args.enabled === "boolean" ? args.enabled : undefined,
+					},
+				},
+			};
+		case "set_accessibility_mode":
+			return {
+				success: true,
+				message: args.enabled
+					? "Mode accessibilité activé. Reconnexion en cours."
+					: "Mode accessibilité désactivé.",
+				uiAction: {
+					type: "set_accessibility_mode",
+					payload: { enabled: !!args.enabled },
+				},
+			};
+		case "read_page_summary":
+			// Le contexte page est déjà fourni au modèle via `session.update`.
+			// Le tool sert d'intention explicite ; le modèle paraphrase.
+			return {
+				success: true,
+				message:
+					"Lecture du contexte page courant — paraphrasez le bloc CONTEXTE PAGE COURANT de vos instructions.",
+				uiAction: { type: "noop" },
+			};
+		case "fill_form_field": {
+			const fieldId = typeof args.fieldId === "string" ? args.fieldId : "";
+			if (!fieldId) {
+				return { success: false, message: "fieldId manquant." };
+			}
+			return {
+				success: true,
+				message: `Remplissage du champ ${fieldId}.`,
+				uiAction: {
+					type: "form_control",
+					payload: { action: "fill", fieldId, value: args.value },
+				},
+			};
+		}
+		case "clear_form_field": {
+			const fieldId = typeof args.fieldId === "string" ? args.fieldId : "";
+			if (!fieldId) {
+				return { success: false, message: "fieldId manquant." };
+			}
+			return {
+				success: true,
+				message: `Champ ${fieldId} effacé.`,
+				uiAction: {
+					type: "form_control",
+					payload: { action: "clear", fieldId },
+				},
+			};
+		}
+		case "submit_form":
+			return {
+				success: true,
+				message: "Soumission du formulaire.",
+				uiAction: {
+					type: "form_control",
+					payload: { action: "submit", formId: args.formId },
+				},
+			};
+		case "read_form_state":
+			return {
+				success: true,
+				message: "Lecture de l'état du formulaire.",
+				uiAction: {
+					type: "form_control",
+					payload: { action: "read_state", formId: args.formId },
+				},
+			};
 		default:
 			return { success: false, message: `Tool UI non géré : ${toolName}` };
 	}
@@ -185,6 +433,68 @@ async function dispatchBusinessTool(
 			return await sendQuickMessage(ctx, args, context);
 		case "open_conversation_with_user":
 			return await openConversationWithUser(ctx, args, context);
+		case "hangup_active_call":
+			return await hangupActiveCall(ctx, args, context);
+		case "add_participant_to_active_call":
+			return await addParticipantToActiveCall(ctx, args, context);
+		case "decline_incoming_call":
+			return await declineIncomingCall(ctx, args, context);
+		case "recall_missed_call":
+			return await recallMissedCall(ctx, args, context);
+
+		// ─── Connaissance du corps diplomatique & annuaire ───
+		case "find_post_holder":
+			return await findPostHolder(ctx, args, context);
+		case "list_diplomatic_corps":
+			return await listDiplomaticCorps(ctx, args, context);
+		case "find_orgs_by_country":
+			return await findOrgsByCountry(ctx, args, context);
+		case "list_org_positions":
+			return await listOrgPositions(ctx, args, context);
+		case "search_consular_registrations":
+			return await searchConsularRegistrations(ctx, args, context);
+
+		// ─── LECTURE VOCALE (Phase A — accessibilité) ───
+		case "read_notifications":
+			return await readNotifications(ctx, args, context);
+		case "read_pending_requests":
+			return await readPendingRequests(ctx, args, context);
+		case "read_correspondance_inbox":
+			return await readCorrespondanceInbox(ctx, args, context);
+		case "read_today_agenda":
+			return await readTodayAgenda(ctx, args, context);
+		case "read_chat_thread":
+			return await readChatThread(ctx, args, context);
+
+		// ─── TRAITEMENT DE LA FILE (Phase B) ───
+		case "approve_request":
+			return await approveRequest(ctx, args, context);
+		case "reject_request":
+			return await rejectRequest(ctx, args, context);
+		case "request_more_info":
+			return await requestMoreInfo(ctx, args, context);
+		case "advance_correspondance_status":
+			return await advanceCorrespondanceStatus(ctx, args, context);
+		case "archive_correspondance":
+			return await archiveCorrespondance(ctx, args, context);
+		case "cancel_meeting":
+			return await cancelMeetingTool(ctx, args, context);
+		case "reschedule_meeting":
+			return await rescheduleMeetingTool(ctx, args, context);
+		case "cancel_request":
+			return await cancelRequestTool(ctx, args, context);
+
+		// ─── SURFACE CITOYEN (Phase E) ───
+		case "submit_consular_request_intent":
+			return await submitConsularRequestIntent(ctx, args, context);
+		case "track_my_request":
+			return await trackMyRequest(ctx, args, context);
+		case "book_my_appointment_intent":
+			return await bookMyAppointmentIntent(ctx, args, context);
+		case "read_my_inbox":
+			return await readMyInbox(ctx, args, context);
+		case "call_my_consulate":
+			return await callMyConsulate(ctx, args, context);
 
 		// ─── Administration plateforme (Phase 2 — Mode God complet) ───
 		case "find_org_by_name":
@@ -476,6 +786,421 @@ async function openConversationWithUser(
 }
 
 // ─────────────────────────────────────────────────────────────
+// Contrôle d'appel actif — hangup / add / decline / recall
+// ─────────────────────────────────────────────────────────────
+
+async function hangupActiveCall(
+	ctx: any,
+	_args: unknown,
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const active = await ctx.runQuery(api.functions.meetings.getActiveCallForUser, {});
+	if (!active) {
+		return { success: false, message: "Aucun appel actif à raccrocher." };
+	}
+	try {
+		await ctx.runMutation(api.functions.meetings.leave, {
+			meetingId: active.meetingId,
+		});
+		const label = active.type === "call" ? "Appel" : "Réunion";
+		return {
+			success: true,
+			message: `${label} « ${active.title} » terminé.`,
+			data: { meetingId: active.meetingId },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Échec du raccrochage : ${e?.message ?? "erreur inconnue"}` };
+	}
+}
+
+async function addParticipantToActiveCall(
+	ctx: any,
+	args: { targetUserId?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const targetUserId = args.targetUserId;
+	if (!targetUserId) {
+		return {
+			success: false,
+			message: "Identifiant du contact manquant. Utilisez find_contact_by_name d'abord.",
+		};
+	}
+	const active = await ctx.runQuery(api.functions.meetings.getActiveCallForUser, {});
+	if (!active) {
+		return { success: false, message: "Aucun appel actif. Lancez d'abord un appel ou une réunion." };
+	}
+	try {
+		await ctx.runMutation(api.functions.meetings.addParticipant, {
+			meetingId: active.meetingId,
+			targetUserId: targetUserId as any,
+		});
+		return {
+			success: true,
+			message: "Participant ajouté — il reçoit une notification d'invitation.",
+			data: { meetingId: active.meetingId, targetUserId },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Ajout échoué : ${e?.message ?? "erreur inconnue"}` };
+	}
+}
+
+async function declineIncomingCall(
+	ctx: any,
+	_args: unknown,
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const active = await ctx.runQuery(api.functions.meetings.getActiveCallForUser, {});
+	if (!active || active.type !== "call" || active.callStatus !== "ringing") {
+		return { success: false, message: "Aucun appel entrant à refuser." };
+	}
+	try {
+		if (active.isOrgInbound) {
+			// Appel org entrant : marquer comme décliné par moi (les autres agents peuvent encore décrocher).
+			await ctx.runMutation(api.functions.meetings.declineCall, {
+				meetingId: active.meetingId,
+			});
+		} else {
+			// Appel direct (utilisateur à utilisateur) : quitter avant de répondre termine l'appel.
+			await ctx.runMutation(api.functions.meetings.leave, {
+				meetingId: active.meetingId,
+			});
+		}
+		return {
+			success: true,
+			message: "Appel refusé.",
+			data: { meetingId: active.meetingId },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Refus échoué : ${e?.message ?? "erreur inconnue"}` };
+	}
+}
+
+// ─────────────────────────────────────────────────────────────
+// Connaissance du corps diplomatique & annuaire
+// ─────────────────────────────────────────────────────────────
+
+async function findPostHolder(
+	ctx: any,
+	args: { role?: string; country?: string; orgQuery?: string; orgId?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const role = (args.role ?? "").trim();
+	if (!role) {
+		return { success: false, message: "Indiquez le rôle à chercher (ex : ambassadeur, consul)." };
+	}
+	if (!args.country && !args.orgQuery && !args.orgId) {
+		return {
+			success: false,
+			message: "Précisez où chercher : pays, nom d'organisation, ou orgId.",
+		};
+	}
+	try {
+		const result = await ctx.runQuery(api.ai.realtimeKnowledge.findPostHolder, {
+			role,
+			country: args.country,
+			orgQuery: args.orgQuery,
+			orgId: args.orgId as any,
+		});
+		const items = (result?.results ?? []) as Array<{
+			org: { name: string; country?: string; type?: string };
+			position: { code: string; titleFr?: string; level: number };
+			user: { firstName?: string; lastName?: string };
+		}>;
+		const cappedNote = result?.cappedScan
+			? `\n[Note : ${result.totalOrgsCandidates} organisations correspondent, seules les ${10} premières ont été scannées. Précisez le pays ou le nom d'org pour affiner.]`
+			: "";
+		if (items.length === 0) {
+			return {
+				success: true,
+				message: `Aucun titulaire trouvé pour le rôle « ${role} » dans le périmètre demandé.${cappedNote}`,
+				data: { results: [], cappedScan: result?.cappedScan },
+			};
+		}
+		const summary = items
+			.slice(0, 5)
+			.map(
+				(r, i) =>
+					`${i + 1}. ${r.position.titleFr ?? r.position.code} : ${r.user.firstName ?? ""} ${r.user.lastName ?? ""}`.trim() +
+					` — ${r.org.name}${r.org.country ? ` (${r.org.country})` : ""}`,
+			)
+			.join("\n");
+		return {
+			success: true,
+			message:
+				(items.length === 1
+					? `${items[0].position.titleFr ?? items[0].position.code} : ${items[0].user.firstName ?? ""} ${items[0].user.lastName ?? ""}`.trim() +
+					  ` — ${items[0].org.name}.`
+					: `${items.length} titulaires correspondent :\n${summary}`) + cappedNote,
+			data: { results: items, cappedScan: result?.cappedScan },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Recherche échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function listDiplomaticCorps(
+	ctx: any,
+	args: { orgId?: string; country?: string; orgQuery?: string; limit?: number },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.orgId && !args.country && !args.orgQuery) {
+		return {
+			success: false,
+			message: "Précisez un org, un pays, ou un nom de représentation.",
+		};
+	}
+	try {
+		const result = await ctx.runQuery(
+			api.ai.realtimeKnowledge.listDiplomaticCorps,
+			{
+				orgId: args.orgId as any,
+				country: args.country,
+				orgQuery: args.orgQuery,
+				limit: args.limit,
+			},
+		);
+		const groups = (result?.results ?? []) as Array<{
+			org: { name: string; country?: string; type?: string };
+			members: Array<{
+				firstName?: string;
+				lastName?: string;
+				positionTitleFr?: string;
+				positionLevel?: number;
+			}>;
+		}>;
+		if (groups.length === 0 || groups.every((g) => g.members.length === 0)) {
+			return {
+				success: true,
+				message: "Aucun agent trouvé pour ce périmètre.",
+				data: { results: groups },
+			};
+		}
+		const summary = groups
+			.map((g) => {
+				const head = `${g.org.name}${g.org.country ? ` (${g.org.country})` : ""} — ${g.members.length} agent(s) :`;
+				const list = g.members
+					.slice(0, 5)
+					.map(
+						(m, i) =>
+							`  ${i + 1}. ${m.positionTitleFr ?? "(poste non précisé)"} — ${m.firstName ?? ""} ${m.lastName ?? ""}`.trim(),
+					)
+					.join("\n");
+				const more =
+					g.members.length > 5 ? `\n  …et ${g.members.length - 5} autre(s).` : "";
+				return `${head}\n${list}${more}`;
+			})
+			.join("\n\n");
+		return {
+			success: true,
+			message: summary,
+			data: { results: groups },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Listing échoué : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function findOrgsByCountry(
+	ctx: any,
+	args: { country?: string; typeFilter?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const country = (args.country ?? "").trim();
+	if (!country) {
+		return { success: false, message: "Indiquez le pays à interroger." };
+	}
+	try {
+		const result = await ctx.runQuery(
+			api.ai.realtimeKnowledge.findOrgsByCountry,
+			{ country, typeFilter: args.typeFilter },
+		);
+		const orgs = (result?.results ?? []) as Array<{
+			name: string;
+			type?: string;
+			country?: string;
+		}>;
+		if (orgs.length === 0) {
+			return {
+				success: true,
+				message: result?.normalizedCountry
+					? `Aucune représentation enregistrée pour ${result.normalizedCountry}.`
+					: `Pays inconnu : « ${country} ». Précisez le nom en français ou le code ISO.`,
+				data: { results: [] },
+			};
+		}
+		const typeLabels: Record<string, string> = {
+			embassy: "Ambassade",
+			consulate: "Consulat",
+			general_consulate: "Consulat général",
+			permanent_mission: "Mission permanente",
+			high_commission: "Haut-Commissariat",
+			honorary_consulate: "Consulat honoraire",
+		};
+		const summary = orgs
+			.slice(0, 10)
+			.map(
+				(o, i) =>
+					`${i + 1}. ${typeLabels[o.type ?? ""] ?? o.type ?? "Représentation"} — ${o.name}`,
+			)
+			.join("\n");
+		return {
+			success: true,
+			message: `${orgs.length} représentation(s) trouvée(s) :\n${summary}`,
+			data: { results: orgs, normalizedCountry: result?.normalizedCountry },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Recherche échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function listOrgPositions(
+	ctx: any,
+	args: { orgId?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.orgId) {
+		return { success: false, message: "Identifiant d'organisation manquant." };
+	}
+	try {
+		const result = await ctx.runQuery(api.ai.realtimeKnowledge.listOrgPositions, {
+			orgId: args.orgId as any,
+		});
+		const org = result?.org as { name: string } | null;
+		const positions = (result?.positions ?? []) as Array<{
+			code: string;
+			titleFr?: string;
+			level: number;
+			occupants: Array<{ firstName?: string; lastName?: string }>;
+		}>;
+		if (!org || positions.length === 0) {
+			return {
+				success: true,
+				message: "Aucun poste trouvé pour cette organisation.",
+				data: { positions: [] },
+			};
+		}
+		const occupied = positions.filter((p) => p.occupants.length > 0).length;
+		const vacant = positions.length - occupied;
+		const summary = positions
+			.slice(0, 15)
+			.map((p, i) => {
+				const occ =
+					p.occupants.length > 0
+						? p.occupants
+								.map((o) => `${o.firstName ?? ""} ${o.lastName ?? ""}`.trim())
+								.join(", ")
+						: "vacant";
+				return `${i + 1}. [niveau ${p.level}] ${p.titleFr ?? p.code} — ${occ}`;
+			})
+			.join("\n");
+		return {
+			success: true,
+			message: `${org.name} — ${positions.length} poste(s) (${occupied} occupé(s), ${vacant} vacant(s)) :\n${summary}`,
+			data: { org, positions },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Listing échoué : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function searchConsularRegistrations(
+	ctx: any,
+	args: { searchQuery?: string; orgId?: string; profileType?: string },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const searchQuery = (args.searchQuery ?? "").trim();
+	if (searchQuery.length < 2) {
+		return { success: false, message: "Saisissez au moins 2 caractères." };
+	}
+	const orgId = args.orgId ?? context.orgId;
+	if (!orgId) {
+		return {
+			success: false,
+			message: "Aucun consulat actif. Précisez un orgId ou activez une organisation.",
+		};
+	}
+	const profileType = args.profileType === "adult" || args.profileType === "child" ? args.profileType : "all";
+	try {
+		const result = await ctx.runQuery(
+			api.functions.consularRegistrations.searchRegistrations,
+			{
+				orgId: orgId as any,
+				searchQuery,
+				profileType,
+			},
+		);
+		const page = (result?.page ?? []) as Array<any>;
+		if (page.length === 0) {
+			return {
+				success: true,
+				message: `Aucun ressortissant trouvé pour « ${searchQuery} ».`,
+				data: { results: [] },
+			};
+		}
+		const summary = page
+			.slice(0, 5)
+			.map((r: any, i: number) => {
+				const profile = r.profile ?? r.childProfile ?? null;
+				const firstName = profile?.identity?.firstName ?? "";
+				const lastName = profile?.identity?.lastName ?? "";
+				const status = r.status ?? "?";
+				return `${i + 1}. ${lastName} ${firstName} — statut : ${status}`;
+			})
+			.join("\n");
+		const totalLabel = result?.totalCount ?? page.length;
+		return {
+			success: true,
+			message: `${totalLabel} ressortissant(s) correspondent :\n${summary}`,
+			data: { results: page, totalCount: totalLabel },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Recherche échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function recallMissedCall(
+	ctx: any,
+	args: { callerName?: string },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const orgId = context.orgId;
+	if (!orgId) {
+		return { success: false, message: "Aucune organisation active." };
+	}
+	try {
+		const candidate = await ctx.runQuery(
+			api.functions.meetings.findRecallableMissedCall,
+			{ callerName: args.callerName?.trim() || undefined },
+		);
+		if (!candidate) {
+			return {
+				success: true,
+				message: args.callerName
+					? `Aucun appel manqué de ${args.callerName} à rappeler.`
+					: "Aucun appel manqué en attente de rappel.",
+				data: { candidates: [] },
+			};
+		}
+		const result = await ctx.runMutation(api.functions.meetings.callUser, {
+			orgId: orgId as any,
+			targetUserId: candidate.callerUserId,
+			mediaType: "audio" as const,
+		});
+		return {
+			success: true,
+			message: `Rappel de ${candidate.callerDisplayName} en cours.`,
+			data: { meetingId: result?.meetingId, callerDisplayName: candidate.callerDisplayName },
+			uiAction: {
+				type: "open_active_call",
+				payload: { meetingId: result?.meetingId, mediaType: "audio" },
+			},
+		};
+	} catch (e: any) {
+		return { success: false, message: `Rappel échoué : ${e?.message ?? "erreur inconnue"}` };
+	}
+}
+
+// ─────────────────────────────────────────────────────────────
 // Implémentations métier (stubs sécurisés)
 //
 // Note : ces implémentations renvoient un descriptif textuel au modèle.
@@ -486,18 +1211,57 @@ async function openConversationWithUser(
 // ─────────────────────────────────────────────────────────────
 
 async function consultRequest(
-	_ctx: any,
+	ctx: any,
 	args: { requestId?: string; requestNumber?: string },
 	_context: { orgId?: string },
 ): Promise<RealtimeToolResult> {
-	const identifier = args.requestId ?? args.requestNumber ?? "(non précisé)";
-	// TODO: brancher sur `api.functions.requests.getByIdOrNumber` quand l'API
-	// sera stabilisée. Pour l'instant, retour informatif au modèle.
-	return {
-		success: true,
-		message: `Consultation du dossier ${identifier}. Veuillez ouvrir le dossier depuis la liste pour le détail complet.`,
-		uiAction: { type: "navigate", payload: { module: "consular_affairs", subpath: `requests/${identifier}` } },
-	};
+	const identifier = args.requestId ?? args.requestNumber;
+	if (!identifier) {
+		return { success: false, message: "Identifiant ou numéro de dossier manquant." };
+	}
+	try {
+		// Tente d'abord par ID Convex, puis par référence (numéro lisible).
+		let detail: any = null;
+		if (args.requestId) {
+			detail = await ctx.runQuery(api.functions.requests.getById, {
+				requestId: args.requestId as any,
+			}).catch(() => null);
+		}
+		if (!detail && args.requestNumber) {
+			detail = await ctx.runQuery(api.functions.requests.getByReferenceId, {
+				referenceId: args.requestNumber,
+			}).catch(() => null);
+		}
+		if (!detail) {
+			return {
+				success: false,
+				message: `Dossier ${identifier} introuvable ou non accessible.`,
+			};
+		}
+		const req = detail.request ?? detail;
+		const status = req.status ?? "?";
+		const service = req.serviceLabel ?? req.serviceCode ?? "?";
+		const owner = detail.user
+			? `${detail.user.firstName ?? ""} ${detail.user.lastName ?? ""}`.trim()
+			: "?";
+		const assigned = detail.assignedTo
+			? `${detail.assignedTo.firstName ?? ""} ${detail.assignedTo.lastName ?? ""}`.trim()
+			: "non assignée";
+		return {
+			success: true,
+			message: `Dossier ${req.reference ?? req._id} — service : ${service} — bénéficiaire : ${owner} — statut : ${status} — assignée à : ${assigned}.`,
+			data: { request: req, owner: detail.user, assignedTo: detail.assignedTo },
+			uiAction: {
+				type: "navigate",
+				payload: {
+					module: "consular_affairs",
+					subpath: `requests/${req._id}`,
+				},
+			},
+		};
+	} catch (e: any) {
+		return { success: false, message: `Consultation échouée : ${e?.message ?? "erreur"}` };
+	}
 }
 
 async function draftCorrespondence(
@@ -541,34 +1305,105 @@ async function generateDocument(
 }
 
 async function queryDiplomaticKB(
-	_ctx: any,
+	ctx: any,
 	args: { query: string },
-	_context: { orgId?: string },
+	context: { orgId?: string },
 ): Promise<RealtimeToolResult> {
-	// Note : la base de connaissance diplomatique est gérée par
-	// `convex/ai/diplomaticAI.ts`. Une API publique stable n'est pas encore
-	// définie pour une consommation directe en vocal. On retourne donc une
-	// réponse générique qui permet à l'agent de paraphraser sa propre
-	// connaissance ou de renvoyer vers la documentation officielle.
-	return {
-		success: true,
-		message: `Recherche dans la base de connaissance pour : "${args.query}". Pour les procédures détaillées, référez-vous au manuel de procédures consulaires ou contactez le service du protocole.`,
-	};
+	const q = (args.query ?? "").trim();
+	if (!q) {
+		return { success: false, message: "Question manquante." };
+	}
+	try {
+		const chunks = await ctx.runAction(api.ai.rag.retriever.query, {
+			query: q,
+			orgScope: context.orgId as any,
+			sourceTypes: ["procedure", "intel_brief", "doc", "faq", "service"],
+			topK: 5,
+		});
+		const list = Array.isArray(chunks) ? chunks : [];
+		if (list.length === 0) {
+			return {
+				success: true,
+				message: `Aucun extrait trouvé dans la base diplomatique pour : « ${q} ».`,
+				data: { chunks: [] },
+			};
+		}
+		const summary = list
+			.slice(0, 3)
+			.map(
+				(c: any, i: number) =>
+					`${i + 1}. (${c.sourceType}) ${c.title ?? "Extrait"} :\n${(c.content ?? "").slice(0, 240)}…`,
+			)
+			.join("\n");
+		return {
+			success: true,
+			message: `Extraits pertinents :\n${summary}\n\nCITEZ les sources à voix haute.`,
+			data: { chunks: list },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Recherche RAG échouée : ${e?.message ?? "erreur"}` };
+	}
 }
 
 async function checkCalendar(
-	_ctx: any,
+	ctx: any,
 	args: { from?: string; to?: string; scope?: string },
 	_context: { orgId?: string },
 ): Promise<RealtimeToolResult> {
-	const from = args.from ?? new Date().toISOString().slice(0, 10);
-	const to = args.to ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+	const fromIso = args.from ?? new Date().toISOString().slice(0, 10);
+	const toIso =
+		args.to ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 	const scope = args.scope ?? "self";
-	return {
-		success: true,
-		message: `Consultation de l'agenda (${scope}) du ${from} au ${to}. Ouvrez iAgenda pour le détail des rendez-vous.`,
-		uiAction: { type: "navigate", payload: { module: "calendar", subpath: `?from=${from}&to=${to}` } },
-	};
+	try {
+		const fromTs = Date.parse(fromIso);
+		const toTs = Date.parse(toIso);
+		const [appts, mtgs] = await Promise.all([
+			ctx
+				.runQuery(api.functions.appointments.listByUser, {})
+				.catch(() => [] as any[]),
+			ctx.runQuery(api.functions.meetings.listMine, {}).catch(() => [] as any[]),
+		]);
+		const apptsList = Array.isArray(appts) ? appts : (appts?.appointments ?? []);
+		const mtgsList = Array.isArray(mtgs) ? mtgs : (mtgs?.meetings ?? []);
+		const inRange = (ts?: number) =>
+			ts !== undefined && ts >= fromTs && ts <= toTs;
+		const apptsInRange = apptsList.filter((a: any) =>
+			inRange(a.scheduledAt ?? a.startTime),
+		);
+		const mtgsInRange = mtgsList.filter((m: any) =>
+			inRange(m.scheduledAt ?? m.startedAt ?? m._creationTime),
+		);
+		const total = apptsInRange.length + mtgsInRange.length;
+		const lines = [
+			...apptsInRange.slice(0, 5).map((a: any) => {
+				const h = new Date(a.scheduledAt ?? a.startTime).toLocaleString("fr-FR", {
+					dateStyle: "short",
+					timeStyle: "short",
+				});
+				return `- RDV ${h} — ${a.serviceLabel ?? a.serviceCode ?? "?"}`;
+			}),
+			...mtgsInRange.slice(0, 5).map((m: any) => {
+				const h = new Date(m.scheduledAt ?? m._creationTime).toLocaleString("fr-FR", {
+					dateStyle: "short",
+					timeStyle: "short",
+				});
+				return `- Réunion ${h} — « ${m.title ?? "Sans titre"} »`;
+			}),
+		];
+		return {
+			success: true,
+			message:
+				total === 0
+					? `Aucun événement entre ${fromIso} et ${toIso}.`
+					: `${total} événement(s) (${scope}) du ${fromIso} au ${toIso} :\n${lines.join("\n")}`,
+			data: {
+				appointments: apptsInRange,
+				meetings: mtgsInRange,
+			},
+		};
+	} catch (e: any) {
+		return { success: false, message: `Consultation agenda échouée : ${e?.message ?? "erreur"}` };
+	}
 }
 
 async function escalateToSupervisor(
@@ -932,4 +1767,539 @@ async function updateUserModulesTool(
 		}
 		return { success: false, message: `Échec : ${msg}` };
 	}
+}
+
+// ═════════════════════════════════════════════════════════════
+// PHASE A — LECTURE VOCALE (accessibilité)
+// ═════════════════════════════════════════════════════════════
+
+async function readNotifications(
+	ctx: any,
+	args: { limit?: number; unreadOnly?: boolean },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const limit = Math.min(args.limit ?? 5, 20);
+	try {
+		const result = await ctx.runQuery(api.functions.notifications.list, {
+			limit,
+		});
+		const items = Array.isArray(result) ? result : (result?.page ?? []);
+		const filtered = args.unreadOnly === false ? items : items.filter((n: any) => !n.isRead);
+		if (filtered.length === 0) {
+			return { success: true, message: "Aucune notification non lue.", data: { results: [] } };
+		}
+		const summary = filtered
+			.slice(0, limit)
+			.map((n: any, i: number) => `${i + 1}. ${n.title ?? "(sans titre)"} — ${n.body ?? ""}`)
+			.join("\n");
+		return {
+			success: true,
+			message: `${filtered.length} notification(s) non lue(s) :\n${summary}`,
+			data: { results: filtered, count: filtered.length },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Lecture échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function readPendingRequests(
+	ctx: any,
+	args: { scope?: string; limit?: number },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const limit = Math.min(args.limit ?? 5, 20);
+	const scope = args.scope === "org" ? "org" : "mine";
+	try {
+		const data =
+			scope === "mine"
+				? await ctx.runQuery(api.functions.requests.listMine, {})
+				: context.orgId
+					? await ctx.runQuery(api.functions.requests.listByOrg, {
+						orgId: context.orgId as any,
+					})
+					: { page: [] };
+		const items = Array.isArray(data) ? data : (data?.page ?? data?.requests ?? []);
+		const pending = items.filter((r: any) =>
+			["pending", "submitted", "under_review", "ready"].includes(r.status),
+		);
+		if (pending.length === 0) {
+			return { success: true, message: "Aucune demande en attente.", data: { results: [] } };
+		}
+		const summary = pending
+			.slice(0, limit)
+			.map((r: any, i: number) =>
+				`${i + 1}. ${r.requestNumber ?? r._id} — ${r.serviceLabel ?? r.serviceCode ?? "?"} (statut : ${r.status})`,
+			)
+			.join("\n");
+		return {
+			success: true,
+			message: `${pending.length} demande(s) en attente :\n${summary}`,
+			data: { results: pending, count: pending.length },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Lecture échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function readCorrespondanceInbox(
+	ctx: any,
+	args: { limit?: number },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!context.orgId) {
+		return { success: false, message: "Aucune org active." };
+	}
+	const limit = Math.min(args.limit ?? 5, 20);
+	try {
+		const items = await ctx.runQuery(api.functions.correspondance.getItems, {
+			orgId: context.orgId as any,
+		});
+		const list = Array.isArray(items) ? items : (items?.items ?? []);
+		const incoming = list
+			.filter(
+				(c: any) =>
+					!c.deletedAt && ["pending", "under_review", "received"].includes(c.status),
+			)
+			.slice(0, limit);
+		if (incoming.length === 0) {
+			return {
+				success: true,
+				message: "Aucune correspondance entrante prioritaire.",
+				data: { results: [] },
+			};
+		}
+		const summary = incoming
+			.map(
+				(c: any, i: number) =>
+					`${i + 1}. ${c.reference ?? c._id} — « ${c.title ?? "Sans objet"} » (de ${c.senderName ?? "?"})`,
+			)
+			.join("\n");
+		return {
+			success: true,
+			message: `${incoming.length} correspondance(s) en attente :\n${summary}`,
+			data: { results: incoming },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Lecture échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function readTodayAgenda(
+	ctx: any,
+	args: { includeAppointments?: boolean; includeMeetings?: boolean },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const includeAppts = args.includeAppointments !== false;
+	const includeMeetings = args.includeMeetings !== false;
+	const todayStart = new Date();
+	todayStart.setHours(0, 0, 0, 0);
+	const todayEnd = new Date(todayStart);
+	todayEnd.setHours(23, 59, 59, 999);
+	const lines: string[] = [];
+	try {
+		if (includeAppts) {
+			const appts = await ctx.runQuery(api.functions.appointments.listByUser, {});
+			const list = Array.isArray(appts) ? appts : (appts?.appointments ?? []);
+			const today = list.filter((a: any) => {
+				const t = a.scheduledAt ?? a.startTime;
+				return t && t >= todayStart.getTime() && t <= todayEnd.getTime();
+			});
+			for (const a of today) {
+				const h = new Date(a.scheduledAt ?? a.startTime).toLocaleTimeString("fr-FR", {
+					hour: "2-digit",
+					minute: "2-digit",
+				});
+				lines.push(`- ${h} : RDV ${a.serviceLabel ?? a.serviceCode ?? "?"}`);
+			}
+		}
+		if (includeMeetings) {
+			const mtgs = await ctx.runQuery(api.functions.meetings.listMine, {});
+			const list = Array.isArray(mtgs) ? mtgs : (mtgs?.meetings ?? []);
+			const today = list.filter((m: any) => {
+				const t = m.scheduledAt ?? m.startedAt ?? m._creationTime;
+				return t && t >= todayStart.getTime() && t <= todayEnd.getTime();
+			});
+			for (const m of today) {
+				const h = new Date(m.scheduledAt ?? m._creationTime).toLocaleTimeString("fr-FR", {
+					hour: "2-digit",
+					minute: "2-digit",
+				});
+				lines.push(`- ${h} : Réunion « ${m.title ?? "Sans titre"} »`);
+			}
+		}
+		if (lines.length === 0) {
+			return { success: true, message: "Aucun événement aujourd'hui.", data: { results: [] } };
+		}
+		return {
+			success: true,
+			message: `Programme du jour :\n${lines.join("\n")}`,
+			data: { results: lines },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Lecture agenda échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function readChatThread(
+	ctx: any,
+	args: { targetUserId?: string; limit?: number },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const limit = Math.min(args.limit ?? 5, 20);
+	try {
+		let chatId: string | null = null;
+		if (args.targetUserId) {
+			const chat = await ctx.runQuery(api.functions.chats.findChatWith, {
+				targetUserId: args.targetUserId as any,
+			});
+			chatId = chat?._id ?? null;
+		}
+		if (!chatId) {
+			return {
+				success: true,
+				message: "Aucun fil de discussion trouvé.",
+				data: { results: [] },
+			};
+		}
+		// Tente de lire les messages du chat — fallback gracieux si l'API diffère.
+		const messages = await ctx
+			.runQuery(api.functions.chats.listMessages, { chatId })
+			.catch(() => []);
+		const list = Array.isArray(messages) ? messages : (messages?.page ?? []);
+		const recent = list.slice(-limit);
+		if (recent.length === 0) {
+			return { success: true, message: "Aucun message dans ce fil.", data: { results: [] } };
+		}
+		const summary = recent
+			.map((m: any) => `${m.senderName ?? "?"} : « ${(m.content ?? "").slice(0, 200)} »`)
+			.join("\n");
+		return {
+			success: true,
+			message: `Derniers messages :\n${summary}`,
+			data: { results: recent },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Lecture échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+// ═════════════════════════════════════════════════════════════
+// PHASE B — TRAITEMENT (validations / refus / annulations)
+// ═════════════════════════════════════════════════════════════
+
+async function approveRequest(
+	ctx: any,
+	args: { requestId?: string; comment?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.requestId) {
+		return { success: false, message: "requestId manquant." };
+	}
+	try {
+		await ctx.runMutation(api.functions.requests.updateStatus, {
+			requestId: args.requestId as any,
+			newStatus: "validated" as any,
+			comment: args.comment,
+		});
+		return {
+			success: true,
+			message: `Demande ${args.requestId} validée.`,
+			data: { requestId: args.requestId },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Validation échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function rejectRequest(
+	ctx: any,
+	args: { requestId?: string; reason?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.requestId || !args.reason?.trim()) {
+		return { success: false, message: "requestId et motif obligatoires." };
+	}
+	try {
+		await ctx.runMutation(api.functions.requests.updateStatus, {
+			requestId: args.requestId as any,
+			newStatus: "cancelled" as any,
+			comment: `Refus : ${args.reason}`,
+		});
+		return {
+			success: true,
+			message: `Demande ${args.requestId} refusée.`,
+			data: { requestId: args.requestId, reason: args.reason },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Refus échoué : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function requestMoreInfo(
+	ctx: any,
+	args: { requestId?: string; what?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.requestId || !args.what?.trim()) {
+		return { success: false, message: "requestId et description requis." };
+	}
+	try {
+		await ctx.runMutation(api.functions.requests.updateStatus, {
+			requestId: args.requestId as any,
+			newStatus: "pending" as any,
+			comment: `Compléments demandés : ${args.what}`,
+		});
+		return {
+			success: true,
+			message: `Demande de compléments envoyée au demandeur.`,
+		};
+	} catch (e: any) {
+		return { success: false, message: `Demande échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function advanceCorrespondanceStatus(
+	ctx: any,
+	args: { itemId?: string; nextStatus?: string; comment?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.itemId || !args.nextStatus) {
+		return { success: false, message: "itemId et nextStatus requis." };
+	}
+	try {
+		await ctx.runMutation(api.functions.correspondance.updateStatus, {
+			itemId: args.itemId as any,
+			newStatus: args.nextStatus as any,
+			comment: args.comment,
+		});
+		return {
+			success: true,
+			message: `Correspondance avancée au statut ${args.nextStatus}.`,
+		};
+	} catch (e: any) {
+		return { success: false, message: `Transition échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function archiveCorrespondance(
+	ctx: any,
+	args: { itemId?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.itemId) {
+		return { success: false, message: "itemId manquant." };
+	}
+	try {
+		await ctx.runMutation(api.functions.correspondance.archiveItem, {
+			itemId: args.itemId as any,
+		});
+		return { success: true, message: "Correspondance archivée." };
+	} catch (e: any) {
+		return { success: false, message: `Archivage échoué : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function cancelMeetingTool(
+	ctx: any,
+	args: { meetingId?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.meetingId) {
+		return { success: false, message: "meetingId manquant." };
+	}
+	try {
+		await ctx.runMutation(api.functions.meetings.cancel, {
+			meetingId: args.meetingId as any,
+		});
+		return { success: true, message: "Réunion annulée." };
+	} catch (e: any) {
+		return { success: false, message: `Annulation échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function rescheduleMeetingTool(
+	ctx: any,
+	args: { meetingId?: string; newScheduledAt?: string },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.meetingId || !args.newScheduledAt) {
+		return { success: false, message: "meetingId et newScheduledAt requis." };
+	}
+	const ts = Date.parse(args.newScheduledAt);
+	if (!Number.isFinite(ts)) {
+		return { success: false, message: "Date invalide." };
+	}
+	try {
+		// Pas de mutation 'reschedule' dédiée : on annule l'ancienne et on recrée.
+		// Récupère d'abord les infos pour reproduire la réunion.
+		const meeting = await ctx.runQuery(api.functions.meetings.get, {
+			meetingId: args.meetingId as any,
+		}).catch(() => null);
+		if (!meeting) {
+			return { success: false, message: "Réunion introuvable." };
+		}
+		await ctx.runMutation(api.functions.meetings.cancel, {
+			meetingId: args.meetingId as any,
+		});
+		const result = await ctx.runMutation(api.functions.meetings.create, {
+			orgId: (meeting.orgId ?? context.orgId) as any,
+			title: meeting.title,
+			type: meeting.type ?? "meeting",
+			participantIds: (meeting.participants ?? []).map((p: any) => p.userId),
+			scheduledAt: ts,
+			mediaType: meeting.mediaType ?? "video",
+		});
+		const isoLocal = new Date(ts).toLocaleString("fr-FR", {
+			dateStyle: "short",
+			timeStyle: "short",
+		});
+		return {
+			success: true,
+			message: `Réunion replanifiée au ${isoLocal}.`,
+			data: { meetingId: result?.meetingId },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Replanification échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function cancelRequestTool(
+	ctx: any,
+	args: { requestId?: string; reason?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.requestId || !args.reason?.trim()) {
+		return { success: false, message: "requestId et motif requis." };
+	}
+	try {
+		await ctx.runMutation(api.functions.requests.cancel, {
+			requestId: args.requestId as any,
+			reason: args.reason,
+		});
+		return { success: true, message: "Demande annulée." };
+	} catch (e: any) {
+		return { success: false, message: `Annulation échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+// ═════════════════════════════════════════════════════════════
+// PHASE E — SURFACE CITOYEN (libre-service consulaire)
+// ═════════════════════════════════════════════════════════════
+
+async function submitConsularRequestIntent(
+	_ctx: any,
+	args: { serviceCode?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	if (!args.serviceCode) {
+		return { success: false, message: "Précisez le service souhaité." };
+	}
+	return {
+		success: true,
+		message: `Ouverture de l'assistant de dépôt pour ${args.serviceCode}.`,
+		uiAction: {
+			type: "navigate",
+			payload: {
+				module: "consular_affairs",
+				subpath: `requests/new?service=${encodeURIComponent(args.serviceCode)}`,
+			},
+		},
+	};
+}
+
+async function trackMyRequest(
+	ctx: any,
+	args: { requestId?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	try {
+		const mine = await ctx.runQuery(api.functions.requests.listMine, {});
+		const list = Array.isArray(mine) ? mine : (mine?.page ?? mine?.requests ?? []);
+		if (list.length === 0) {
+			return { success: true, message: "Aucune demande en cours.", data: { results: [] } };
+		}
+		const target = args.requestId
+			? list.find((r: any) => r._id === args.requestId || r.requestNumber === args.requestId)
+			: list[0];
+		if (!target) {
+			return { success: false, message: "Demande introuvable parmi les vôtres." };
+		}
+		return {
+			success: true,
+			message: `Demande ${target.requestNumber ?? target._id} — service ${target.serviceLabel ?? target.serviceCode ?? "?"} — statut : ${target.status}.`,
+			data: { request: target },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Suivi échoué : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function bookMyAppointmentIntent(
+	_ctx: any,
+	args: { orgId?: string; serviceCode?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const params = new URLSearchParams();
+	if (args.orgId) params.set("org", args.orgId);
+	if (args.serviceCode) params.set("service", args.serviceCode);
+	const subpath = params.toString() ? `appointments/new?${params}` : "appointments/new";
+	return {
+		success: true,
+		message: "Ouverture du flux de prise de rendez-vous.",
+		uiAction: {
+			type: "navigate",
+			payload: { module: "consular_affairs", subpath },
+		},
+	};
+}
+
+async function readMyInbox(
+	ctx: any,
+	args: { limit?: number },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const limit = Math.min(args.limit ?? 5, 20);
+	try {
+		const [notifs, _ignored] = await Promise.all([
+			ctx
+				.runQuery(api.functions.notifications.list, { limit })
+				.catch(() => [] as any[]),
+			Promise.resolve(null),
+		]);
+		const notifList = Array.isArray(notifs) ? notifs : (notifs?.page ?? []);
+		if (notifList.length === 0) {
+			return { success: true, message: "Votre boîte est vide.", data: { results: [] } };
+		}
+		const summary = notifList
+			.slice(0, limit)
+			.map((n: any, i: number) => `${i + 1}. ${n.title ?? "(sans titre)"} — ${n.body ?? ""}`)
+			.join("\n");
+		void context;
+		return {
+			success: true,
+			message: `Boîte de réception (${notifList.length} élément(s)) :\n${summary}`,
+			data: { results: notifList },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Lecture échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function callMyConsulate(
+	_ctx: any,
+	_args: unknown,
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	// Implémentation simplifiée : redirige vers la page d'appel citoyen qui
+	// résout le consulat de juridiction. La résolution exacte côté serveur
+	// (callOrganization) demande une logique de jurisdiction-matching plus
+	// élaborée et est traitée par le flux UI dédié.
+	return {
+		success: true,
+		message: "Ouverture de la ligne consulaire.",
+		uiAction: {
+			type: "navigate",
+			payload: { module: "consular_affairs", subpath: "call" },
+		},
+	};
 }

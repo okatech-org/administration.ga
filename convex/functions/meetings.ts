@@ -1650,3 +1650,152 @@ export const declineRecordingConsent = authMutation({
     return { declined: true };
   },
 });
+
+// ============================================
+// VOICE AGENT (iAsted) — Helpers
+// ============================================
+
+/**
+ * Retourne la réunion / appel actif où l'utilisateur courant est participant.
+ * Utilisé par les tools vocaux iAsted (hangup, add_participant, decline,
+ * livekit_control) pour identifier la cible sans demander le meetingId au
+ * modèle.
+ *
+ * Scope :
+ *   - Meetings où je suis créateur (outbound) + status="active"
+ *   - Meetings dans mes orgs (inbound) + status="active" où je suis participant
+ *
+ * Retourne le plus récent (par startedAt) ou null si aucun.
+ */
+export const getActiveCallForUser = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    const userId = ctx.user._id;
+    const isMine = (m: { participants: ReadonlyArray<{ userId: Id<"users">; leftAt?: number }> }) =>
+      m.participants.some((p) => p.userId === userId && !p.leftAt);
+
+    // Outbound (créateur = moi)
+    const outbound = await ctx.db
+      .query("meetings")
+      .withIndex("by_createdBy", (q) => q.eq("createdBy", userId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .collect();
+
+    // Inbound — scan par org dont je suis membre actif
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+
+    const inbound: typeof outbound = [];
+    for (const m of memberships) {
+      const orgActive = await ctx.db
+        .query("meetings")
+        .withIndex("by_org_status", (q) =>
+          q.eq("orgId", m.orgId).eq("status", "active"),
+        )
+        .collect();
+      for (const mtg of orgActive) {
+        if (mtg.createdBy !== userId) inbound.push(mtg);
+      }
+    }
+
+    const seen = new Set<string>();
+    const candidates = [...outbound, ...inbound].filter((m) => {
+      if (seen.has(m._id)) return false;
+      seen.add(m._id);
+      return isMine(m);
+    });
+    if (candidates.length === 0) return null;
+
+    candidates.sort(
+      (a, b) =>
+        (b.startedAt ?? b._creationTime) - (a.startedAt ?? a._creationTime),
+    );
+    const m = candidates[0];
+    return {
+      meetingId: m._id,
+      type: m.type,
+      title: m.title,
+      status: m.status,
+      callStatus: m.callStatus,
+      isOrgInbound: m.isOrgInbound ?? false,
+      createdBy: m.createdBy,
+      orgId: m.orgId,
+    };
+  },
+});
+
+/**
+ * Retourne le dernier appel manqué éligible au rappel pour les orgs de
+ * l'utilisateur courant. Si `callerName` est fourni, filtre les appelants
+ * dont firstName/lastName matche (case-insensitive).
+ *
+ * Utilisé par le tool vocal `recall_missed_call`.
+ */
+export const findRecallableMissedCall = authQuery({
+  args: {
+    callerName: v.optional(v.string()),
+  },
+  handler: async (ctx, { callerName }) => {
+    const userId = ctx.user._id;
+
+    // Orgs de l'utilisateur
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+    if (memberships.length === 0) return null;
+
+    const needle = callerName?.trim().toLowerCase();
+    const matchesNeedle = (first?: string, last?: string, display?: string) => {
+      if (!needle) return true;
+      const hay = `${first ?? ""} ${last ?? ""} ${display ?? ""}`.toLowerCase();
+      return hay.includes(needle);
+    };
+
+    // Collecter les missed calls pending les plus récents par org
+    type MissedCallDoc = Awaited<ReturnType<typeof ctx.db.query>> extends never
+      ? never
+      : any;
+    const candidates: Array<{
+      missedCallId: Id<"missedCalls">;
+      callerUserId: Id<"users">;
+      callerDisplayName: string;
+      startedAt: number;
+      orgId: Id<"orgs">;
+    }> = [];
+
+    for (const m of memberships) {
+      const list = await ctx.db
+        .query("missedCalls")
+        .withIndex("by_org_status", (q) =>
+          q.eq("orgId", m.orgId).eq("callbackStatus", "pending"),
+        )
+        .order("desc")
+        .take(20);
+      for (const mc of list) {
+        if (!mc.caller.userId) continue;
+        const u = await ctx.db.get(mc.caller.userId);
+        const first = (u as any)?.firstName as string | undefined;
+        const last = (u as any)?.lastName as string | undefined;
+        if (!matchesNeedle(first, last, mc.caller.displayName)) continue;
+        candidates.push({
+          missedCallId: mc._id,
+          callerUserId: mc.caller.userId,
+          callerDisplayName:
+            mc.caller.displayName ||
+            [first, last].filter(Boolean).join(" ") ||
+            "Appelant",
+          startedAt: mc.startedAt,
+          orgId: m.orgId,
+        });
+      }
+    }
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => b.startedAt - a.startedAt);
+    return candidates[0];
+  },
+});

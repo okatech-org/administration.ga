@@ -67,6 +67,7 @@ import { captureEvent } from "../../lib/analytics";
 import {
 	usePageContext,
 	useRegisterPageAction,
+	useRegisterPageField,
 } from "../../hooks/use-page-context";
 import type {
 	PageAction,
@@ -191,6 +192,27 @@ export default function StatisticsPage() {
 		}
 		setPeriod(p);
 		return { success: true, period: p };
+	});
+
+	// ─── Exposition iAsted : champ « période » pilotable par la voix ───
+	// Démonstration du pattern `useRegisterPageField` — l'utilisateur peut
+	// dire « mets la période sur mois » et iAsted exécute `fill_form_field`.
+	useRegisterPageField("statistics.period", {
+		type: "select",
+		label: "Période d'analyse",
+		setter: (v) => {
+			const p = String(v);
+			if (p === "week" || p === "month" || p === "year") {
+				setPeriod(p);
+			}
+		},
+		getCurrentValue: () => period,
+		options: [
+			{ value: "week", label: "Semaine" },
+			{ value: "month", label: "Mois" },
+			{ value: "year", label: "Année" },
+		],
+		formId: "statistics",
 	});
 
 	// ─── Derived data ─────────────────────────────────────────────────────

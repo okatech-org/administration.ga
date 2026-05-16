@@ -9,6 +9,7 @@ export {
   pageContextStore,
   usePageContextSnapshot,
   useShellContextSnapshot,
+  useFieldDescriptorsSnapshot,
   PAGE_CONTEXT_LIMITS,
 } from "./page-context-store"
 
@@ -25,4 +26,5 @@ export type {
   ShellContextSnapshot,
   PageEntity,
   PageAction,
+  FieldSpec,
 } from "./page-context-store"

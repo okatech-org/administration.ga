@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
 import { callRoomRegistry } from "../../stores/call-room-registry";
 import { useCallStore, type CallSlot } from "../../stores/call-store";
+import { IAstedLiveKitBridge } from "../iasted-bridge";
 
 /**
  * Composant interne — capture la `Room` LiveKit créée par `<LiveKitRoom>` et
@@ -90,6 +91,9 @@ export function CallRoomMount({
     >
       <RoomRegistrar meetingId={slot.meetingId} />
       <MicController isActive={isActive} />
+      {/* Bridge iAsted : route les commandes vocales (mute, caméra, screen share)
+          vers le LocalParticipant. Actif uniquement sur le slot en cours d'usage. */}
+      {isActive && <IAstedLiveKitBridge />}
       {isActive && <RoomAudioRenderer />}
     </LiveKitRoom>
   );

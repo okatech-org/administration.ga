@@ -46,14 +46,36 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   },
 
   // Realtime voice sessions (OpenAI gpt-4o-realtime via WebRTC).
-  // Coût élevé (audio output ~$0.24/min), on limite à 1 nouvelle session toutes
-  // les 30 secondes par utilisateur. La session active elle-même peut durer
-  // tant que la connexion WebRTC tient — c'est l'établissement qui est rate-limité.
+  // Coût élevé (audio output ~$0.24/min), on limite à 10 nouvelles sessions
+  // par minute par utilisateur. Capacity 5 permet une rafale (test/debug) sans
+  // bloquer immédiatement après un faux-départ. La session active elle-même
+  // peut durer tant que la connexion WebRTC tient — c'est l'établissement
+  // qui est rate-limité.
   aiRealtimeSession: {
     kind: "token bucket",
-    rate: 2,
+    rate: 10,
     period: MINUTE,
-    capacity: 2,
+    capacity: 5,
+  },
+
+  // Tool calls vocaux. Garde-fou contre boucle / amplification : 60 invocations
+  // par minute par utilisateur, capacity 20 pour absorber les rafales légitimes
+  // (ex : enchaînement find_contact → launch_call → toggle_mic en 3s).
+  aiRealtimeToolCall: {
+    kind: "token bucket",
+    rate: 60,
+    period: MINUTE,
+    capacity: 20,
+  },
+
+  // Mutations vocales (actions destructives ou impactantes). Budget journalier
+  // pour éviter qu'une session compromise valide des centaines de dossiers.
+  // 200/jour permet largement un usage normal (~25 dossiers/jour pour 8h).
+  aiRealtimeMutation: {
+    kind: "token bucket",
+    rate: 200,
+    period: 24 * HOUR,
+    capacity: 30,
   },
 
   // ── Auth — brute-force protection ───────────────────────────
@@ -100,6 +122,37 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     rate: 60,
     period: MINUTE,
     capacity: 10,
+  },
+
+  // ── Affaires Diplomatiques — actions IA Gemini ──────────────
+  // Découverte de cibles (10 cibles par appel × Gemini lourd).
+  // Limite stricte pour éviter d'épuiser le quota et de spammer la DB.
+  "diplomatic:discover": {
+    kind: "token bucket",
+    rate: 5,
+    period: HOUR,
+    capacity: 2,
+  },
+  // Plan stratégique (mode complet ~ 50 Ko JSON, plus coûteux que les autres).
+  "diplomatic:strategy": {
+    kind: "token bucket",
+    rate: 20,
+    period: HOUR,
+    capacity: 5,
+  },
+  // Autres actions IA standard (enrich, draftLetter, compileReport, structureProject).
+  "diplomatic:standard": {
+    kind: "token bucket",
+    rate: 30,
+    period: HOUR,
+    capacity: 10,
+  },
+  // Extraction de priorités depuis document (PDF/Markdown).
+  "diplomatic:extract": {
+    kind: "token bucket",
+    rate: 15,
+    period: HOUR,
+    capacity: 5,
   },
 
   // ── Admin batch operations ──────────────────────────────────

@@ -121,6 +121,8 @@ import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
 import { iastedMemoriesTable } from "./schemas/iastedMemories";
 // Phase 4 — Préférences voix iAsted per-user (refonte Settings)
 import { userIastedVoicePrefsTable } from "./schemas/userIastedVoicePrefs";
+// Sessions vocales iAsted — supervision, audit, coût (P0.4)
+import { aiRealtimeSessionsTable } from "./schemas/aiRealtimeSessions";
 
 export default defineSchema(
   {
@@ -258,6 +260,7 @@ export default defineSchema(
   iastedMemories: iastedMemoriesTable,
   // Phase 4 — Préférences voix iAsted per-user
   userIastedVoicePrefs: userIastedVoicePrefsTable,
+  aiRealtimeSessions: aiRealtimeSessionsTable,
   },
   { schemaValidation: false },
 );
