@@ -879,7 +879,7 @@ export default function IDocumentPage() {
 	// ═══════════════════════════════════════════════════════
 
 	return (
-		<motion.div initial="hidden" animate="visible" variants={stagger} className="flex flex-1 flex-col gap-4 p-3 md:p-4 w-full">
+		<motion.div initial="hidden" animate="visible" variants={stagger} className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px] w-full">
 			{/* ── Header ── */}
 			<motion.div variants={fadeUp}>
 				<PageHeader

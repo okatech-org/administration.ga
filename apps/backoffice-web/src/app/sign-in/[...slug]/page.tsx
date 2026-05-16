@@ -260,7 +260,7 @@ export default function SignInPage() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+33 6 12 34 56 78"
+                  placeholder="+33612345678"
                   required
                   autoComplete="tel"
                   enterKeyHint="next"

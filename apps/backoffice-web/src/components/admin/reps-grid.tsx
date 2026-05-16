@@ -217,7 +217,7 @@ export function RepsGrid({
 						placeholder="Rechercher une représentation..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
-						className="pl-10 h-10 w-full text-sm bg-background border-border"
+						className="pl-10 md:pl-10 h-10 w-full text-sm bg-background border-border"
 					/>
 				</div>
 				<div className="flex flex-wrap gap-3">

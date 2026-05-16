@@ -116,6 +116,11 @@ import {
   aiAgentPresenceTable,
   aiCapabilityConfigTable,
   newsletterSubscriptionsTable,
+  cvSkillItemsTable,
+  aiSuggestedSkillItemsTable,
+  skillCatalogStatsTable,
+  professionTitleStatsTable,
+  aiEnrichmentRunsTable,
 } from "./schemas";
 // Phase 3 — RAG iAsted (schema knowledge + mémoires long terme)
 import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
@@ -262,7 +267,14 @@ export default defineSchema(
   iastedMemories: iastedMemoriesTable,
   // Phase 4 — Préférences voix iAsted per-user
   userIastedVoicePrefs: userIastedVoicePrefsTable,
+  // Sessions vocales iAsted — supervision, audit, coût (P0.4)
   aiRealtimeSessions: aiRealtimeSessionsTable,
+  // Super-admin /skills — dénormalisation + stats + historique runs IA
+  cvSkillItems: cvSkillItemsTable,
+  aiSuggestedSkillItems: aiSuggestedSkillItemsTable,
+  skillCatalogStats: skillCatalogStatsTable,
+  professionTitleStats: professionTitleStatsTable,
+  aiEnrichmentRuns: aiEnrichmentRunsTable,
   },
   { schemaValidation: false },
 );

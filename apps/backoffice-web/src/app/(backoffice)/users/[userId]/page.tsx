@@ -164,7 +164,7 @@ export default function UserDetailPage() {
 
 	if (isLoadingUser) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 				<Skeleton className="h-8 w-32" />
 				<div className="flex gap-4">
 					<Skeleton className="h-20 w-20 rounded-full" />
@@ -179,7 +179,7 @@ export default function UserDetailPage() {
 
 	if (!user) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 				<Button
 					variant="ghost"
 					size="sm"
@@ -202,7 +202,7 @@ export default function UserDetailPage() {
 	const roleLabel = ROLE_LABELS[userRole] || "Utilisateur";
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+		<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 			{/* Header */}
 			<PageHeader
 				icon={<Eye className="h-5 w-5" />}

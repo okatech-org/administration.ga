@@ -1,861 +1,2177 @@
 "use client";
 
-import { api } from "@convex/_generated/api";
 import Link from "next/link";
-import { Component, type ErrorInfo, type ReactNode, useEffect, useRef, useState } from "react";
-import {
-	Activity,
-	ArrowRight,
-	BarChart3,
-	Building2,
-	CalendarCheck,
-	CheckCircle2,
-	ClipboardList,
-	FileText,
-	Gauge,
-	Globe,
-	Handshake,
-	Landmark,
-	MapPin,
-	Plus,
-	Settings,
-	ShieldAlert,
-	TrendingUp,
-	User,
-	UserCheck,
-	Users,
-	XCircle,
-	AlertTriangle,
-	Shield,
-	ShieldCheck,
-	Lock,
-	Eye,
-	Server,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	Bar,
-	BarChart,
-	CartesianGrid,
-	Cell,
-	Legend,
-	Pie,
-	PieChart,
-	RadialBar,
-	RadialBarChart,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
-} from "recharts";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FlatCard } from "@/components/design-system/flat-card";
-import { SectionHeader } from "@/components/design-system/section-header";
-import { PageHeader } from "@/components/design-system/page-header";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { api } from "@convex/_generated/api";
+import { Icon } from "@/components/dashboard-v2/icon";
+import { ToolbarSlot } from "@/components/dashboard-v2/toolbar-slot";
+import { AiSummarySheet } from "@/components/dashboard-v2/ai-summary-sheet";
+import { DailyReportSheet } from "@/components/dashboard-v2/daily-report-sheet";
+import { FlagIcon } from "@/components/ui/flag-icon";
 import {
 	useAuthenticatedConvexQuery,
 	useAuthenticatedPaginatedQuery,
 } from "@/integrations/convex/hooks";
-import { getLocalizedValue } from "@/lib/i18n-utils";
-import { NeocortexMonitoringWidget } from "@/components/dashboard/superadmin/NeocortexMonitoringWidget";
 
-// ─── Colors ─────────────────────────────────────────────────────────────────
-const CHART_COLORS = [
-	"#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899",
-	"#f43f5e", "#ef4444", "#f97316", "#eab308", "#22c55e",
-	"#14b8a6", "#06b6d4", "#3b82f6", "#2563eb",
+// ════════════════════════════════════════════════════════════════════════════
+// Constants & helpers
+// ════════════════════════════════════════════════════════════════════════════
+
+type Tone =
+	| "info"
+	| "success"
+	| "warning"
+	| "danger"
+	| "purple"
+	| "cyan"
+	| "teal"
+	| "green"
+	| "muted";
+
+const TONE_VAR: Record<Tone, { color: string; tint: string }> = {
+	info: { color: "var(--gabon-blue-v2)", tint: "var(--gabon-blue-v2-tint)" },
+	success: { color: "var(--success-v2)", tint: "var(--success-v2-tint)" },
+	warning: { color: "var(--warning-v2)", tint: "var(--warning-v2-tint)" },
+	danger: { color: "var(--danger-v2)", tint: "var(--danger-v2-tint)" },
+	purple: { color: "var(--purple-v2)", tint: "var(--purple-v2-tint)" },
+	cyan: { color: "var(--cyan-v2)", tint: "var(--cyan-v2-tint)" },
+	teal: { color: "var(--teal-v2)", tint: "var(--teal-v2-tint)" },
+	green: { color: "var(--gabon-green-v2)", tint: "var(--gabon-green-v2-tint)" },
+	muted: { color: "var(--text-faint)", tint: "var(--surface-3)" },
+};
+
+type PeriodId = "total" | "24h" | "7j" | "30j" | "90j" | "year";
+const PERIODS: { id: PeriodId; label: string; ms: number }[] = [
+	{ id: "total", label: "Total", ms: 0 },
+	{ id: "24h", label: "24 h", ms: 24 * 60 * 60 * 1000 },
+	{ id: "7j", label: "7 j", ms: 7 * 24 * 60 * 60 * 1000 },
+	{ id: "30j", label: "30 j", ms: 30 * 24 * 60 * 60 * 1000 },
+	{ id: "90j", label: "90 j", ms: 90 * 24 * 60 * 60 * 1000 },
+	{ id: "year", label: "Année", ms: 365 * 24 * 60 * 60 * 1000 },
 ];
 
-const STATUS_COLORS: Record<string, { fill: string; bg: string; bgLight: string; text: string }> = {
-	draft:                 { fill: "#94a3b8", bg: "bg-slate-400",   bgLight: "bg-slate-400/10",   text: "text-slate-400" },
-	pending:               { fill: "#f59e0b", bg: "bg-amber-500",   bgLight: "bg-amber-500/10",   text: "text-amber-500" },
-	pending_completion:    { fill: "#fb923c", bg: "bg-orange-400",  bgLight: "bg-orange-400/10",  text: "text-orange-400" },
-	edited:                { fill: "#a78bfa", bg: "bg-violet-400",  bgLight: "bg-violet-400/10",  text: "text-violet-400" },
-	submitted:             { fill: "#3b82f6", bg: "bg-blue-500",    bgLight: "bg-blue-500/10",    text: "text-blue-500" },
-	under_review:          { fill: "#6366f1", bg: "bg-indigo-500",  bgLight: "bg-indigo-500/10",  text: "text-indigo-500" },
-	in_production:         { fill: "#8b5cf6", bg: "bg-violet-500",  bgLight: "bg-violet-500/10",  text: "text-violet-500" },
-	validated:             { fill: "#10b981", bg: "bg-emerald-500", bgLight: "bg-emerald-500/10", text: "text-emerald-500" },
-	rejected:              { fill: "#ef4444", bg: "bg-red-500",     bgLight: "bg-red-500/10",     text: "text-red-500" },
-	appointment_scheduled: { fill: "#06b6d4", bg: "bg-cyan-500",    bgLight: "bg-cyan-500/10",    text: "text-cyan-500" },
-	ready_for_pickup:      { fill: "#14b8a6", bg: "bg-teal-500",    bgLight: "bg-teal-500/10",    text: "text-teal-500" },
-	completed:             { fill: "#22c55e", bg: "bg-green-500",   bgLight: "bg-green-500/10",   text: "text-green-500" },
-	cancelled:             { fill: "#64748b", bg: "bg-slate-500",   bgLight: "bg-slate-500/10",   text: "text-slate-500" },
-	processing:            { fill: "#6366f1", bg: "bg-indigo-500",  bgLight: "bg-indigo-500/10",  text: "text-indigo-500" },
-};
-const DEFAULT_STATUS_COLOR = STATUS_COLORS.draft;
-const STATUS_LABELS: Record<string, { fr: string; en: string }> = {
-	draft: { fr: "Brouillon", en: "Draft" },
-	pending: { fr: "En attente", en: "Pending" },
-	pending_completion: { fr: "Compléments", en: "Completion" },
-	edited: { fr: "Modifié", en: "Edited" },
-	submitted: { fr: "Soumis", en: "Submitted" },
-	under_review: { fr: "Examen", en: "Review" },
-	in_production: { fr: "Production", en: "Production" },
-	validated: { fr: "Validé", en: "Validated" },
-	rejected: { fr: "Rejeté", en: "Rejected" },
-	appointment_scheduled: { fr: "RDV", en: "Appointment" },
-	ready_for_pickup: { fr: "Prêt", en: "Ready" },
-	completed: { fr: "Terminé", en: "Completed" },
-	cancelled: { fr: "Annulé", en: "Cancelled" },
-	processing: { fr: "Traitement", en: "Processing" },
+// Noms de pays + drapeaux : on s'appuie sur les clés i18n
+// `superadmin.countryCodes.${code}` et le composant `<FlagIcon>` partagé
+// (`@/components/ui/flag-icon` → `@workspace/ui/components/flag-icon`).
+// Aucune table locale à maintenir.
+
+// Status labels viennent de `fields.requestStatus.options.*` via t()
+// (déjà internationalisé dans le projet). On garde uniquement le mapping
+// status → tone localement.
+
+const STATUS_TONE: Record<string, Tone> = {
+	draft: "muted",
+	submitted: "info",
+	pending: "warning",
+	pending_completion: "warning",
+	edited: "purple",
+	under_review: "info",
+	processing: "cyan",
+	in_production: "purple",
+	validated: "green",
+	appointment_scheduled: "cyan",
+	ready_for_pickup: "teal",
+	completed: "success",
+	cancelled: "muted",
+	rejected: "danger",
 };
 
-const ORG_TYPE_LABELS: Record<string, string> = {
-	embassy: "Ambassade",
-	high_representation: "Haute Représentation",
-	general_consulate: "Consulat Général",
-	high_commission: "Haut-Commissariat",
-	permanent_mission: "Mission Permanente",
-	third_party: "Partenaire Tiers",
-	consulate: "Consulat",
-	honorary_consulate: "Consulat Honoraire",
+const REG_STATUS_TONE: Record<string, Tone> = {
+	requested: "warning",
+	active: "success",
+	expired: "danger",
+	unknown: "muted",
 };
 
-const COUNTRY_NAMES: Record<string, string> = {
-	ES: "Espagne", FR: "France", US: "États-Unis", GB: "Royaume-Uni",
-	DE: "Allemagne", IT: "Italie", BE: "Belgique", MA: "Maroc",
-	SN: "Sénégal", CM: "Cameroun", CG: "Congo", CD: "RD Congo",
-	CI: "Côte d'Ivoire", GA: "Gabon", CN: "Chine", JP: "Japon",
-	BR: "Brésil", CA: "Canada", SA: "Arabie Saoudite", AE: "Émirats",
-	ZA: "Afrique du Sud", GQ: "Guinée Équat.", NG: "Nigeria",
-	EG: "Égypte", RU: "Russie", IN: "Inde", TR: "Turquie",
-	TG: "Togo", BJ: "Bénin", GH: "Ghana", KE: "Kenya",
-};
+function timeAgo(ts: number): string {
+	const diff = Date.now() - ts;
+	const m = Math.floor(diff / 60000);
+	if (m < 1) return "à l'instant";
+	if (m < 60) return `il y a ${m} min`;
+	const h = Math.floor(m / 60);
+	if (h < 24) return `il y a ${h} h`;
+	const d = Math.floor(h / 24);
+	return `il y a ${d} j`;
+}
 
-// ─── Shared tooltip style ──────────────────────────────────────────────────
-const tooltipStyle = {
-	contentStyle: {
-		background: "hsl(var(--popover))",
-		border: "1px solid hsl(var(--border))",
-		borderRadius: "8px",
-		boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-		color: "hsl(var(--popover-foreground))",
-		fontSize: "12px",
-	},
-};
+function fmt(n: number): string {
+	return n.toLocaleString("fr-FR");
+}
 
-// ─── KPI Card ──────────────────────────────────────────────────────────────
-function KpiCard({
-	icon: Icon, label, value, sub, trend, accentBg, accentBgLight, accentText, loading,
-}: {
-	icon: React.ElementType; label: string; value: number | string; sub: string;
-	trend?: { value: string; positive?: boolean };
-	accentBg: string; accentBgLight: string; accentText: string; loading?: boolean;
-}) {
+function niceCeil(n: number): number {
+	if (n <= 0) return 1;
+	const pow = Math.pow(10, Math.floor(Math.log10(n)));
+	const norm = n / pow;
+	let nice: number;
+	if (norm <= 1) nice = 1;
+	else if (norm <= 2) nice = 2;
+	else if (norm <= 3) nice = 3;
+	else if (norm <= 5) nice = 5;
+	else if (norm <= 7.5) nice = 7.5;
+	else nice = 10;
+	return Math.ceil(nice * pow);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Small UI atoms
+// ════════════════════════════════════════════════════════════════════════════
+
+function EmptyState() {
+	const { t } = useTranslation();
 	return (
-		<FlatCard className="relative overflow-hidden">
-			<div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accentBg}`} />
-			<div className="p-3 lg:p-4">
-				<div className="flex flex-row items-center justify-between pb-2">
-					<span className="text-sm font-medium text-muted-foreground">{label}</span>
-					<div className={`flex h-9 w-9 items-center justify-center rounded-lg ${accentBgLight}`}>
-						<Icon className={`h-4 w-4 ${accentText}`} />
-					</div>
-				</div>
-				{loading ? <Skeleton className="h-8 w-20" /> : (
-					<div className="flex items-end gap-2">
-						<div className="text-3xl font-bold tracking-tight">{value}</div>
-						{trend && (
-							<span className={`text-xs font-medium pb-1 ${trend.positive ? "text-emerald-500" : "text-muted-foreground"}`}>
-								{trend.value}
-							</span>
-						)}
-					</div>
-				)}
-				<p className="mt-1 text-xs text-muted-foreground">{sub}</p>
-			</div>
-		</FlatCard>
+		<div
+			className="text-sm text-muted ta-center"
+			style={{ padding: "32px 0" }}
+		>
+			{t("superadmin.common.noData", "Aucune donnée disponible")}
+		</div>
 	);
 }
 
-// ─── Status Badge ──────────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
-	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
-	const colors = STATUS_COLORS[status] ?? DEFAULT_STATUS_COLOR;
-	const label = STATUS_LABELS[status]?.[lang] ?? status;
+function ToneDot({ tone = "info", size = 8 }: { tone?: Tone; size?: number }) {
 	return (
-		<span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${colors.bgLight} ${colors.text}`}>
-			<span className={`h-1.5 w-1.5 rounded-full ${colors.bg}`} />
-			{label}
+		<span
+			style={{
+				width: size,
+				height: size,
+				borderRadius: "50%",
+				background: TONE_VAR[tone].color,
+				flexShrink: 0,
+				display: "inline-block",
+			}}
+		/>
+	);
+}
+
+function GabonStripe() {
+	return (
+		<span style={{ display: "inline-flex", height: 3, width: 36, borderRadius: 100, overflow: "hidden" }}>
+			<span style={{ flex: 1, background: "var(--gabon-green-v2)" }} />
+			<span style={{ flex: 1, background: "var(--gabon-yellow-v2)" }} />
+			<span style={{ flex: 1, background: "var(--gabon-blue-v2)" }} />
 		</span>
 	);
 }
 
-function timeAgo(ts: number): string {
-	const diff = Date.now() - ts;
-	const mins = Math.floor(diff / 60000);
-	if (mins < 1) return "à l'instant";
-	if (mins < 60) return `il y a ${mins}m`;
-	const hours = Math.floor(mins / 60);
-	if (hours < 24) return `il y a ${hours}h`;
-	return `il y a ${Math.floor(hours / 24)}j`;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CHART COMPONENTS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Garde de montage client pour Recharts : attend que le parent ait des
- * dimensions mesurables avant de monter `ResponsiveContainer`, évitant le
- * warning `width(-1)` que la lib émet sinon au premier render.
- *
- * Deux étapes :
- *   1. Attend que `useEffect` ait exécuté (post-hydration).
- *   2. Mesure le parent via `getBoundingClientRect` — si width > 0, monte le
- *      chart ; sinon attend le prochain frame via `requestAnimationFrame`.
- *
- * Cette double-garde élimine le warning car `ResponsiveContainer` n'est
- * monté qu'à partir du moment où son parent a une taille non-zéro.
- */
-function ChartMount({ children }: { children: ReactNode }) {
-	const [ready, setReady] = useState(false);
-	const wrapperRef = useRef<HTMLDivElement | null>(null);
-	useEffect(() => {
-		let raf: number;
-		const tick = () => {
-			const el = wrapperRef.current;
-			if (el && el.getBoundingClientRect().width > 0) {
-				setReady(true);
-			} else {
-				raf = requestAnimationFrame(tick);
-			}
-		};
-		raf = requestAnimationFrame(tick);
-		return () => cancelAnimationFrame(raf);
-	}, []);
-	return (
-		<div ref={wrapperRef} className="h-full w-full">
-			{ready ? children : null}
-		</div>
-	);
-}
-
-/** Donut chart — Request status distribution */
-function RequestStatusDonut({ breakdown }: { breakdown: Record<string, number> }) {
-	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
-	const data = Object.entries(breakdown)
-		.map(([status, count]) => ({
-			name: STATUS_LABELS[status]?.[lang] ?? status,
-			value: count,
-			fill: (STATUS_COLORS[status] ?? DEFAULT_STATUS_COLOR).fill,
-		}))
-		.sort((a, b) => b.value - a.value);
-	if (data.length === 0) return <p className="text-sm text-muted-foreground py-8 text-center">Aucune donnée</p>;
-	return (
-		<div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-			<div className="h-56 flex-1 min-w-0">
-				<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-					<PieChart>
-						<Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value" strokeWidth={0}>
-							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
-						</Pie>
-						<Tooltip {...tooltipStyle} />
-					</PieChart>
-				</ResponsiveContainer></ChartMount>
-			</div>
-			<div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs lg:grid-cols-1">
-				{data.slice(0, 8).map((item) => (
-					<div key={item.name} className="flex items-center gap-2">
-						{/* Dynamic color from data — inline style required */}
-						{/* eslint-disable-next-line react/forbid-dom-props */}
-						<span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
-						<span className="text-muted-foreground truncate">{item.name}</span>
-						<span className="ml-auto font-semibold tabular-nums">{item.value}</span>
-					</div>
-				))}
-			</div>
-		</div>
-	);
-}
-
-/** Horizontal bar chart — Pipeline stages */
-function PipelineBarChart({ pipeline, total }: {
-	pipeline: Record<string, number>; total: number;
+function PeriodFilter({
+	value,
+	onChange,
+}: {
+	value: PeriodId;
+	onChange: (id: PeriodId) => void;
 }) {
-	const stages = [
-		{ key: "draft", label: "Brouillon", count: pipeline.draft ?? 0, color: "#94a3b8" },
-		{ key: "submitted", label: "Soumis", count: pipeline.submitted ?? 0, color: "#3b82f6" },
-		{ key: "pending", label: "En attente", count: pipeline.pending ?? 0, color: "#f59e0b" },
-		{ key: "underReview", label: "En examen", count: pipeline.underReview ?? 0, color: "#6366f1" },
-		{ key: "inProduction", label: "Production", count: pipeline.inProduction ?? 0, color: "#8b5cf6" },
-		{ key: "validated", label: "Validé", count: pipeline.validated ?? 0, color: "#10b981" },
-		{ key: "readyForPickup", label: "Prêt", count: pipeline.readyForPickup ?? 0, color: "#14b8a6" },
-		{ key: "completed", label: "Terminé", count: pipeline.completed ?? 0, color: "#22c55e" },
-		{ key: "rejected", label: "Rejeté", count: pipeline.rejected ?? 0, color: "#ef4444" },
-	].filter((s) => s.count > 0);
-	if (stages.length === 0 || total === 0) return null;
+	const { t } = useTranslation();
 	return (
-		<div className="h-72">
-			<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-				<BarChart data={stages} layout="vertical" margin={{ left: 70, right: 20, top: 5, bottom: 5 }}>
-					<CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} />
-					<XAxis type="number" tick={{ fontSize: 11 }} />
-					<YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={65} />
-					<Tooltip {...tooltipStyle} />
-					<Bar dataKey="count" name="Demandes" radius={[0, 4, 4, 0]} barSize={20}>
-						{stages.map((s) => <Cell key={s.key} fill={s.color} />)}
-					</Bar>
-				</BarChart>
-			</ResponsiveContainer></ChartMount>
+		<div
+			style={{
+				display: "inline-flex",
+				background: "var(--surface)",
+				border: "1px solid var(--border)",
+				borderRadius: 100,
+				padding: 3,
+				gap: 2,
+			}}
+		>
+			{PERIODS.map((p) => {
+				const active = p.id === value;
+				return (
+					<button
+						key={p.id}
+						type="button"
+						onClick={() => onChange(p.id)}
+						style={{
+							appearance: "none",
+							background: active ? "var(--ink-900)" : "transparent",
+							// `--ink-900` s'inverse en dark mode (devient beige clair) ; le
+							// texte doit s'inverser en miroir → `var(--bg)` (≈ blanc en
+							// light, ≈ noir en dark). Hardcoder `#fff` ferait blanc-sur-
+							// beige-clair en dark mode.
+							color: active ? "var(--bg)" : "var(--text-muted)",
+							border: "none",
+							borderRadius: 100,
+							padding: "6px 14px",
+							fontSize: 12,
+							fontWeight: 500,
+							cursor: "pointer",
+							letterSpacing: "-0.005em",
+						}}
+					>
+						{t(`superadmin.dashboard.periods.${p.id}`, p.label)}
+					</button>
+				);
+			})}
 		</div>
 	);
 }
 
-/** Donut chart — Org types deployment */
-function OrgTypeDonut({ byType }: { byType: Record<string, number> }) {
-	const data = Object.entries(byType)
-		.map(([type, count], i) => ({
-			name: ORG_TYPE_LABELS[type] ?? type,
-			value: count,
-			fill: CHART_COLORS[i % CHART_COLORS.length],
-		}))
-		.sort((a, b) => b.value - a.value);
-	if (data.length === 0) return <p className="text-sm text-muted-foreground py-8 text-center">Aucune organisation</p>;
+function SystemHealthPill({ health }: { health?: string }) {
+	const { t } = useTranslation();
+	const TONE_BY_HEALTH: Record<string, { tone: Tone; key: string }> = {
+		HEALTHY: { tone: "success", key: "healthy" },
+		DEGRADED: { tone: "warning", key: "degraded" },
+		CRITICAL: { tone: "danger", key: "critical" },
+	};
+	const cfg = TONE_BY_HEALTH[health ?? "HEALTHY"] ?? TONE_BY_HEALTH.HEALTHY!;
+	const tv = TONE_VAR[cfg.tone];
 	return (
-		<div className="flex flex-col items-center gap-4">
-			<div className="h-52 w-full">
-				<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-					<PieChart>
-						<Pie data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
-							{data.map((e) => <Cell key={e.name} fill={e.fill} />)}
-						</Pie>
-						<Tooltip {...tooltipStyle} />
-					</PieChart>
-				</ResponsiveContainer></ChartMount>
-			</div>
-			<div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs">
-				{data.map((item) => (
-					<div key={item.name} className="flex items-center gap-1.5">
-						{/* Dynamic color from data — inline style required */}
-						{/* eslint-disable-next-line react/forbid-dom-props */}
-						<span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: item.fill }} />
-						<span className="text-muted-foreground">{item.name}</span>
-						<span className="font-semibold">{item.value}</span>
+		<span
+			className="row items-center"
+			style={{
+				gap: 8,
+				padding: "4px 10px",
+				background: tv.tint,
+				borderRadius: 100,
+			}}
+		>
+			<span
+				style={{
+					width: 7,
+					height: 7,
+					borderRadius: "50%",
+					background: tv.color,
+					boxShadow: `0 0 0 4px ${tv.tint}`,
+				}}
+			/>
+			<span style={{ fontSize: 12, fontWeight: 600, color: tv.color }}>
+				{t(`superadmin.dashboard.systemHealth.${cfg.key}`)}
+			</span>
+		</span>
+	);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Welcome banner (with dismiss persisted in localStorage)
+// ════════════════════════════════════════════════════════════════════════════
+
+function WelcomeBanner({
+	totalReps,
+	totalUsers,
+	urgentPending,
+	onDismiss,
+	onDailyReport,
+	onAiSummary,
+}: {
+	totalReps: number;
+	totalUsers: number;
+	urgentPending: number;
+	onDismiss: () => void;
+	onDailyReport: () => void;
+	onAiSummary: () => void;
+}) {
+	const { t, i18n } = useTranslation();
+	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
+	const now = useMemo(() => new Date(), []);
+	const dateLabel = now.toLocaleDateString(locale, {
+		weekday: "long",
+		day: "numeric",
+		month: "long",
+		year: "numeric",
+	});
+	const timeLabel = now.toLocaleTimeString(locale, {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+	return (
+		<div
+			style={{
+				position: "relative",
+				background:
+					"linear-gradient(135deg, #0b4f9c 0%, #073871 60%, #0a5f4c 100%)",
+				borderRadius: 16,
+				padding: "20px 24px",
+				color: "#fff",
+				overflow: "hidden",
+			}}
+		>
+			<span
+				aria-hidden
+				style={{
+					position: "absolute",
+					right: -40,
+					top: -40,
+					width: 280,
+					height: 280,
+					borderRadius: "50%",
+					background:
+						"radial-gradient(circle, rgba(241,197,49,0.18) 0%, transparent 60%)",
+				}}
+			/>
+			<span
+				aria-hidden
+				style={{
+					position: "absolute",
+					right: 0,
+					bottom: 0,
+					width: 280,
+					height: 4,
+					background:
+						"linear-gradient(to right, var(--gabon-green-v2) 0%, var(--gabon-green-v2) 33%, var(--gabon-yellow-v2) 33%, var(--gabon-yellow-v2) 66%, #5b9bdf 66%, #5b9bdf 100%)",
+				}}
+			/>
+			<div
+				className="row items-center justify-between"
+				style={{ gap: 16, position: "relative", flexWrap: "wrap" }}
+			>
+				<div style={{ flex: 1, minWidth: 0 }}>
+					<div
+						style={{
+							fontSize: 10.5,
+							textTransform: "uppercase",
+							letterSpacing: "0.14em",
+							color: "rgba(255,255,255,0.7)",
+							fontWeight: 600,
+						}}
+					>
+						{dateLabel} · {timeLabel}
 					</div>
-				))}
-			</div>
-		</div>
-	);
-}
-
-/** Bar chart — Representation by country */
-function CountryBarChart({ byCountry }: { byCountry: Record<string, { count: number; names: string[] }> }) {
-	const data = Object.entries(byCountry)
-		.map(([code, info]) => ({
-			country: COUNTRY_NAMES[code] ?? code,
-			count: info.count,
-		}))
-		.sort((a, b) => b.count - a.count)
-		.slice(0, 10);
-	if (data.length === 0) return null;
-	return (
-		<div className="h-64">
-			<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 40 }}>
-					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-					<XAxis dataKey="country" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" interval={0} />
-					<YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-					<Tooltip {...tooltipStyle} />
-					<Bar dataKey="count" name="Représentations" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={28}>
-						{data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-					</Bar>
-				</BarChart>
-			</ResponsiveContainer></ChartMount>
-		</div>
-	);
-}
-
-/** Radial bar — Performance gauge */
-function PerformanceGauge({ completionRate, urgentPending }: { completionRate: number; urgentPending: number }) {
-	const data = [
-		{ name: "Résolution", value: completionRate, fill: "#22c55e" },
-	];
-	return (
-		<div className="flex flex-col items-center gap-2">
-			<div className="h-44 w-44 relative">
-				<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-					<RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" data={data} startAngle={180} endAngle={0} barSize={12}>
-						<RadialBar background={{ fill: "hsl(var(--muted))" }} dataKey="value" cornerRadius={6} />
-					</RadialBarChart>
-				</ResponsiveContainer></ChartMount>
-				<div className="absolute inset-0 flex flex-col items-center justify-center">
-					<span className="text-3xl font-bold">{completionRate}%</span>
-					<span className="text-xs text-muted-foreground">Résolution</span>
+					<h1
+						style={{
+							fontSize: 24,
+							fontWeight: 600,
+							letterSpacing: "-0.02em",
+							marginTop: 6,
+							color: "#fff",
+						}}
+					>
+						{t("superadmin.dashboard.hero.greeting")}
+						<span style={{ color: "rgba(255,255,255,0.7)", fontWeight: 400 }}>
+							{" "}— {t("superadmin.dashboard.hero.subtitle")}
+						</span>
+					</h1>
+					<div
+						style={{
+							fontSize: 13.5,
+							color: "rgba(255,255,255,0.78)",
+							marginTop: 6,
+							lineHeight: 1.5,
+							maxWidth: 720,
+						}}
+					>
+						{t("superadmin.dashboard.hero.summary", {
+							reps: fmt(totalReps),
+							users: fmt(totalUsers),
+						})}
+						{urgentPending > 0
+							? t("superadmin.dashboard.hero.urgentSuffix", {
+									urgent: fmt(urgentPending),
+								})
+							: ""}
+						.
+					</div>
+				</div>
+				<div className="row" style={{ gap: 8, flexShrink: 0 }}>
+					<button
+						type="button"
+						className="btn btn-sm"
+						onClick={onDailyReport}
+						style={{
+							background: "rgba(255,255,255,0.14)",
+							color: "#fff",
+							border: "1px solid rgba(255,255,255,0.18)",
+						}}
+					>
+						<Icon name="FileText" size={14} />
+						{t("superadmin.dashboard.actions.dailyReport")}
+					</button>
+					<button
+						type="button"
+						className="btn btn-sm"
+						onClick={onAiSummary}
+						style={{
+							background: "#fff",
+							// Fond du hero verrouillé en bleu foncé (gradient hardcodé) →
+							// on ne s'appuie pas sur `--gabon-blue-v2` qui devient bleu
+							// clair en dark mode et passe blanc-sur-blanc.
+							color: "#0b4f9c",
+							border: "1px solid #fff",
+							fontWeight: 600,
+						}}
+					>
+						<Icon name="Sparkles" size={14} />
+						{t("superadmin.dashboard.actions.aiSummary")}
+					</button>
+					<button
+						type="button"
+						onClick={onDismiss}
+						className="btn btn-icon"
+						aria-label={t("superadmin.dashboard.actions.dismiss")}
+						style={{
+							background: "rgba(255,255,255,0.08)",
+							color: "rgba(255,255,255,0.7)",
+							border: "1px solid rgba(255,255,255,0.12)",
+						}}
+					>
+						<Icon name="X" size={14} />
+					</button>
 				</div>
 			</div>
-			{urgentPending > 0 && (
-				<div className="flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1">
-					<AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-					<span className="text-xs font-semibold text-red-500">{urgentPending} urgentes en attente</span>
+		</div>
+	);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// KPI card
+// ════════════════════════════════════════════════════════════════════════════
+
+type Kpi = {
+	id: string;
+	label: string;
+	value: number | string;
+	delta?: string;
+	hint: string;
+	icon: string;
+	tone: Tone;
+};
+
+function KpiCard({ k, loading }: { k: Kpi; loading?: boolean }) {
+	const tv = TONE_VAR[k.tone];
+	return (
+		<div className="card card-pad" style={{ position: "relative", overflow: "hidden" }}>
+			<span
+				aria-hidden
+				style={{
+					position: "absolute",
+					left: 0,
+					top: 14,
+					bottom: 14,
+					width: 3,
+					background: tv.color,
+					borderRadius: "0 3px 3px 0",
+				}}
+			/>
+			<div
+				className="row items-start justify-between"
+				style={{ paddingLeft: 6, gap: 8 }}
+			>
+				<div style={{ flex: 1, minWidth: 0 }}>
+					<div className="uppercase" style={{ color: "var(--text-muted)" }}>
+						{k.label}
+					</div>
+					<div
+						style={{
+							fontSize: 32,
+							fontWeight: 600,
+							letterSpacing: "-0.025em",
+							marginTop: 4,
+							fontFamily: "var(--mono-v2)",
+							color: "var(--text)",
+							lineHeight: 1,
+						}}
+					>
+						{loading ? "—" : typeof k.value === "number" ? fmt(k.value) : k.value}
+					</div>
+					<div
+						className="text-xs text-muted"
+						style={{ marginTop: 8, lineHeight: 1.4 }}
+					>
+						{k.hint}
+					</div>
+				</div>
+				<div
+					style={{
+						width: 38,
+						height: 38,
+						borderRadius: 10,
+						background: tv.tint,
+						color: tv.color,
+						display: "grid",
+						placeItems: "center",
+						flexShrink: 0,
+					}}
+				>
+					<Icon name={k.icon} size={18} />
+				</div>
+			</div>
+			{k.delta && (
+				<div style={{ marginTop: 10, paddingLeft: 6 }}>
+					<span
+						className="pill pill-mono"
+						style={{
+							background: tv.tint,
+							color: tv.color,
+							borderColor: "transparent",
+						}}
+					>
+						{k.delta}
+					</span>
 				</div>
 			)}
 		</div>
 	);
 }
 
-/** Registrations by status — bar chart */
-function RegistrationStatusChart({ byStatus }: { byStatus: Record<string, number> }) {
-	const statusColors: Record<string, string> = {
-		requested: "#f59e0b", active: "#22c55e", expired: "#ef4444", unknown: "#94a3b8",
-	};
-	const statusLabels: Record<string, string> = {
-		requested: "En attente", active: "Active", expired: "Expirée", unknown: "Autre",
-	};
-	const data = Object.entries(byStatus)
-		.map(([status, count]) => ({
-			name: statusLabels[status] ?? status,
-			count,
-			fill: statusColors[status] ?? "#94a3b8",
-		}))
-		.sort((a, b) => b.count - a.count);
-	if (data.length === 0) return <p className="text-sm text-muted-foreground py-4 text-center">Aucune inscription</p>;
+// ════════════════════════════════════════════════════════════════════════════
+// Section header (compact, with optional actions)
+// ════════════════════════════════════════════════════════════════════════════
+
+function CardHead({
+	icon,
+	title,
+	hint,
+	tone = "info",
+	actions,
+}: {
+	icon: string;
+	title: string;
+	hint?: string;
+	tone?: Tone;
+	actions?: React.ReactNode;
+}) {
+	const tv = TONE_VAR[tone];
 	return (
-		<div className="h-48">
-			<ChartMount><ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-				<BarChart data={data} margin={{ left: 5, right: 5, top: 5, bottom: 5 }}>
-					<CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-					<XAxis dataKey="name" tick={{ fontSize: 11 }} />
-					<YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-					<Tooltip {...tooltipStyle} />
-					<Bar dataKey="count" name="Inscriptions" radius={[4, 4, 0, 0]} barSize={36}>
-						{data.map((d) => <Cell key={d.name} fill={d.fill} />)}
-					</Bar>
-				</BarChart>
-			</ResponsiveContainer></ChartMount>
+		<div className="card-head">
+			<div className="row items-center" style={{ gap: 10, minWidth: 0 }}>
+				<span
+					style={{
+						width: 30,
+						height: 30,
+						borderRadius: 8,
+						background: tv.tint,
+						color: tv.color,
+						display: "grid",
+						placeItems: "center",
+						flexShrink: 0,
+					}}
+				>
+					<Icon name={icon} size={15} />
+				</span>
+				<div style={{ minWidth: 0 }}>
+					<div
+						style={{
+							fontSize: 13.5,
+							fontWeight: 600,
+							color: "var(--text)",
+							letterSpacing: "-0.005em",
+							lineHeight: 1.2,
+						}}
+					>
+						{title}
+					</div>
+					{hint && (
+						<div className="text-xs text-muted" style={{ marginTop: 1 }}>
+							{hint}
+						</div>
+					)}
+				</div>
+			</div>
+			{actions && (
+				<div className="row items-center" style={{ gap: 8 }}>
+					{actions}
+				</div>
+			)}
 		</div>
 	);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SECURITY PANEL
-// ═══════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// Charts (custom CSS/SVG, no recharts dep)
+// ════════════════════════════════════════════════════════════════════════════
 
-function SecurityPanel({ data, loading }: { data?: any; loading: boolean }) {
-	if (loading || !data) return <FlatCard><div className="p-3 lg:p-4 py-8"><Skeleton className="h-48 w-full" /></div></FlatCard>;
-	const hasCritical = data.criticalAlerts?.length > 0;
-	const borderClass = hasCritical ? "ring-1 ring-red-500/30" : data.systemHealth === "DEGRADED" ? "ring-1 ring-amber-500/30" : "";
-	const healthColors: Record<string, { dot: string; bg: string; text: string; label: string }> = {
-		HEALTHY: { dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", label: "Opérationnel" },
-		DEGRADED: { dot: "bg-amber-500", bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400", label: "Dégradé" },
-		CRITICAL: { dot: "bg-red-500", bg: "bg-red-500/10", text: "text-red-600 dark:text-red-400", label: "Critique" },
-	};
-	const hc = healthColors[data.systemHealth] ?? healthColors.HEALTHY;
+type BarDatum = { id: string; label: string; count: number; tone: Tone };
+
+function HBarChart({
+	data,
+	labelWidth = 104,
+	height = 18,
+	ticks = 4,
+}: {
+	data: BarDatum[];
+	labelWidth?: number;
+	height?: number;
+	ticks?: number;
+}) {
+	if (!data.length) {
+		return <EmptyState />;
+	}
+	const max = Math.max(...data.map((d) => d.count));
+	const niceMax = niceCeil(max);
+	const step = niceMax / ticks;
+	const tickValues = Array.from({ length: ticks + 1 }, (_, i) =>
+		Math.round(step * i),
+	);
 	return (
-		<FlatCard className={borderClass}>
-			<div className="p-3 lg:p-4">
-				<SectionHeader
-					icon={<ShieldAlert className="h-3.5 w-3.5" />}
-					iconBgClass="bg-red-500/10"
-					iconTextClass="text-red-500"
-					title="Sécurité & Alertes"
-					actions={
-						<div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${hc.bg}`}>
-							<span className={`h-2 w-2 rounded-full ${hc.dot} animate-pulse`} />
-							<span className={`text-xs font-semibold ${hc.text}`}>{hc.label}</span>
+		<div style={{ position: "relative" }}>
+			<div className="stack" style={{ gap: 14 }}>
+				{data.map((d) => {
+					const pct = (d.count / niceMax) * 100;
+					const tv = TONE_VAR[d.tone];
+					return (
+						<div
+							key={d.id}
+							className="row items-center"
+							style={{ gap: 12 }}
+						>
+							<div
+								style={{
+									width: labelWidth,
+									flexShrink: 0,
+									fontSize: 12.5,
+									color: "var(--text)",
+									textAlign: "right",
+									fontWeight: 500,
+								}}
+							>
+								{d.label}
+							</div>
+							<div
+								style={{
+									flex: 1,
+									position: "relative",
+									height,
+									background: "transparent",
+								}}
+							>
+								{tickValues.slice(1, -1).map((tv, i) => (
+									<span
+										key={i}
+										aria-hidden
+										style={{
+											position: "absolute",
+											top: -2,
+											bottom: -2,
+											left: `${(tv / niceMax) * 100}%`,
+											width: 1,
+											background: "var(--border-soft)",
+										}}
+									/>
+								))}
+								<div
+									style={{
+										width: `${Math.max(1.5, pct)}%`,
+										height: "100%",
+										background: tv.color,
+										borderRadius: 6,
+										position: "relative",
+										overflow: "hidden",
+										boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.06)",
+									}}
+								>
+									<span
+										aria-hidden
+										style={{
+											position: "absolute",
+											inset: 0,
+											background:
+												"linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 60%)",
+										}}
+									/>
+								</div>
+							</div>
+							<div
+								className="text-mono text-xs"
+								style={{
+									color: "var(--text)",
+									fontWeight: 600,
+									minWidth: 48,
+									textAlign: "right",
+								}}
+							>
+								{fmt(d.count)}
+							</div>
 						</div>
-					}
-				/>
-				<p className="text-xs text-muted-foreground mb-4">Surveillance réseau, cyber-sécurité et intrusions</p>
-				<div className="space-y-4">
-				<div className="grid grid-cols-3 gap-3">
-					<div className="flex flex-col items-center gap-1 rounded-lg bg-muted/50 p-3">
-						<ShieldCheck className="h-4 w-4 text-muted-foreground" />
-						<span className="text-lg font-bold tabular-nums">{data.queueDepth ?? 0}</span>
-						<span className="text-[10px] text-muted-foreground text-center">Signaux en attente</span>
+					);
+				})}
+			</div>
+			<div
+				style={{
+					marginTop: 10,
+					paddingLeft: labelWidth + 12,
+					paddingRight: 60,
+					position: "relative",
+					height: 14,
+				}}
+			>
+				{tickValues.map((tv, i) => (
+					<div
+						key={i}
+						style={{
+							position: "absolute",
+							left: `${(tv / niceMax) * 100}%`,
+							transform: "translateX(-50%)",
+							fontFamily: "var(--mono-v2)",
+							fontSize: 10.5,
+							color: "var(--text-faint)",
+						}}
+					>
+						{tv}
 					</div>
-					<div className="flex flex-col items-center gap-1 rounded-lg bg-muted/50 p-3">
-						<AlertTriangle className={`h-4 w-4 ${(data.totalAlerts24h ?? 0) > 0 ? "text-red-500" : "text-muted-foreground"}`} />
-						<span className={`text-lg font-bold tabular-nums ${(data.totalAlerts24h ?? 0) > 0 ? "text-red-500" : ""}`}>{data.totalAlerts24h ?? 0}</span>
-						<span className="text-[10px] text-muted-foreground text-center">Alertes 24h</span>
-					</div>
-					<div className="flex flex-col items-center gap-1 rounded-lg bg-muted/50 p-3">
-						<Eye className="h-4 w-4 text-muted-foreground" />
-						<span className="text-lg font-bold tabular-nums">{data.totalSecurityEvents24h ?? 0}</span>
-						<span className="text-[10px] text-muted-foreground text-center">Événements sécu.</span>
-					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function VBarChart({
+	data,
+	height = 200,
+}: {
+	data: BarDatum[];
+	height?: number;
+}) {
+	if (!data.length) {
+		return <EmptyState />;
+	}
+	const max = Math.max(...data.map((d) => d.count));
+	const niceMax = niceCeil(max);
+	const ticks = 4;
+	const tickValues = Array.from({ length: ticks + 1 }, (_, i) =>
+		Math.round((niceMax / ticks) * i),
+	).reverse();
+	return (
+		<div style={{ position: "relative", height: height + 50 }}>
+			<div className="row" style={{ height, alignItems: "stretch", gap: 0 }}>
+				<div style={{ width: 38, flexShrink: 0, position: "relative" }}>
+					{tickValues.map((tv, i) => (
+						<div
+							key={i}
+							style={{
+								position: "absolute",
+								right: 6,
+								top: `${(i / ticks) * 100}%`,
+								transform: "translateY(-50%)",
+								fontFamily: "var(--mono-v2)",
+								fontSize: 10.5,
+								color: "var(--text-faint)",
+							}}
+						>
+							{tv}
+						</div>
+					))}
 				</div>
-				{data.criticalAlerts?.length > 0 && (
-					<div className="space-y-2">
-						<h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider flex items-center gap-1.5">
-							<span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />Alertes Critiques
-						</h4>
-						<div className="space-y-1.5 max-h-[140px] overflow-y-auto">
-							{data.criticalAlerts.map((alert: any) => (
-								<div key={alert._id} className="flex items-start gap-2.5 rounded-lg border border-red-500/20 bg-red-500/5 p-2.5">
-									<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
-									<div className="min-w-0 flex-1">
-										<p className="text-xs font-medium leading-tight truncate">{alert.message}</p>
-										<p className="mt-0.5 text-[10px] text-muted-foreground">{alert.source} • {timeAgo(alert.timestamp)}</p>
+				<div style={{ flex: 1, position: "relative" }}>
+					{tickValues.map((_tv, i) => (
+						<span
+							key={i}
+							aria-hidden
+							style={{
+								position: "absolute",
+								left: 0,
+								right: 0,
+								top: `${(i / ticks) * 100}%`,
+								height: 1,
+								background:
+									i === ticks ? "var(--border)" : "var(--border-soft)",
+							}}
+						/>
+					))}
+					<div
+						style={{
+							position: "absolute",
+							inset: 0,
+							display: "flex",
+							alignItems: "flex-end",
+							justifyContent: "space-around",
+							padding: "0 12px",
+						}}
+					>
+						{data.map((d) => {
+							const h = (d.count / niceMax) * 100;
+							const tv = TONE_VAR[d.tone];
+							return (
+								<div
+									key={d.id}
+									style={{
+										flex: 1,
+										display: "flex",
+										flexDirection: "column",
+										alignItems: "center",
+										gap: 6,
+										height: "100%",
+										justifyContent: "flex-end",
+										maxWidth: 80,
+									}}
+								>
+									<div
+										className="text-mono"
+										style={{
+											fontSize: 11.5,
+											fontWeight: 600,
+											color: "var(--text)",
+										}}
+									>
+										{fmt(d.count)}
+									</div>
+									<div
+										style={{
+											width: "64%",
+											height: `${h}%`,
+											minHeight: 4,
+											background: tv.color,
+											borderRadius: "8px 8px 0 0",
+											boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.08)",
+											position: "relative",
+											overflow: "hidden",
+										}}
+									>
+										<span
+											aria-hidden
+											style={{
+												position: "absolute",
+												inset: 0,
+												background:
+													"linear-gradient(180deg, rgba(255,255,255,0.22) 0%, transparent 50%)",
+											}}
+										/>
 									</div>
 								</div>
-							))}
-						</div>
-					</div>
-				)}
-				{data.securityEvents?.length > 0 && (
-					<div className="space-y-2">
-						<h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><Lock className="h-3 w-3" />Événements Sécurité (24h)</h4>
-						<div className="space-y-1 max-h-[120px] overflow-y-auto">
-							{data.securityEvents.map((evt: any) => (
-								<div key={evt._id} className="flex items-center justify-between rounded-md bg-muted/30 px-2.5 py-1.5 text-xs">
-									<div className="flex items-center gap-2 min-w-0"><Shield className="h-3 w-3 shrink-0 text-amber-500" /><span className="font-mono truncate">{evt.action}</span></div>
-									<span className="text-muted-foreground whitespace-nowrap ml-2">{timeAgo(evt.timestamp)}</span>
-								</div>
-							))}
-						</div>
-					</div>
-				)}
-				{(data.criticalAlerts?.length ?? 0) === 0 && (data.securityEvents?.length ?? 0) === 0 && (
-					<div className="flex flex-col items-center justify-center py-6 text-center">
-						<Server className="mb-2 h-8 w-8 text-emerald-500/40" />
-						<p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Aucune alerte détectée</p>
-						<p className="text-xs text-muted-foreground mt-1">Tous les systèmes sont opérationnels</p>
-					</div>
-				)}
-				</div>
-			</div>
-		</FlatCard>
-	);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DEPLOYMENT STATS
-// ═══════════════════════════════════════════════════════════════════════════
-
-function DeploymentStats({ data, loading }: { data?: any; loading: boolean }) {
-	if (loading || !data) return <FlatCard><div className="p-3 lg:p-4 py-8"><Skeleton className="h-48 w-full" /></div></FlatCard>;
-	return (
-		<FlatCard>
-			<div className="p-3 lg:p-4">
-				<SectionHeader
-					icon={<Globe className="h-3.5 w-3.5" />}
-					iconBgClass="bg-blue-500/10"
-					iconTextClass="text-blue-500"
-					title="Déploiement Réseau Diplomatique"
-				/>
-				<p className="text-xs text-muted-foreground mb-4">Couverture géographique et activation des représentations</p>
-				<div className="space-y-5">
-				{/* Summary */}
-				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-					<div className="flex flex-col gap-1 rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
-						<div className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5 text-blue-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Actives</span></div>
-						<span className="text-2xl font-bold tabular-nums">{data.activeOrgs}</span>
-						<span className="text-[10px] text-muted-foreground">/ {data.totalOrgs} total</span>
-					</div>
-					<div className="flex flex-col gap-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-3">
-						<div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-emerald-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Pays</span></div>
-						<span className="text-2xl font-bold tabular-nums">{Object.keys(data.byCountry ?? {}).length}</span>
-						<span className="text-[10px] text-muted-foreground">{data.countriesCovered} juridictions</span>
-					</div>
-					<div className="flex flex-col gap-1 rounded-lg bg-amber-500/5 border border-amber-500/10 p-3">
-						<div className="flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5 text-amber-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Chefs Mission</span></div>
-						<span className="text-2xl font-bold tabular-nums">{data.orgsWithHeadOfMission}</span>
-						<span className="text-[10px] text-muted-foreground">/ {data.activeOrgs} postes</span>
-					</div>
-					<div className="flex flex-col gap-1 rounded-lg bg-violet-500/5 border border-violet-500/10 p-3">
-						<div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-violet-500" /><span className="text-[10px] text-muted-foreground uppercase tracking-wider">Effectifs</span></div>
-						<span className="text-2xl font-bold tabular-nums">{data.totalStaff}</span>
-						<span className="text-[10px] text-muted-foreground">agents déclarés</span>
-					</div>
-				</div>
-				{/* Activation Rate */}
-				<div className="space-y-2">
-					<div className="flex items-center justify-between text-xs">
-						<span className="text-muted-foreground">Taux d'activation du réseau</span>
-						<span className="font-semibold">{data.activationRate}%</span>
-					</div>
-					<div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
-						{/* Dynamic width requires inline style — no Tailwind alternative for computed percentages */}
-						{/* eslint-disable-next-line react/forbid-dom-props */}
-						<div className="h-full rounded-full bg-linear-to-r from-blue-500 to-emerald-500 transition-all duration-700" style={{ width: `${data.activationRate}%` }} />
+							);
+						})}
 					</div>
 				</div>
 			</div>
-			</div>
-		</FlatCard>
-	);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ACTIVITY LIST
-// ═══════════════════════════════════════════════════════════════════════════
-
-function RecentActivityList() {
-	const { t } = useTranslation();
-	const { results: logs, isLoading } = useAuthenticatedPaginatedQuery(api.functions.admin.getAuditLogs, {}, { initialNumItems: 6 });
-	if (isLoading) return <div className="space-y-3">{[1,2,3,4].map((i) => <div key={i} className="flex items-center gap-3"><Skeleton className="h-9 w-9 rounded-full" /><div className="flex-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-24" /></div></div>)}</div>;
-	if (!logs?.length) return <div className="flex flex-col items-center justify-center py-8 text-center"><Activity className="mb-2 h-8 w-8 text-muted-foreground/40" /><p className="text-sm text-muted-foreground">{t("superadmin.common.noData")}</p></div>;
-	const getIcon = (a: string) => { if (a.includes("user")) return <User className="h-4 w-4" />; if (a.includes("org")) return <Building2 className="h-4 w-4" />; if (a.includes("service")) return <FileText className="h-4 w-4" />; if (a.includes("request")) return <ClipboardList className="h-4 w-4" />; return <Settings className="h-4 w-4" />; };
-	const getCls = (a: string) => { if (a.includes("created") || a.includes("submitted")) return { bg: "bg-green-500/8", text: "text-green-500" }; if (a.includes("updated") || a.includes("changed")) return { bg: "bg-blue-500/8", text: "text-blue-500" }; if (a.includes("deleted") || a.includes("disabled")) return { bg: "bg-red-500/8", text: "text-red-500" }; return { bg: "bg-indigo-500/8", text: "text-indigo-500" }; };
-	return (
-		<div className="space-y-2">
-			{logs.map((log) => { const cls = getCls(log.action); return (
-				<div key={log._id} className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted/40">
-					<div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${cls.bg}`}><span className={cls.text}>{getIcon(log.action)}</span></div>
-					<div className="min-w-0 flex-1"><p className="text-sm font-medium leading-tight">{t(`superadmin.auditLogs.actions.${log.action}`, log.action)}</p><p className="mt-0.5 text-xs text-muted-foreground truncate">{log.user?.firstName} {log.user?.lastName} • {new Date(log.timestamp).toLocaleString()}</p></div>
+			<div className="row" style={{ marginTop: 8, gap: 0 }}>
+				<div style={{ width: 38, flexShrink: 0 }} />
+				<div
+					style={{
+						flex: 1,
+						display: "flex",
+						justifyContent: "space-around",
+						padding: "0 12px",
+					}}
+				>
+					{data.map((d) => {
+						const tv = TONE_VAR[d.tone];
+						return (
+							<div
+								key={d.id}
+								style={{
+									flex: 1,
+									maxWidth: 80,
+									textAlign: "center",
+									fontSize: 12,
+									color: "var(--text)",
+									fontWeight: 500,
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									gap: 6,
+								}}
+							>
+								<span
+									style={{
+										width: 8,
+										height: 8,
+										borderRadius: "50%",
+										background: tv.color,
+									}}
+								/>
+								<span>{d.label}</span>
+							</div>
+						);
+					})}
 				</div>
-			); })}
+			</div>
 		</div>
 	);
 }
 
-// ─── Widget Error Boundary ──────────────────────────────────────────────────
-class WidgetErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, { hasError: boolean }> {
-	state = { hasError: false };
-	static getDerivedStateFromError() { return { hasError: true }; }
-	componentDidCatch(error: Error, info: ErrorInfo) { console.warn("[WidgetErrorBoundary]", error.message, info.componentStack); }
-	render() { if (this.state.hasError) return this.props.fallback ?? null; return this.props.children; }
+function HalfGauge({
+	pct,
+	label,
+	sub,
+	tone = "success",
+}: {
+	pct: number;
+	label: string;
+	sub?: string;
+	tone?: Tone;
+}) {
+	const p = Math.min(100, Math.max(0, pct));
+	const r = 88;
+	const c = Math.PI * r;
+	const fill = (p / 100) * c;
+	const color = TONE_VAR[tone].color;
+	return (
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				gap: 10,
+			}}
+		>
+			<div style={{ position: "relative", width: 220, height: 130 }}>
+				<svg width="220" height="130" viewBox="0 0 220 130">
+					<defs>
+						<linearGradient id="halfgauge-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+							<stop offset="0%" stopColor={color} stopOpacity="0.55" />
+							<stop offset="100%" stopColor={color} stopOpacity="1" />
+						</linearGradient>
+					</defs>
+					<path
+						d="M 22 118 A 88 88 0 0 1 198 118"
+						fill="none"
+						stroke="var(--surface-3)"
+						strokeWidth="16"
+						strokeLinecap="round"
+					/>
+					<path
+						d="M 22 118 A 88 88 0 0 1 198 118"
+						fill="none"
+						stroke="url(#halfgauge-grad)"
+						strokeWidth="16"
+						strokeLinecap="round"
+						strokeDasharray={`${fill} ${c}`}
+					/>
+				</svg>
+				<div
+					style={{
+						position: "absolute",
+						left: 0,
+						right: 0,
+						bottom: 8,
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+					}}
+				>
+					<div
+						style={{
+							fontSize: 42,
+							fontWeight: 600,
+							letterSpacing: "-0.03em",
+							fontFamily: "var(--mono-v2)",
+							color: "var(--text)",
+							lineHeight: 1,
+						}}
+					>
+						{p}
+						<span
+							style={{
+								fontSize: 22,
+								color: "var(--text-muted)",
+								marginLeft: 2,
+							}}
+						>
+							%
+						</span>
+					</div>
+				</div>
+			</div>
+			<div style={{ textAlign: "center" }}>
+				<div
+					style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)" }}
+				>
+					{label}
+				</div>
+				{sub && (
+					<div className="text-xs text-muted" style={{ marginTop: 2 }}>
+						{sub}
+					</div>
+				)}
+			</div>
+		</div>
+	);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN DASHBOARD
-// ═══════════════════════════════════════════════════════════════════════════
+type DonutSegment = { id: string; label: string; count: number; tone: Tone };
+
+function Donut({
+	data,
+	centerValue,
+	centerLabel,
+	size = 200,
+	thickness = 28,
+}: {
+	data: DonutSegment[];
+	centerValue: string;
+	centerLabel: string;
+	size?: number;
+	thickness?: number;
+}) {
+	const { t } = useTranslation();
+	const total = data.reduce((s, d) => s + d.count, 0);
+	if (total === 0) {
+		return <EmptyState />;
+	}
+	const r = (size - thickness) / 2;
+	const cx = size / 2;
+	const cy = size / 2;
+	const circumference = 2 * Math.PI * r;
+	let offset = 0;
+	return (
+		<svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+			<title>{t("superadmin.dashboard.requestsByStatus")}</title>
+			<circle
+				cx={cx}
+				cy={cy}
+				r={r}
+				fill="none"
+				stroke="var(--surface-3)"
+				strokeWidth={thickness}
+			/>
+			{data.map((d) => {
+				const frac = d.count / total;
+				const dash = frac * circumference;
+				const seg = (
+					<circle
+						key={d.id}
+						cx={cx}
+						cy={cy}
+						r={r}
+						fill="none"
+						stroke={TONE_VAR[d.tone].color}
+						strokeWidth={thickness}
+						strokeDasharray={`${dash} ${circumference - dash}`}
+						strokeDashoffset={-offset}
+						transform={`rotate(-90 ${cx} ${cy})`}
+					/>
+				);
+				offset += dash;
+				return seg;
+			})}
+			<text
+				x={cx}
+				y={cy - 4}
+				textAnchor="middle"
+				style={{
+					fontSize: 22,
+					fontWeight: 700,
+					fontFamily: "var(--mono-v2)",
+					fill: "var(--text)",
+				}}
+			>
+				{centerValue}
+			</text>
+			<text
+				x={cx}
+				y={cy + 16}
+				textAnchor="middle"
+				style={{
+					fontSize: 11,
+					fill: "var(--text-muted)",
+					letterSpacing: "0.04em",
+				}}
+			>
+				{centerLabel}
+			</text>
+		</svg>
+	);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Page
+// ════════════════════════════════════════════════════════════════════════════
 
 export default function SuperadminDashboard() {
-	const { t, i18n } = useTranslation();
-	const { data: stats, isPending } = useAuthenticatedConvexQuery(api.functions.admin.getStats, {});
+	const { t } = useTranslation();
+	const [period, setPeriod] = useState<PeriodId>("total");
+	const [showWelcome, setShowWelcome] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
+	const [dailyReportOpen, setDailyReportOpen] = useState(false);
+	const [aiSummaryOpen, setAiSummaryOpen] = useState(false);
 
-	const currentDate = new Date().toLocaleDateString(i18n.language === "fr" ? "fr-FR" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-	const systemHealth = stats?.security?.systemHealth ?? "HEALTHY";
-	const healthColor = systemHealth === "CRITICAL" ? "text-red-500" : systemHealth === "DEGRADED" ? "text-amber-500" : "text-emerald-500";
-	const healthDot = systemHealth === "CRITICAL" ? "bg-red-500" : systemHealth === "DEGRADED" ? "bg-amber-500" : "bg-emerald-500";
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const dismissed = window.localStorage.getItem("dashboard.welcomeDismissed");
+		if (dismissed === "1") setShowWelcome(false);
+	}, []);
 
-	// Derive pipeline data from statusBreakdown (works even if performance.pipeline is undefined)
+	const dismissWelcome = () => {
+		setShowWelcome(false);
+		if (typeof window !== "undefined") {
+			window.localStorage.setItem("dashboard.welcomeDismissed", "1");
+		}
+	};
+
+	// Convex est réactif → les données s'actualisent automatiquement. Le
+	// bouton "Rafraîchir" force un rechargement complet pour les cas où une
+	// preview-build est figée (CDN/HMR) ou pour donner un signal visuel.
+	const refresh = () => {
+		setRefreshing(true);
+		if (typeof window !== "undefined") {
+			window.location.reload();
+		}
+	};
+
+	const { data: stats, isPending } = useAuthenticatedConvexQuery(
+		api.functions.admin.getStats,
+		{},
+	) as { data: any; isPending: boolean };
+
+	const periodMs = useMemo(
+		() => PERIODS.find((p) => p.id === period)?.ms ?? 0,
+		[period],
+	);
+
+	// "Total" = pas de fenêtre temporelle → on skippe la query delta. Les
+	// KPI affichent alors la valeur globale sans pill delta.
+	const { data: deltas } = useAuthenticatedConvexQuery(
+		api.functions.admin.getStatsDelta,
+		period === "total" ? "skip" : { sinceMs: periodMs },
+	) as {
+		data:
+			| {
+					usersDelta: number;
+					orgsDelta: number;
+					requestsDelta: number;
+					registrationsDelta: number;
+					associationsDelta: number;
+					companiesDelta: number;
+			  }
+			| undefined;
+	};
+
+	const { results: auditLogs } = useAuthenticatedPaginatedQuery(
+		api.functions.admin.getAuditLogs,
+		{},
+		{ initialNumItems: 7 },
+	);
+
+	const periodLabel = t(
+		`superadmin.dashboard.periods.${period}`,
+		PERIODS.find((p) => p.id === period)?.label ?? "",
+	).toLowerCase();
+	const fmtDelta = (n: number) =>
+		t("superadmin.dashboard.kpi.delta", { n: fmt(n), period: periodLabel });
+
+	// ── KPI strip ─────────────────────────────────────────────────────────
 	const sb = stats?.requests?.statusBreakdown ?? {};
-	const derivedPipeline = stats?.performance?.pipeline ?? {
+	const totalReqs = stats?.requests?.total ?? 0;
+	const urgentPending = stats?.performance?.urgentPending ?? (sb.pending ?? 0);
+	const completionRate = stats?.performance?.completionRate ?? 0;
+	const completedCount = sb.completed ?? 0;
+
+	const kpis: Kpi[] = [
+		{
+			id: "ressortissants",
+			label: t("superadmin.dashboard.stats.users"),
+			value: stats?.users?.total ?? 0,
+			delta:
+				deltas && typeof deltas.usersDelta === "number"
+					? fmtDelta(deltas.usersDelta)
+					: undefined,
+			hint: t("superadmin.dashboard.kpi.userHint"),
+			icon: "Users",
+			tone: "info",
+		},
+		{
+			id: "representations",
+			label: t("superadmin.dashboard.stats.organizations"),
+			value: stats?.deployment?.totalOrgs ?? stats?.orgs?.total ?? 0,
+			delta:
+				typeof stats?.deployment?.activationRate === "number"
+					? t("superadmin.dashboard.kpi.orgRate", {
+							rate: stats.deployment.activationRate,
+						})
+					: undefined,
+			hint: t("superadmin.dashboard.kpi.orgHint"),
+			icon: "Building2",
+			tone: "warning",
+		},
+		{
+			id: "demandes",
+			label: t("superadmin.dashboard.stats.requests"),
+			value: totalReqs,
+			delta:
+				deltas && typeof deltas.requestsDelta === "number"
+					? fmtDelta(deltas.requestsDelta)
+					: undefined,
+			hint: t("superadmin.dashboard.kpi.requestsHint", {
+				count: urgentPending,
+			}),
+			icon: "FileText",
+			tone: "cyan",
+		},
+		{
+			id: "inscriptions",
+			label: t("superadmin.dashboard.stats.registrations"),
+			value: stats?.registrations?.total ?? 0,
+			delta:
+				deltas && typeof deltas.registrationsDelta === "number"
+					? fmtDelta(deltas.registrationsDelta)
+					: undefined,
+			hint: t("superadmin.dashboard.kpi.registrationsHint"),
+			icon: "IdCard",
+			tone: "green",
+		},
+		{
+			id: "associations",
+			label: t("superadmin.dashboard.kpi.associations"),
+			value: stats?.associations?.total ?? 0,
+			delta:
+				deltas && typeof deltas.associationsDelta === "number"
+					? fmtDelta(deltas.associationsDelta)
+					: t("superadmin.dashboard.kpi.companiesFallback", {
+							count: stats?.companies?.total ?? 0,
+						}),
+			hint: t("superadmin.dashboard.kpi.associationsHint"),
+			icon: "Handshake",
+			tone: "purple",
+		},
+	];
+
+	// ── Pipeline (HBar) ──────────────────────────────────────────────────
+	const pipelineSrc = stats?.performance?.pipeline ?? {
 		draft: sb.draft ?? 0,
 		submitted: sb.submitted ?? 0,
-		pending: (sb.pending ?? 0) + (sb.pending_completion ?? 0) + (sb.edited ?? 0),
+		pending:
+			(sb.pending ?? 0) +
+			(sb.pending_completion ?? 0) +
+			(sb.edited ?? 0),
 		underReview: (sb.under_review ?? 0) + (sb.processing ?? 0),
 		inProduction: sb.in_production ?? 0,
 		validated: sb.validated ?? 0,
-		readyForPickup: (sb.ready_for_pickup ?? 0) + (sb.appointment_scheduled ?? 0),
-		completed: sb.completed ?? 0,
+		readyForPickup:
+			(sb.ready_for_pickup ?? 0) + (sb.appointment_scheduled ?? 0),
+		completed: completedCount,
 		rejected: (sb.rejected ?? 0) + (sb.cancelled ?? 0),
 	};
+	// Status labels viennent de `fields.requestStatus.options.*` (déjà
+	// internationalisé). Mapping local → status convex pour la pipeline.
+	const statusLabel = (key: string) =>
+		t(`fields.requestStatus.options.${key}`, key);
+	const pipelineBars: BarDatum[] = [
+		{ id: "draft", label: statusLabel("draft"), count: pipelineSrc.draft ?? 0, tone: "muted" },
+		{ id: "submitted", label: statusLabel("submitted"), count: pipelineSrc.submitted ?? 0, tone: "info" },
+		{ id: "pending", label: statusLabel("pending"), count: pipelineSrc.pending ?? 0, tone: "warning" },
+		{ id: "review", label: statusLabel("under_review"), count: pipelineSrc.underReview ?? 0, tone: "cyan" },
+		{ id: "production", label: statusLabel("in_production"), count: pipelineSrc.inProduction ?? 0, tone: "purple" },
+		{ id: "validated", label: statusLabel("validated"), count: pipelineSrc.validated ?? 0, tone: "green" },
+		{ id: "ready", label: statusLabel("ready_for_pickup"), count: pipelineSrc.readyForPickup ?? 0, tone: "teal" },
+		{ id: "completed", label: statusLabel("completed"), count: pipelineSrc.completed ?? 0, tone: "success" },
+		{ id: "rejected", label: statusLabel("rejected"), count: pipelineSrc.rejected ?? 0, tone: "danger" },
+	].filter((b) => b.count > 0);
 
-	// Derive completion rate client-side as fallback
-	const totalReqs = stats?.requests?.total ?? 0;
-	const completedCount = sb.completed ?? 0;
-	const derivedCompletionRate = stats?.performance?.completionRate ?? (totalReqs > 0 ? Math.round((completedCount / totalReqs) * 100) : 0);
-	const urgentCount = stats?.performance?.urgentPending ?? (sb.pending ?? 0);
-	const terminalCount = stats?.performance?.totalTerminal ?? (completedCount + (sb.cancelled ?? 0) + (sb.rejected ?? 0));
+	// ── Donut (statuts) ──────────────────────────────────────────────────
+	const donutData: DonutSegment[] = Object.entries(sb)
+		.filter(([, n]) => (n as number) > 0)
+		.map(([status, n]) => ({
+			id: status,
+			label: statusLabel(status),
+			count: n as number,
+			tone: STATUS_TONE[status] ?? "muted",
+		}))
+		.sort((a, b) => b.count - a.count);
+
+	// ── Inscriptions (VBar) ──────────────────────────────────────────────
+	const regBy = stats?.engagement?.registrationsByStatus ?? {};
+	const regBars: BarDatum[] = Object.entries(regBy)
+		.map(([status, n]) => ({
+			id: status,
+			label: t(`superadmin.dashboard.registrationStatus.${status}`, status),
+			count: n as number,
+			tone: REG_STATUS_TONE[status] ?? "muted",
+		}))
+		.filter((b) => b.count > 0);
+
+	// ── Top représentations ──────────────────────────────────────────────
+	const byCountry: Record<string, { count: number; names: string[] }> =
+		stats?.deployment?.byCountry ?? {};
+	const topReps = Object.entries(byCountry)
+		.map(([code, info]) => ({ code, ...info }))
+		.sort((a, b) => b.count - a.count)
+		.slice(0, 6);
+	const maxRep = Math.max(1, ...topReps.map((r) => r.count));
+
+	// ── Alertes ──────────────────────────────────────────────────────────
+	const criticalAlerts: any[] = stats?.security?.criticalAlerts ?? [];
+	const securityEvents: any[] = stats?.security?.securityEvents ?? [];
+	const alertItems = [
+		...criticalAlerts.slice(0, 3).map((a) => ({
+			id: a._id,
+			tone: "danger" as Tone,
+			icon: "AlertTriangle",
+			title: a.message ?? a.type,
+			text: `${a.source} · priorité ${a.priorite}`,
+			when: timeAgo(a.timestamp),
+		})),
+		...securityEvents.slice(0, 2).map((e) => ({
+			id: e._id,
+			tone: "warning" as Tone,
+			icon: "ShieldAlert",
+			title: e.action,
+			text:
+				e.entiteType ??
+				t("superadmin.dashboard.healthCards.eventsLabel"),
+			when: timeAgo(e.timestamp),
+		})),
+	];
+
+	// ── Système ──────────────────────────────────────────────────────────
+	const systemHealth = stats?.security?.systemHealth ?? "HEALTHY";
+	const queueDepth = stats?.security?.queueDepth ?? 0;
+	const healthCards: { id: string; label: string; value: string; sub: string; tone: Tone }[] = [
+		{
+			id: "global",
+			label: t("superadmin.dashboard.healthCards.globalLabel"),
+			value:
+				systemHealth === "HEALTHY"
+					? t("superadmin.dashboard.healthCards.healthy")
+					: systemHealth === "DEGRADED"
+						? t("superadmin.dashboard.healthCards.degraded")
+						: t("superadmin.dashboard.healthCards.critical"),
+			sub: t("superadmin.dashboard.healthCards.globalSub"),
+			tone:
+				systemHealth === "HEALTHY"
+					? "success"
+					: systemHealth === "DEGRADED"
+						? "warning"
+						: "danger",
+		},
+		{
+			id: "queue",
+			label: t("superadmin.dashboard.healthCards.queueLabel"),
+			value: fmt(queueDepth),
+			sub: t("superadmin.dashboard.healthCards.queueSub"),
+			tone:
+				queueDepth > 100
+					? "danger"
+					: queueDepth > 50
+						? "warning"
+						: "success",
+		},
+		{
+			id: "alerts",
+			label: t("superadmin.dashboard.healthCards.alertsLabel"),
+			value: fmt(stats?.security?.totalAlerts24h ?? 0),
+			sub: t("superadmin.dashboard.healthCards.alertsSub"),
+			tone:
+				(stats?.security?.totalAlerts24h ?? 0) > 0 ? "danger" : "success",
+		},
+		{
+			id: "events",
+			label: t("superadmin.dashboard.healthCards.eventsLabel"),
+			value: fmt(stats?.security?.totalSecurityEvents24h ?? 0),
+			sub: t("superadmin.dashboard.healthCards.eventsSub"),
+			tone:
+				(stats?.security?.totalSecurityEvents24h ?? 0) > 0
+					? "warning"
+					: "success",
+		},
+	];
+
+	// ── Quick actions ────────────────────────────────────────────────────
+	const quickActions: { id: string; icon: string; label: string; href: string; tone: Tone }[] = [
+		{ id: "new-rep", icon: "Building2", label: t("superadmin.dashboard.quickAccessLinks.newRep"), href: "/reps/new", tone: "info" },
+		{ id: "new-user", icon: "UserPlus", label: t("superadmin.dashboard.quickAccessLinks.newAgent"), href: "/users", tone: "purple" },
+		{ id: "new-svc", icon: "FileText", label: t("superadmin.dashboard.quickAccessLinks.newService"), href: "/services/new", tone: "teal" },
+		{ id: "audit", icon: "BookOpen", label: t("superadmin.dashboard.quickAccessLinks.auditLogs"), href: "/audit-logs", tone: "warning" },
+		{ id: "monitor", icon: "Activity", label: t("superadmin.dashboard.quickAccessLinks.monitoring"), href: "/monitoring", tone: "success" },
+		{ id: "support", icon: "Bell", label: t("superadmin.dashboard.quickAccessLinks.support"), href: "/support", tone: "danger" },
+	];
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
-			{/* ── Header ──────────────────────────────────────────── */}
-			<PageHeader
-				icon={<Landmark className="h-5 w-5" />}
-				title={t("superadmin.dashboard.title", "Centre de Commandement")}
-				subtitle={
-					<span className="flex items-center gap-2">
-						{t("superadmin.dashboard.welcome", "Vue stratégique globale")}
-						<span className="inline-flex items-center gap-1.5 ml-2">
-							<span className={`h-2 w-2 rounded-full ${healthDot} animate-pulse`} />
-							<span className={`text-xs font-medium ${healthColor}`}>{systemHealth === "CRITICAL" ? "Alerte" : systemHealth === "DEGRADED" ? "Dégradé" : "Nominal"}</span>
-						</span>
-					</span>
-				}
-				actions={<p className="text-sm text-muted-foreground capitalize">{currentDate}</p>}
-			/>
+		<div className="v2-page">
+			<div className="v2-page-body">
+				<div className="stack stack-4">
+					{showWelcome && (
+						<WelcomeBanner
+							totalReps={stats?.deployment?.totalOrgs ?? stats?.orgs?.total ?? 0}
+							totalUsers={stats?.users?.total ?? 0}
+							urgentPending={urgentPending}
+							onDismiss={dismissWelcome}
+							onDailyReport={() => setDailyReportOpen(true)}
+							onAiSummary={() => setAiSummaryOpen(true)}
+						/>
+					)}
 
-			{/* ── KPI Cards (6) ────────────────────────────────────── */}
-			<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 stagger-children">
-				<KpiCard icon={Users} label="Ressortissants" value={stats?.users.total ?? 0} sub="Comptes actifs"
-					trend={stats?.engagement ? { value: `+${stats.engagement.newUsers30d} / 30j`, positive: (stats.engagement.newUsers30d ?? 0) > 0 } : undefined}
-					accentBg="bg-indigo-500" accentBgLight="bg-indigo-500/10" accentText="text-indigo-500" loading={isPending} />
-				<KpiCard icon={Building2} label="Représentations" value={stats?.deployment?.totalOrgs ?? stats?.orgs?.total ?? 0} sub={`${stats?.deployment?.activationRate ?? 0}% activées`}
-					accentBg="bg-amber-500" accentBgLight="bg-amber-500/10" accentText="text-amber-500" loading={isPending} />
-				<KpiCard icon={FileText} label="Demandes" value={totalReqs} sub={`${urgentCount} en attente`}
-					accentBg="bg-blue-500" accentBgLight="bg-blue-500/10" accentText="text-blue-500" loading={isPending} />
-				<KpiCard icon={CalendarCheck} label="Inscriptions" value={stats?.registrations?.total ?? 0} sub="Registre consulaire"
-					accentBg="bg-emerald-500" accentBgLight="bg-emerald-500/10" accentText="text-emerald-500" loading={isPending} />
-				<KpiCard icon={Handshake} label="Associations" value={stats?.associations?.total ?? 0} sub={`${stats?.companies?.total ?? 0} entreprises`}
-					accentBg="bg-violet-500" accentBgLight="bg-violet-500/10" accentText="text-violet-500" loading={isPending} />
-				<KpiCard icon={Gauge} label="Taux de résolution" value={`${derivedCompletionRate}%`} sub={`${terminalCount} terminées`}
-					accentBg="bg-teal-500" accentBgLight="bg-teal-500/10" accentText="text-teal-500" loading={isPending} />
-			</div>
+					<DailyReportSheet
+						open={dailyReportOpen}
+						onOpenChange={setDailyReportOpen}
+						stats={stats}
+					/>
+					<AiSummarySheet
+						open={aiSummaryOpen}
+						onOpenChange={setAiSummaryOpen}
+					/>
 
-			{/* ── Row 2: Pipeline + Performance Gauge ──────────────── */}
-			<div className="grid gap-4 lg:grid-cols-3 stagger-children">
-				<FlatCard className="lg:col-span-2">
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<BarChart3 className="h-3.5 w-3.5" />} iconBgClass="bg-blue-500/10" iconTextClass="text-blue-500" title="Pipeline de traitement" />
-						<p className="text-xs text-muted-foreground mb-3">Répartition des demandes par étape du workflow</p>
-						{isPending ? <Skeleton className="h-64 w-full" /> : <PipelineBarChart pipeline={derivedPipeline} total={totalReqs} />}
+					{/* ── Top-bar slot : pill santé + refresh à côté de la cloche ── */}
+					<ToolbarSlot>
+						<SystemHealthPill health={systemHealth} />
+						<button
+							type="button"
+							className="btn btn-sm btn-soft"
+							onClick={refresh}
+							disabled={refreshing}
+						>
+							<Icon
+								name={refreshing ? "Loader" : "RefreshCcw"}
+								size={14}
+							/>
+							{refreshing
+								? "…"
+								: t("superadmin.dashboard.actions.refresh")}
+						</button>
+					</ToolbarSlot>
+
+					{/* ── Page header (maquette : eyebrow + tricolore / h2 / filtre) ── */}
+					<div
+						style={{
+							display: "flex",
+							alignItems: "flex-end",
+							justifyContent: "space-between",
+							gap: 16,
+							flexWrap: "wrap",
+						}}
+					>
+						<div>
+							<div className="row items-center" style={{ gap: 10 }}>
+								<span
+									className="uppercase"
+									style={{ color: "var(--text-muted)" }}
+								>
+									{t("superadmin.dashboard.welcome")}
+								</span>
+								<GabonStripe />
+							</div>
+							<h2
+								style={{
+									fontSize: 18,
+									fontWeight: 600,
+									letterSpacing: "-0.01em",
+									marginTop: 4,
+									color: "var(--text)",
+								}}
+							>
+								{t("superadmin.dashboard.kpiSection")}
+							</h2>
+						</div>
+						<PeriodFilter value={period} onChange={setPeriod} />
 					</div>
-				</FlatCard>
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<Gauge className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Performance globale" />
-						<p className="text-xs text-muted-foreground mb-3">Taux de résolution des demandes</p>
-						<div className="flex items-center justify-center">
-							{isPending ? <Skeleton className="h-44 w-44 rounded-full" /> : <PerformanceGauge completionRate={derivedCompletionRate} urgentPending={urgentCount} />}
+
+					{/* ── KPI strip (5 cards) ────────────────────────────── */}
+					<div
+						style={{
+							display: "grid",
+							gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+							gap: 12,
+						}}
+						className="kpi-grid"
+					>
+						{kpis.map((k) => (
+							<KpiCard key={k.id} k={k} loading={isPending} />
+						))}
+					</div>
+
+					{/* ── Row 1: Pipeline + Gauge ─────────────────────────── */}
+					<div
+						style={{
+							display: "grid",
+							gridTemplateColumns: "1.7fr 1fr",
+							gap: 14,
+						}}
+						className="dash-row-1"
+					>
+						<div className="card">
+							<CardHead
+								icon="Activity"
+								title={t("superadmin.dashboard.sections.pipeline")}
+								hint={t("superadmin.dashboard.sections.pipelineHint")}
+								tone="info"
+								actions={
+									<span className="pill pill-mono">
+										{pipelineBars.length}
+									</span>
+								}
+							/>
+							<div style={{ padding: "18px 22px" }}>
+								<HBarChart data={pipelineBars} />
+							</div>
+						</div>
+
+						<div className="card">
+							<CardHead
+								icon="Gauge"
+								title={t("superadmin.dashboard.sections.performance")}
+								hint={t("superadmin.dashboard.sections.performanceHint")}
+								tone="success"
+							/>
+							<div
+								style={{
+									padding: "24px 18px 22px",
+									display: "flex",
+									flexDirection: "column",
+									alignItems: "center",
+									gap: 16,
+								}}
+							>
+								<HalfGauge
+									pct={completionRate}
+									label={t("superadmin.dashboard.sections.resolution")}
+									sub={t("superadmin.dashboard.sections.resolutionSub", {
+										done: fmt(completedCount),
+										total: fmt(totalReqs),
+									})}
+									tone="success"
+								/>
+								<div className="divider w-full" />
+								<div className="row w-full" style={{ gap: 10 }}>
+									<div
+										style={{
+											flex: 1,
+											textAlign: "center",
+											padding: "10px 8px",
+											background: "var(--surface-2)",
+											borderRadius: 10,
+										}}
+									>
+										<div
+											className="text-mono"
+											style={{
+												fontSize: 18,
+												fontWeight: 600,
+												color: "var(--success-v2)",
+											}}
+										>
+											{fmt(completedCount)}
+										</div>
+										<div
+											className="text-xs text-muted"
+											style={{ marginTop: 2 }}
+										>
+											{t("fields.requestStatus.options.completed")}
+										</div>
+									</div>
+									<div
+										style={{
+											flex: 1,
+											textAlign: "center",
+											padding: "10px 8px",
+											background: "var(--surface-2)",
+											borderRadius: 10,
+										}}
+									>
+										<div
+											className="text-mono"
+											style={{
+												fontSize: 18,
+												fontWeight: 600,
+												color: "var(--warning-v2)",
+											}}
+										>
+											{fmt(urgentPending)}
+										</div>
+										<div
+											className="text-xs text-muted"
+											style={{ marginTop: 2 }}
+										>
+											{t("fields.requestStatus.options.pending")}
+										</div>
+									</div>
+									<div
+										style={{
+											flex: 1,
+											textAlign: "center",
+											padding: "10px 8px",
+											background: "var(--surface-2)",
+											borderRadius: 10,
+										}}
+									>
+										<div
+											className="text-mono"
+											style={{
+												fontSize: 18,
+												fontWeight: 600,
+												color: "var(--danger-v2)",
+											}}
+										>
+											{fmt((sb.rejected ?? 0) + (sb.cancelled ?? 0))}
+										</div>
+										<div
+											className="text-xs text-muted"
+											style={{ marginTop: 2 }}
+										>
+											{t("fields.requestStatus.options.rejected")}
+										</div>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
-				</FlatCard>
-			</div>
 
-			{/* ── Row 3: Donut statuts + Inscriptions bar ─────────── */}
-			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<TrendingUp className="h-3.5 w-3.5" />} title="Demandes par statut" />
-						<p className="text-xs text-muted-foreground mb-3">Répartition circulaire des statuts de traitement</p>
-						{isPending ? <Skeleton className="h-56 w-full" /> : <RequestStatusDonut breakdown={stats?.requests.statusBreakdown ?? {}} />}
-					</div>
-				</FlatCard>
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<CalendarCheck className="h-3.5 w-3.5" />} iconBgClass="bg-emerald-500/10" iconTextClass="text-emerald-500" title="Inscriptions consulaires par statut" />
-						<p className="text-xs text-muted-foreground mb-3">État des inscriptions au registre consulaire</p>
-						{isPending ? <Skeleton className="h-48 w-full" /> : (() => {
-							const regData = stats?.engagement?.registrationsByStatus;
-							const regTotal = stats?.registrations?.total ?? 0;
-							const hasRegData = regData && Object.keys(regData).length > 0;
-							const fallbackReg = hasRegData ? regData : regTotal > 0 ? { active: regTotal } : {};
-							return <RegistrationStatusChart byStatus={fallbackReg} />;
-						})()}
-					</div>
-				</FlatCard>
-			</div>
-
-			{/* ── Row 4: Déploiement stats + Org type donut ─────── */}
-			<WidgetErrorBoundary>
-				<DeploymentStats data={stats?.deployment ?? (stats?.orgs ? {
-					activeOrgs: 0,
-					totalOrgs: stats.orgs.total,
-					activationRate: 0,
-					byType: {},
-					byCountry: {},
-					countriesCovered: 0,
-					orgsWithHeadOfMission: 0,
-					totalStaff: 0,
-				} : undefined)} loading={isPending} />
-			</WidgetErrorBoundary>
-
-			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<Building2 className="h-3.5 w-3.5" />} iconBgClass="bg-indigo-500/10" iconTextClass="text-indigo-500" title="Types de représentation" />
-						<p className="text-xs text-muted-foreground mb-3">Répartition par catégorie diplomatique</p>
-						{isPending ? <Skeleton className="h-52 w-full" /> : <OrgTypeDonut byType={stats?.deployment?.byType ?? {}} />}
-					</div>
-				</FlatCard>
-				<FlatCard>
-					<div className="p-3 lg:p-4">
-						<SectionHeader icon={<MapPin className="h-3.5 w-3.5" />} iconBgClass="bg-violet-500/10" iconTextClass="text-violet-500" title="Top pays d'implantation" />
-						<p className="text-xs text-muted-foreground mb-3">Représentations par pays (top 10)</p>
-						{isPending ? <Skeleton className="h-64 w-full" /> : <CountryBarChart byCountry={stats?.deployment?.byCountry ?? {}} />}
-					</div>
-				</FlatCard>
-			</div>
-
-			{/* ── Row 5: Security + Neocortex ──────────────────── */}
-			<div className="grid gap-4 lg:grid-cols-2 stagger-children">
-				<WidgetErrorBoundary>
-					<SecurityPanel data={stats?.security} loading={isPending} />
-				</WidgetErrorBoundary>
-				<WidgetErrorBoundary>
-					<NeocortexMonitoringWidget />
-				</WidgetErrorBoundary>
-			</div>
-
-			{/* ── Row 6: Activity + Recent Requests ────────────── */}
-			<div className="grid gap-4 lg:grid-cols-7 stagger-children">
-				<FlatCard className="lg:col-span-3">
-					<div className="p-3 lg:p-4">
-						<SectionHeader
-							icon={<Activity className="h-3.5 w-3.5" />}
-							title={t("superadmin.dashboard.recentActivity")}
-							actions={<Button variant="ghost" size="sm" asChild><Link href="/audit-logs"><ArrowRight className="h-4 w-4" /></Link></Button>}
-						/>
-						<p className="text-xs text-muted-foreground mb-3">{t("superadmin.dashboard.recentActivityDesc")}</p>
-						<RecentActivityList />
-					</div>
-				</FlatCard>
-				<FlatCard className="lg:col-span-4">
-					<div className="p-3 lg:p-4">
-						<SectionHeader
-							icon={<ClipboardList className="h-3.5 w-3.5" />}
-							title={t("superadmin.dashboard.recentRequests")}
-							actions={<Button variant="outline" size="sm" asChild><Link href="/requests">{t("superadmin.dashboard.viewAll")}<ArrowRight className="ml-1 h-4 w-4" /></Link></Button>}
-						/>
-						<p className="text-xs text-muted-foreground mb-3">Les 10 dernières demandes sur la plateforme</p>
-						{isPending ? <div className="space-y-3">{[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div> : !stats?.recentRequests?.length ? (
-							<div className="flex flex-col items-center justify-center py-8 text-center"><ClipboardList className="mb-2 h-8 w-8 text-muted-foreground/40" /><p className="text-sm text-muted-foreground">Aucune demande</p></div>
-						) : (
-							<>
-								<div className="hidden md:block overflow-x-auto">
-									<Table>
-										<TableHeader><TableRow>
-											<TableHead>Référence</TableHead><TableHead>Utilisateur</TableHead><TableHead>Service</TableHead><TableHead>Statut</TableHead><TableHead className="text-right">Date</TableHead>
-										</TableRow></TableHeader>
-										<TableBody>
-											{stats.recentRequests.map((r: any) => (
-												<TableRow key={r._id}>
-													<TableCell className="font-mono text-xs"><Link href={`/requests/${r._id}`} className="text-primary hover:underline">{r.reference}</Link></TableCell>
-													<TableCell><div className="flex items-center gap-2"><Avatar className="h-6 w-6"><AvatarFallback className="text-[10px] bg-primary/10">{r.userName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar><span className="text-sm truncate max-w-[100px]">{r.userName}</span></div></TableCell>
-													<TableCell className="text-sm text-muted-foreground truncate max-w-[120px]">{typeof r.serviceName === "string" ? r.serviceName : getLocalizedValue(r.serviceName, i18n.language)}</TableCell>
-													<TableCell><StatusBadge status={r.status} /></TableCell>
-													<TableCell className="text-right text-xs text-muted-foreground tabular-nums">{new Date(r.createdAt).toLocaleDateString()}</TableCell>
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-								</div>
-
-								{/* Mobile Cards View */}
-								<div className="md:hidden space-y-3">
-									{stats.recentRequests.map((r: any) => (
-										<div key={r._id} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-2">
-											<div className="flex justify-between items-start">
-												<Link href={`/requests/${r._id}`} className="text-primary hover:underline font-mono text-xs font-semibold">{r.reference}</Link>
-												<StatusBadge status={r.status} />
-											</div>
-											<div className="flex items-center gap-2">
-												<Avatar className="h-6 w-6"><AvatarFallback className="text-[10px] bg-primary/10">{r.userName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-												<div className="text-sm font-medium">{r.userName}</div>
-											</div>
-											<div className="flex justify-between items-center mt-1">
-												<div className="text-xs text-muted-foreground truncate max-w-[200px]">{typeof r.serviceName === "string" ? r.serviceName : getLocalizedValue(r.serviceName, i18n.language)}</div>
-												<div className="text-[11px] text-muted-foreground tabular-nums">{new Date(r.createdAt).toLocaleDateString()}</div>
-											</div>
+					{/* ── Row 2: Donut + Inscriptions ─────────────────────── */}
+					<div
+						style={{
+							display: "grid",
+							gridTemplateColumns: "1.2fr 1fr",
+							gap: 14,
+						}}
+						className="dash-row-2"
+					>
+						<div className="card">
+							<CardHead
+								icon="FileText"
+								title={t("superadmin.dashboard.requestsByStatus")}
+								hint={t(
+									"superadmin.dashboard.sections.requestsByStatusHint",
+									{ count: fmt(totalReqs) },
+								)}
+								tone="cyan"
+							/>
+							<div
+								style={{
+									padding: "18px 22px",
+									display: "grid",
+									gridTemplateColumns: "200px 1fr",
+									gap: 28,
+									alignItems: "center",
+								}}
+								className="donut-row"
+							>
+								<Donut
+									data={donutData}
+									centerValue={fmt(totalReqs)}
+									centerLabel={t("superadmin.dashboard.stats.requests")}
+								/>
+								<div
+									style={{
+										display: "grid",
+										gridTemplateColumns: "1fr 1fr",
+										gap: 10,
+									}}
+								>
+									{donutData.slice(0, 8).map((d) => (
+										<div
+											key={d.id}
+											className="row items-center"
+											style={{ gap: 10, padding: "4px 0" }}
+										>
+											<ToneDot tone={d.tone} />
+											<span
+												style={{
+													flex: 1,
+													fontSize: 12.5,
+													color: "var(--text)",
+												}}
+												className="truncate"
+											>
+												{d.label}
+											</span>
+											<span
+												className="text-mono text-xs"
+												style={{ color: "var(--text)", fontWeight: 600 }}
+											>
+												{fmt(d.count)}
+											</span>
 										</div>
 									))}
 								</div>
-							</>
-						)}
-					</div>
-				</FlatCard>
-			</div>
+							</div>
+						</div>
 
-			{/* ── Quick Actions ────────────────────────────────────── */}
-			<FlatCard>
-				<div className="p-3 lg:p-4">
-					<SectionHeader icon={<Settings className="h-3.5 w-3.5" />} title={t("superadmin.dashboard.quickActions")} />
-					<p className="text-xs text-muted-foreground mb-3">{t("superadmin.dashboard.quickActionsDesc")}</p>
-					<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-						<Button variant="outline" asChild className="justify-start h-10"><Link href="/users"><Users className="mr-2 h-4 w-4" />{t("superadmin.nav.users")}</Link></Button>
-						<Button variant="outline" asChild className="justify-start h-10"><Link href="/reps/new"><Plus className="mr-2 h-4 w-4" />{t("superadmin.dashboard.addOrg")}</Link></Button>
-						<Button variant="outline" asChild className="justify-start h-10"><Link href="/services"><FileText className="mr-2 h-4 w-4" />{t("superadmin.nav.services")}</Link></Button>
-						<Button variant="outline" asChild className="justify-start h-10"><Link href="/audit-logs"><ClipboardList className="mr-2 h-4 w-4" />{t("superadmin.dashboard.viewLogs")}</Link></Button>
+						<div className="card">
+							<CardHead
+								icon="IdCard"
+								title={t("superadmin.dashboard.sections.registrations")}
+								hint={t(
+									"superadmin.dashboard.sections.registrationsHint",
+									{ count: fmt(stats?.registrations?.total ?? 0) },
+								)}
+								tone="green"
+								actions={
+									<Link href="/profiles" className="btn btn-text btn-sm">
+										{t("superadmin.dashboard.actions.registry")}
+										<Icon name="ChevronRight" size={12} />
+									</Link>
+								}
+							/>
+							<div style={{ padding: "18px 22px 22px" }}>
+								<VBarChart data={regBars} height={180} />
+							</div>
+						</div>
+					</div>
+
+					{/* ── Row 3: Alerts + Top reps + Quick actions ───────── */}
+					<div
+						style={{
+							display: "grid",
+							gridTemplateColumns: "1.2fr 1.1fr 1fr",
+							gap: 14,
+						}}
+						className="dash-row-3"
+					>
+						<div className="card">
+							<CardHead
+								icon="AlertTriangle"
+								title={t("superadmin.dashboard.sections.alerts")}
+								hint={t("superadmin.dashboard.sections.alertsHint", {
+									count: alertItems.length,
+								})}
+								tone="warning"
+								actions={
+									<Link href="/monitoring" className="btn btn-text btn-sm">
+										{t("superadmin.dashboard.actions.seeAll")}
+										<Icon name="ChevronRight" size={12} />
+									</Link>
+								}
+							/>
+							<div
+								style={{
+									padding: "14px 16px",
+									display: "flex",
+									flexDirection: "column",
+									gap: 8,
+								}}
+							>
+								{alertItems.length === 0 ? (
+									<div
+										className="ta-center text-sm text-muted"
+										style={{ padding: "32px 0" }}
+									>
+										<Icon name="ShieldCheck" size={24} />
+										<div style={{ marginTop: 6 }}>
+											{t("superadmin.dashboard.sections.noAlerts")}
+										</div>
+									</div>
+								) : (
+									alertItems.map((a) => {
+										const tv = TONE_VAR[a.tone];
+										return (
+											<div
+												key={a.id}
+												className="row items-start"
+												style={{
+													gap: 12,
+													padding: "12px 14px",
+													borderRadius: 12,
+													background: "var(--surface-2)",
+													border: "1px solid var(--border-soft)",
+												}}
+											>
+												<div
+													style={{
+														width: 32,
+														height: 32,
+														borderRadius: 9,
+														background: tv.tint,
+														color: tv.color,
+														display: "grid",
+														placeItems: "center",
+														flexShrink: 0,
+													}}
+												>
+													<Icon name={a.icon} size={16} />
+												</div>
+												<div style={{ flex: 1, minWidth: 0 }}>
+													<div
+														className="row items-center justify-between"
+														style={{ gap: 8 }}
+													>
+														<div
+															style={{
+																fontSize: 13,
+																fontWeight: 600,
+																color: "var(--text)",
+															}}
+															className="truncate"
+														>
+															{a.title}
+														</div>
+														<span
+															className="text-xs text-muted text-mono"
+															style={{ flexShrink: 0 }}
+														>
+															{a.when}
+														</span>
+													</div>
+													<div
+														className="text-xs text-muted"
+														style={{ marginTop: 3, lineHeight: 1.5 }}
+													>
+														{a.text}
+													</div>
+												</div>
+											</div>
+										);
+									})
+								)}
+							</div>
+						</div>
+
+						<div className="card">
+							<CardHead
+								icon="Building2"
+								title={t("superadmin.dashboard.sections.topReps")}
+								hint={t("superadmin.dashboard.sections.topRepsHint", {
+									active: fmt(stats?.deployment?.activeOrgs ?? 0),
+									total: fmt(stats?.deployment?.totalOrgs ?? 0),
+								})}
+								tone="info"
+								actions={
+									<Link href="/reps" className="btn btn-text btn-sm">
+										{t("superadmin.dashboard.actions.seeAll")}
+										<Icon name="ChevronRight" size={12} />
+									</Link>
+								}
+							/>
+							<div style={{ padding: "6px 18px 14px" }}>
+								{topReps.length === 0 ? (
+									<div
+										className="ta-center text-sm text-muted"
+										style={{ padding: "32px 0" }}
+									>
+										{t("superadmin.dashboard.sections.noReps")}
+									</div>
+								) : (
+									topReps.map((r) => {
+										const pct = (r.count / maxRep) * 100;
+										return (
+											<div
+												key={r.code}
+												className="row items-center"
+												style={{
+													gap: 12,
+													padding: "10px 0",
+													borderTop: "1px solid var(--border-soft)",
+												}}
+											>
+												<FlagIcon
+													countryCode={r.code}
+													size={24}
+													className="w-6 !h-auto rounded-sm shrink-0"
+												/>
+												<div style={{ flex: 1, minWidth: 0 }}>
+													<div
+														className="row items-center"
+														style={{ gap: 8 }}
+													>
+														<span
+															style={{
+																fontSize: 13,
+																fontWeight: 600,
+																color: "var(--text)",
+															}}
+														>
+															{t(
+																`superadmin.countryCodes.${r.code}`,
+																r.code,
+															)}
+														</span>
+														<span className="text-xs text-muted">
+															{t("superadmin.dashboard.posts", {
+																count: r.count,
+																defaultValue: "{{count}} poste",
+																defaultValue_other: "{{count}} postes",
+															})}
+														</span>
+													</div>
+													<div
+														style={{
+															height: 5,
+															background: "var(--surface-3)",
+															borderRadius: 100,
+															marginTop: 5,
+															overflow: "hidden",
+														}}
+													>
+														<div
+															style={{
+																width: `${pct}%`,
+																height: "100%",
+																background: "var(--gabon-blue-v2)",
+																borderRadius: 100,
+															}}
+														/>
+													</div>
+												</div>
+											</div>
+										);
+									})
+								)}
+							</div>
+						</div>
+
+						<div className="card">
+							<CardHead
+								icon="Zap"
+								title={t("superadmin.dashboard.sections.quickAccess")}
+								hint={t("superadmin.dashboard.sections.quickAccessHint")}
+								tone="purple"
+							/>
+							<div
+								style={{
+									padding: 14,
+									display: "flex",
+									flexDirection: "column",
+									gap: 8,
+								}}
+							>
+								{quickActions.map((a) => {
+									const tv = TONE_VAR[a.tone];
+									return (
+										<Link
+											key={a.id}
+											href={a.href}
+											style={{
+												background: "var(--surface)",
+												border: "1px solid var(--border)",
+												borderRadius: 12,
+												padding: "12px 14px",
+												display: "flex",
+												alignItems: "center",
+												gap: 10,
+												minHeight: 56,
+												textDecoration: "none",
+												color: "var(--text)",
+											}}
+										>
+											<span
+												style={{
+													width: 32,
+													height: 32,
+													borderRadius: 9,
+													background: tv.tint,
+													color: tv.color,
+													display: "grid",
+													placeItems: "center",
+													flexShrink: 0,
+												}}
+											>
+												<Icon name={a.icon} size={16} />
+											</span>
+											<span
+												style={{
+													flex: 1,
+													fontSize: 12.5,
+													fontWeight: 500,
+												}}
+											>
+												{a.label}
+											</span>
+											<Icon name="ChevronRight" size={14} />
+										</Link>
+									);
+								})}
+							</div>
+						</div>
+					</div>
+
+					{/* ── Row 4: Activity + System health ─────────────────── */}
+					<div
+						style={{
+							display: "grid",
+							gridTemplateColumns: "1.5fr 1fr",
+							gap: 14,
+						}}
+						className="dash-row-4"
+					>
+						<div className="card">
+							<CardHead
+								icon="Activity"
+								title={t("superadmin.dashboard.recentActivity")}
+								hint={t("superadmin.dashboard.sections.activityHint")}
+								tone="teal"
+								actions={
+									<>
+										<span
+											className="row items-center"
+											style={{
+												gap: 6,
+												fontSize: 11.5,
+												color: "var(--text-muted)",
+											}}
+										>
+											<span
+												style={{
+													width: 6,
+													height: 6,
+													borderRadius: "50%",
+													background: "var(--success-v2)",
+												}}
+											/>
+											{t("superadmin.dashboard.live")}
+										</span>
+										<Link href="/audit-logs" className="btn btn-text btn-sm">
+											{t("superadmin.dashboard.actions.journal")}
+											<Icon name="ChevronRight" size={12} />
+										</Link>
+									</>
+								}
+							/>
+							<div style={{ padding: "4px 18px 18px" }}>
+								{!auditLogs?.length ? (
+									<div
+										className="ta-center text-sm text-muted"
+										style={{ padding: "32px 0" }}
+									>
+										{t("superadmin.dashboard.sections.noActivity")}
+									</div>
+								) : (
+									auditLogs.map((log: any) => {
+										const tone: Tone = log.action?.includes("delete")
+											? "danger"
+											: log.action?.includes("create")
+												? "success"
+												: log.action?.includes("update")
+													? "info"
+													: "muted";
+										const tv = TONE_VAR[tone];
+										const systemLabel = t(
+											"superadmin.dashboard.activity.system",
+											"Système",
+										);
+										const userName = log.user
+											? `${log.user.firstName ?? ""} ${log.user.lastName ?? ""}`.trim() ||
+												systemLabel
+											: systemLabel;
+										const initials =
+											userName
+												.split(" ")
+												.map((w: string) => w[0])
+												.slice(0, 2)
+												.join("")
+												.toUpperCase() || "SY";
+										return (
+											<div
+												key={log._id}
+												className="row items-start"
+												style={{
+													gap: 12,
+													padding: "10px 0",
+													borderTop: "1px solid var(--border-soft)",
+												}}
+											>
+												<div
+													className="avatar sm"
+													// Tint + couleur tonale → contraste OK en clair ET en sombre
+													// (les tokens v2 inversent en dark mode, donc `var(--xxx-v2)`
+													// devient clair et serait illisible sur fond blanc).
+													style={{
+														background: tv.tint,
+														color: tv.color,
+													}}
+												>
+													{initials}
+												</div>
+												<div style={{ flex: 1, minWidth: 0 }}>
+													<div
+														style={{ fontSize: 12.5, lineHeight: 1.4 }}
+													>
+														<span
+															style={{
+																fontWeight: 600,
+																color: "var(--text)",
+															}}
+														>
+															{userName}
+														</span>
+														<span style={{ color: "var(--text-muted)" }}>
+															{" "}—{" "}
+															{t(
+																`superadmin.auditLogs.actions.${log.action}`,
+																log.action,
+															)}
+														</span>
+													</div>
+													<div
+														className="text-xs text-muted"
+														style={{ marginTop: 2 }}
+													>
+														{timeAgo(log.timestamp ?? log._creationTime)}
+													</div>
+												</div>
+											</div>
+										);
+									})
+								)}
+							</div>
+						</div>
+
+						<div className="card">
+							<CardHead
+								icon="HeartPulse"
+								title={t("superadmin.dashboard.sections.health")}
+								hint={t("superadmin.dashboard.sections.healthHint")}
+								tone="success"
+								actions={
+									<Link href="/monitoring" className="btn btn-text btn-sm">
+										{t("superadmin.dashboard.actions.monitoring")}
+										<Icon name="ArrowUpRight" size={12} />
+									</Link>
+								}
+							/>
+							<div
+								style={{
+									padding: 14,
+									display: "flex",
+									flexDirection: "column",
+									gap: 8,
+								}}
+							>
+								{healthCards.map((h) => {
+									const tv = TONE_VAR[h.tone];
+									return (
+										<div
+											key={h.id}
+											style={{
+												padding: "12px 14px",
+												borderRadius: 10,
+												background: "var(--surface)",
+												border: "1px solid var(--border)",
+											}}
+										>
+											<div
+												className="row items-center justify-between"
+												style={{ gap: 8 }}
+											>
+												<div
+													className="row items-center"
+													style={{ gap: 8 }}
+												>
+													<ToneDot tone={h.tone} />
+													<span
+														style={{
+															fontSize: 12.5,
+															fontWeight: 500,
+															color: "var(--text)",
+														}}
+													>
+														{h.label}
+													</span>
+												</div>
+												<span
+													className="text-mono"
+													style={{
+														fontSize: 12.5,
+														fontWeight: 600,
+														color: tv.color,
+													}}
+												>
+													{h.value}
+												</span>
+											</div>
+											<div
+												className="text-xs text-muted"
+												style={{ marginTop: 4 }}
+											>
+												{h.sub}
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
 					</div>
 				</div>
-			</FlatCard>
+			</div>
+
+			{/* Responsive overrides — collapse multi-column rows on narrow viewports. */}
+			<style jsx>{`
+				@media (max-width: 1180px) {
+					.kpi-grid {
+						grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+					}
+					.dash-row-1,
+					.dash-row-2,
+					.dash-row-4 {
+						grid-template-columns: 1fr !important;
+					}
+					.dash-row-3 {
+						grid-template-columns: 1fr 1fr !important;
+					}
+				}
+				@media (max-width: 720px) {
+					.kpi-grid,
+					.dash-row-3 {
+						grid-template-columns: 1fr !important;
+					}
+					.donut-row {
+						grid-template-columns: 1fr !important;
+					}
+				}
+			`}</style>
 		</div>
 	);
 }

@@ -89,7 +89,7 @@ export function CatalogHeader({
             className={cn(
               "grid size-8 place-items-center rounded-full",
               view === "grid"
-                ? "bg-[var(--pub-ink-900)] text-white"
+                ? "bg-[var(--pub-ink-900)] text-[var(--pub-bg)]"
                 : "text-[var(--pub-text-muted)]",
             )}
           >
@@ -103,7 +103,7 @@ export function CatalogHeader({
             className={cn(
               "grid size-8 place-items-center rounded-full",
               view === "list"
-                ? "bg-[var(--pub-ink-900)] text-white"
+                ? "bg-[var(--pub-ink-900)] text-[var(--pub-bg)]"
                 : "text-[var(--pub-text-muted)]",
             )}
           >

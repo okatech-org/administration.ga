@@ -56,7 +56,7 @@ export function ServicesPagination({
             className={cn(
               "size-[38px] rounded-full border text-[13px] font-medium",
               page === p
-                ? "border-[var(--pub-ink-900)] bg-[var(--pub-ink-900)] text-white"
+                ? "border-[var(--pub-ink-900)] bg-[var(--pub-ink-900)] text-[var(--pub-bg)]"
                 : "border-[var(--pub-border)] bg-[var(--pub-surface)] text-[var(--pub-text)] hover:bg-[var(--pub-surface-2)]",
             )}
           >

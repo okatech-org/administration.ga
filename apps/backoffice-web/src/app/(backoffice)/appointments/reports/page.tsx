@@ -124,7 +124,7 @@ export default function BackofficeAppointmentsReportsPage() {
 	const completed = stats?.statusCounts.completed ?? 0;
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+		<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 			<PageHeader
 				icon={<LineChartIcon className="h-5 w-5" />}
 				title={lang === "fr" ? "Rapports rendez-vous" : "Appointment reports"}

@@ -1121,6 +1121,58 @@ export const getStats = backofficeQuery({
   },
 });
 
+/**
+ * Period-windowed deltas for the dashboard KPI strip.
+ *
+ * Returns the number of documents created since `Date.now() - sinceMs` for
+ * each KPI tile. Used to power the 24h/7j/30j/90j/année filter on the
+ * Centre de Commandement — totals stay global, only the delta line updates.
+ */
+export const getStatsDelta = backofficeQuery({
+  args: { sinceMs: v.number() },
+  handler: async (ctx, { sinceMs }) => {
+    const since = Date.now() - sinceMs;
+    const lower = { lower: { key: since, inclusive: true } } as const;
+
+    const [usersDelta, orgsDelta, associationsDelta, companiesDelta] =
+      await Promise.all([
+        globalCounts.count(ctx, { bounds: lower }),
+        orgsGlobal.count(ctx, { bounds: lower }),
+        associationsGlobal.count(ctx, { bounds: lower }),
+        companiesGlobal.count(ctx, { bounds: lower }),
+      ]);
+
+    // requestsGlobal has sortKey [status, _creationTime] — fan out by status.
+    const statuses = ["draft", "submitted", "pending", "pending_completion", "edited", "under_review", "processing", "in_production", "validated", "appointment_scheduled", "ready_for_pickup", "completed", "cancelled", "rejected"];
+    const requestsPerStatus = await Promise.all(
+      statuses.map((status) =>
+        requestsGlobal.count(ctx, {
+          bounds: {
+            lower: { key: [status, since], inclusive: true },
+            upper: { key: [status, Number.MAX_SAFE_INTEGER], inclusive: true },
+          },
+        })
+      )
+    );
+    const requestsDelta = requestsPerStatus.reduce((s, n) => s + n, 0);
+
+    // Registrations: no global aggregate yet — bounded scan (cheap, ≤ 5000).
+    const registrationsDocs = await ctx.db.query("consularRegistrations").take(5000);
+    const registrationsDelta = registrationsDocs.filter(
+      (r: any) => r._creationTime >= since
+    ).length;
+
+    return {
+      usersDelta,
+      orgsDelta,
+      requestsDelta,
+      registrationsDelta,
+      associationsDelta,
+      companiesDelta,
+    };
+  },
+});
+
 export const getStatsDev = backofficeQuery({
   args: {},
   handler: async (ctx) => {

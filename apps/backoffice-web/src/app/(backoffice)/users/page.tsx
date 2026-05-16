@@ -8,7 +8,6 @@ import { DataTable } from "@/components/ui/data-table"
 import { columns, corpsAdminColumns } from "@/components/admin/users-columns"
 import dynamic from "next/dynamic"
 import { ProfilesView } from "@/components/admin/profiles-view"
-import { DiplomaticProfilesView } from "@/components/admin/diplomatic-profiles-view"
 
 // Mapbox-GL touches `window` / WebGL at module load and breaks Next's SSR
 // analysis even from a "use client" file — load the map view client-only.
@@ -29,7 +28,6 @@ const UsersMapView = dynamic(
 import {
   Crown,
   Map as MapIcon,
-  Shield,
   Users as UsersIcon,
   X,
 } from "lucide-react"
@@ -53,7 +51,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import { useDebounce } from "@/hooks/use-debounce"
 
-type ViewMode = "accounts" | "profiles" | "diplomatic" | "map"
+type ViewMode = "accounts" | "profiles" | "map"
 
 type UserTab = "all" | "backoffice" | "corps" | "agents" | "users" | "inactive"
 
@@ -98,7 +96,6 @@ const ALL_ROLES = [
 const VIEW_MODES: { id: ViewMode; label: string; icon: React.ElementType }[] = [
   { id: "accounts", label: "Comptes", icon: UsersIcon },
   { id: "profiles", label: "Profils Consulaires", icon: Crown },
-  { id: "diplomatic", label: "Corps Diplomatique", icon: Shield },
   { id: "map", label: "Carte des utilisateurs", icon: MapIcon },
 ]
 
@@ -348,7 +345,6 @@ export default function UsersPage() {
   const subtitleByView: Record<ViewMode, string> = {
     accounts: "Gestion des comptes de la plateforme",
     profiles: "Profils consulaires des citoyens et ressortissants",
-    diplomatic: "Profils diplomatiques du corps administratif",
     map: "Vision géographique : citoyens et agents répartis dans le monde",
   }
 
@@ -364,7 +360,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+    <div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
       <PageHeader
         icon={<UsersIcon className="h-5 w-5" />}
         title="Comptes & Profils"
@@ -379,7 +375,6 @@ export default function UsersPage() {
       />
 
       {view === "profiles" && <ProfilesView />}
-      {view === "diplomatic" && <DiplomaticProfilesView />}
       {view === "map" && <UsersMapView />}
 
       {view === "accounts" && (

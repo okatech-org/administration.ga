@@ -117,7 +117,7 @@ export default function SuperadminTicketDetail() {
 	}
 
 	return (
-		<div className="flex min-h-full flex-col gap-4 p-3 md:p-4 max-w-5xl mx-auto w-full">
+		<div className="flex min-h-full flex-col gap-4 px-7 pt-6 pb-[60px] max-w-5xl mx-auto w-full">
 			<PageHeader
 				icon={<LifeBuoy className="h-5 w-5" />}
 				title={ticket.subject}

@@ -17,7 +17,6 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Edit,
-	Globe,
 	Layers,
 	Loader2,
 	MoreVertical,
@@ -1232,33 +1231,6 @@ export function RepsTypesTemplatesTab({
 
 	return (
 		<div className="flex flex-col gap-6">
-			{/* ─── Header ─── */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-							<Globe className="h-5 w-5 text-primary" />
-						</div>
-						{lang === "fr"
-							? "Représentations diplomatiques"
-							: "Diplomatic representations"}
-					</h1>
-					<p className="text-muted-foreground mt-1">
-						{lang === "fr"
-							? "Types de représentations, postes, modules et niveaux d'accès par défaut"
-							: "Representation types, positions, modules and default access levels"}
-					</p>
-				</div>
-				<Button asChild>
-					<Link href="/reps/new">
-						<Plus className="mr-1.5 h-4 w-4" />
-						{lang === "fr"
-							? "Nouvelle représentation"
-							: "New representation"}
-					</Link>
-				</Button>
-			</div>
-
 			{/* ─── Stats ─── */}
 			<div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 				<FlatCard>

@@ -40,6 +40,7 @@ const getAnalysisPrompt = (data: {
   serviceName: string
   isChildProfile?: boolean
   requiredDocuments: string[]
+  optionalDocuments: string[]
   providedDocuments: string[]
   providedDocumentsDetails: Array<{
     filename: string
@@ -62,7 +63,7 @@ const getAnalysisPrompt = (data: {
     mimeType: string
     reason: string
   }>
-}) => `Tu es un assistant consulaire expert. Analyse cette demande de service consulaire.
+}) => `Tu es un assistant consulaire expert. Analyse cette demande de service consulaire avec rigueur mais SANS excès de zèle : ne signale comme manquant ou non-conforme que ce qui l'est réellement.
 
 ## Service demandé
 ${data.serviceName}${data.isChildProfile ? `
@@ -76,8 +77,14 @@ Cette demande concerne un enfant mineur. Les règles suivantes s'appliquent :
 - La photo d'identité format passeport est requise
 - Ne signale PAS comme manquants les documents qui relèvent du parent/tuteur (justificatif de domicile, attestation d'hébergement, etc.)` : ""}
 
-## Documents requis par le service
-${data.requiredDocuments.length > 0 ? data.requiredDocuments.map((d) => `- ${d}`).join("\n") : "Aucun document requis spécifié"}
+## Documents OBLIGATOIRES (à fournir impérativement)
+${data.requiredDocuments.length > 0 ? data.requiredDocuments.map((d) => `- ${d}`).join("\n") : "Aucun document obligatoire"}
+${data.optionalDocuments.length > 0 ? `
+
+## Documents OPTIONNELS (facultatifs — NE PAS signaler comme manquants s'ils sont absents)
+${data.optionalDocuments.map((d) => `- ${d}`).join("\n")}
+
+Règle stricte : ne mets dans \`documentAnalysis.missing\` QUE des documents de la liste OBLIGATOIRES. Un document optionnel non fourni n'est jamais un problème.` : ""}
 
 ## Documents fournis par le demandeur
 ${
@@ -102,30 +109,40 @@ ${data.visionAttachments
   )
   .join("\n")}
 
-Pour CHAQUE fichier ci-dessus, vérifie en regardant son contenu :
-- Le contenu correspond-il bien au type déclaré ? (ex. un fichier déclaré "passport" doit montrer une page d'identité de passeport, pas autre chose)
-- Le document est-il lisible (netteté, luminosité, intégralité — pages complètes pour les PDF) ?
-- Si une date d'expiration est lisible, le document n'est-il pas visiblement expiré ?
-- Y a-t-il un contenu suspect (capture partielle, screenshot de mauvaise qualité, document tronqué, photo de personne différente de l'identité déclarée dans le formulaire) ?
+Pour CHAQUE fichier ci-dessus, vérifie en regardant son contenu. Sois TOLÉRANT sur la qualité (un léger flou, une lumière imparfaite ou une petite pixellisation ne sont PAS bloquants tant que l'information reste lisible). Ne signale un document que si :
+- Le contenu ne correspond manifestement pas au type déclaré (ex. un fichier déclaré "passport" montre une facture)
+- Le document est globalement illisible (texte ou visage impossible à identifier, image très sombre, document tronqué)
+- Une date d'expiration est clairement lisible et le document est manifestement expiré
+- Le contenu est suspect (screenshot de mauvaise qualité rendant le contenu inutilisable, photo d'une personne visiblement différente de l'identité du formulaire)
 
-Si un fichier ne respecte pas ces critères, ajoute-le à \`documentAnalysis.suspicious\` en citant la raison précise (ex : "passport.pdf : seule la page de garde est visible, page d'identité manquante").${data.hasIdentityPhoto ? `
+Si un fichier pose un vrai problème (pas juste un défaut esthétique), ajoute-le à \`documentAnalysis.suspicious\` en citant la raison précise (ex : "passport.pdf : seule la page de garde est visible, page d'identité manquante"). En cas de doute, considère le document comme acceptable — il est préférable de laisser passer un document moyen que de bloquer un usager pour une raison cosmétique.${data.hasIdentityPhoto ? `
 
 ## Vérification des photos d'identité
 Compare chaque photo déclarée comme "${IDENTITY_PHOTO_TYPE}" à l'image de référence officielle (1ère pièce jointe).
 
-Critères de conformité (TOUS doivent être respectés) :
-- Visage centré et dégagé, occupant ~70-80 % du cadre vertical
-- Fond uni et clair (blanc ou gris très clair)
-- Expression neutre, bouche fermée, regard face caméra
-- Aucun élément occultant le visage : pas de lunettes de soleil, pas de chapeau/casquette, pas de masque
-- Photo nette, bien éclairée, sans ombre marquée ni reflet
-- Format portrait, qualité suffisante (pas de pixellisation visible)
-- Une seule personne sur l'image, visible jusqu'aux épaules
+Approche : sois RAISONNABLE, pas tatillon. Une photo n'a pas besoin d'être parfaite — elle doit juste permettre d'identifier la personne et respecter les règles essentielles. Un léger flou, une légère pixellisation ou un éclairage imparfait sont ACCEPTABLES tant que le visage reste clairement reconnaissable.
 
-Si une photo identité ne respecte PAS un ou plusieurs critères :
-- Ajoute-la à \`documentAnalysis.suspicious\` en listant précisément les critères manqués
-- Ajoute une \`suggestedActions\` de type "upload_document" ciblant la photo d'identité, avec un message qui explique au citoyen ce qui ne va pas et l'invite à téléverser une nouvelle photo conforme
-- Considère la demande comme \`incomplete\`` : ""}${data.excludedFromVision.length > 0 ? `
+Ne rejette une photo QUE si un de ces critères ÉLIMINATOIRES est non respecté :
+- Le visage n'est pas clairement identifiable (visage tourné, yeux fermés, photo très floue au point qu'on ne reconnaît plus la personne)
+- Le visage est occulté : lunettes de soleil, chapeau, casquette, capuche, masque
+- L'arrière-plan est manifestement non conforme : décor, paysage, mur très coloré ou très chargé (un fond légèrement texturé ou crème reste acceptable)
+- Plusieurs personnes sont visibles sur la photo
+- Le format est inadapté (photo de groupe, photo en pied de loin, capture d'écran d'une autre photo)
+- La photo est trop sombre, surexposée ou tronquée au point d'être inutilisable
+
+Critères SOUHAITABLES mais NON éliminatoires (à NE PAS signaler) :
+- Expression du visage (un léger sourire est acceptable)
+- Cadrage parfait à 70-80 %
+- Netteté absolue
+- Fond strictement blanc
+- Légères ombres ou reflets
+
+Si une photo identité ne respecte PAS un critère ÉLIMINATOIRE :
+- Ajoute-la à \`documentAnalysis.suspicious\` en listant précisément le ou les critères éliminatoires manqués
+- Ajoute une \`suggestedActions\` de type "upload_document" ciblant la photo d'identité, avec un message clair et bienveillant
+- Considère la demande comme \`incomplete\`
+
+Si la photo est juste imparfaite mais utilisable, NE la signale PAS.` : ""}${data.excludedFromVision.length > 0 ? `
 
 ### Fichiers non analysés visuellement (format non supporté ou taille excessive)
 Pour ces fichiers, base-toi uniquement sur les métadonnées (filename + type déclaré) :
@@ -141,31 +158,37 @@ ${data.formDataText || "(Aucune donnée de formulaire)"}
 
 ## Instructions d'analyse
 Analyse cette demande et vérifie :
-1. **Documents manquants** : Compare les documents requis avec ceux fournis. Le "type déclaré" doit correspondre à un document requis.
-2. **Correspondance des documents** : Vérifie si le type déclaré par l'utilisateur correspond logiquement au fichier uploadé (ex: un PDF nommé "passport_scan.pdf" déclaré comme "Passeport" est cohérent).
-3. **Formulaire** : Compare les champs obligatoires du schéma avec les valeurs fournies. Un champ est manquant s'il est requis (obligatoire) dans le schéma mais absent ou vide dans les données.
-4. **Anomalies** : Détecte toute incohérence (dates invalides, texte non pertinent, valeurs incohérentes, etc.)
+1. **Documents manquants** : Compare UNIQUEMENT les documents OBLIGATOIRES avec ceux fournis. Les documents optionnels absents ne sont JAMAIS un problème. Le "type déclaré" doit correspondre à un document obligatoire.
+2. **Correspondance des documents** : Vérifie si le type déclaré par l'utilisateur correspond logiquement au fichier uploadé (ex: un PDF nommé "passport_scan.pdf" déclaré comme "Passeport" est cohérent). Sois tolérant.
+3. **Formulaire** : Compare les champs OBLIGATOIRES du schéma avec les valeurs fournies. Un champ est manquant SEULEMENT s'il est marqué (obligatoire) dans le schéma ET absent/vide dans les données. Les champs (optionnel) ne sont JAMAIS à signaler comme manquants.
+4. **Sections de type liste/tableau** (ex: contacts d'urgence, enfants, etc.) :
+   - Lis attentivement la description de section si elle est fournie ("Au moins un contact...", "Optionnel...", etc.) — elle dicte la règle de cardinalité.
+   - Par défaut, **un seul élément valide suffit**. Si au moins un élément est renseigné avec ses champs obligatoires remplis, la section est COMPLÈTE.
+   - Ne réclame JAMAIS un 2ᵉ, 3ᵉ élément si la description ne l'exige pas explicitement.
+   - Ne signale comme manquant que si la liste est totalement vide ou si aucun élément n'a ses champs obligatoires renseignés.
+5. **Anomalies** : Détecte toute incohérence vraie (dates invalides, texte non pertinent, valeurs incohérentes). Pas de zèle sur des détails cosmétiques.
 
 ## Format de réponse (JSON uniquement)
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown ni texte autour :
 {
   "status": "complete" | "incomplete" | "review_needed",
   "documentAnalysis": {
-    "matched": ["liste des documents requis qui ont été fournis correctement"],
-    "missing": ["liste des documents requis mais non fournis — utilise le LABEL FR exact du document"],
-    "suspicious": ["documents dont le type déclaré ne semble pas correspondre au fichier"]
+    "matched": ["liste des documents obligatoires qui ont été fournis correctement"],
+    "missing": ["liste des documents OBLIGATOIRES non fournis — utilise le LABEL FR exact du document, jamais un document optionnel"],
+    "suspicious": ["documents dont le type déclaré ne correspond manifestement pas au fichier, ou photos d'identité ne respectant pas un critère éliminatoire"]
   },
   "formAnalysis": {
-    "missingFields": ["identifiants des champs manquants au format sectionId.fieldId tel qu'indiqué dans la structure du formulaire"],
+    "missingFields": ["identifiants des champs OBLIGATOIRES manquants au format sectionId.fieldId tel qu'indiqué dans la structure du formulaire"],
     "invalidValues": ["identifiants des champs invalides au format sectionId.fieldId"]
   },
-  "issues": ["autres problèmes détectés"],
-  "summary": "résumé concis de l'analyse en français (max 3 phrases)",
+  "issues": ["autres problèmes réels détectés"],
+  "summary": "résumé synthétique en français destiné à l'agent qui traitera la demande. Inclus les informations clés et pertinentes : nom du demandeur (si présent dans le formulaire), type de demande, état (complète/incomplète), points saillants pour le traitement (dates importantes, motif, situation particulière, profession, pays, etc.). 4 à 6 phrases. C'est la première chose que l'agent lira — sois informatif, pas générique.",
+  "keyHighlights": ["bullets courts d'informations pertinentes à mettre en avant pour l'agent : 3 à 6 éléments factuels (ex: 'Demandeur né au Gabon, résidant en France depuis 2018', 'Passeport expire le 12/03/2027', 'Contact d'urgence renseigné au Gabon')"],
   "confidence": 0-100,
   "suggestedActions": [
     {
       "type": "upload_document" | "complete_info" | "confirm_info",
-      "message": "message clair et actionnable pour le citoyen pour cette action spécifique"
+      "message": "message clair, bienveillant et actionnable pour le citoyen pour cette action spécifique"
     }
   ]
 }
@@ -174,11 +197,13 @@ IMPORTANT pour missingFields et invalidValues :
 - Retourne UNIQUEMENT des identifiants au format "sectionId.fieldId" tel qu'indiqué entre crochets dans la structure du formulaire (ex: "basic_info.last_name", "contact_info.phone")
 - N'invente PAS d'identifiants — utilise UNIQUEMENT ceux listés dans le schéma
 - Ne retourne PAS de titres de sections — retourne les identifiants de champs individuels
+- Pour une section de type liste avec au moins un élément valide, NE retourne PAS les champs des éléments suivants comme manquants
 
 IMPORTANT pour suggestedActions :
-- Si des documents sont manquants ET des champs de formulaire sont incomplets, crée DEUX actions séparées (une "upload_document" et une "complete_info")
-- Chaque action doit avoir son propre message ciblé
-- Si aucune action n'est nécessaire, retourne un tableau vide []`
+- Si des documents OBLIGATOIRES sont manquants ET des champs OBLIGATOIRES sont incomplets, crée DEUX actions séparées (une "upload_document" et une "complete_info")
+- Chaque action doit avoir son propre message ciblé et bienveillant
+- Si aucune action n'est nécessaire, retourne un tableau vide []
+- Préfère le statut "complete" si seuls des éléments optionnels manquent`
 
 interface AnalysisResult {
   status: "complete" | "incomplete" | "review_needed"
@@ -193,6 +218,7 @@ interface AnalysisResult {
   }
   issues: string[]
   summary: string
+  keyHighlights?: string[]
   confidence: number
   // New multi-action format
   suggestedActions?: Array<{
@@ -211,6 +237,12 @@ function buildAnalysisNote(analysis: AnalysisResult): string {
   const sections: string[] = [
     `**Analyse IA automatique**\n\n${analysis.summary}`,
   ]
+
+  if (analysis.keyHighlights?.length) {
+    sections.push(
+      `\n\n**Points clés :**\n${analysis.keyHighlights.map((h) => `- ${h}`).join("\n")}`
+    )
+  }
 
   // Document analysis
   const docAnalysis = analysis.documentAnalysis
@@ -295,6 +327,7 @@ export const analyzeRequest = internalAction({
         serviceName: request.serviceName,
         isChildProfile: request.isChildProfile,
         requiredDocuments: request.requiredDocuments,
+        optionalDocuments: request.optionalDocuments,
         providedDocuments: request.providedDocuments,
         providedDocumentsDetails: request.providedDocumentsDetails || [],
         formDataText: request.formDataText || "",
@@ -667,10 +700,22 @@ export const getRequestData = internalQuery({
     return {
       serviceName: service?.name?.fr || service?.name?.en || "Service inconnu",
       isChildProfile,
-      requiredDocuments: joinedDocs.map(
-        (d: { label?: { fr?: string; en?: string }; type: string }) =>
-          d.label?.fr || d.type
-      ),
+      requiredDocuments: joinedDocs
+        .filter(
+          (d: { required?: boolean }) => d.required === true
+        )
+        .map(
+          (d: { label?: { fr?: string; en?: string }; type: string }) =>
+            d.label?.fr || d.type
+        ),
+      optionalDocuments: joinedDocs
+        .filter(
+          (d: { required?: boolean }) => d.required !== true
+        )
+        .map(
+          (d: { label?: { fr?: string; en?: string }; type: string }) =>
+            d.label?.fr || d.type
+        ),
       // Raw joinedDocs with type slugs for mapping AI labels back to slugs
       joinedDocumentTypes: joinedDocs.map(
         (d: {
@@ -695,6 +740,7 @@ export const getRequestData = internalQuery({
         (s: {
           id: string
           title: { fr?: string; en?: string }
+          description?: { fr?: string; en?: string }
           fields?: Array<{
             id: string
             type?: string
@@ -705,6 +751,7 @@ export const getRequestData = internalQuery({
         }) => ({
           id: s.id,
           title: s.title,
+          description: s.description,
           fields: (s.fields ?? []).map((f) => ({
             id: f.id,
             type: f.type,

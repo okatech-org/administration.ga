@@ -535,7 +535,7 @@ export function InlineAuth({ defaultMode = "sign-up" }: InlineAuthProps) {
                   <Input
                     id={`${formId}-phone`}
                     type="tel"
-                    placeholder="+33 6 12 34 56 78"
+                    placeholder="+33612345678"
                     autoComplete="tel"
                     {...field}
                   />

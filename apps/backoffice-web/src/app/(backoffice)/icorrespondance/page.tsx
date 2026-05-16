@@ -1841,7 +1841,7 @@ export default function ICorrespondancePage() {
       initial="hidden"
       animate="visible"
       variants={stagger}
-      className="flex w-full flex-1 flex-col gap-4 p-3 md:p-4"
+      className="flex w-full flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]"
     >
       {/* ── Header ── */}
       <motion.div variants={fadeUp}>

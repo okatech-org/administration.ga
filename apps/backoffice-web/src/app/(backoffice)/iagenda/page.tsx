@@ -148,7 +148,7 @@ export default function IAgendaPage() {
 	const todayCount = allEvents.filter((e) => e.date === today).length;
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4 h-full overflow-y-auto">
+		<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px] h-full overflow-y-auto">
 			{/* ── Header ── */}
 			<PageHeader
 				icon={<Calendar className="h-5 w-5" />}

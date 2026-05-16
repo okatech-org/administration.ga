@@ -17,105 +17,16 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-	birthSchema,
-	contactSchema,
-	contactsSchemaFor,
-	documentsSchemaFor,
-	familySchema,
-	nameSchema,
-	passportSchema,
-	professionSchema,
-} from "../lib/schemas";
+	computeIncompleteSteps,
+	type ValidatableStepKey,
+} from "../lib/validateSteps";
 import { formatAddressDisplay, type OnboardingData } from "../types";
 import {
 	getDocsForUserType,
 	type RegistrationFiles,
 } from "./DocumentsStep";
 
-type StepKey = "identity" | "family" | "contacts" | "profession" | "documents";
-
-function computeIncompleteSteps(
-	data: OnboardingData,
-	files: RegistrationFiles,
-	userType: PublicUserType,
-): StepKey[] {
-	const incomplete: StepKey[] = [];
-
-	const identityChecks = [
-		nameSchema.safeParse({
-			firstName: data.firstName,
-			lastName: data.lastName,
-		}),
-		contactSchema.safeParse({ email: data.email, phone: data.phone }),
-		birthSchema.safeParse({
-			birthDate: data.birthDate,
-			birthPlace: data.birthPlace,
-			birthCountry: data.birthCountry,
-			gender: data.gender,
-			nationality: data.nationality,
-			nationalityAcquisition: data.nationalityAcquisition,
-			nip: data.nip,
-		}),
-		passportSchema.safeParse({
-			passportNumber: data.passportNumber,
-			passportIssuingAuthority: data.passportIssuingAuthority,
-			passportIssueDate: data.passportIssueDate,
-			passportExpiryDate: data.passportExpiryDate,
-		}),
-	];
-	if (identityChecks.some((r) => !r.success)) incomplete.push("identity");
-
-	const steps =
-		userType === PublicUserType.LongStay
-			? (["family", "contacts", "profession", "documents"] as const)
-			: (["contacts", "documents"] as const);
-
-	for (const step of steps) {
-		if (step === "family") {
-			if (
-				!familySchema.safeParse({
-					maritalStatus: data.maritalStatus,
-					spouseFirstName: data.spouseFirstName,
-					spouseLastName: data.spouseLastName,
-					fatherFirstName: data.fatherFirstName,
-					fatherLastName: data.fatherLastName,
-					motherFirstName: data.motherFirstName,
-					motherLastName: data.motherLastName,
-				}).success
-			) {
-				incomplete.push("family");
-			}
-		} else if (step === "contacts") {
-			const schema = contactsSchemaFor(userType);
-			const res = schema.safeParse({
-				address: data.address ?? {},
-				homeland: data.homeland,
-				emergencyContacts: data.emergencyContacts,
-			});
-			if (!res.success) incomplete.push("contacts");
-		} else if (step === "profession") {
-			if (
-				!professionSchema.safeParse({
-					workStatus: data.workStatus,
-					workTitle: data.workTitle,
-					workEmployer: data.workEmployer,
-				}).success
-			) {
-				incomplete.push("profession");
-			}
-		} else if (step === "documents") {
-			const schema = documentsSchemaFor(userType);
-			const docs = getDocsForUserType(userType);
-			const values: Record<string, File | string | undefined> = {};
-			for (const doc of docs) {
-				values[doc.key] = files[doc.key] ?? data.documents?.[doc.key];
-			}
-			if (!schema.safeParse(values).success) incomplete.push("documents");
-		}
-	}
-
-	return incomplete;
-}
+type StepKey = ValidatableStepKey;
 
 function ReviewSection({
 	title,

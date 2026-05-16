@@ -463,7 +463,7 @@ export default function AffairesDiplomatiquesSettings() {
   const [activeTab, setActiveTab] = useState<TabId>("global")
 
   return (
-    <div className="flex min-h-full w-full flex-1 flex-col gap-4 overflow-auto p-3 md:p-4">
+    <div className="flex min-h-full w-full flex-1 flex-col gap-4 overflow-auto px-7 pt-6 pb-[60px]">
       {/* En-tête */}
       <PageHeader
         icon={<Globe2 className="h-5 w-5" />}

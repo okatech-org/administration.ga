@@ -54,8 +54,8 @@ export function ServicesHero({
   ]
 
   return (
-    <section className="border-b border-[var(--pub-border)] py-16 md:py-[64px] md:pb-12">
-      <div className="mx-auto max-w-[1280px] px-8">
+    <section className="border-b border-[var(--pub-border)] pt-10 pb-10 md:py-[64px] md:pb-12">
+      <div className="mx-auto max-w-[1280px] px-5 md:px-8">
         <div className="grid items-end gap-12 md:grid-cols-[1.3fr_1fr]">
           <div>
             <span className="inline-block text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--pub-text-muted)]">

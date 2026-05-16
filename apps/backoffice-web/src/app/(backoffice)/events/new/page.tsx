@@ -131,7 +131,7 @@ export default function AdminNewEventPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+    <div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
       <PageHeader
         icon={<CalendarDays className="h-5 w-5" />}
         title="Nouvel événement"
