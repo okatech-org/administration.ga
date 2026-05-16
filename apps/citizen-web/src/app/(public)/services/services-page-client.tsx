@@ -198,7 +198,7 @@ export function ServicesPageClient({
         onTransverseToggle={toggleTransverse}
       />
 
-      <div className="mx-auto max-w-[1280px] px-8 pb-24">
+      <div className="mx-auto max-w-[1280px] px-5 md:px-8 pb-24">
         {featuredService && (
           <div className="hidden md:block">
             <FeaturedServiceCard service={featuredService} />

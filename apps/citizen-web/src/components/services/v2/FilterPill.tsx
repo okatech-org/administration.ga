@@ -22,7 +22,7 @@ export function FilterPill({
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
         active
-          ? "border-[var(--pub-ink-900)] bg-[var(--pub-ink-900)] text-white"
+          ? "border-[var(--pub-ink-900)] bg-[var(--pub-ink-900)] text-[var(--pub-bg)]"
           : "border-[var(--pub-border)] bg-[var(--pub-surface)] text-[var(--pub-text-muted)] hover:border-[var(--pub-border-strong)] hover:text-[var(--pub-text)]",
       )}
     >
