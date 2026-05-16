@@ -429,22 +429,24 @@ http.route({
         );
       }
 
-      // 2. Find the Better Auth user by authId
-      const email = body.email;
+      // 2. Resolve email — for phone-based PIN login, look up the user's email
+      // from the consulat `users` table (indexed by phone).
+      let email = body.email;
+      if (!email && body.phone) {
+        email = await ctx.runQuery(internal.functions.pin.getEmailByPhone, {
+          phone: body.phone,
+        }) as string | null ?? undefined;
+        if (!email) {
+          return new Response(
+            JSON.stringify({ error: "User not found in auth system" }),
+            { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } },
+          );
+        }
+      }
       if (!email) {
-        // Pour les connexions par téléphone, on doit d'abord trouver l'email
-        const userByPhone = await ctx.runQuery(
-          components.betterAuth.adapter.findMany,
-          {
-            model: "user",
-            where: [{ field: "email", value: email ?? "" }],
-            paginationOpts: { numItems: 1, cursor: null },
-          },
-        );
-        // Fallback: PIN par téléphone nécessite un flux différent
         return new Response(
-          JSON.stringify({ error: "Phone PIN login not yet supported via HTTP" }),
-          { status: 501, headers: { "Content-Type": "application/json", ...corsHeaders } },
+          JSON.stringify({ error: "email or phone required" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
 

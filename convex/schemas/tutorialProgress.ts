@@ -1,9 +1,16 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
+/**
+ * Tutorial progress per user
+ * 0-100 percent + lastWatchedAt + completedAt
+ */
 export const tutorialProgressTable = defineTable({
   userId: v.id("users"),
   tutorialId: v.id("tutorials"),
-  progress: v.optional(v.float64()),
-  completedAt: v.optional(v.float64()),
-}).index("by_user", ["userId"]);
+  percent: v.number(),
+  lastWatchedAt: v.number(),
+  completedAt: v.optional(v.number()),
+})
+  .index("by_user_tutorial", ["userId", "tutorialId"])
+  .index("by_user", ["userId"]);

@@ -1,249 +1,344 @@
 "use client"
 
 import { api } from "@convex/_generated/api"
-import { TutorialCategory, TutorialType } from "@convex/lib/constants"
-import Image from "next/image"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import {
-  ArrowRight,
+  TutorialBadge,
+  TutorialCategory,
+  TutorialType,
+} from "@convex/lib/constants"
+import {
   BookOpen,
-  Clock,
+  CreditCard,
   FileText,
   GraduationCap,
-  PlayCircle,
-  Search,
+  Plane,
+  Shield,
+  ShieldCheck,
+  Users,
+  Globe,
+  Stamp,
+  Vote,
+  Wallet,
+  HeartPulse,
+  Home,
+  IdCard,
 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { LocationBanner } from "@/components/guides/LocationBanner"
-import { FeatureGuides } from "@/components/blocks/feature-guides"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useConvexAuth } from "convex/react"
 import { useConvexQuery } from "@/integrations/convex/hooks"
-import { cn } from "@/lib/utils"
+import { useLocationContext } from "@/contexts/LocationContext"
 
-const categoryConfig = [
-  { value: null, key: "all", icon: BookOpen },
-  { value: TutorialCategory.Administrative, key: "administratif", icon: FileText },
-  { value: TutorialCategory.Entrepreneurship, key: "entrepreneuriat", icon: GraduationCap },
-  { value: TutorialCategory.Travel, key: "voyage", icon: GraduationCap },
-  { value: TutorialCategory.PracticalLife, key: "vie_pratique", icon: BookOpen },
-] as const
+import { PublicHero } from "@/components/public/ressources/PublicHero"
+import { ResourceSearchBar } from "@/components/public/ressources/ResourceSearchBar"
+import { PopularSearchTags } from "@/components/public/ressources/PopularSearchTags"
+import { HeroStatsRow } from "@/components/public/ressources/HeroStatsRow"
+import { LocationPromptCard } from "@/components/public/ressources/LocationPromptCard"
+import { SectionHeading } from "@/components/public/ressources/SectionHeading"
+import {
+  GuideCard,
+  type GuideCardIconTint,
+} from "@/components/public/ressources/GuideCard"
+import { CategoryChips, type CategoryChip } from "@/components/public/ressources/CategoryChips"
+import { ProcedureList, type ProcedureItem } from "@/components/public/ressources/ProcedureList"
+import { VideoTutorialCard } from "@/components/public/ressources/VideoTutorialCard"
+import { PublicFAQ } from "@/components/public/ressources/PublicFAQ"
 
-const typeIcons: Record<string, typeof PlayCircle> = {
-  [TutorialType.Video]: PlayCircle,
-  [TutorialType.Article]: FileText,
-  [TutorialType.Guide]: BookOpen,
+const POPULAR_SEARCHES = [
+  "Renouveler son passeport",
+  "Acte de naissance",
+  "Mariage à l'étranger",
+  "Bourses scolaires",
+  "Carte consulaire",
+]
+
+const FEATURED_CATEGORY_TINTS: Record<string, GuideCardIconTint> = {
+  [TutorialCategory.ConsularProcedures]: "primary",
+  [TutorialCategory.Administrative]: "primary",
+  [TutorialCategory.CivilStatus]: "amber",
+  [TutorialCategory.EducationGrants]: "primary",
+  [TutorialCategory.PracticalLife]: "success",
+  [TutorialCategory.Taxation]: "warning",
+  [TutorialCategory.ReturnGabon]: "warning",
+  [TutorialCategory.Travel]: "primary",
+  [TutorialCategory.Entrepreneurship]: "primary",
 }
 
-const typeBadgeStyles: Record<string, string> = {
-  [TutorialType.Video]: "badge-destructive",
-  [TutorialType.Article]: "badge-info",
-  [TutorialType.Guide]: "badge-success",
+const PROCEDURE_ICONS: Record<string, typeof FileText> = {
+  [TutorialCategory.ConsularProcedures]: IdCard,
+  [TutorialCategory.Administrative]: FileText,
+  [TutorialCategory.CivilStatus]: Stamp,
+  [TutorialCategory.EducationGrants]: GraduationCap,
+  [TutorialCategory.PracticalLife]: Home,
+  [TutorialCategory.Taxation]: Wallet,
+  [TutorialCategory.ReturnGabon]: Plane,
+  [TutorialCategory.Travel]: Globe,
+  [TutorialCategory.Entrepreneurship]: Users,
 }
 
-export default function RessourcesPage() {
+function formatUpdatedAt(ts?: number) {
+  if (!ts) return ""
+  try {
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "numeric",
+      month: "long",
+    }).format(new Date(ts))
+  } catch {
+    return ""
+  }
+}
+
+function buildGuideMeta(tutorial: {
+  readingMinutes?: number
+  duration?: string
+  publishedAt?: number
+  updatedAt?: number
+  type: string
+}) {
+  const parts: string[] = []
+  if (tutorial.readingMinutes) {
+    parts.push(`Lecture ${tutorial.readingMinutes} min`)
+  } else if (tutorial.duration && tutorial.type === TutorialType.Video) {
+    parts.push(tutorial.duration)
+  }
+  const ts = tutorial.updatedAt ?? tutorial.publishedAt
+  if (ts) parts.push(`mis à jour le ${formatUpdatedAt(ts)}`)
+  return parts.join(" · ")
+}
+
+function buildStepLabel(t: {
+  stepCount?: number
+  type: string
+  badges?: TutorialBadge[]
+}) {
+  if (t.badges?.includes(TutorialBadge.Essential)) return "Essentiel"
+  if (t.badges?.includes(TutorialBadge.Express)) return "Express"
+  if (t.stepCount) return `${t.stepCount} étapes`
+  if (t.type === TutorialType.Article) return "Fiche"
+  return undefined
+}
+
+export default function RessourcesPageClient() {
   const { t } = useTranslation()
-  const searchParams = useSearchParams()
-  const category = searchParams.get("category") as TutorialCategory | null
-  const [searchQuery, setSearchQuery] = useState("")
+  const router = useRouter()
+  const params = useSearchParams()
+  const category = (params.get("category") as TutorialCategory | null) ?? null
+  const queryText = params.get("q") ?? ""
 
-  const selectedCategory = category ?? undefined
+  const { country } = useLocationContext()
+  const { isAuthenticated } = useConvexAuth()
 
-  const { data: tutorials, isLoading } = useConvexQuery(
-    api.functions.tutorials.list,
-    { category: selectedCategory, limit: 50 },
+  // Featured guides (Section 3)
+  const { data: featured } = useConvexQuery(
+    api.functions.tutorials.listFeatured,
+    { countryCode: country ?? undefined, limit: 6 },
   )
 
-  const filtered = useMemo(() => {
-    if (!tutorials) return []
-    if (!searchQuery.trim()) return tutorials
-    const q = searchQuery.toLowerCase()
-    return tutorials.filter(
-      (tut) =>
-        tut.title.toLowerCase().includes(q) ||
-        tut.excerpt.toLowerCase().includes(q),
-    )
-  }, [tutorials, searchQuery])
+  // Stats agrégées (hero + chips count)
+  const { data: stats } = useConvexQuery(
+    api.functions.resources.stats,
+    {},
+  )
+
+  // Liste filtrée (procédures) ou search
+  const { data: filteredList } = useConvexQuery(
+    api.functions.tutorials.list,
+    queryText ? "skip" : { category: category ?? undefined, limit: 20 },
+  )
+  const { data: searchResults } = useConvexQuery(
+    api.functions.tutorials.search,
+    queryText ? { q: queryText, limit: 20 } : "skip",
+  )
+  const listForSection = queryText ? searchResults : filteredList
+
+  // Tutoriels vidéo (Section 5)
+  const { data: videos } = useConvexQuery(
+    api.functions.tutorials.list,
+    { limit: 12 },
+  )
+  const videoList = useMemo(
+    () => (videos ?? []).filter((v) => v.type === TutorialType.Video).slice(0, 3),
+    [videos],
+  )
+
+  // Progression utilisateur — seulement si authentifié
+  const videoIds = useMemo(() => videoList.map((v) => v._id), [videoList])
+  const { data: progressMap } = useConvexQuery(
+    api.functions.tutorialProgress.myProgress,
+    isAuthenticated && videoIds.length > 0 ? { tutorialIds: videoIds } : "skip",
+  )
+
+  // FAQ
+  const { data: faqs } = useConvexQuery(api.functions.faqs.list, {
+    featured: true,
+    limit: 6,
+  })
+
+  // Catégories chips
+  const categoryChips: CategoryChip[] = useMemo(() => {
+    const counts = stats?.byCategory ?? {}
+    const desired = [
+      TutorialCategory.ConsularProcedures,
+      TutorialCategory.CivilStatus,
+      TutorialCategory.PracticalLife,
+      TutorialCategory.EducationGrants,
+      TutorialCategory.Taxation,
+      TutorialCategory.ReturnGabon,
+    ] as const
+    return desired
+      .filter((c) => (counts[c] ?? 0) > 0 || c === TutorialCategory.ConsularProcedures)
+      .map((value) => ({
+        value,
+        label: t(`academy.categories.${value}`, value),
+        count: counts[value] ?? 0,
+      }))
+  }, [stats, t])
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="py-20 lg:py-40 bg-[oklch(0.145_0_0)] text-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-block mb-4 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80">
-            {t("ressources.badge")}
-          </span>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-[-0.02em] text-white mb-4">
-            {t("ressources.title")}
-          </h1>
-          <p className="text-lg md:text-xl text-[oklch(0.7_0_0)] max-w-2xl mx-auto">
-            {t(
-              "ressources.subtitle",
-              "Retrouvez toutes les informations essentielles pour vos demarches consulaires, la vie pratique, l'education ainsi que nos guides et tutoriels.",
-            )}
-          </p>
-          <div className="mt-8 max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <Input
-              className="pl-10 rounded-[10px] bg-white/5 border border-white/10 text-white placeholder:text-white/40"
-              placeholder={t("academy.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+    <div className="bg-background min-h-screen">
+      {/* === Section 1 — Hero === */}
+      <PublicHero
+        kicker="Ressources & informations"
+        title="Guides, démarches et"
+        titleAccent="tutoriels."
+        lede="Retrouvez les informations essentielles pour vos démarches consulaires, votre vie pratique à l'étranger, la scolarité de vos enfants — accompagnées de tutoriels vidéo et d'une foire aux questions."
+      >
+        <ResourceSearchBar defaultValue={queryText} />
+        <PopularSearchTags items={POPULAR_SEARCHES} />
+        <HeroStatsRow />
+      </PublicHero>
+
+      {/* === Section 2 — Location prompt === */}
+      <LocationPromptCard />
+
+      {/* === Section 3 — Guides personnalisés === */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-18 pt-10">
+        <SectionHeading
+          title="Vos guides"
+          titleAccent="personnalisés."
+          lede="Sélection de démarches consulaires fréquentes, adaptée à votre situation et à votre représentation de rattachement."
+          allHref="/ressources?all=guides"
+          allLabel="Tous les guides"
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {(featured ?? []).map((tut) => {
+            const tint = FEATURED_CATEGORY_TINTS[tut.category] ?? "primary"
+            const Icon = PROCEDURE_ICONS[tut.category] ?? FileText
+            return (
+              <GuideCard
+                key={tut._id}
+                href={`/ressources/${tut.slug}`}
+                icon={Icon}
+                iconTint={tint}
+                stepLabel={buildStepLabel(tut)}
+                title={tut.title}
+                description={tut.excerpt}
+                meta={buildGuideMeta(tut)}
+              />
+            )
+          })}
+          {(featured?.length ?? 0) === 0 ? (
+            <div className="col-span-full rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
+              Aucun guide marqué « featured » pour l'instant — passez le drapeau{" "}
+              <code>featured: true</code> sur quelques tutoriels depuis le backoffice.
+            </div>
+          ) : null}
         </div>
       </section>
 
-      {/* Section 1: Guides Personnalises */}
-      <section className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6">
-            <LocationBanner />
-          </div>
-          <FeatureGuides />
+      {/* === Section 4 — Toutes les démarches === */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-18 pt-10">
+        <SectionHeading
+          title="Toutes les"
+          titleAccent="démarches."
+          lede={`${stats?.tutorialsCount ?? "—"} fiches et procédures, organisées par thématique. Filtrez par catégorie pour affiner.`}
+          allHref="/services"
+          allLabel="Catalogue des services"
+        />
+        <CategoryChips
+          items={categoryChips}
+          total={stats?.tutorialsCount}
+          paramName="category"
+        />
+        <ProcedureList
+          items={(listForSection ?? []).map<ProcedureItem>((tut) => ({
+            id: tut._id,
+            href: `/ressources/${tut.slug}`,
+            icon: PROCEDURE_ICONS[tut.category] ?? FileText,
+            title: tut.title,
+            subMeta: [
+              tut.stepCount ? `${tut.stepCount} étapes` : "Fiche",
+              tut.readingMinutes ? `${tut.readingMinutes} min` : "—",
+            ].filter((s) => s !== "—"),
+            badge: tut.badges?.includes(TutorialBadge.Updated)
+              ? { label: "Mis à jour", tone: "info" }
+              : tut.badges?.includes(TutorialBadge.Express)
+              ? { label: "Express", tone: "success" }
+              : tut.badges?.includes(TutorialBadge.Essential)
+              ? { label: "Essentiel", tone: "warning" }
+              : undefined,
+          }))}
+        />
+      </section>
+
+      {/* === Section 5 — Tutoriels vidéo === */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-18 pt-10">
+        <SectionHeading
+          title="Tutoriels en"
+          titleAccent="vidéo."
+          lede="Cours pas-à-pas de 5 à 12 minutes, sous-titrés en français, anglais, portugais et arabe."
+          allHref="/ressources?type=video"
+          allLabel="Voir la chaîne complète"
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {videoList.map((v, idx) => {
+            const tint = (["blue", "green", "yellow"] as const)[idx % 3]
+            const progress = progressMap?.[v._id]
+            return (
+              <VideoTutorialCard
+                key={v._id}
+                href={`/ressources/${v.slug}`}
+                thumbnail={v.coverImageUrl ?? undefined}
+                thumbTint={tint}
+                episode={
+                  v.category
+                    ? `Épisode ${String(idx + 1).padStart(2, "0")} · ${t(
+                        `academy.categories.${v.category}`,
+                        v.category,
+                      )}`
+                    : undefined
+                }
+                title={v.title}
+                duration={v.duration}
+                progressPercent={isAuthenticated ? progress?.percent ?? 0 : undefined}
+              />
+            )
+          })}
+          {videoList.length === 0 ? (
+            <div className="col-span-full rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
+              Aucun tutoriel vidéo publié pour l'instant.
+            </div>
+          ) : null}
         </div>
       </section>
 
-      {/* Section 2: Filtres tutoriels */}
-      <section className="sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-t border-border pt-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
-            {t("academy.guidesTitle")}
-          </h2>
-          <div className="flex gap-2 py-2 overflow-x-auto justify-center">
-            {categoryConfig.map((cat) => {
-              const Icon = cat.icon
-              const isActive =
-                category === cat.value || (!category && cat.value === null)
-              return (
-                <Link
-                  key={cat.key}
-                  href={cat.value ? `/ressources?category=${cat.value}` : "/ressources"}
-                >
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/80 text-muted-foreground",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {t(`academy.categories.${cat.key}`, cat.key)}
-                  </Button>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Tutorials Grid */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-card rounded-[10px] overflow-hidden border border-border animate-pulse"
-                >
-                  <div className="aspect-video bg-muted" />
-                  <div className="p-5 space-y-3">
-                    <div className="h-4 w-20 bg-muted rounded" />
-                    <div className="h-6 w-full bg-muted rounded" />
-                    <div className="h-4 w-3/4 bg-muted rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-20">
-              <GraduationCap className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                {t("academy.empty.title")}
-              </h3>
-              <p className="text-muted-foreground">
-                {t(
-                  "academy.empty.description",
-                  "De nouveaux guides seront bientot publies.",
-                )}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map((tutorial) => {
-                const TypeIcon = typeIcons[tutorial.type] ?? BookOpen
-                return (
-                  <Link
-                    key={tutorial._id}
-                    href={`/ressources/${tutorial.slug}`}
-                    className="block"
-                  >
-                    <Card className="pt-0 group overflow-hidden border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                      <div className="aspect-video bg-muted overflow-hidden relative">
-                        {tutorial.coverImageUrl ? (
-                          <Image
-                            src={tutorial.coverImageUrl}
-                            alt={tutorial.title}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary/5 to-primary/20">
-                            <GraduationCap className="h-12 w-12 text-primary/30" />
-                          </div>
-                        )}
-                        <span
-                          className={cn(
-                            "absolute top-3 left-3 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1",
-                            typeBadgeStyles[tutorial.type] ?? "bg-gray-100 text-gray-800",
-                          )}
-                        >
-                          <TypeIcon className="h-3.5 w-3.5" />
-                          {t(`academy.types.${tutorial.type}`, tutorial.type)}
-                        </span>
-                      </div>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            {t(`academy.categories.${tutorial.category}`, tutorial.category)}
-                          </Badge>
-                          {tutorial.duration && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {tutorial.duration}
-                            </span>
-                          )}
-                        </div>
-                        <CardTitle className="text-lg line-clamp-2">
-                          {tutorial.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <CardDescription className="line-clamp-2">
-                          {tutorial.excerpt}
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </div>
+      {/* === Section 6 — FAQ === */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-18 pt-10 pb-20">
+        <SectionHeading
+          title="Foire aux"
+          titleAccent="questions."
+          lede="Les réponses aux questions les plus fréquemment posées par les ressortissants gabonais et leurs partenaires."
+          allHref="/faq"
+          allLabel="Toutes les questions"
+        />
+        <PublicFAQ
+          items={(faqs ?? []).map((f) => ({
+            id: f._id,
+            question: f.question,
+            answer: f.answer,
+          }))}
+        />
       </section>
     </div>
   )

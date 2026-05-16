@@ -5,11 +5,12 @@ import { Footer } from "@/components/Footer"
 import Header from "@/components/Header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useRegistrationStorage } from "@/hooks/useRegistrationStorage"
 import { PublicUserType } from "@convex/lib/constants"
 import { useConvex } from "convex/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   captureEvent,
@@ -19,10 +20,15 @@ import { useRegistrationAnalytics } from "@/lib/useRegistrationAnalytics"
 import { DesktopRecapSidebar } from "./DesktopRecapSidebar"
 import { DesktopStepsSidebar } from "./DesktopStepsSidebar"
 import {
+  clearGuestSession,
+  getOrCreateGuestSessionId,
+} from "./lib/guestSession"
+import {
   STEPS_BY_TYPE,
   type IdentityPhase,
   type OnboardingStepKey,
 } from "./lib/onboardingFlow"
+import type { StepHandle } from "./lib/stepHandle"
 import { submitRegistration } from "./lib/submitRegistration"
 import { OnboardingMobileActionBar } from "./MobileActionBar"
 import { OnboardingMobileHeader } from "./MobileHeader"
@@ -73,10 +79,30 @@ function formatHourMinute(d: Date): string {
   ).padStart(2, "0")}`
 }
 
+/**
+ * Track whether the viewport is desktop-sized (lg breakpoint = 1024px). We
+ * render only ONE of the two layouts at a time — otherwise both trees mount
+ * and keep their own per-instance state (e.g. IdentityStep's `phase`), which
+ * causes the mobile tree to stay frozen at the initial sub-phase while the
+ * desktop one progresses, and vice-versa.
+ */
+function useIsLargeViewport() {
+  const [isLarge, setIsLarge] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)")
+    const update = () => setIsLarge(mql.matches)
+    update()
+    mql.addEventListener("change", update)
+    return () => mql.removeEventListener("change", update)
+  }, [])
+  return isLarge
+}
+
 export function OnboardingShell() {
   const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isLargeViewport = useIsLargeViewport()
 
   const STEP_TITLES: Record<
     OnboardingStepKey,
@@ -122,26 +148,83 @@ export function OnboardingShell() {
   const [userType, setUserType] = useState<PublicUserType | null>(initialType)
   const [stepIndex, setStepIndex] = useState(0)
   const [data, setData] = useState<OnboardingData>({})
+  const [draftLoaded, setDraftLoaded] = useState(!initialType)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
-  // Fichiers en mémoire — non persistés (File n'est pas sérialisable).
-  // Si l'utilisateur recharge la page, il devra re-téléverser.
+  // Fichiers en cache mémoire. Source de vérité = IndexedDB
+  // (`regStorage`). On miroite ici pour avoir un accès synchrone côté UI.
+  // Hydraté au mount depuis IDB ; les uploads/suppressions sont mirrorés
+  // dans IDB pour survivre aux refresh et fermetures d'onglet.
   const [files, setFiles] = useState<RegistrationFiles>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submittedRef, setSubmittedRef] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const setFile = useCallback((key: string, file: File) => {
-    setFiles((prev) => ({ ...prev, [key]: file }))
-  }, [])
+  // Identifiant stable de la session d'inscription, persisté dans
+  // localStorage. Sert de clé de partition pour IndexedDB (fichiers) et
+  // pour le rate-limit de l'extraction IA.
+  const [guestSessionId] = useState(() => getOrCreateGuestSessionId())
+  const regStorage = useRegistrationStorage(guestSessionId)
+  const hydratedRef = useRef(false)
 
-  const removeFile = useCallback((key: string) => {
-    setFiles((prev) => {
-      const next = { ...prev }
-      delete next[key]
-      return next
-    })
-  }, [])
+  const setFile = useCallback(
+    (key: string, file: File) => {
+      setFiles((prev) => ({ ...prev, [key]: file }))
+      // Persiste le binaire dans IndexedDB. Fire-and-forget : l'UI ne doit
+      // pas bloquer sur l'écriture. Une erreur dégrade vers le comportement
+      // précédent (fichier en mémoire seulement).
+      regStorage.saveFile(key, file).catch((err) => {
+        console.error("Failed to persist file to IndexedDB:", err)
+      })
+    },
+    [regStorage],
+  )
+
+  const removeFile = useCallback(
+    (key: string) => {
+      setFiles((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      regStorage.removeFile(key).catch((err) => {
+        console.error("Failed to remove file from IndexedDB:", err)
+      })
+    },
+    [regStorage],
+  )
+
+  // Hydrate `files` depuis IndexedDB une fois la DB ouverte. Repeuple aussi
+  // `data.documents` pour que l'UI (cases vertes + recap) reflète l'état
+  // réel des binaires plutôt que des noms persistés à part.
+  useEffect(() => {
+    if (!regStorage.isReady) return
+    if (hydratedRef.current) return
+    hydratedRef.current = true
+    regStorage
+      .getAllFiles()
+      .then((map) => {
+        if (map.size === 0) return
+        const hydratedFiles: RegistrationFiles = {}
+        const documents: Record<string, string> = {}
+        for (const [docType, info] of map.entries()) {
+          // Reconstruit un File depuis le Blob stocké pour conserver
+          // l'API File (name, type) attendue par le pipeline d'upload.
+          hydratedFiles[docType] = new File([info.blob], info.filename, {
+            type: info.mimeType,
+          })
+          documents[docType] = info.filename
+        }
+        setFiles((prev) => ({ ...hydratedFiles, ...prev }))
+        setData((prev) => ({
+          ...prev,
+          documents: { ...documents, ...(prev.documents ?? {}) },
+        }))
+      })
+      .catch((err) => {
+        console.error("Failed to hydrate files from IndexedDB:", err)
+      })
+  }, [regStorage])
 
   // Sync URL when userType changes (without scroll reset)
   useEffect(() => {
@@ -154,19 +237,27 @@ export function OnboardingShell() {
     }
   }, [userType, router, searchParams])
 
-  // Load draft on userType change
+  // Load draft on userType change. We reset `draftLoaded` first so that the
+  // step bodies don't mount with empty defaults while waiting for the read.
   useEffect(() => {
-    if (!userType) return
+    if (!userType) {
+      setDraftLoaded(true)
+      return
+    }
+    setDraftLoaded(false)
     const draft = loadDraft(userType)
     setData(draft)
+    setDraftLoaded(true)
   }, [userType])
 
-  // Autosave draft on data change (without sensitive fields)
+  // Autosave draft on data change (without sensitive fields).
+  // Skip until the draft has been loaded — otherwise the initial empty `data`
+  // overwrites the persisted draft before we get a chance to read it.
   useEffect(() => {
-    if (!userType) return
+    if (!userType || !draftLoaded) return
     saveDraft(userType, data)
     setLastSavedAt(new Date())
-  }, [userType, data])
+  }, [userType, data, draftLoaded])
 
   const updateData = useCallback((patch: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...patch }))
@@ -246,7 +337,14 @@ export function OnboardingShell() {
     [analytics]
   )
 
-  const handleNext = useCallback(() => {
+  const stepHandleRef = useRef<StepHandle | null>(null)
+
+  const handleNext = useCallback(async () => {
+    const handle = stepHandleRef.current
+    if (handle) {
+      const ok = await handle.validateAndNext()
+      if (!ok) return
+    }
     analytics.trackStepCompleted()
     setStepIndex((i) => Math.min(i + 1, steps.length - 1))
   }, [analytics, steps.length])
@@ -271,8 +369,13 @@ export function OnboardingShell() {
     setSubmittedRef(null)
     setIsSubmitted(false)
     setSubmitError(null)
+    // Purge les fichiers IDB et la session d'inscription en cours — on
+    // recommence à zéro avec un nouvel identifiant.
+    regStorage.clearRegistration().catch(() => {})
+    clearGuestSession()
+    hydratedRef.current = false
     router.replace("/register", { scroll: false })
-  }, [router])
+  }, [regStorage, router])
 
   const handleJumpByKey = useCallback(
     (key: OnboardingStepKey) => {
@@ -300,10 +403,14 @@ export function OnboardingShell() {
         has_children: false,
         jurisdiction_country: data.address?.country,
       })
-      // Purge le brouillon — soumission réussie.
+      // Purge le brouillon + les fichiers IDB + la session — soumission
+      // réussie. Évite qu'un retour ultérieur sur /register ne re-injecte
+      // d'anciens documents dans une nouvelle inscription.
       if (typeof window !== "undefined") {
         localStorage.removeItem(`${DRAFT_KEY_PREFIX}${userType}`)
       }
+      await regStorage.clearRegistration().catch(() => {})
+      clearGuestSession()
     } catch (err) {
       console.error("Submit error:", err)
       setSubmitError(
@@ -314,15 +421,19 @@ export function OnboardingShell() {
     } finally {
       setSubmitting(false)
     }
-  }, [convex, data, files, userType, t, analytics])
+  }, [convex, data, files, userType, t, analytics, regStorage])
 
   if (isSubmitted) {
     return (
-      <div className="onboarding-root">
-        <SubmittedScreen
-          reference={submittedRef || undefined}
-          onRestart={handleRestart}
-        />
+      <div className="onboarding-root flex min-h-svh flex-col">
+        <Header />
+        <main className="flex-1">
+          <SubmittedScreen
+            reference={submittedRef || undefined}
+            onRestart={handleRestart}
+          />
+        </main>
+        <Footer />
       </div>
     )
   }
@@ -351,6 +462,16 @@ export function OnboardingShell() {
 
   const stepBody = (() => {
     if (!currentStep) return null
+    // Wait for the draft to be read from localStorage before mounting the
+    // step component — otherwise useForm captures empty defaultValues and
+    // wipes out the persisted data on the user's first interaction.
+    if (!draftLoaded) {
+      return (
+        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+          <span suppressHydrationWarning>…</span>
+        </div>
+      )
+    }
     switch (currentStep.key) {
       case "identity":
         return (
@@ -367,20 +488,34 @@ export function OnboardingShell() {
           />
         )
       case "family":
-        return <FamilyStep data={data} updateData={updateData} />
+        return (
+          <FamilyStep
+            ref={stepHandleRef}
+            data={data}
+            updateData={updateData}
+          />
+        )
       case "contacts":
         return (
           <ContactsStep
+            ref={stepHandleRef}
             data={data}
             updateData={updateData}
             userType={userType}
           />
         )
       case "profession":
-        return <ProfessionStep data={data} updateData={updateData} />
+        return (
+          <ProfessionStep
+            ref={stepHandleRef}
+            data={data}
+            updateData={updateData}
+          />
+        )
       case "documents":
         return (
           <DocumentsStep
+            ref={stepHandleRef}
             data={data}
             updateData={updateData}
             userType={userType}
@@ -395,6 +530,7 @@ export function OnboardingShell() {
           <ReviewStep
             data={data}
             userType={userType}
+            files={files}
             onJump={handleJumpByKey}
             onSubmit={handleSubmit}
             submitting={submitting}
@@ -415,34 +551,38 @@ export function OnboardingShell() {
 
   return (
     <div className="onboarding-root">
-      {/* Mobile / tablet */}
-      <div className="flex min-h-svh flex-col lg:hidden">
-        <OnboardingMobileHeader
-          onBack={canPrev ? handlePrev : handleRestart}
-          savedAt={savedAtLabel}
-        />
-        {currentStep && (
-          <OnboardingMobileProgressHeader
-            step={currentStep}
-            currentIndex={stepIndex}
-            totalSteps={steps.length}
+      {/* Mobile / tablet — only mounted when viewport < lg, otherwise the
+          desktop tree below holds the active component state. */}
+      {!isLargeViewport && (
+        <div className="flex min-h-svh flex-col">
+          <OnboardingMobileHeader
+            onBack={canPrev ? handlePrev : handleRestart}
+            savedAt={savedAtLabel}
           />
-        )}
-        <main className="onboarding-mobile-main flex flex-1 flex-col px-4 py-5">
-          {stepBody}
-        </main>
-        {!selfNav && (
-          <OnboardingMobileActionBar
-            onPrev={handlePrev}
-            onNext={handleNext}
-            canPrev={canPrev}
-            canNext={canNext}
-          />
-        )}
-      </div>
+          {currentStep && (
+            <OnboardingMobileProgressHeader
+              step={currentStep}
+              currentIndex={stepIndex}
+              totalSteps={steps.length}
+            />
+          )}
+          <main className="onboarding-mobile-main flex flex-1 flex-col px-4 py-5">
+            {stepBody}
+          </main>
+          {!selfNav && (
+            <OnboardingMobileActionBar
+              onPrev={handlePrev}
+              onNext={handleNext}
+              canPrev={canPrev}
+              canNext={canNext}
+            />
+          )}
+        </div>
+      )}
 
       {/* Desktop */}
-      <div className="hidden lg:block">
+      {isLargeViewport && (
+        <div>
         <Header />
 
         <div className="mx-auto grid grid-cols-[260px_1fr_320px] gap-8 px-8 py-8">
@@ -488,7 +628,8 @@ export function OnboardingShell() {
             files={files}
           />
         </div>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

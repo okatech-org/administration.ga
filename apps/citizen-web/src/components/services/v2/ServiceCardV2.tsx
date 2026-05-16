@@ -43,19 +43,14 @@ export function ServiceCardV2({ service }: { service: ServiceCardData }) {
           {t("services.cardOnlineRibbon", "100 % en ligne")}
         </span>
       )}
-      <div className="flex items-start justify-between gap-3">
-        <div
-          className={cn(
-            "grid size-11 shrink-0 place-items-center rounded-[12px]",
-            tint.bg,
-            tint.fg,
-          )}
-        >
-          <service.icon className="size-5" aria-hidden="true" />
-        </div>
-        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--pub-text-muted)]">
-          {service.categoryLabel}
-        </span>
+      <div
+        className={cn(
+          "grid size-11 shrink-0 place-items-center rounded-[12px]",
+          tint.bg,
+          tint.fg,
+        )}
+      >
+        <service.icon className="size-5" aria-hidden="true" />
       </div>
       <div>
         <h3 className="text-[20px] font-semibold leading-[1.25] tracking-[-0.015em] text-[var(--pub-text)]">
@@ -66,17 +61,8 @@ export function ServiceCardV2({ service }: { service: ServiceCardData }) {
         </p>
       </div>
       <div className="mt-auto flex items-center justify-between border-t border-dashed border-[var(--pub-border)] pt-4 text-[13px] text-[var(--pub-text-muted)]">
-        <span className="inline-flex items-center gap-1.5">
-          <Clock
-            className="size-3.5 text-[var(--pub-text-faint)]"
-            aria-hidden="true"
-          />
-          <b className="font-medium text-[var(--pub-text)]">
-            {t("services.daysShort", {
-              count: service.estimatedDays,
-              defaultValue: "{{count}} j",
-            })}
-          </b>
+        <span className="font-medium text-[var(--pub-text)]">
+          {service.categoryLabel}
         </span>
         <span className="inline-flex items-center gap-1 text-[13px] font-medium text-[var(--pub-gabon-blue)]">
           {t("services.cardCta", "En savoir plus →")}
@@ -109,7 +95,7 @@ export function ServiceRowV2({ service }: { service: ServiceCardData }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--pub-text-muted)]">
+          <span className="text-[12px] font-medium text-[var(--pub-text-muted)]">
             {service.categoryLabel}
           </span>
           {service.isFullyOnline && (

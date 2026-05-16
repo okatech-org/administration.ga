@@ -1,4 +1,5 @@
 import type { PublicUserType } from "@convex/lib/constants";
+import { getCountryName } from "@/lib/country-utils";
 import type { AuthState, IdentityPhase, PinPhase } from "./lib/onboardingFlow";
 
 export type EmergencyContact = {
@@ -20,6 +21,30 @@ export type AddressData = {
 	lng?: string | number;
 };
 
+/**
+ * Composer un libellé d'adresse à afficher.
+ *
+ * `address.full` n'est renseigné que lorsque l'utilisateur passe par
+ * l'autocomplete Google Places (`formattedAddress`). Une saisie manuelle
+ * via l'AddressInput laisse `full` undefined ; on retombe sur les champs
+ * structurés pour ne pas afficher un champ "vide" en recap.
+ */
+export function formatAddressDisplay(
+	address: AddressData | undefined,
+): string | undefined {
+	if (!address) return undefined;
+	if (address.full && address.full.trim().length > 0) return address.full;
+	const composed = [
+		address.street,
+		[address.postalCode, address.city].filter(Boolean).join(" ").trim() ||
+			undefined,
+		address.country ? getCountryName(address.country) : undefined,
+	]
+		.filter((s): s is string => Boolean(s && s.trim().length > 0))
+		.join(", ");
+	return composed.length > 0 ? composed : undefined;
+}
+
 export type OnboardingData = {
 	// Internal flow markers
 	_identityPhase?: IdentityPhase;
@@ -35,9 +60,10 @@ export type OnboardingData = {
 	email?: string;
 	phone?: string;
 
-	// Identity — Password (NEVER persisted)
+	// Identity — Auth bridge password.
+	// Généré aléatoirement côté client par OtpPhase pour permettre `signUp.email`
+	// puis `signIn.email`. JAMAIS exposé à l'utilisateur, JAMAIS persisté.
 	password?: string;
-	passwordConfirm?: string;
 	acceptTerms?: boolean;
 
 	// Identity — OTP (NEVER persisted)
@@ -104,15 +130,22 @@ export type OnboardingData = {
 export type OnboardingProfileType = PublicUserType;
 
 /**
- * Champs sensibles qui NE doivent JAMAIS être persistés (localStorage,
- * sessionStorage, IndexedDB-meta). Filtrés à l'écriture du draft.
+ * Champs exclus de la persistance localStorage du draft.
+ *
+ * - Sensibles (credentials) : password, otp, pin, pinConfirm.
+ * - Éphémères : `documents` (= mapping doc → filename) ne doit JAMAIS être
+ *   persisté dans le draft. Les fichiers binaires vivent dans IndexedDB
+ *   (`useRegistrationStorage`) ; persister uniquement le filename donnerait
+ *   l'illusion d'un upload (case verte) après refresh alors que le blob
+ *   réel a disparu, et la soumission partirait avec des documents vides.
+ *   `data.documents` est repeuplé au mount depuis IndexedDB.
  */
 export const SENSITIVE_KEYS: ReadonlyArray<keyof OnboardingData> = [
 	"password",
-	"passwordConfirm",
 	"otp",
 	"pin",
 	"pinConfirm",
+	"documents",
 ];
 
 export function stripSensitive(data: OnboardingData): OnboardingData {

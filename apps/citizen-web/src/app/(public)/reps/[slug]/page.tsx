@@ -11,6 +11,18 @@ type PageProps = {
   params: Promise<{ slug: string }>
 }
 
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  try {
+    const entries = await fetchQuery(api.functions.seo.getSitemapEntries, {})
+    return entries.orgs.slice(0, 100).map((o) => ({ slug: o.slug }))
+  } catch (error) {
+    console.error("[reps/[slug]] generateStaticParams failed", error)
+    return []
+  }
+}
+
 const countryNames: Record<string, string> = {
   FR: "France",
   BE: "Belgique",
@@ -49,7 +61,7 @@ export default async function OrgDetailPage({ params }: PageProps) {
 
   const [org, preloaded] = await Promise.all([
     fetchQuery(api.functions.orgs.getBySlug, { slug }),
-    preloadQuery(api.functions.orgs.getBySlug, { slug }),
+    preloadQuery(api.functions.orgsPublic.publicDetails, { slug }),
   ])
 
   if (!org) notFound()

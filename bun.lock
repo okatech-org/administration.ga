@@ -129,6 +129,7 @@
         "@workspace/i18n": "workspace:*",
         "@workspace/iasted": "workspace:*",
         "@workspace/livekit": "workspace:*",
+        "@workspace/map": "workspace:*",
         "@workspace/posthog-shared": "workspace:*",
         "@workspace/routing": "workspace:*",
         "@workspace/settings-form": "workspace:*",
@@ -201,6 +202,7 @@
         "@workspace/i18n": "workspace:*",
         "@workspace/iasted": "workspace:*",
         "@workspace/livekit": "workspace:*",
+        "@workspace/map": "workspace:*",
         "@workspace/posthog-shared": "workspace:*",
         "@workspace/settings-form": "workspace:*",
         "@workspace/shared": "workspace:*",
@@ -556,6 +558,22 @@
         "react": "^19.0.0",
       },
     },
+    "packages/map": {
+      "name": "@workspace/map",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/mapbox-gl": "^3.4.0",
+        "@types/react": "^19.2.10",
+        "@workspace/tsconfig": "workspace:*",
+        "mapbox-gl": "^3.21.0",
+        "react": "19.2.4",
+        "typescript": "^5.9.3",
+      },
+      "peerDependencies": {
+        "mapbox-gl": "^3.21.0",
+        "react": "^19.0.0",
+      },
+    },
     "packages/posthog-shared": {
       "name": "@workspace/posthog-shared",
       "version": "0.0.0",
@@ -610,10 +628,11 @@
       "name": "@workspace/shared",
       "version": "0.0.0",
       "dependencies": {
-        "isomorphic-dompurify": "^3.7.1",
+        "dompurify": "^3.2.6",
         "zod": "^3.25.76",
       },
       "devDependencies": {
+        "@types/dompurify": "^3.2.0",
         "@workspace/tsconfig": "workspace:*",
         "typescript": "^5.9.3",
       },
@@ -1603,6 +1622,8 @@
 
     "@types/dom-mediacapture-record": ["@types/dom-mediacapture-record@1.0.22", "", {}, "sha512-mUMZLK3NvwRLcAAT9qmcK+9p7tpU2FHdDsntR3YI4+GY88XrgG4XiE7u1Q2LAN2/FZOz/tdMDC3GQCR4T8nFuw=="],
 
+    "@types/dompurify": ["@types/dompurify@3.2.0", "", { "dependencies": { "dompurify": "*" } }, "sha512-Fgg31wv9QbLDA0SpTOXO3MaxySc4DKGLi8sna4/Utjo4r3ZRPdCt4UQee8BWr+Q5z21yifghREPJGYaEOEIACg=="],
+
     "@types/eslint": ["@types/eslint@9.6.1", "", { "dependencies": { "@types/estree": "*", "@types/json-schema": "*" } }, "sha512-FXx2pKgId/WyYo2jXw63kk7/+TY7u7AziEJxJAnSFzHlqTAS3Ync6SvgYAN/k4/PQpnnVuzoMuVnByKK2qp0ag=="],
 
     "@types/eslint-scope": ["@types/eslint-scope@3.7.7", "", { "dependencies": { "@types/eslint": "*", "@types/estree": "*" } }, "sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg=="],
@@ -1628,6 +1649,8 @@
     "@types/keyv": ["@types/keyv@3.1.4", "", { "dependencies": { "@types/node": "*" } }, "sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg=="],
 
     "@types/linkify-it": ["@types/linkify-it@5.0.0", "", {}, "sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q=="],
+
+    "@types/mapbox-gl": ["@types/mapbox-gl@3.5.0", "", { "dependencies": { "mapbox-gl": "*" } }, "sha512-3wVAUTC6q1UKatLP9YxFBnGJWi3neJUF9OKeyRdUf/BsYjZAP35xmZkL4zogVJbO3vdExuSVYCAkzUXjpjdhOg=="],
 
     "@types/markdown-it": ["@types/markdown-it@14.1.2", "", { "dependencies": { "@types/linkify-it": "^5", "@types/mdurl": "^2" } }, "sha512-promo4eFwuiW+TfGxhi+0x3czqTYJkG8qB17ZUJiVF10Xm7NLVRSLUsfRTU/6h1e24VvRnXCx+hG7li58lkzog=="],
 
@@ -1794,6 +1817,8 @@
     "@workspace/iasted": ["@workspace/iasted@workspace:packages/iasted"],
 
     "@workspace/livekit": ["@workspace/livekit@workspace:packages/livekit"],
+
+    "@workspace/map": ["@workspace/map@workspace:packages/map"],
 
     "@workspace/posthog-shared": ["@workspace/posthog-shared@workspace:packages/posthog-shared"],
 

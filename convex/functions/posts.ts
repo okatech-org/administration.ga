@@ -1,13 +1,49 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { query, mutation } from "../_generated/server";
-import { postCategoryValidator, postStatusValidator } from "../lib/validators";
+import {
+  postCategoryValidator,
+  postStatusValidator,
+  localizedStringValidator,
+} from "../lib/validators";
 import { requireAuth, requireBackOfficeAccess, getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { PostStatus, PostCategory } from "../lib/constants";
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
+
+// ────────────────────────────────────────────────────────────────────────
+// Editorial extension validators (Article.html maquette)
+// ────────────────────────────────────────────────────────────────────────
+const postSourceValidator = v.object({
+  label: v.string(),
+  url: v.string(),
+});
+
+/** All optional — extends both create() and update() arg shapes. */
+const postEditorialExtraArgs = {
+  // Bilingue (variantes I18n des champs principaux)
+  titleI18n: v.optional(localizedStringValidator),
+  excerptI18n: v.optional(localizedStringValidator),
+  contentI18n: v.optional(localizedStringValidator),
+  // Champs editoriaux etendus
+  lede: v.optional(v.string()),
+  ledeI18n: v.optional(localizedStringValidator),
+  heroImageCaption: v.optional(v.string()),
+  heroImageCaptionI18n: v.optional(localizedStringValidator),
+  heroImageCredit: v.optional(v.string()),
+  readingMinutes: v.optional(v.number()),
+  location: v.optional(v.string()),
+  subCategory: v.optional(v.string()),
+  subCategoryI18n: v.optional(localizedStringValidator),
+  region: v.optional(v.string()),
+  tags: v.optional(v.array(v.string())),
+  sources: v.optional(v.array(postSourceValidator)),
+  referenceNumber: v.optional(v.string()),
+  authorName: v.optional(v.string()),
+  authorRole: v.optional(v.string()),
+} as const;
 
 // ============================================================================
 // PUBLIC QUERIES
@@ -127,13 +163,86 @@ export const getBySlug = query({
 
     // Get org info if linked
     const org = post.orgId ? await ctx.db.get(post.orgId) : null;
+    let orgLogoUrl: string | null = null;
+    if (org?.branding?.logoStorageId) {
+      orgLogoUrl = await ctx.storage.getUrl(org.branding.logoStorageId);
+    }
 
     return {
       ...post,
       coverImageUrl,
       documentUrl,
-      org: org ? { name: org.name, slug: org.slug } : null,
+      org: org
+        ? {
+            name: org.name,
+            slug: org.slug,
+            type: org.type,
+            logoUrl: orgLogoUrl,
+          }
+        : null,
     };
+  },
+});
+
+/**
+ * Related posts for the « Suite a lire » section on the article detail page.
+ *
+ * Scoring (greedy):
+ *  - +3 si meme `subCategory`
+ *  - +2 si meme `region`
+ *  - +1 par tag commun
+ *  - fallback : meme `category`, ordres par publishedAt desc
+ */
+export const getRelated = query({
+  args: {
+    slug: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 3;
+
+    const current = await ctx.db
+      .query("posts")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+    if (!current) return [];
+
+    const published = await ctx.db
+      .query("posts")
+      .withIndex("by_published", (q) =>
+        q.eq("status", PostStatus.Published),
+      )
+      .order("desc")
+      .take(60);
+
+    const candidates = published.filter((p) => p._id !== current._id);
+
+    const currentTags = new Set(current.tags ?? []);
+    const scored = candidates.map((p) => {
+      let score = 0;
+      if (current.subCategory && p.subCategory === current.subCategory)
+        score += 3;
+      if (current.region && p.region === current.region) score += 2;
+      for (const t of p.tags ?? []) if (currentTags.has(t)) score += 1;
+      if (p.category === current.category) score += 0.5;
+      return { post: p, score };
+    });
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (b.post.publishedAt ?? 0) - (a.post.publishedAt ?? 0);
+    });
+
+    const top = scored.slice(0, limit).map((s) => s.post);
+
+    return Promise.all(
+      top.map(async (p) => ({
+        ...p,
+        coverImageUrl: p.coverImageStorageId
+          ? await ctx.storage.getUrl(p.coverImageStorageId)
+          : null,
+      })),
+    );
   },
 });
 
@@ -288,6 +397,9 @@ export const create = mutation({
 
     // Optional: publish immediately
     publish: v.optional(v.boolean()),
+
+    // Editorial extensions (Article.html maquette)
+    ...postEditorialExtraArgs,
   },
   handler: async (ctx, args) => {
     // Auth check
@@ -351,6 +463,26 @@ export const create = mutation({
 
       // Communique fields
       documentStorageId: args.documentStorageId,
+
+      // Editorial extensions
+      titleI18n: args.titleI18n,
+      excerptI18n: args.excerptI18n,
+      contentI18n: args.contentI18n,
+      lede: args.lede,
+      ledeI18n: args.ledeI18n,
+      heroImageCaption: args.heroImageCaption,
+      heroImageCaptionI18n: args.heroImageCaptionI18n,
+      heroImageCredit: args.heroImageCredit,
+      readingMinutes: args.readingMinutes,
+      location: args.location,
+      subCategory: args.subCategory,
+      subCategoryI18n: args.subCategoryI18n,
+      region: args.region,
+      tags: args.tags,
+      sources: args.sources,
+      referenceNumber: args.referenceNumber,
+      authorName: args.authorName,
+      authorRole: args.authorRole,
     });
 
     await logCortexAction(ctx, {
@@ -388,6 +520,9 @@ export const update = mutation({
 
     // Communique-specific
     documentStorageId: v.optional(v.id("_storage")),
+
+    // Editorial extensions (Article.html maquette)
+    ...postEditorialExtraArgs,
   },
   handler: async (ctx, args) => {
     const post = await ctx.db.get(args.postId);

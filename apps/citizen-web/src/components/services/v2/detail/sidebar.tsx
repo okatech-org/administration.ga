@@ -8,10 +8,13 @@ import {
   ChevronRight,
   type LucideIcon,
   FileText,
+  Info,
+  LogIn,
   MapPin,
   Phone,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import type { ServiceCtaState } from "./hero"
 import { getLocalizedValue } from "@/lib/i18n-utils"
 import { cn } from "@/lib/utils"
 import { CATEGORY_CONFIG } from "../categories"
@@ -34,7 +37,7 @@ export function InBriefCard({
   pricingMain,
   isFullyOnline,
   pricingMinor,
-  ctaHref,
+  cta,
   showSticky = true,
 }: {
   category: string
@@ -44,7 +47,7 @@ export function InBriefCard({
   pricingMain?: string
   isFullyOnline: boolean
   pricingMinor?: string
-  ctaHref: string
+  cta: ServiceCtaState
   showSticky?: boolean
 }) {
   const { t } = useTranslation()
@@ -95,13 +98,49 @@ export function InBriefCard({
         }
         highlight={isFullyOnline ? "success" : undefined}
       />
-      <Link
-        href={ctaHref}
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--pub-gabon-blue)] px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
-      >
-        {t("services.detail.startCta", "Démarrer la démarche")}
-        <ArrowRight className="size-3.5" aria-hidden="true" />
-      </Link>
+      {cta.kind === "eligible" && (
+        <Link
+          href={cta.href}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--pub-gabon-blue)] px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
+        >
+          {t("services.detail.startCta", "Démarrer la démarche")}
+          <ArrowRight className="size-3.5" aria-hidden="true" />
+        </Link>
+      )}
+      {cta.kind === "unauthenticated" && (
+        <Link
+          href={cta.href}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--pub-gabon-blue)] px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
+        >
+          <LogIn className="size-3.5" aria-hidden="true" />
+          {t("services.detail.heroCtaSignIn", "Se connecter pour démarrer")}
+        </Link>
+      )}
+      {(cta.kind === "not_offered" || cta.kind === "no_attached_org") && (
+        <div className="mt-4 flex items-start gap-2 rounded-[10px] border border-[var(--pub-border)] bg-[var(--pub-surface-2)] px-3 py-2.5 text-[12px] leading-[1.45] text-[var(--pub-text-muted)]">
+          <Info
+            className="mt-0.5 size-3.5 shrink-0 text-[var(--pub-warning)]"
+            aria-hidden="true"
+          />
+          <span>
+            {cta.kind === "no_attached_org"
+              ? t(
+                  "services.detail.heroCtaNoOrg",
+                  "Vous devez d'abord vous immatriculer auprès d'un organisme consulaire pour démarrer cette démarche.",
+                )
+              : t(
+                  "services.detail.heroCtaNotOffered",
+                  "Cette démarche n'est pas proposée par votre organisme de rattachement.",
+                )}
+          </span>
+        </div>
+      )}
+      {cta.kind === "loading" && (
+        <div
+          aria-hidden="true"
+          className="mt-4 h-[42px] w-full animate-pulse rounded-[10px] bg-[var(--pub-surface-2)]"
+        />
+      )}
     </div>
   )
 }

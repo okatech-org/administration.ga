@@ -1,10 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { passportSchema, type PassportValues } from "../../lib/schemas";
 import type { OnboardingData } from "../../types";
 
 export function PassportPhase({
@@ -19,15 +27,27 @@ export function PassportPhase({
 	onPrev: () => void;
 }) {
 	const { t } = useTranslation();
-	const canContinue = (data.passportNumber?.trim().length ?? 0) >= 5;
+
+	const form = useForm<PassportValues>({
+		resolver: zodResolver(passportSchema),
+		mode: "onTouched",
+		defaultValues: {
+			passportNumber: data.passportNumber ?? "",
+			passportIssuingAuthority: data.passportIssuingAuthority ?? "",
+			passportIssueDate: data.passportIssueDate ?? "",
+			passportExpiryDate: data.passportExpiryDate ?? "",
+		},
+	});
+
+	const onSubmit = form.handleSubmit((values) => {
+		updateData(values);
+		onNext();
+	});
 
 	return (
 		<form
-			onSubmit={(e) => {
-				e.preventDefault();
-				if (canContinue) onNext();
-			}}
-			className="flex flex-col gap-6"
+			onSubmit={onSubmit}
+			className="flex min-h-[calc(100svh-260px)] flex-col gap-6 md:min-h-0"
 		>
 			<header className="flex flex-col gap-2">
 				<h1
@@ -41,69 +61,116 @@ export function PassportPhase({
 				</p>
 			</header>
 
-			<div className="grid gap-4 md:grid-cols-2">
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="passportNumber" suppressHydrationWarning>
-						{t("onboarding.identity.passport.number")}{" "}
-						<span className="text-destructive">*</span>
-					</Label>
-					<Input
-						id="passportNumber"
-						value={data.passportNumber ?? ""}
-						onChange={(e) => updateData({ passportNumber: e.target.value })}
-						placeholder={t("onboarding.identity.passport.numberPlaceholder")}
-						autoFocus
-					/>
-				</div>
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="passportIssuingAuthority" suppressHydrationWarning>
-						{t("onboarding.identity.passport.issuingAuthority")}
-					</Label>
-					<Input
-						id="passportIssuingAuthority"
-						value={data.passportIssuingAuthority ?? ""}
-						onChange={(e) =>
-							updateData({ passportIssuingAuthority: e.target.value })
-						}
-						placeholder={t(
-							"onboarding.identity.passport.issuingAuthorityPlaceholder",
-						)}
-					/>
-				</div>
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="passportIssueDate" suppressHydrationWarning>
-						{t("onboarding.identity.passport.issueDate")}
-					</Label>
-					<Input
-						id="passportIssueDate"
-						type="date"
-						value={data.passportIssueDate ?? ""}
-						onChange={(e) => updateData({ passportIssueDate: e.target.value })}
-					/>
-				</div>
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="passportExpiryDate" suppressHydrationWarning>
-						{t("onboarding.identity.passport.expiryDate")}
-					</Label>
-					<Input
-						id="passportExpiryDate"
-						type="date"
-						value={data.passportExpiryDate ?? ""}
-						onChange={(e) =>
-							updateData({ passportExpiryDate: e.target.value })
-						}
-					/>
-				</div>
-			</div>
+			<FieldGroup className="grid gap-4 md:grid-cols-2">
+				<Controller
+					control={form.control}
+					name="passportNumber"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="passportNumber" suppressHydrationWarning>
+								{t("onboarding.identity.passport.number")}{" "}
+								<span className="text-destructive">*</span>
+							</FieldLabel>
+							<Input
+								id="passportNumber"
+								placeholder={t("onboarding.identity.passport.numberPlaceholder")}
+								autoFocus
+								aria-invalid={fieldState.invalid}
+								{...field}
+							/>
+							{fieldState.invalid && (
+								<FieldError errors={[fieldState.error]} />
+							)}
+						</Field>
+					)}
+				/>
+				<Controller
+					control={form.control}
+					name="passportIssuingAuthority"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel
+								htmlFor="passportIssuingAuthority"
+								suppressHydrationWarning
+							>
+								{t("onboarding.identity.passport.issuingAuthority")}{" "}
+								<span className="text-destructive">*</span>
+							</FieldLabel>
+							<Input
+								id="passportIssuingAuthority"
+								placeholder={t(
+									"onboarding.identity.passport.issuingAuthorityPlaceholder",
+								)}
+								aria-invalid={fieldState.invalid}
+								{...field}
+							/>
+							{fieldState.invalid && (
+								<FieldError errors={[fieldState.error]} />
+							)}
+						</Field>
+					)}
+				/>
+				<Controller
+					control={form.control}
+					name="passportIssueDate"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="passportIssueDate" suppressHydrationWarning>
+								{t("onboarding.identity.passport.issueDate")}{" "}
+								<span className="text-destructive">*</span>
+							</FieldLabel>
+							<Input
+								id="passportIssueDate"
+								type="date"
+								aria-invalid={fieldState.invalid}
+								{...field}
+							/>
+							{fieldState.invalid && (
+								<FieldError errors={[fieldState.error]} />
+							)}
+						</Field>
+					)}
+				/>
+				<Controller
+					control={form.control}
+					name="passportExpiryDate"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel htmlFor="passportExpiryDate" suppressHydrationWarning>
+								{t("onboarding.identity.passport.expiryDate")}{" "}
+								<span className="text-destructive">*</span>
+							</FieldLabel>
+							<Input
+								id="passportExpiryDate"
+								type="date"
+								aria-invalid={fieldState.invalid}
+								{...field}
+							/>
+							{fieldState.invalid && (
+								<FieldError errors={[fieldState.error]} />
+							)}
+						</Field>
+					)}
+				/>
+			</FieldGroup>
 
-			<div className="flex justify-between">
-				<Button type="button" variant="outline" onClick={onPrev}>
+			<div className="phase-footer justify-between">
+				<Button
+					type="button"
+					variant="outline"
+					onClick={onPrev}
+					className="btn-prev"
+				>
 					<ArrowLeft className="mr-1 size-4" />
 					<span suppressHydrationWarning>
 						{t("onboarding.identity.passport.back")}
 					</span>
 				</Button>
-				<Button type="submit" disabled={!canContinue}>
+				<Button
+					type="submit"
+					disabled={form.formState.isSubmitting}
+					className="btn-next"
+				>
 					<span suppressHydrationWarning>
 						{t("onboarding.identity.passport.finish")}
 					</span>

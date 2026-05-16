@@ -240,7 +240,7 @@ function UploadStage({
 					const file = files[doc.key];
 					const Icon = doc.icon;
 					return (
-						<div key={doc.key}>
+						<div key={doc.key} className="w-full min-w-0">
 							<input
 								ref={(el) => {
 									inputRefs.current[doc.key] = el;
@@ -259,7 +259,7 @@ function UploadStage({
 									else inputRefs.current[doc.key]?.click();
 								}}
 								className={cn(
-									"flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-left transition-colors",
+									"flex w-full min-w-0 items-center gap-3.5 overflow-hidden rounded-xl px-4 py-3.5 text-left transition-colors",
 									file
 										? "border border-gabon-green bg-gabon-green-tint"
 										: "border border-dashed border-border bg-card hover:bg-secondary",
@@ -427,58 +427,69 @@ function DoneStage({
 		.filter((e) => e.value.length > 0);
 
 	return (
-		<div className="flex flex-col gap-5 p-6">
-			<div className="flex items-center gap-3">
-				<div className="flex size-11 items-center justify-center rounded-xl bg-gabon-green-tint text-gabon-green">
-					<Check className="size-5" strokeWidth={3} />
-				</div>
-				<div>
-					<h3 className="text-lg font-semibold" suppressHydrationWarning>
-						{t("onboarding.aiPrefill.done.title")}
-					</h3>
-					<p className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>
-						{entries.length > 1
-							? t("onboarding.aiPrefill.done.descriptionMany", {
-									count: entries.length,
-								})
-							: t("onboarding.aiPrefill.done.descriptionOne", {
-									count: entries.length,
-								})}
-					</p>
-				</div>
-			</div>
-
-			<div className="overflow-hidden rounded-xl border border-border">
-				{entries.map((e, i) => (
-					<div
-						key={e.key}
-						className={cn(
-							"grid grid-cols-[1fr_1.2fr] gap-3 px-4 py-2.5 text-[13px]",
-							i > 0 && "border-t border-border",
-						)}
-					>
-						<span className="text-muted-foreground" suppressHydrationWarning>
-							{e.label}
-						</span>
-						<span className="truncate font-medium">{e.value}</span>
+		<div className="flex h-full max-h-[85svh] flex-col">
+			{/* Zone scrollable : entête + liste des champs extraits + note */}
+			<div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
+				<div className="flex items-center gap-3">
+					<div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gabon-green-tint text-gabon-green">
+						<Check className="size-5" strokeWidth={3} />
 					</div>
-				))}
+					<div>
+						<h3 className="text-lg font-semibold" suppressHydrationWarning>
+							{t("onboarding.aiPrefill.done.title")}
+						</h3>
+						<p
+							className="mt-1 text-sm text-muted-foreground"
+							suppressHydrationWarning
+						>
+							{entries.length > 1
+								? t("onboarding.aiPrefill.done.descriptionMany", {
+										count: entries.length,
+									})
+								: t("onboarding.aiPrefill.done.descriptionOne", {
+										count: entries.length,
+									})}
+						</p>
+					</div>
+				</div>
+
+				<div className="overflow-hidden rounded-xl border border-border">
+					{entries.map((e, i) => (
+						<div
+							key={e.key}
+							className={cn(
+								"grid grid-cols-[1fr_1.2fr] gap-3 px-4 py-2.5 text-[13px]",
+								i > 0 && "border-t border-border",
+							)}
+						>
+							<span className="text-muted-foreground" suppressHydrationWarning>
+								{e.label}
+							</span>
+							<span className="truncate font-medium">{e.value}</span>
+						</div>
+					))}
+				</div>
+
+				<p className="text-xs text-muted-foreground" suppressHydrationWarning>
+					{t("onboarding.aiPrefill.done.note")}
+				</p>
 			</div>
 
-			<p className="text-xs text-muted-foreground" suppressHydrationWarning>
-				{t("onboarding.aiPrefill.done.note")}
-			</p>
-
-			<Button
-				type="button"
-				className="h-11 w-full bg-gabon-blue text-white hover:bg-gabon-blue-deep"
-				onClick={onContinue}
-			>
-				<span suppressHydrationWarning>
-					{t("onboarding.aiPrefill.buttons.continue")}
-				</span>
-				<ArrowRight className="ml-1 size-4" />
-			</Button>
+			{/* Footer sticky : bouton "Continuer" toujours visible — sinon, sur
+				un long passeport, le bouton tombe sous le pli et l'utilisateur ne
+				sait pas qu'il faut scroller. */}
+			<div className="sticky bottom-0 shrink-0 border-t border-border bg-background/95 px-6 py-4 pb-[max(env(safe-area-inset-bottom),1rem)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+				<Button
+					type="button"
+					className="h-11 w-full bg-gabon-blue text-white hover:bg-gabon-blue-deep"
+					onClick={onContinue}
+				>
+					<span suppressHydrationWarning>
+						{t("onboarding.aiPrefill.buttons.continue")}
+					</span>
+					<ArrowRight className="ml-1 size-4" />
+				</Button>
+			</div>
 		</div>
 	);
 }

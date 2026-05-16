@@ -15,6 +15,11 @@ export default function PostLoginRedirectPage() {
     isAuthenticated ? {} : "skip",
   )
 
+  const { data: pinStatus } = useConvexQuery(
+    api.functions.pin.getPinStatus,
+    isAuthenticated ? {} : "skip",
+  )
+
   useEffect(() => {
     if (isAuthLoading) return
 
@@ -23,14 +28,22 @@ export default function PostLoginRedirectPage() {
       return
     }
 
-    if (profile !== undefined) {
-      if (profile?.profile) {
-        router.replace("/my-space")
-      } else {
-        router.replace("/register")
-      }
+    if (profile === undefined || pinStatus === undefined) return
+
+    // No profile yet → continue onboarding (which sets the PIN inline)
+    if (!profile?.profile) {
+      router.replace("/register")
+      return
     }
-  }, [isAuthLoading, isAuthenticated, profile, router])
+
+    // Legacy user (onboarded but no PIN) → force PIN setup before /my-space
+    if (!pinStatus?.hasPin) {
+      router.replace("/setup-pin")
+      return
+    }
+
+    router.replace("/my-space")
+  }, [isAuthLoading, isAuthenticated, profile, pinStatus, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center">

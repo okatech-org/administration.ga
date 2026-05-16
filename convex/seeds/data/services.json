@@ -1,0 +1,2850 @@
+[
+  {
+    "slug": "demande-visa",
+    "category": "visa",
+    "audience": {
+      "fr": "Étrangers non-gabonais souhaitant entrer au Gabon depuis la France",
+      "en": "Non-Gabonese foreigners wishing to enter Gabon from France"
+    },
+    "titleValidity": {
+      "fr": "Validité selon le type de visa (court ou long séjour)",
+      "en": "Validity depends on visa type (short or long stay)"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Le certificat international de vaccination contre la fièvre jaune est obligatoire à l'entrée du Gabon.",
+        "en": "The international yellow-fever vaccination certificate is mandatory to enter Gabon."
+      }
+    },
+    "useCases": [
+      {
+        "fr": "Voyage touristique au Gabon",
+        "en": "Tourist trip to Gabon"
+      },
+      {
+        "fr": "Mission professionnelle ou rendez-vous d'affaires",
+        "en": "Business mission or professional meeting"
+      },
+      {
+        "fr": "Visite familiale ou amicale",
+        "en": "Family or friends visit"
+      },
+      {
+        "fr": "Études supérieures (long séjour)",
+        "en": "Higher studies (long stay)"
+      }
+    ],
+    "processSteps": [
+      {
+        "label": {
+          "fr": "Téléchargement du formulaire DGDI",
+          "en": "Download the DGDI form"
+        },
+        "description": {
+          "fr": "Formulaire officiel disponible sur ae.dgdifrance.fr",
+          "en": "Official form on ae.dgdifrance.fr"
+        },
+        "icon": "file-text"
+      },
+      {
+        "label": {
+          "fr": "Constitution du dossier",
+          "en": "File preparation"
+        },
+        "description": {
+          "fr": "Passeport, photos, billet, hébergement, fièvre jaune, ressources",
+          "en": "Passport, photos, ticket, accommodation, yellow fever, funds"
+        },
+        "icon": "folder"
+      },
+      {
+        "label": {
+          "fr": "Prise de rendez-vous",
+          "en": "Booking the appointment"
+        },
+        "description": {
+          "fr": "Par SMS +33 6 08 03 20 29 ou sur ae.dgdifrance.fr",
+          "en": "Via SMS +33 6 08 03 20 29 or on ae.dgdifrance.fr"
+        },
+        "icon": "calendar"
+      },
+      {
+        "label": {
+          "fr": "Dépôt au DGDI Paris",
+          "en": "Submission at DGDI Paris"
+        },
+        "description": {
+          "fr": "26 bis avenue Raphaël, 75016 Paris — lundi à jeudi 9h-12h",
+          "en": "26 bis avenue Raphaël, 75016 Paris — Monday to Thursday 9-12"
+        },
+        "icon": "map-pin"
+      },
+      {
+        "label": {
+          "fr": "Paiement en espèces",
+          "en": "Cash payment"
+        },
+        "description": {
+          "fr": "Frais consulaires payés au dépôt",
+          "en": "Consular fees paid on submission"
+        },
+        "icon": "credit-card"
+      },
+      {
+        "label": {
+          "fr": "Retrait du visa",
+          "en": "Visa collection"
+        },
+        "description": {
+          "fr": "Selon délai standard ou urgent",
+          "en": "Per standard or urgent timing"
+        },
+        "icon": "check-circle"
+      }
+    ],
+    "joinedDocuments": [
+      {
+        "type": "passport",
+        "label": {
+          "fr": "Passeport en cours de validité",
+          "en": "Valid passport"
+        },
+        "description": {
+          "fr": "Validité > 6 mois après séjour, 2 pages libres face à face",
+          "en": "Valid > 6 months after stay, 2 facing blank pages"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire officiel DGDI rempli",
+          "en": "Completed official DGDI form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "photo",
+        "label": {
+          "fr": "2 photos couleur 4,5×3,5 cm",
+          "en": "2 colour photos 4.5×3.5 cm"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "ticket",
+        "label": {
+          "fr": "Copie billet aller-retour",
+          "en": "Copy of return ticket"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "accommodation",
+        "label": {
+          "fr": "Justificatif d'hébergement",
+          "en": "Accommodation proof"
+        },
+        "description": {
+          "fr": "Certificat de mairie gabonaise OU réservation d'hôtel",
+          "en": "Gabonese town hall certificate OR hotel booking"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "insurance",
+        "label": {
+          "fr": "Assurance rapatriement",
+          "en": "Repatriation insurance"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "vaccination",
+        "label": {
+          "fr": "Carnet de vaccination fièvre jaune",
+          "en": "Yellow-fever vaccination record"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "residence_proof",
+        "label": {
+          "fr": "Justificatif de domicile en France",
+          "en": "Proof of address in France"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "income",
+        "label": {
+          "fr": "Justificatif professionnel ou de revenus",
+          "en": "Professional or income proof"
+        },
+        "description": {
+          "fr": "Solde compte > 1 500 € recommandé",
+          "en": "Account balance > €1,500 recommended"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "standard",
+        "variant": "standard",
+        "name": {
+          "fr": "Frais consulaires standard",
+          "en": "Standard consular fee"
+        },
+        "description": {
+          "fr": "Délai normal d'instruction",
+          "en": "Standard processing time"
+        },
+        "delay": {
+          "fr": "6 à 7 jours ouvrés",
+          "en": "6 to 7 business days"
+        },
+        "price": {
+          "fr": "55 € (frais consulaires officiels)",
+          "en": "€55 (official consular fee)"
+        }
+      },
+      {
+        "id": "express",
+        "variant": "express",
+        "name": {
+          "fr": "Procédure urgente",
+          "en": "Urgent procedure"
+        },
+        "description": {
+          "fr": "Délai express",
+          "en": "Express timing"
+        },
+        "delay": {
+          "fr": "3 jours ouvrés",
+          "en": "3 business days"
+        },
+        "price": {
+          "fr": "165 € (au lieu de 110 € — frais consulaires urgents)",
+          "en": "€165 (instead of €110 — urgent consular fee)"
+        }
+      }
+    ],
+    "pricingNote": {
+      "fr": "Tarif indicatif via prestataire 199 € à 365 € selon type et urgence. Vérifier directement auprès de la DGDI Paris.",
+      "en": "Indicative provider rate €199-365 depending on type and urgency. Check directly with DGDI Paris."
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt en personne",
+          "en": "In-person submission"
+        },
+        "description": {
+          "fr": "À la DGDI Paris sur rendez-vous",
+          "en": "At DGDI Paris by appointment"
+        },
+        "delay": {
+          "fr": "6-7 jours ouvrés",
+          "en": "6-7 business days"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Dossier par correspondance",
+          "en": "Postal application"
+        },
+        "description": {
+          "fr": "Accepté pour certaines demandes",
+          "en": "Accepted for some applications"
+        },
+        "delay": {
+          "fr": "Variable",
+          "en": "Variable"
+        }
+      }
+    ],
+    "faqs": [
+      {
+        "question": {
+          "fr": "Le vaccin contre la fièvre jaune est-il obligatoire ?",
+          "en": "Is the yellow-fever vaccine mandatory?"
+        },
+        "answer": {
+          "fr": "Oui, pour tous les voyageurs âgés de 9 mois et plus, quelle que soit la provenance.",
+          "en": "Yes, for all travellers aged 9 months and over, regardless of origin."
+        }
+      },
+      {
+        "question": {
+          "fr": "Combien de temps faut-il prévoir entre la demande et le départ ?",
+          "en": "How much time between application and departure?"
+        },
+        "answer": {
+          "fr": "Au moins 3 semaines pour une demande standard, plus pour un long séjour.",
+          "en": "At least 3 weeks for a standard request, longer for a long stay."
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "evisa-gabon",
+    "category": "visa",
+    "audience": {
+      "fr": "Voyageurs touristes et d'affaires éligibles à l'e-visa",
+      "en": "Tourist and business travellers eligible for the e-visa"
+    },
+    "titleValidity": {
+      "fr": "1 à 3 mois (entrée simple) ou 6 mois (entrées multiples)",
+      "en": "1-3 months (single entry) or 6 months (multiple entries)"
+    },
+    "noteCallout": {
+      "variant": "success",
+      "body": {
+        "fr": "100 % en ligne depuis décembre 2025, paiement intégré via MaDigiPaie (mobile money).",
+        "en": "100% online since December 2025, integrated payment via MaDigiPaie (mobile money)."
+      }
+    },
+    "useCases": [
+      {
+        "fr": "Voyage touristique court",
+        "en": "Short tourist trip"
+      },
+      {
+        "fr": "Mission d'affaires courte",
+        "en": "Short business mission"
+      },
+      {
+        "fr": "Visite familiale courte",
+        "en": "Short family visit"
+      }
+    ],
+    "processSteps": [
+      {
+        "label": {
+          "fr": "Connexion sur evisa.dgdi.ga",
+          "en": "Log in on evisa.dgdi.ga"
+        },
+        "icon": "globe"
+      },
+      {
+        "label": {
+          "fr": "Remplir le formulaire en ligne",
+          "en": "Fill in the online form"
+        },
+        "icon": "file-text"
+      },
+      {
+        "label": {
+          "fr": "Upload du passeport et de la photo",
+          "en": "Upload passport and photo"
+        },
+        "icon": "upload"
+      },
+      {
+        "label": {
+          "fr": "Paiement via MaDigiPaie / mobile money",
+          "en": "Payment via MaDigiPaie / mobile money"
+        },
+        "icon": "credit-card"
+      },
+      {
+        "label": {
+          "fr": "Réception de l'autorisation par email",
+          "en": "Authorisation received by email"
+        },
+        "icon": "mail"
+      },
+      {
+        "label": {
+          "fr": "Entrée par l'aéroport Léon-Mba uniquement",
+          "en": "Entry via Léon-Mba airport only"
+        },
+        "icon": "map-pin"
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "single-entry",
+        "variant": "standard",
+        "name": {
+          "fr": "Entrée simple 1 à 3 mois",
+          "en": "Single entry 1-3 months"
+        },
+        "delay": {
+          "fr": "72 heures",
+          "en": "72 hours"
+        },
+        "price": {
+          "fr": "70 € frais consulaires + frais traitement (~85 € total)",
+          "en": "€70 consular fee + processing (~€85 total)"
+        }
+      },
+      {
+        "id": "multiple-entries",
+        "variant": "standard",
+        "name": {
+          "fr": "Entrées multiples 6 mois",
+          "en": "Multiple entries 6 months"
+        },
+        "delay": {
+          "fr": "72 heures",
+          "en": "72 hours"
+        },
+        "price": {
+          "fr": "185 € + frais traitement (~200 € total)",
+          "en": "€185 + processing (~€200 total)"
+        }
+      }
+    ],
+    "pricingNote": {
+      "fr": "Paiement digital intégré depuis décembre 2025 via Airtel Money, Moov Money ou Clikpay Money.",
+      "en": "Digital payment integrated since December 2025 via Airtel Money, Moov Money or Clikpay Money."
+    },
+    "availableModes": [
+      {
+        "mode": "online",
+        "title": {
+          "fr": "Demande 100 % en ligne",
+          "en": "100% online"
+        },
+        "description": {
+          "fr": "Plateforme officielle evisa.dgdi.ga",
+          "en": "Official portal evisa.dgdi.ga"
+        },
+        "delay": {
+          "fr": "~72 heures",
+          "en": "~72 hours"
+        },
+        "recommended": true
+      }
+    ],
+    "faqs": [
+      {
+        "question": {
+          "fr": "Par quel aéroport puis-je entrer avec l'e-visa ?",
+          "en": "Through which airport can I enter with the e-visa?"
+        },
+        "answer": {
+          "fr": "Uniquement par l'aéroport Léon-Mba de Libreville.",
+          "en": "Only through Léon-Mba airport in Libreville."
+        }
+      },
+      {
+        "question": {
+          "fr": "Le paiement se fait-il en ligne désormais ?",
+          "en": "Is payment now made online?"
+        },
+        "answer": {
+          "fr": "Oui, depuis décembre 2025, le paiement est entièrement digital sur la plateforme MaDigiPaie.",
+          "en": "Yes, since December 2025 payment is fully digital on the MaDigiPaie platform."
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "visa-tourisme",
+    "category": "visa",
+    "audience": {
+      "fr": "Voyageurs en visite privée ou touristique au Gabon",
+      "en": "Travellers for private or tourist visits to Gabon"
+    },
+    "titleValidity": {
+      "fr": "Jusqu'à 90 jours (entrée simple)",
+      "en": "Up to 90 days (single entry)"
+    },
+    "useCases": [
+      {
+        "fr": "Vacances au Gabon",
+        "en": "Holidays in Gabon"
+      },
+      {
+        "fr": "Visite familiale",
+        "en": "Family visit"
+      },
+      {
+        "fr": "Tourisme culturel et nature",
+        "en": "Cultural and nature tourism"
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "standard",
+        "variant": "standard",
+        "name": {
+          "fr": "Standard simple entrée 30 jours",
+          "en": "Standard single entry 30 days"
+        },
+        "delay": {
+          "fr": "7 jours ouvrés",
+          "en": "7 business days"
+        },
+        "price": {
+          "fr": "55 € frais consulaires (199 € via prestataire)",
+          "en": "€55 consular fee (€199 via provider)"
+        }
+      },
+      {
+        "id": "express",
+        "variant": "express",
+        "name": {
+          "fr": "Urgent simple entrée 30 jours",
+          "en": "Urgent single entry 30 days"
+        },
+        "delay": {
+          "fr": "3 jours ouvrés",
+          "en": "3 business days"
+        },
+        "price": {
+          "fr": "165 € frais consulaires urgent (345 € via prestataire)",
+          "en": "€165 urgent consular fee (€345 via provider)"
+        }
+      },
+      {
+        "id": "minor",
+        "variant": "reduced",
+        "name": {
+          "fr": "Tarif enfant 0-6 ans",
+          "en": "Child rate 0-6 years"
+        },
+        "price": {
+          "fr": "119 € via prestataire",
+          "en": "€119 via provider"
+        }
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt à la DGDI Paris",
+          "en": "Submission at DGDI Paris"
+        },
+        "delay": {
+          "fr": "7 jours ouvrés",
+          "en": "7 business days"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Dossier par correspondance",
+          "en": "Postal application"
+        }
+      },
+      {
+        "mode": "online",
+        "title": {
+          "fr": "e-Visa en ligne",
+          "en": "e-Visa online"
+        },
+        "description": {
+          "fr": "Alternative pour court séjour",
+          "en": "Alternative for short stay"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "visa-affaires",
+    "category": "visa",
+    "audience": {
+      "fr": "Professionnels en mission au Gabon",
+      "en": "Professionals on mission to Gabon"
+    },
+    "titleValidity": {
+      "fr": "Jusqu'à 90 jours",
+      "en": "Up to 90 days"
+    },
+    "joinedDocuments": [
+      {
+        "type": "mission_order",
+        "label": {
+          "fr": "Ordre de mission entreprise française",
+          "en": "French company mission order"
+        },
+        "description": {
+          "fr": "Avec cachet et signature, précisant le partenaire gabonais et les dates",
+          "en": "With stamp and signature, specifying Gabonese partner and dates"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "invitation",
+        "label": {
+          "fr": "Lettre d'invitation entreprise gabonaise",
+          "en": "Invitation letter from Gabonese company"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "standard",
+        "variant": "standard",
+        "name": {
+          "fr": "Standard simple entrée 30 jours",
+          "en": "Standard single entry 30 days"
+        },
+        "delay": {
+          "fr": "7 jours ouvrés",
+          "en": "7 business days"
+        },
+        "price": {
+          "fr": "55 € frais consulaires (230 € via prestataire)",
+          "en": "€55 consular fee (€230 via provider)"
+        }
+      },
+      {
+        "id": "express",
+        "variant": "express",
+        "name": {
+          "fr": "Urgent simple entrée 30 jours",
+          "en": "Urgent single entry 30 days"
+        },
+        "delay": {
+          "fr": "3 jours ouvrés",
+          "en": "3 business days"
+        },
+        "price": {
+          "fr": "165 € urgent (365 € via prestataire)",
+          "en": "€165 urgent (€365 via provider)"
+        }
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt à la DGDI Paris",
+          "en": "Submission at DGDI Paris"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Dossier par correspondance",
+          "en": "Postal application"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "visa-long-sejour",
+    "category": "visa",
+    "audience": {
+      "fr": "Étudiants, salariés et regroupement familial pour un séjour > 90 jours",
+      "en": "Students, employees and family reunification for stays > 90 days"
+    },
+    "noteCallout": {
+      "variant": "warning",
+      "body": {
+        "fr": "Tarifs et délais variables : la demande est instruite par la DGDI, contacter directement le poste consulaire pour les modalités à jour.",
+        "en": "Fees and delays vary: the request is processed by DGDI; contact the consular post directly for up-to-date terms."
+      }
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au consulat",
+          "en": "Submission at the consulate"
+        },
+        "description": {
+          "fr": "Sur rendez-vous",
+          "en": "By appointment"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "passeport-ordinaire",
+    "category": "passport",
+    "noteCallout": {
+      "variant": "warning",
+      "body": {
+        "fr": "Les passeports ordinaires ne sont plus délivrés, sauf cas d'extrême urgence dûment justifié (source : Ambassade du Gabon à Libreville).",
+        "en": "Ordinary passports are no longer issued, except in duly justified extreme emergencies (source: Embassy of Gabon in Libreville)."
+      }
+    },
+    "legalReference": {
+      "fr": "Loi n° 14-03 du 24 février 2014 relative aux documents et titres de voyage",
+      "en": "Law no. 14-03 of 24 February 2014 on documents and travel titles"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt en personne",
+          "en": "In-person submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "passeport-biometrique-nouveau",
+    "category": "passport",
+    "audience": {
+      "fr": "Ressortissants gabonais demandant un premier passeport biométrique en France",
+      "en": "Gabonese nationals applying for a first biometric passport in France"
+    },
+    "titleValidity": {
+      "fr": "10 ans pour adultes, 5 ans pour mineurs (depuis le 24/11/2015)",
+      "en": "10 years for adults, 5 years for minors (since 24/11/2015)"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Service délivré par l'Antenne Extérieure DGDI au 26 bis avenue Raphaël, 75016 Paris, sur rendez-vous obligatoire.",
+        "en": "Service issued by the DGDI External Office at 26 bis avenue Raphaël, 75016 Paris, by mandatory appointment."
+      }
+    },
+    "useCases": [
+      {
+        "fr": "Premier passeport pour un enfant gabonais né en France",
+        "en": "First passport for a Gabonese child born in France"
+      },
+      {
+        "fr": "Première demande après obtention de la nationalité",
+        "en": "First request after acquiring nationality"
+      }
+    ],
+    "processSteps": [
+      {
+        "label": {
+          "fr": "Téléchargement du formulaire",
+          "en": "Download the form"
+        },
+        "description": {
+          "fr": "Sur ae.dgdifrance.fr / dgdi.ga",
+          "en": "On ae.dgdifrance.fr / dgdi.ga"
+        },
+        "icon": "file-text"
+      },
+      {
+        "label": {
+          "fr": "Prise de rendez-vous",
+          "en": "Book an appointment"
+        },
+        "description": {
+          "fr": "SMS au +33 6 08 03 20 29 ou en ligne",
+          "en": "SMS to +33 6 08 03 20 29 or online"
+        },
+        "icon": "calendar"
+      },
+      {
+        "label": {
+          "fr": "Constitution du dossier",
+          "en": "Prepare the file"
+        },
+        "description": {
+          "fr": "Acte de naissance légalisé, photos biométriques, justificatifs",
+          "en": "Legalised birth certificate, biometric photos, supporting documents"
+        },
+        "icon": "folder"
+      },
+      {
+        "label": {
+          "fr": "Dépôt + enrôlement biométrique",
+          "en": "Submission + biometric enrolment"
+        },
+        "description": {
+          "fr": "Lundi à jeudi 9h-12h sur rendez-vous",
+          "en": "Monday-Thursday 9-12 by appointment"
+        },
+        "icon": "fingerprint"
+      },
+      {
+        "label": {
+          "fr": "Paiement en espèces",
+          "en": "Cash payment"
+        },
+        "description": {
+          "fr": "Au moment du dépôt",
+          "en": "Upon submission"
+        },
+        "icon": "credit-card"
+      },
+      {
+        "label": {
+          "fr": "Retrait",
+          "en": "Collection"
+        },
+        "description": {
+          "fr": "Vendredi 9h-12h sans rendez-vous",
+          "en": "Friday 9-12 without appointment"
+        },
+        "icon": "check-circle"
+      }
+    ],
+    "joinedDocuments": [
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire de demande",
+          "en": "Application form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "photo",
+        "label": {
+          "fr": "Photo couleur récente sur fond blanc ou gris",
+          "en": "Recent colour photo on white or grey background"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Acte de naissance simple",
+          "en": "Plain birth certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "marriage_certificate",
+        "label": {
+          "fr": "Acte de mariage (femmes mariées)",
+          "en": "Marriage certificate (married women)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "divorce_decree",
+        "label": {
+          "fr": "Acte de divorce",
+          "en": "Divorce decree"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "death_certificate",
+        "label": {
+          "fr": "Acte de décès du conjoint (veuves)",
+          "en": "Spouse death certificate (widows)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "naturalisation_decree",
+        "label": {
+          "fr": "Décret de naturalisation (pour naturalisés)",
+          "en": "Naturalisation decree (for naturalised)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "nationality_certificate",
+        "label": {
+          "fr": "Certificat de nationalité (pour naturalisés)",
+          "en": "Nationality certificate (for naturalised)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      }
+    ],
+    "pricingNote": {
+      "fr": "Tarif non publié officiellement. Frais payés en espèces lors du dépôt. Aux USA : 87 $ adulte, 67 $ mineur (source : ambassade Washington).",
+      "en": "Fee not officially published. Cash payment on submission. In the USA: $87 adult, $67 minor (source: Washington embassy)."
+    },
+    "legalReference": {
+      "fr": "Loi n° 14-03 du 24 février 2014 relative aux documents et titres de voyage",
+      "en": "Law no. 14-03 of 24 February 2014 on documents and travel titles"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt physique obligatoire",
+          "en": "Mandatory physical submission"
+        },
+        "description": {
+          "fr": "Enrôlement biométrique sur place",
+          "en": "Biometric enrolment on site"
+        },
+        "recommended": true
+      }
+    ],
+    "faqs": [
+      {
+        "question": {
+          "fr": "Quelle est la validité du passeport biométrique ?",
+          "en": "What is the biometric passport validity?"
+        },
+        "answer": {
+          "fr": "10 ans pour les adultes, 5 ans pour les mineurs.",
+          "en": "10 years for adults, 5 years for minors."
+        }
+      },
+      {
+        "question": {
+          "fr": "Le retrait nécessite-t-il un rendez-vous ?",
+          "en": "Does collection require an appointment?"
+        },
+        "answer": {
+          "fr": "Non, le retrait se fait sans rendez-vous le vendredi de 9h à 12h.",
+          "en": "No, collection is without appointment on Friday from 9 am to 12 pm."
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "passeport-biometrique-renouvellement",
+    "category": "passport",
+    "audience": {
+      "fr": "Détenteurs d'un passeport biométrique gabonais arrivant à expiration",
+      "en": "Holders of a Gabonese biometric passport approaching expiry"
+    },
+    "titleValidity": {
+      "fr": "Nouveau passeport valable 10 ans (adultes) ou 5 ans (mineurs)",
+      "en": "New passport valid 10 years (adults) or 5 years (minors)"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Renouvellement à distance possible via dgdi.ga depuis 2024.",
+        "en": "Remote renewal available via dgdi.ga since 2024."
+      }
+    },
+    "joinedDocuments": [
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire de demande",
+          "en": "Application form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "previous_passport",
+        "label": {
+          "fr": "Ancien passeport (original)",
+          "en": "Previous passport (original)"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "photo",
+        "label": {
+          "fr": "Photo couleur récente",
+          "en": "Recent colour photo"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Acte de naissance simple",
+          "en": "Plain birth certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "legalReference": {
+      "fr": "Loi n° 14-03 du 24 février 2014. Passeport non retiré détruit 6 mois après notification.",
+      "en": "Law no. 14-03 of 24 February 2014. Unclaimed passport destroyed 6 months after notification."
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt physique à la DGDI",
+          "en": "Physical submission at DGDI"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "online",
+        "title": {
+          "fr": "Renouvellement à distance via dgdi.ga",
+          "en": "Remote renewal via dgdi.ga"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "passeport-perte-vol",
+    "category": "passport",
+    "audience": {
+      "fr": "Ressortissants gabonais ayant perdu ou s'étant fait voler leur passeport",
+      "en": "Gabonese nationals who have lost or had their passport stolen"
+    },
+    "noteCallout": {
+      "variant": "warning",
+      "body": {
+        "fr": "La déclaration de perte/vol établie par les autorités du pays de résidence est obligatoire.",
+        "en": "The loss/theft declaration from the authorities of the country of residence is mandatory."
+      }
+    },
+    "processSteps": [
+      {
+        "label": {
+          "fr": "Déclaration de perte/vol auprès des autorités locales",
+          "en": "Loss/theft declaration to local authorities"
+        },
+        "description": {
+          "fr": "En France : commissariat ou gendarmerie",
+          "en": "In France: police or gendarmerie"
+        },
+        "icon": "alert-triangle"
+      },
+      {
+        "label": {
+          "fr": "Constitution du dossier de remplacement",
+          "en": "Replacement file preparation"
+        },
+        "description": {
+          "fr": "Formulaire, photo, acte de naissance, déclaration",
+          "en": "Form, photo, birth certificate, declaration"
+        },
+        "icon": "folder"
+      },
+      {
+        "label": {
+          "fr": "Dépôt à la DGDI sur rendez-vous",
+          "en": "Submission at DGDI by appointment"
+        },
+        "icon": "map-pin"
+      },
+      {
+        "label": {
+          "fr": "Délivrance du nouveau passeport",
+          "en": "Issuance of new passport"
+        },
+        "icon": "check-circle"
+      }
+    ],
+    "joinedDocuments": [
+      {
+        "type": "loss_declaration",
+        "label": {
+          "fr": "Déclaration de perte ou vol",
+          "en": "Loss or theft declaration"
+        },
+        "description": {
+          "fr": "Délivrée par les autorités compétentes du pays de résidence",
+          "en": "Issued by competent authorities in the country of residence"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire",
+          "en": "Form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "photo",
+        "label": {
+          "fr": "Photo couleur",
+          "en": "Colour photo"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Acte de naissance simple",
+          "en": "Plain birth certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "legalReference": {
+      "fr": "Loi n° 14-03 du 24 février 2014 relative aux documents et titres de voyage",
+      "en": "Law no. 14-03 of 24 February 2014 on documents and travel titles"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt physique obligatoire",
+          "en": "Mandatory physical submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "tenant-lieu-passeport",
+    "category": "travel_document",
+    "audience": {
+      "fr": "Ressortissants gabonais sans passeport valide ayant besoin d'un titre administratif",
+      "en": "Gabonese nationals without a valid passport needing an administrative title"
+    },
+    "titleValidity": {
+      "fr": "1 an",
+      "en": "1 year"
+    },
+    "useCases": [
+      {
+        "fr": "Régularisation administrative en France en l'absence de passeport",
+        "en": "Administrative regularisation in France without a passport"
+      }
+    ],
+    "joinedDocuments": [
+      {
+        "type": "consular_card",
+        "label": {
+          "fr": "Copie de la carte d'immatriculation consulaire",
+          "en": "Copy of the consular card"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire TLP dûment rempli",
+          "en": "Duly completed TLP form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "pricingNote": {
+      "fr": "Délai indicatif 7 jours ouvrés au Canada (source : Ambassade Ottawa).",
+      "en": "Indicative time 7 business days in Canada (source: Ottawa embassy)."
+    },
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "laissez-passer",
+    "category": "travel_document",
+    "audience": {
+      "fr": "Ressortissants gabonais devant urgemment rejoindre le Gabon sans passeport",
+      "en": "Gabonese nationals urgently needing to return to Gabon without a passport"
+    },
+    "titleValidity": {
+      "fr": "30 jours, voyage unique vers le Gabon",
+      "en": "30 days, single trip to Gabon"
+    },
+    "noteCallout": {
+      "variant": "warning",
+      "body": {
+        "fr": "Document strictement réservé au voyage de retour au Gabon.",
+        "en": "Document strictly reserved for the return trip to Gabon."
+      }
+    },
+    "joinedDocuments": [
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire dûment rempli",
+          "en": "Duly completed form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "passport_copy",
+        "label": {
+          "fr": "Copie passeport gabonais (si disponible)",
+          "en": "Copy of Gabonese passport (if any)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Copie acte de naissance gabonais",
+          "en": "Copy of Gabonese birth certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "residence_permit",
+        "label": {
+          "fr": "Copie du titre de séjour",
+          "en": "Copy of residence permit"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "loss_declaration",
+        "label": {
+          "fr": "Déclaration de perte (autorités françaises)",
+          "en": "Loss declaration (French authorities)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "ticket",
+        "label": {
+          "fr": "Copie du billet d'avion",
+          "en": "Copy of the airline ticket"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "photo",
+        "label": {
+          "fr": "2 photos couleur récentes",
+          "en": "2 recent colour photos"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt en urgence au Consulat",
+          "en": "Emergency submission at the Consulate"
+        }
+      }
+    ],
+    "pricingNote": {
+      "fr": "Délai indicatif 7 jours ouvrés au Canada (source : Ambassade Ottawa).",
+      "en": "Indicative time 7 business days in Canada (source: Ottawa embassy)."
+    },
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "certificat-nationalite",
+    "category": "identity",
+    "audience": {
+      "fr": "Ressortissants gabonais devant prouver leur nationalité",
+      "en": "Gabonese nationals needing to prove their nationality"
+    },
+    "titleValidity": {
+      "fr": "Document utilisé à vie",
+      "en": "Lifelong document"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Document délivré par le Président du Tribunal de Première Instance ; le Consulat peut servir d'intermédiaire depuis l'étranger.",
+        "en": "Issued by the President of the Court of First Instance; the Consulate can act as intermediary from abroad."
+      }
+    },
+    "useCases": [
+      {
+        "fr": "Première demande de passeport biométrique",
+        "en": "First biometric passport application"
+      },
+      {
+        "fr": "Candidature à une bourse ANBG",
+        "en": "Application for an ANBG scholarship"
+      },
+      {
+        "fr": "Mariage civil ou succession",
+        "en": "Civil marriage or inheritance"
+      },
+      {
+        "fr": "Candidature à un concours national",
+        "en": "National competition application"
+      }
+    ],
+    "processSteps": [
+      {
+        "label": {
+          "fr": "Rédaction de la demande au Président du Tribunal",
+          "en": "Drafting the request to the Court President"
+        },
+        "icon": "edit"
+      },
+      {
+        "label": {
+          "fr": "Réunion des pièces",
+          "en": "Gather documents"
+        },
+        "icon": "folder"
+      },
+      {
+        "label": {
+          "fr": "Envoi/dépôt au Consulat",
+          "en": "Send/deposit to Consulate"
+        },
+        "icon": "mail"
+      },
+      {
+        "label": {
+          "fr": "Transmission au Tribunal compétent au Gabon",
+          "en": "Forwarding to competent court in Gabon"
+        },
+        "icon": "globe"
+      },
+      {
+        "label": {
+          "fr": "Instruction (3 mois max)",
+          "en": "Processing (3 months max)"
+        },
+        "icon": "clock"
+      },
+      {
+        "label": {
+          "fr": "Délivrance ou recours en appel",
+          "en": "Issuance or appeal"
+        },
+        "icon": "check-circle"
+      }
+    ],
+    "joinedDocuments": [
+      {
+        "type": "letter",
+        "label": {
+          "fr": "Lettre adressée au Consul Général précisant les motifs",
+          "en": "Letter to the Consul General stating the reasons"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Copie de l'acte de naissance gabonais",
+          "en": "Copy of Gabonese birth certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "envelope",
+        "label": {
+          "fr": "Enveloppe timbrée avec adresse de retour",
+          "en": "Stamped envelope with return address"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "court-fee",
+        "variant": "standard",
+        "name": {
+          "fr": "Frais de procédure au tribunal",
+          "en": "Court procedure fee"
+        },
+        "price": {
+          "fr": "10 000 FCFA (à vérifier auprès du tribunal)",
+          "en": "XAF 10,000 (to verify with the court)"
+        },
+        "delay": {
+          "fr": "Jusqu'à 3 mois (réputé acquis si silence)",
+          "en": "Up to 3 months (deemed acquired if silence)"
+        }
+      }
+    ],
+    "legalReference": {
+      "fr": "Loi n° 37/98 du 20 juillet 1999 portant Code de la nationalité gabonaise ; Décret n° 767/PR/MJGS du 16 octobre 2002 ; Ordonnance n° 0004/PR/2026",
+      "en": "Law no. 37/98 of 20 July 1999 establishing the Gabonese Nationality Code; Decree no. 767/PR/MJGS of 16 October 2002; Ordinance no. 0004/PR/2026"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi par voie postale",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "faqs": [
+      {
+        "question": {
+          "fr": "Que se passe-t-il si le tribunal ne répond pas dans les 3 mois ?",
+          "en": "What happens if the court does not reply within 3 months?"
+        },
+        "answer": {
+          "fr": "La nationalité gabonaise est réputée acquise.",
+          "en": "Gabonese nationality is deemed acquired."
+        }
+      },
+      {
+        "question": {
+          "fr": "Combien de temps depuis l'étranger ?",
+          "en": "How long from abroad?"
+        },
+        "answer": {
+          "fr": "Avec transmission consulaire, comptez 6 à 9 mois cumulés.",
+          "en": "With consular forwarding, expect 6 to 9 months cumulative."
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "consular-card-registration",
+    "category": "registration",
+    "audience": {
+      "fr": "Ressortissants gabonais résidant à l'étranger",
+      "en": "Gabonese nationals residing abroad"
+    },
+    "titleValidity": {
+      "fr": "Validité indicative 5 ans, renouvelable",
+      "en": "Indicative validity 5 years, renewable"
+    },
+    "noteCallout": {
+      "variant": "success",
+      "body": {
+        "fr": "Demande gratuite (source : Consulat Général du Gabon en France).",
+        "en": "Free application (source: Consulate-General of Gabon in France)."
+      }
+    },
+    "joinedDocuments": [
+      {
+        "type": "letter",
+        "label": {
+          "fr": "Lettre adressée au Consul Général",
+          "en": "Letter to the Consul General"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire dûment rempli",
+          "en": "Duly completed form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Acte de naissance gabonais",
+          "en": "Gabonese birth certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "passport",
+        "label": {
+          "fr": "Passeport gabonais en cours",
+          "en": "Valid Gabonese passport"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "student_card",
+        "label": {
+          "fr": "Carte étudiant",
+          "en": "Student card"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "work_attestation",
+        "label": {
+          "fr": "Attestation de travail / stage",
+          "en": "Work / internship attestation"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      },
+      {
+        "type": "residence_proof",
+        "label": {
+          "fr": "Justificatif de domicile",
+          "en": "Proof of residence"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "free",
+        "variant": "standard",
+        "name": {
+          "fr": "Gratuit",
+          "en": "Free of charge"
+        },
+        "delay": {
+          "fr": "Environ 25 jours",
+          "en": "About 25 days"
+        },
+        "price": {
+          "fr": "0 € (source : Consulat Général Gabon France)",
+          "en": "€0 (source: Consulate-General of Gabon in France)"
+        }
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "consular-notification",
+    "category": "registration",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "inscription-registre-consulaire",
+    "category": "registration",
+    "audience": {
+      "fr": "Tous les ressortissants gabonais souhaitant être recensés à l'étranger",
+      "en": "All Gabonese nationals wishing to be registered abroad"
+    },
+    "joinedDocuments": [
+      {
+        "type": "passport_pages",
+        "label": {
+          "fr": "Copie des 3 premières pages du passeport et page visa",
+          "en": "Copy of first 3 passport pages and visa page"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "nationality_certificate",
+        "label": {
+          "fr": "Copie du certificat de nationalité gabonaise",
+          "en": "Copy of Gabonese nationality certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "residence_permit",
+        "label": {
+          "fr": "Copie d'un titre de séjour valide ou récépissé de renouvellement",
+          "en": "Copy of valid residence permit or renewal receipt"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "residence_proof",
+        "label": {
+          "fr": "Justificatif récent de domicile",
+          "en": "Recent proof of residence"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "work_or_school",
+        "label": {
+          "fr": "Attestation d'emploi ou certificat de scolarité",
+          "en": "Employment attestation or school certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "inscription-liste-electorale",
+    "category": "registration",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "transcription-naissance",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Parents gabonais dont l'enfant est né à l'étranger",
+      "en": "Gabonese parents whose child was born abroad"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Aucun délai légal pour transcrire, mais à effectuer dans les premiers mois pour permettre la délivrance d'un passeport gabonais.",
+        "en": "No legal deadline for transcription, but to be done in the first months to allow issuance of a Gabonese passport."
+      }
+    },
+    "useCases": [
+      {
+        "fr": "Obtenir un passeport gabonais pour l'enfant",
+        "en": "Obtain a Gabonese passport for the child"
+      },
+      {
+        "fr": "Préserver les droits à l'héritage et à la nationalité",
+        "en": "Preserve inheritance and nationality rights"
+      },
+      {
+        "fr": "Permettre l'inscription au livret de famille gabonais",
+        "en": "Allow entry in the Gabonese family record book"
+      }
+    ],
+    "joinedDocuments": [
+      {
+        "type": "form",
+        "label": {
+          "fr": "Formulaire dûment rempli",
+          "en": "Duly completed form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Copie intégrale de l'acte de naissance de l'enfant",
+          "en": "Full copy of the child's birth certificate"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "parents_id",
+        "label": {
+          "fr": "Copie pièce d'identité de chaque parent",
+          "en": "Copy of each parent's ID"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "legalReference": {
+      "fr": "Loi n° 004/2021 du 15 septembre 2021 portant réorganisation de l'état civil ; Code civil gabonais Art. 159",
+      "en": "Law no. 004/2021 of 15 September 2021 reorganising civil status; Gabonese Civil Code Art. 159"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "transcription-mariage",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Conjoint(s) gabonais d'un mariage célébré à l'étranger",
+      "en": "Gabonese spouse(s) of a marriage celebrated abroad"
+    },
+    "joinedDocuments": [
+      {
+        "type": "marriage_certificate",
+        "label": {
+          "fr": "Copie intégrale de l'acte de mariage",
+          "en": "Full copy of marriage certificate"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificates",
+        "label": {
+          "fr": "Copies des actes de naissance des époux",
+          "en": "Copies of spouses' birth certificates"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "spouses_id",
+        "label": {
+          "fr": "Copies des pièces d'identité des époux",
+          "en": "Copies of spouses' IDs"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "legalReference": {
+      "fr": "Code civil gabonais Art. 159",
+      "en": "Gabonese Civil Code Art. 159"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "transcription-deces",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Famille ou ayants-droit d'un Gabonais décédé à l'étranger",
+      "en": "Family or heirs of a Gabonese deceased abroad"
+    },
+    "joinedDocuments": [
+      {
+        "type": "death_certificate",
+        "label": {
+          "fr": "Copie intégrale de l'acte de décès",
+          "en": "Full copy of death certificate"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "deceased_passport",
+        "label": {
+          "fr": "Copie passeport du défunt",
+          "en": "Copy of deceased's passport"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "legalReference": {
+      "fr": "Code civil gabonais Art. 159",
+      "en": "Gabonese Civil Code Art. 159"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "acte-naissance-copie",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Personnes nécessitant une copie d'un acte de naissance gabonais",
+      "en": "People needing a copy of a Gabonese birth certificate"
+    },
+    "legalReference": {
+      "fr": "Loi n° 004/2021 du 15 septembre 2021 portant réorganisation de l'état civil",
+      "en": "Law no. 004/2021 of 15 September 2021 reorganising civil status"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande à la mairie du lieu de déclaration au Gabon",
+          "en": "Request at the Gabonese town hall where birth was declared"
+        }
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "acte-mariage-copie",
+    "category": "civil_status",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "celebration-mariage",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Couples souhaitant se marier au Consulat",
+      "en": "Couples wishing to marry at the Consulate"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Un entretien préalable des futurs époux est nécessaire avant la célébration.",
+        "en": "A preliminary interview with the future spouses is required before the ceremony."
+      }
+    },
+    "joinedDocuments": [
+      {
+        "type": "request_letter",
+        "label": {
+          "fr": "Lettre de demande de mariage adressée au Consul",
+          "en": "Marriage request letter addressed to the Consul"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "form_marriage",
+        "label": {
+          "fr": "Formulaire de demande dûment rempli",
+          "en": "Duly completed application form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "matrimonial_regime",
+        "label": {
+          "fr": "Formulaire option régime matrimonial",
+          "en": "Matrimonial-regime option form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "witnesses",
+        "label": {
+          "fr": "Formulaire témoins",
+          "en": "Witnesses form"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "passport",
+        "label": {
+          "fr": "Copie passeport en cours de validité",
+          "en": "Copy of valid passport"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "birth_certificate",
+        "label": {
+          "fr": "Copie certifiée acte de naissance",
+          "en": "Certified copy of birth certificate"
+        },
+        "format": "certified",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "medical_certificate",
+        "label": {
+          "fr": "Certificat médical prénuptial < 3 mois",
+          "en": "Prenuptial medical certificate < 3 months old"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "witnesses_id",
+        "label": {
+          "fr": "Copies pièces d'identité des témoins",
+          "en": "Copies of witnesses' IDs"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "consular_card",
+        "label": {
+          "fr": "Copies carte consulaire et titre de séjour (zone Schengen)",
+          "en": "Copies of consular card and residence permit (Schengen area)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Célébration au Consulat",
+          "en": "Celebration at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "certificat-coutume-celibat",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Personnes se mariant en France avec un Gabonais",
+      "en": "Persons marrying a Gabonese national in France"
+    },
+    "legalReference": {
+      "fr": "Code civil gabonais (mariage)",
+      "en": "Gabonese Civil Code (marriage)"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        }
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "certificat-non-opposition",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Futurs époux après publication des bans",
+      "en": "Future spouses after publication of banns"
+    },
+    "legalReference": {
+      "fr": "Code civil gabonais",
+      "en": "Gabonese Civil Code"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Délivrance au Consulat",
+          "en": "Issued by the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "fiche-familiale",
+    "category": "civil_status",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "attestation-filiation",
+    "category": "civil_status",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "attestation-patronymique",
+    "category": "civil_status",
+    "audience": {
+      "fr": "Parents souhaitant choisir le nom patronymique de leur enfant à naître",
+      "en": "Parents wishing to choose their unborn child's patronymic name"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Demande recommandée à partir du 6e mois de grossesse, avant la date prévue d'accouchement.",
+        "en": "Recommended from the 6th month of pregnancy, before the expected delivery date."
+      }
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "attestation-permis-conduire",
+    "category": "certification",
+    "audience": {
+      "fr": "Détenteurs d'un permis de conduire gabonais souhaitant l'utiliser en France",
+      "en": "Holders of a Gabonese driving licence wishing to use it in France"
+    },
+    "joinedDocuments": [
+      {
+        "type": "driving_license",
+        "label": {
+          "fr": "Copie du permis de conduire gabonais",
+          "en": "Copy of Gabonese driving licence"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "authenticity_certificate",
+        "label": {
+          "fr": "Certificats d'authenticité et de validité (Ministère des Transports)",
+          "en": "Authenticity and validity certificates (Ministry of Transport)"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "passport",
+        "label": {
+          "fr": "Copie passeport et/ou acte de naissance",
+          "en": "Copy of passport and/or birth certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "attestation-capacite-juridique",
+    "category": "certification",
+    "legalReference": {
+      "fr": "Code civil gabonais",
+      "en": "Gabonese Civil Code"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "certificat-vie",
+    "category": "certification",
+    "audience": {
+      "fr": "Retraités gabonais à l'étranger pour le maintien de leur pension",
+      "en": "Gabonese pensioners abroad for the continuation of their pension"
+    },
+    "noteCallout": {
+      "variant": "warning",
+      "body": {
+        "fr": "La présence physique du demandeur est obligatoire au Consulat.",
+        "en": "Physical presence of the applicant is mandatory at the Consulate."
+      }
+    },
+    "joinedDocuments": [
+      {
+        "type": "pension_document",
+        "label": {
+          "fr": "Copie du document de pension",
+          "en": "Copy of pension document"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Présence obligatoire au Consulat",
+          "en": "Mandatory presence at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "certificat-expatriation",
+    "category": "certification",
+    "audience": {
+      "fr": "Personnes quittant définitivement la France pour le Gabon",
+      "en": "Persons leaving France definitively for Gabon"
+    },
+    "joinedDocuments": [
+      {
+        "type": "address_attestation",
+        "label": {
+          "fr": "Attestation de changement d'adresse de la mairie",
+          "en": "Town hall address-change attestation"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "passport",
+        "label": {
+          "fr": "Copie d'un passeport en cours",
+          "en": "Copy of a valid passport"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "ticket",
+        "label": {
+          "fr": "Copie d'un billet d'avion",
+          "en": "Copy of an airline ticket"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "certificat-residence-changement",
+    "category": "certification",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "attestation-concordance",
+    "category": "certification",
+    "audience": {
+      "fr": "Personnes dont les documents officiels présentent des incohérences d'orthographe ou d'identité",
+      "en": "Persons whose official documents show spelling or identity inconsistencies"
+    },
+    "joinedDocuments": [
+      {
+        "type": "documents",
+        "label": {
+          "fr": "Copies des documents en cause",
+          "en": "Copies of the documents in question"
+        },
+        "description": {
+          "fr": "Acte de naissance, passeport ou tout document attestant la vérité des faits",
+          "en": "Birth certificate, passport or any document attesting the facts"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "attestation-revenus",
+    "category": "certification",
+    "audience": {
+      "fr": "Fonctionnaires gabonais ou stagiaires résidant en France",
+      "en": "Gabonese civil servants or trainees residing in France"
+    },
+    "joinedDocuments": [
+      {
+        "type": "passport",
+        "label": {
+          "fr": "Copie du passeport gabonais",
+          "en": "Copy of Gabonese passport"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "service_certificate",
+        "label": {
+          "fr": "Certificat de prise de service ou bulletin de salaire blanc",
+          "en": "Service certificate or blank payslip"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "scholarship_attestation",
+        "label": {
+          "fr": "Attestation de prise en charge (stagiaires)",
+          "en": "Funding attestation (trainees)"
+        },
+        "format": "copy",
+        "group": "situational",
+        "required": false
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "copie-certifiee-conforme",
+    "category": "certification",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "legalisation-documents",
+    "category": "certification",
+    "audience": {
+      "fr": "Toute personne devant faire valoir un document gabonais à l'étranger ou inversement",
+      "en": "Anyone needing to use a Gabonese document abroad or vice versa"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "La légalisation authentifie la signature, la qualité du signataire et l'identité du sceau/timbre du document.",
+        "en": "Legalisation authenticates the signature, the signatory's capacity and the identity of the seal/stamp."
+      }
+    },
+    "processSteps": [
+      {
+        "label": {
+          "fr": "Vérifier que le document original porte un timbre municipal palpable du Gabon",
+          "en": "Check that the original carries a tangible Gabonese municipal stamp"
+        },
+        "icon": "check-circle"
+      },
+      {
+        "label": {
+          "fr": "Légalisation par le Ministère des Affaires étrangères à Libreville",
+          "en": "Legalisation by the Ministry of Foreign Affairs in Libreville"
+        },
+        "icon": "globe"
+      },
+      {
+        "label": {
+          "fr": "Authentification finale au Consulat Général à l'étranger",
+          "en": "Final authentication at the Consulate-General abroad"
+        },
+        "icon": "stamp"
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "small-batch",
+        "variant": "standard",
+        "name": {
+          "fr": "Moins de 15 documents",
+          "en": "Less than 15 documents"
+        },
+        "delay": {
+          "fr": "Retrait immédiat à Libreville",
+          "en": "Immediate collection in Libreville"
+        },
+        "price": {
+          "fr": "Non publié — vérifier auprès du Ministère",
+          "en": "Not published — verify with the Ministry"
+        }
+      },
+      {
+        "id": "large-batch",
+        "variant": "standard",
+        "name": {
+          "fr": "15 documents et plus",
+          "en": "15 documents or more"
+        },
+        "delay": {
+          "fr": "48 h minimum à Libreville",
+          "en": "Minimum 48 hours in Libreville"
+        },
+        "price": {
+          "fr": "Non publié — vérifier auprès du Ministère",
+          "en": "Not published — verify with the Ministry"
+        }
+      }
+    ],
+    "pricingNote": {
+      "fr": "Documents exclus : documents judiciaires, médicaux, scolaires. Source : affaires-etrangeres.gouv.ga",
+      "en": "Excluded documents: judicial, medical, school records. Source: affaires-etrangeres.gouv.ga"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt physique",
+          "en": "Physical submission"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "legalisation-signature",
+    "category": "certification",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "procuration-legalisation-signature",
+    "category": "certification",
+    "audience": {
+      "fr": "Ressortissants gabonais souhaitant donner mandat à un tiers",
+      "en": "Gabonese nationals wishing to grant power of attorney to a third party"
+    },
+    "noteCallout": {
+      "variant": "warning",
+      "body": {
+        "fr": "La présence physique du mandant est obligatoire au Consulat pour la signature devant l'officier consulaire.",
+        "en": "Physical presence of the principal is mandatory at the Consulate to sign before the consular officer."
+      }
+    },
+    "joinedDocuments": [
+      {
+        "type": "consular_card",
+        "label": {
+          "fr": "Carte consulaire",
+          "en": "Consular card"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "id_card",
+        "label": {
+          "fr": "Carte nationale d'identité valide ou attestation d'identité",
+          "en": "Valid national ID or identity attestation"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "mandate",
+        "label": {
+          "fr": "Lettre de procuration / constitution",
+          "en": "Power of attorney / constitution letter"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "residence_proof",
+        "label": {
+          "fr": "Justificatif de domicile",
+          "en": "Proof of residence"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "agent_id",
+        "label": {
+          "fr": "Copie pièce d'identité du mandataire",
+          "en": "Copy of agent's ID"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Signature au Consulat",
+          "en": "Signature at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "procuration-consulaire",
+    "category": "certification",
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "protection-assistance-consulaire",
+    "category": "assistance",
+    "audience": {
+      "fr": "Tout ressortissant gabonais en difficulté à l'étranger",
+      "en": "Any Gabonese national in difficulty abroad"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Mission de service public gratuite : 24h/24 pour les urgences.",
+        "en": "Free public-service mission: 24/7 for emergencies."
+      }
+    },
+    "useCases": [
+      {
+        "fr": "Arrestation ou détention à l'étranger",
+        "en": "Arrest or detention abroad"
+      },
+      {
+        "fr": "Accident, hospitalisation, situation médicale grave",
+        "en": "Accident, hospitalisation, serious medical situation"
+      },
+      {
+        "fr": "Décès à l'étranger d'un proche",
+        "en": "Death abroad of a relative"
+      },
+      {
+        "fr": "Perte de papiers en situation d'urgence",
+        "en": "Loss of documents in an emergency"
+      }
+    ],
+    "pricingTable": [
+      {
+        "id": "free",
+        "variant": "standard",
+        "name": {
+          "fr": "Service gratuit",
+          "en": "Free service"
+        },
+        "price": {
+          "fr": "0 €",
+          "en": "€0"
+        },
+        "delay": {
+          "fr": "Immédiat (urgence)",
+          "en": "Immediate (emergency)"
+        }
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Contact direct au Consulat",
+          "en": "Direct contact at the Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "online",
+        "title": {
+          "fr": "Email ou téléphone d'urgence 24h/24",
+          "en": "Email or 24/7 emergency phone"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "assistance-consulaire",
+    "category": "assistance",
+    "audience": {
+      "fr": "Ressortissants gabonais à l'étranger sollicitant l'aide de leur Consulat",
+      "en": "Gabonese nationals abroad seeking help from their Consulate"
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        }
+      },
+      {
+        "mode": "online",
+        "title": {
+          "fr": "Contact en ligne",
+          "en": "Online contact"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "rapatriement-sanitaire",
+    "category": "assistance",
+    "audience": {
+      "fr": "Patients gabonais ou résidents nécessitant une évacuation sanitaire",
+      "en": "Gabonese patients or residents requiring medical evacuation"
+    },
+    "noteCallout": {
+      "variant": "info",
+      "body": {
+        "fr": "Le service social du Consulat sert d'intermédiaire entre le Ministère gabonais de la Santé et les hôpitaux publics français.",
+        "en": "The Consulate social service liaises between Gabon's Ministry of Health and French public hospitals."
+      }
+    },
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au service social du Consulat",
+          "en": "Application to the Consulate's social service"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "attestation-rapatriement-corps",
+    "category": "assistance",
+    "audience": {
+      "fr": "Familles ou pompes funèbres organisant le rapatriement d'un défunt vers le Gabon",
+      "en": "Families or funeral homes arranging repatriation of a deceased to Gabon"
+    },
+    "joinedDocuments": [
+      {
+        "type": "death_certificate",
+        "label": {
+          "fr": "Copie de l'acte de décès",
+          "en": "Copy of death certificate"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "passport",
+        "label": {
+          "fr": "Copie passeport du défunt",
+          "en": "Copy of deceased's passport"
+        },
+        "format": "copy",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "coffin_closure",
+        "label": {
+          "fr": "Autorisation de fermeture du cercueil (police ou préfecture)",
+          "en": "Coffin closure authorisation (police or prefecture)"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "medical_certificate",
+        "label": {
+          "fr": "Certificat médical et de non-contagion",
+          "en": "Medical and non-contagion certificate"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "transport_authorisation",
+        "label": {
+          "fr": "Autorisation de transport (préfecture)",
+          "en": "Transport authorisation (prefecture)"
+        },
+        "format": "original",
+        "group": "required",
+        "required": true
+      },
+      {
+        "type": "death_certificate_full",
+        "label": {
+          "fr": "Copie intégrale de l'acte de décès",
+          "en": "Full copy of the death certificate"
+        },
+        "format": "certified",
+        "group": "required",
+        "required": true
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Demande au Consulat",
+          "en": "Application at the Consulate"
+        },
+        "recommended": true
+      },
+      {
+        "mode": "postal",
+        "title": {
+          "fr": "Envoi postal",
+          "en": "Postal submission"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  },
+  {
+    "slug": "declaration-perte-cni",
+    "category": "declaration",
+    "audience": {
+      "fr": "Ressortissants gabonais ayant perdu leur carte nationale d'identité (CNI)",
+      "en": "Gabonese nationals who have lost their national ID card (CNI)"
+    },
+    "noteCallout": {
+      "variant": "warning",
+      "body": {
+        "fr": "La nouvelle CNIE gabonaise relève du Ministère de l'Intérieur (interieur.gouv.ga). À l'étranger, le Consulat peut assister la démarche.",
+        "en": "The new Gabonese CNIE is issued by the Ministry of the Interior (interieur.gouv.ga). Abroad, the Consulate can assist with the procedure."
+      }
+    },
+    "processSteps": [
+      {
+        "label": {
+          "fr": "Déclaration auprès des autorités locales (commissariat)",
+          "en": "Declaration to local authorities (police station)"
+        },
+        "icon": "alert-triangle"
+      },
+      {
+        "label": {
+          "fr": "Présentation au Consulat",
+          "en": "Presentation at the Consulate"
+        },
+        "icon": "map-pin"
+      },
+      {
+        "label": {
+          "fr": "Suivi pour nouvelle CNIE au Gabon",
+          "en": "Follow-up for new CNIE in Gabon"
+        },
+        "icon": "id-card"
+      }
+    ],
+    "availableModes": [
+      {
+        "mode": "in_person",
+        "title": {
+          "fr": "Dépôt au Consulat",
+          "en": "Submission at the Consulate"
+        }
+      }
+    ],
+    "status": "active",
+    "isActive": true
+  }
+]

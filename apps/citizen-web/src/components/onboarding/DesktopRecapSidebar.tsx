@@ -6,7 +6,8 @@ import { PublicUserType } from "@convex/lib/constants"
 import { Check, Info } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "react-i18next"
-import type { OnboardingData } from "./types"
+import { getCountryName } from "@/lib/country-utils"
+import { formatAddressDisplay, type OnboardingData } from "./types"
 import type { RegistrationFiles } from "./steps/DocumentsStep"
 
 function SidebarLine({
@@ -41,9 +42,7 @@ export function DesktopRecapSidebar({
 }) {
   const { t } = useTranslation()
   const fullName = [data.firstName, data.lastName].filter(Boolean).join(" ")
-  const addressFull =
-    data.address?.full ||
-    [data.address?.city, data.address?.country].filter(Boolean).join(", ")
+  const addressFull = formatAddressDisplay(data.address)
   const docCount = files ? Object.keys(files).length : 0
 
   return (
@@ -76,7 +75,10 @@ export function DesktopRecapSidebar({
             <SidebarLine label={t("onboarding.recap.labels.email")} value={data.email} />
             <SidebarLine label={t("onboarding.recap.labels.phone")} value={data.phone} />
             <SidebarLine label={t("onboarding.recap.labels.birthDate")} value={data.birthDate} />
-            <SidebarLine label={t("onboarding.recap.labels.nationality")} value={data.nationality} />
+            <SidebarLine
+              label={t("onboarding.recap.labels.nationality")}
+              value={data.nationality ? getCountryName(data.nationality) : undefined}
+            />
             <SidebarLine label={t("onboarding.recap.labels.address")} value={addressFull || undefined} />
             <SidebarLine label={t("onboarding.recap.labels.passportNumber")} value={data.passportNumber} />
             <SidebarLine

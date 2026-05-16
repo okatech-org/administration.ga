@@ -33,8 +33,16 @@ function useIsMobile() {
 	return isMobile;
 }
 
+/**
+ * PinPhase manages its own local state for `pin` and `pinConfirm` instead of
+ * going through react-hook-form. Two reasons: (1) the values must never leak
+ * to the persisted draft (already filtered in OnboardingData, but local state
+ * is even safer); (2) the two-stage UX (create → confirm) involves an
+ * imperative stage transition that doesn't fit cleanly with a single form
+ * submit cycle — using useState here avoids races between form.setValue and
+ * form.watch when the stage flips between digits.
+ */
 export function PinPhase({
-	data,
 	updateData,
 	onNext,
 	onPrev,
@@ -52,9 +60,13 @@ export function PinPhase({
 		isAuthenticated ? {} : "skip",
 	);
 	const createPin = useMutation(api.functions.pin.createPin);
-	const markOtpVerified = useMutation(api.functions.pin.markOtpVerified);
-	const otpRefreshedRef = useRef(false);
 	const autoAdvancedRef = useRef(false);
+
+	const [pin, setPin] = useState("");
+	const [confirm, setConfirm] = useState("");
+	const [stage, setStage] = useState<Stage>("create");
+	const [submitting, setSubmitting] = useState(false);
+	const [serverError, setServerError] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (pinStatus?.hasPin && !autoAdvancedRef.current) {
@@ -64,27 +76,10 @@ export function PinPhase({
 		}
 	}, [pinStatus, onNext, updateData]);
 
-	useEffect(() => {
-		if (!isAuthenticated || otpRefreshedRef.current) return;
-		if (pinStatus?.hasPin) return;
-		otpRefreshedRef.current = true;
-		markOtpVerified({}).catch((err) => {
-			console.error("markOtpVerified failed:", err);
-		});
-	}, [isAuthenticated, markOtpVerified, pinStatus]);
-
-	const [stage, setStage] = useState<Stage>(() =>
-		(data.pin?.length ?? 0) === PIN_LENGTH ? "confirm" : "create",
-	);
-	const [error, setError] = useState<string | null>(null);
-	const [submitting, setSubmitting] = useState(false);
-
-	const pin = data.pin ?? "";
-	const confirm = data.pinConfirm ?? "";
-	const currentValue = stage === "create" ? pin : confirm;
-
 	const match =
-		pin.length === PIN_LENGTH && confirm.length === PIN_LENGTH && pin === confirm;
+		pin.length === PIN_LENGTH &&
+		confirm.length === PIN_LENGTH &&
+		pin === confirm;
 	const mismatch =
 		stage === "confirm" && confirm.length === PIN_LENGTH && pin !== confirm;
 
@@ -95,12 +90,13 @@ export function PinPhase({
 		}
 	}, [stage, pin]);
 
+	const currentValue = stage === "create" ? pin : confirm;
 	const setValue = useCallback(
 		(next: string) => {
-			if (stage === "create") updateData({ pin: next });
-			else updateData({ pinConfirm: next });
+			if (stage === "create") setPin(next);
+			else setConfirm(next);
 		},
-		[stage, updateData],
+		[stage],
 	);
 
 	const handleDigit = useCallback(
@@ -119,45 +115,50 @@ export function PinPhase({
 	}, [stage, pin, confirm, setValue]);
 
 	const handleRestart = useCallback(() => {
-		updateData({ pin: "", pinConfirm: "" });
+		setPin("");
+		setConfirm("");
 		setStage("create");
-		setError(null);
-	}, [updateData]);
+		setServerError(null);
+	}, []);
 
 	const handleBack = useCallback(() => {
 		if (stage === "confirm") {
-			updateData({ pinConfirm: "" });
+			setConfirm("");
 			setStage("create");
-			setError(null);
+			setServerError(null);
 		} else {
 			onPrev();
 		}
-	}, [stage, onPrev, updateData]);
+	}, [stage, onPrev]);
 
-	const handleSubmit = useCallback(async () => {
-		if (!match || submitting) return;
-		setError(null);
-		setSubmitting(true);
-		try {
-			await createPin({ pin });
-			updateData({ pin: undefined, pinConfirm: undefined });
-			onNext();
-		} catch (err) {
-			console.error("createPin error:", err);
-			const message =
-				err instanceof Error
-					? err.message
-					: t("onboarding.identity.pin.genericError");
-			if (message.includes("PIN_ALREADY_EXISTS")) {
+	const handleSubmit = useCallback(
+		async (e: React.FormEvent) => {
+			e.preventDefault();
+			if (!match || submitting) return;
+			setServerError(null);
+			setSubmitting(true);
+			try {
+				await createPin({ pin });
 				updateData({ pin: undefined, pinConfirm: undefined });
 				onNext();
-				return;
+			} catch (err) {
+				console.error("createPin error:", err);
+				const message =
+					err instanceof Error
+						? err.message
+						: t("onboarding.identity.pin.genericError");
+				if (message.includes("PIN_ALREADY_EXISTS")) {
+					updateData({ pin: undefined, pinConfirm: undefined });
+					onNext();
+					return;
+				}
+				setServerError(message);
+			} finally {
+				setSubmitting(false);
 			}
-			setError(message);
-		} finally {
-			setSubmitting(false);
-		}
-	}, [createPin, match, pin, submitting, updateData, onNext, t]);
+		},
+		[createPin, match, pin, submitting, updateData, onNext, t],
+	);
 
 	if (pinStatus === undefined || pinStatus?.hasPin) {
 		return (
@@ -173,7 +174,10 @@ export function PinPhase({
 	}
 
 	return (
-		<div className="flex flex-col gap-6">
+		<form
+			onSubmit={handleSubmit}
+			className="flex min-h-[calc(100svh-260px)] flex-col gap-6 md:min-h-0"
+		>
 			<header className="flex flex-col gap-2">
 				<h1
 					className="text-2xl font-semibold tracking-tight md:text-3xl"
@@ -239,7 +243,7 @@ export function PinPhase({
 					</div>
 				)}
 
-				{stage === "confirm" && match && !submitting && !error && (
+				{stage === "confirm" && match && !submitting && !serverError && (
 					<div
 						className="flex items-center gap-2 text-sm text-gabon-green"
 						suppressHydrationWarning
@@ -252,34 +256,35 @@ export function PinPhase({
 
 			<div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
 				<Shield className="mt-0.5 size-4 shrink-0" />
-				<span suppressHydrationWarning>
-					{t("onboarding.identity.pin.info")}
-				</span>
+				<span suppressHydrationWarning>{t("onboarding.identity.pin.info")}</span>
 			</div>
 
-			{error && (
+			{serverError && (
 				<div
 					role="alert"
 					className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
 				>
 					<AlertTriangle className="mt-0.5 size-4 shrink-0" />
-					<span>{error}</span>
+					<span>{serverError}</span>
 				</div>
 			)}
 
-			<div className="flex justify-between">
+			<div className="phase-footer justify-between">
 				<Button
 					type="button"
 					variant="outline"
 					onClick={handleBack}
 					disabled={submitting}
+					className="btn-prev"
 				>
 					<ArrowLeft className="mr-1 size-4" />
-					<span suppressHydrationWarning>
-						{t("onboarding.identity.pin.back")}
-					</span>
+					<span suppressHydrationWarning>{t("onboarding.identity.pin.back")}</span>
 				</Button>
-				<Button onClick={handleSubmit} disabled={!match || submitting}>
+				<Button
+					type="submit"
+					disabled={!match || submitting}
+					className="btn-next"
+				>
 					{submitting ? (
 						<>
 							<Loader2 className="mr-1 size-4 animate-spin" />
@@ -297,6 +302,6 @@ export function PinPhase({
 					)}
 				</Button>
 			</div>
-		</div>
+		</form>
 	);
 }

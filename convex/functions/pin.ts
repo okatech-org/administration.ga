@@ -8,7 +8,7 @@
 
 import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { v } from "convex/values";
-import { query, mutation, internalMutation } from "../_generated/server";
+import { query, mutation, internalMutation, internalQuery } from "../_generated/server";
 import { authQuery, authMutation, backofficeMutation, backofficeQuery } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { logCortexAction } from "../lib/neocortex";
@@ -89,6 +89,23 @@ export const getPinStatus = authQuery({
       lastOtpVerifiedAt: (user as any).lastOtpVerifiedAt ?? null,
       isLocked: !!((user as any).pinLockedUntil && (user as any).pinLockedUntil > Date.now()),
     };
+  },
+});
+
+/**
+ * Résolution email depuis téléphone pour le flux PIN par téléphone.
+ * Utilisé par /api/auth/pin-session quand l'utilisateur s'identifie via phone.
+ */
+export const getEmailByPhone = internalQuery({
+  args: { phone: v.string() },
+  handler: async (ctx, { phone }) => {
+    if (!PHONE_REGEX.test(phone)) return null;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_phone", (q) => q.eq("phone", phone))
+      .unique();
+    if (!user || !user.isActive) return null;
+    return user.email ?? null;
   },
 });
 
@@ -336,9 +353,35 @@ export const deletePin = authMutation({
 });
 
 /**
- * Marquer la dernière vérification OTP réussie.
- * Appelé après chaque connexion OTP pour rafraîchir le timer 90 jours.
- * Déverrouille aussi le PIN si verrouillé.
+ * Marquer la dernière vérification OTP réussie pour un utilisateur identifié
+ * par son `authId` Better Auth. Appelée par le hook serveur Better Auth après
+ * `/sign-in/email-otp` et `/phone-number/verify` — donc aucune identité à
+ * propager côté client. No-op si la ligne `users` n'existe pas encore
+ * (sign-up OTP : `ensureUser` ne s'est pas encore exécuté ; pas de PIN à
+ * gérer dans ce cas).
+ */
+export const markOtpVerifiedByAuthId = internalMutation({
+  args: { authId: v.string() },
+  handler: async (ctx, { authId }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authId", (q) => q.eq("authId", authId))
+      .unique();
+    if (!user) return;
+    await ctx.db.patch(user._id, {
+      lastOtpVerifiedAt: Date.now(),
+      pinFailedAttempts: 0,
+      pinLockedUntil: undefined,
+    } as any);
+  },
+});
+
+/**
+ * Client-callable variant for the registration flow. On first OTP sign-up,
+ * the Better Auth `after` hook fires BEFORE the Convex `users` record is
+ * created by `ensureUser` — so the internal stamp is a no-op. The client
+ * must call this mutation after `waitForSync` to anchor the OTP timestamp,
+ * otherwise `createPin` later refuses with PIN_RECENT_OTP_REQUIRED.
  */
 export const markOtpVerified = authMutation({
   args: {},

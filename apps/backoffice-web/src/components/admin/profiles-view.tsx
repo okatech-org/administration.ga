@@ -1,9 +1,17 @@
 /**
- * ProfilesView — Composant réutilisable pour afficher les profils consulaires.
- * Extrait de profiles/index.tsx pour être utilisé dans la page unifiée /users.
+ * ProfilesView — Profils consulaires de la page /users (vue Profils).
+ *
+ * Pagination offset-based côté serveur (api.functions.profiles.listProfilesPage),
+ * facets (api.functions.profiles.getProfileFacets), et état complet dans l'URL
+ * (continent, country, type, attachment, search, mode, page, pageSize) via
+ * `router.replace({ scroll: false })`. Pas de layout shift entre pages : la
+ * dernière snapshot est conservée dans un ref pendant que la query suivante
+ * est en vol.
  */
 
-import { api } from "@convex/_generated/api";
+"use client"
+
+import { api } from "@convex/_generated/api"
 import {
 	Building2,
 	LayoutGrid,
@@ -11,269 +19,337 @@ import {
 	Loader2,
 	Search,
 	Users,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { DataTable } from "@/components/ui/data-table";
-import { ProfileCard } from "@/components/dashboard/ProfileCard";
-import { profileColumns } from "@/components/admin/profiles-columns";
-import { Badge } from "@/components/ui/badge";
-import { useAuthenticatedPaginatedQuery } from "@/integrations/convex/hooks";
-import { cn } from "@/lib/utils";
+} from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
+import type { PaginationState } from "@tanstack/react-table"
+import { useQuery } from "convex/react"
+import { DataTable } from "@/components/ui/data-table"
+import { ProfileCard } from "@/components/dashboard/ProfileCard"
+import { profileColumns } from "@/components/admin/profiles-columns"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@workspace/ui/components/button"
+import {
+	Combobox,
+	type ComboboxOption,
+} from "@workspace/ui/components/combobox"
+import { useDebounce } from "@/hooks/use-debounce"
+import { cn } from "@/lib/utils"
 import {
 	type Continent,
-	getActiveContinents,
+	CONTINENT_META,
 	getContinent,
 	getContinentEmoji,
 	getContinentLabel,
 	getCountryFlag,
 	getCountryName,
-	getOrgTypeEmoji,
-	getOrgTypeLabel,
-} from "@/lib/country-utils";
+} from "@/lib/country-utils"
 
-function useDebounce<T>(value: T, delay: number): T {
-	const [debouncedValue, setDebouncedValue] = useState<T>(value);
-	useEffect(() => {
-		const handler = setTimeout(() => {
-			setDebouncedValue(value);
-		}, delay);
-		return () => clearTimeout(handler);
-	}, [value, delay]);
-	return debouncedValue;
+// ── URL params owned by this view ────────────────────────────────────
+const P = {
+	q: "q",
+	continent: "continent",
+	country: "country",
+	type: "type",
+	attach: "attach",
+	mode: "mode",
+	page: "page",
+	pageSize: "pageSize",
+} as const
+
+const USER_TYPE_LABELS: Record<string, string> = {
+	long_stay: "Résident",
+	short_stay: "De passage",
+	visa_tourism: "Visa tourisme",
+	visa_business: "Visa affaires",
+	visa_long_stay: "Visa long séjour",
+	admin_services: "Services admin",
 }
+const ALL_USER_TYPES = Object.keys(USER_TYPE_LABELS)
+
+const DEFAULT_PAGE_SIZE = 10
+
+type Mode = "table" | "grid"
+type Attachment = "attached" | "unattached"
 
 export function ProfilesView() {
-	useTranslation();
-	const [searchTerm, setSearchTerm] = useState("");
-	const debouncedSearch = useDebounce(searchTerm, 500);
-	const [activeContinent, setActiveContinent] = useState<Continent | null>(null);
-	const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-	const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+	useTranslation()
+	const router = useRouter()
+	const searchParams = useSearchParams()
 
-	const {
-		results: profiles,
-		status: paginationStatus,
-		loadMore,
-		isLoading,
-	} = useAuthenticatedPaginatedQuery(
-		api.functions.profiles.searchProfiles,
-		{ searchTerm: debouncedSearch },
-		{ initialNumItems: 100 },
-	);
+	// ── URL is the source of truth for all filters + pagination ───────
+	const urlSearch = searchParams.get(P.q) ?? ""
+	const activeContinent = (searchParams.get(P.continent) as Continent | null) ?? null
+	const activeCountry = searchParams.get(P.country) ?? null
+	const activeUserType = searchParams.get(P.type) ?? null
+	const activeAttachment = (searchParams.get(P.attach) as Attachment | null) ?? null
+	const mode = (searchParams.get(P.mode) as Mode | null) ?? "table"
+	const urlPage = Math.max(
+		0,
+		Number.parseInt(searchParams.get(P.page) ?? "1", 10) - 1,
+	)
+	const urlPageSize = (() => {
+		const raw = Number.parseInt(
+			searchParams.get(P.pageSize) ?? String(DEFAULT_PAGE_SIZE),
+			10,
+		)
+		return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_PAGE_SIZE
+	})()
 
-	// Get country from profile
-	const getProfileCountry = useCallback((profile: any): string | undefined => {
-		return profile.countryOfResidence || profile.addresses?.residence?.country;
-	}, []);
+	// Search input mirror — keystrokes don't wait on the URL round-trip.
+	const [searchInput, setSearchInput] = useState(urlSearch)
+	const debouncedSearch = useDebounce(searchInput, 300)
+	useEffect(() => {
+		setSearchInput(urlSearch)
+	}, [urlSearch])
 
-	// Continent detection + counts + filtering
-	const { continents, continentCounts, filteredProfiles, countryOptions } = useMemo(() => {
-		const countryCodes = profiles
-			.map((p: any) => getProfileCountry(p))
-			.filter(Boolean) as string[];
-
-		const activeContinents = getActiveContinents(countryCodes);
-
-		// Count per continent
-		const countMap = new Map<Continent | "all", number>();
-		countMap.set("all", profiles.length);
-		for (const c of activeContinents) {
-			countMap.set(c, 0);
-		}
-		for (const profile of profiles) {
-			const code = getProfileCountry(profile);
-			const continent = code ? getContinent(code) : null;
-			if (continent && countMap.has(continent)) {
-				countMap.set(continent, (countMap.get(continent) || 0) + 1);
+	// Shallow URL writer. Null/empty → delete the key to keep URLs clean.
+	const updateParams = useCallback(
+		(updates: Record<string, string | null>) => {
+			const params = new URLSearchParams(searchParams.toString())
+			for (const [k, v] of Object.entries(updates)) {
+				if (v === null || v === "") params.delete(k)
+				else params.set(k, v)
 			}
-		}
+			const qs = params.toString()
+			router.replace(qs ? `/users?${qs}` : "/users", { scroll: false })
+		},
+		[router, searchParams],
+	)
 
-		// Country options for selected continent
-		const countries = new Map<string, { code: string; label: string; count: number }>();
-		for (const profile of profiles) {
-			const code = getProfileCountry(profile);
-			if (!code) continue;
-			const continent = getContinent(code);
-			if (activeContinent && continent !== activeContinent) continue;
-			if (!countries.has(code)) {
-				countries.set(code, {
+	// Debounced search → URL. Resets to page 1.
+	useEffect(() => {
+		if (debouncedSearch !== urlSearch) {
+			updateParams({ [P.q]: debouncedSearch || null, [P.page]: null })
+		}
+	}, [debouncedSearch, urlSearch, updateParams])
+
+	const filters = useMemo(
+		() => ({
+			search: urlSearch.trim() || undefined,
+			continent: activeContinent ?? undefined,
+			country: activeCountry ?? undefined,
+			userType: activeUserType ?? undefined,
+			attachment: activeAttachment ?? undefined,
+		}),
+		[urlSearch, activeContinent, activeCountry, activeUserType, activeAttachment],
+	)
+
+	const pageData = useQuery(api.functions.profiles.listProfilesPage, {
+		filters,
+		page: urlPage,
+		pageSize: urlPageSize,
+	})
+	const facets = useQuery(api.functions.profiles.getProfileFacets, {})
+
+	// Stable rows: keep the last snapshot visible while the next query is
+	// in flight. DataTable's `isPageTransitioning` dims the rows to signal
+	// loading without shrinking the table back to zero height.
+	const lastSnapshotRef = useRef<{ rows: any[]; total: number }>({
+		rows: [],
+		total: 0,
+	})
+	if (pageData !== undefined) {
+		lastSnapshotRef.current = { rows: pageData.rows, total: pageData.total }
+	}
+	const profiles = lastSnapshotRef.current.rows
+	const total = lastSnapshotRef.current.total
+
+	const isInitialLoad = pageData === undefined && profiles.length === 0
+	const isPageTransitioning = pageData === undefined && profiles.length > 0
+
+	// ── Setters (write through URL) ────────────────────────────────────
+	const setContinent = (v: Continent | null) => {
+		const updates: Record<string, string | null> = {
+			[P.continent]: v,
+			[P.page]: null,
+		}
+		// Drop the country filter if it doesn't belong to the new continent.
+		if (activeCountry && v && getContinent(activeCountry) !== v) {
+			updates[P.country] = null
+		}
+		updateParams(updates)
+	}
+	const setCountry = (v: string | null) =>
+		updateParams({ [P.country]: v, [P.page]: null })
+	const setUserType = (v: string | null) =>
+		updateParams({ [P.type]: v, [P.page]: null })
+	const setAttachment = (v: Attachment | null) =>
+		updateParams({ [P.attach]: v, [P.page]: null })
+	const setMode = (v: Mode) =>
+		updateParams({ [P.mode]: v === "table" ? null : v })
+
+	const setPagination = useCallback(
+		(updater: PaginationState | ((s: PaginationState) => PaginationState)) => {
+			const current: PaginationState = {
+				pageIndex: urlPage,
+				pageSize: urlPageSize,
+			}
+			const next = typeof updater === "function" ? updater(current) : updater
+			updateParams({
+				[P.page]: next.pageIndex === 0 ? null : String(next.pageIndex + 1),
+				[P.pageSize]:
+					next.pageSize === DEFAULT_PAGE_SIZE ? null : String(next.pageSize),
+			})
+		},
+		[urlPage, urlPageSize, updateParams],
+	)
+
+	// ── Filter option lists from facets ────────────────────────────────
+	const continents: Continent[] = facets
+		? (Object.keys(facets.continents) as Continent[]).sort(
+				(a, b) =>
+					(CONTINENT_META[a]?.order ?? 99) - (CONTINENT_META[b]?.order ?? 99),
+			)
+		: []
+
+	const countryOptions = facets
+		? Object.entries(facets.countries)
+				.filter(([code]) =>
+					activeContinent ? getContinent(code) === activeContinent : true,
+				)
+				.map(([code, count]) => ({
 					code,
 					label: `${getCountryFlag(code)} ${getCountryName(code)}`,
-					count: 0,
-				});
-			}
-			countries.get(code)!.count++;
-		}
-		const countryOpts = [...countries.values()]
-			.sort((a, b) => a.label.localeCompare(b.label));
+					count,
+				}))
+				.sort((a, b) => a.label.localeCompare(b.label))
+		: []
 
-		// Filter profiles
-		let filtered = profiles;
-		if (debouncedSearch) {
-			const lowerQuery = debouncedSearch.toLowerCase();
-			filtered = filtered.filter((p: any) => {
-				const searchStr = `${p.identity?.firstName || ""} ${p.identity?.lastName || ""} ${p.user?.email || ""}`.toLowerCase();
-				return searchStr.includes(lowerQuery);
-			});
-		}
-		if (activeContinent) {
-			filtered = filtered.filter((p: any) => {
-				const code = getProfileCountry(p);
-				return code ? getContinent(code) === activeContinent : false;
-			});
-		}
-		if (selectedCountry) {
-			filtered = filtered.filter((p: any) => {
-				return getProfileCountry(p) === selectedCountry;
-			});
-		}
+	const userTypeOptions: ComboboxOption<string>[] = ALL_USER_TYPES
+		.filter((t) => (facets?.userTypes?.[t] ?? 0) > 0)
+		.map((t) => ({
+			value: t,
+			label: `${USER_TYPE_LABELS[t]} (${facets?.userTypes?.[t] ?? 0})`,
+		}))
 
-		return {
-			continents: activeContinents,
-			continentCounts: countMap,
-			filteredProfiles: filtered,
-			countryOptions: countryOpts,
-		};
-	}, [profiles, activeContinent, selectedCountry, getProfileCountry, debouncedSearch]);
+	const hasActiveFilter =
+		urlSearch.length > 0 ||
+		activeContinent !== null ||
+		activeCountry !== null ||
+		activeUserType !== null ||
+		activeAttachment !== null
 
-	// Stats
-	const stats = useMemo(() => {
-		const total = filteredProfiles.length;
-		const attached = filteredProfiles.filter((p: any) => p.managedByOrg || p.signaledToOrg).length;
-		return { total, attached, unattached: total - attached };
-	}, [filteredProfiles]);
+	const resetFilters = () => {
+		setSearchInput("")
+		const params = new URLSearchParams()
+		const view = searchParams.get("view")
+		if (view) params.set("view", view)
+		// Keep the current view mode (table/grid is a UI preference, not a filter).
+		if (mode !== "table") params.set(P.mode, mode)
+		const qs = params.toString()
+		router.replace(qs ? `/users?${qs}` : "/users", { scroll: false })
+	}
 
-	// Reset country filter when continent changes
-	useEffect(() => {
-		setSelectedCountry(null);
-	}, [activeContinent]);
-
-	// Dynamic filter options for DataTable
-	const filterableColumns = useMemo(() => {
-		const opts: { id: string; title: string; options: { label: string; value: string }[] }[] = [];
-
-		// User type filter
-		const userTypes = new Set<string>();
-		for (const p of filteredProfiles) {
-			if ((p as any).userType) userTypes.add((p as any).userType);
-		}
-		if (userTypes.size > 1) {
-			const USER_TYPE_LABELS: Record<string, string> = {
-				long_stay: " Résident",
-				short_stay: " De passage",
-				visa_tourism: " Visa tourisme",
-				visa_business: " Visa affaires",
-				visa_long_stay: " Visa long séjour",
-				admin_services: " Services admin",
-			};
-			opts.push({
-				id: "userType",
-				title: "Statut",
-				options: [...userTypes].map((t) => ({
-					value: t,
-					label: USER_TYPE_LABELS[t] ?? t,
-				})),
-			});
-		}
-
-		// Country filter
-		if (countryOptions.length > 1) {
-			opts.push({
-				id: "country",
-				title: "Pays",
-				options: countryOptions.map((c) => ({
-					value: c.code,
-					label: c.label,
-				})),
-			});
-		}
-
-		return opts;
-	}, [filteredProfiles, countryOptions]);
-
-	// Load more when available
-	useEffect(() => {
-		if (paginationStatus === "CanLoadMore") {
-			loadMore(100);
-		}
-	}, [paginationStatus, loadMore]);
+	const pagination: PaginationState = {
+		pageIndex: urlPage,
+		pageSize: urlPageSize,
+	}
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4 pt-6">
 			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight">
-						Profils Citoyens
-					</h1>
+					<h1 className="text-3xl font-bold tracking-tight">Profils Citoyens</h1>
 					<p className="text-muted-foreground">
 						Recherchez et consultez les profils consulaires.
 					</p>
 				</div>
 
-				{/* Stats badges */}
-				{profiles.length > 0 && (
-					<div className="flex items-center gap-4 flex-wrap">
-						{/* View Toggles */}
-						<div className="flex items-center p-1 bg-muted/50 rounded-lg shrink-0">
-							<button
-								type="button"
-								onClick={() => setViewMode("table")}
-								className={cn(
-									"p-1.5 rounded-md text-sm transition-all focus:outline-none",
-									viewMode === "table"
-										? "bg-background text-foreground"
-										: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-								)}
-								title="Vue tableau"
-							>
-								<List className="h-4 w-4" />
-							</button>
-							<button
-								type="button"
-								onClick={() => setViewMode("grid")}
-								className={cn(
-									"p-1.5 rounded-md text-sm transition-all focus:outline-none",
-									viewMode === "grid"
-										? "bg-background text-foreground"
-										: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-								)}
-								title="Vue grille"
-							>
-								<LayoutGrid className="h-4 w-4" />
-							</button>
-						</div>
+				<div className="flex items-center gap-4 flex-wrap">
+					{/* View toggle (table / grid) */}
+					<div className="flex items-center p-1 bg-muted/50 rounded-lg shrink-0">
+						<button
+							type="button"
+							onClick={() => setMode("table")}
+							className={cn(
+								"p-1.5 rounded-md text-sm transition-all focus:outline-none",
+								mode === "table"
+									? "bg-background text-foreground"
+									: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
+							)}
+							title="Vue tableau"
+						>
+							<List className="h-4 w-4" />
+						</button>
+						<button
+							type="button"
+							onClick={() => setMode("grid")}
+							className={cn(
+								"p-1.5 rounded-md text-sm transition-all focus:outline-none",
+								mode === "grid"
+									? "bg-background text-foreground"
+									: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
+							)}
+							title="Vue grille"
+						>
+							<LayoutGrid className="h-4 w-4" />
+						</button>
+					</div>
 
+					{/* Stats */}
+					{facets && (
 						<div className="flex items-center gap-2 flex-wrap">
 							<div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/50 text-sm">
 								<Users className="h-3.5 w-3.5 text-muted-foreground" />
-								<span className="font-medium">{stats.total}</span>
+								<span className="font-medium">{total}</span>
 								<span className="text-muted-foreground">profils</span>
 							</div>
-							{stats.attached > 0 && (
-								<div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 text-sm border border-green-500/20">
+							{facets.attachment.attached > 0 && (
+								<button
+									type="button"
+									onClick={() =>
+										setAttachment(
+											activeAttachment === "attached" ? null : "attached",
+										)
+									}
+									className={cn(
+										"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors",
+										activeAttachment === "attached"
+											? "bg-green-500/20 border-green-500/40 text-green-700"
+											: "bg-green-500/10 border-green-500/20 text-green-700 hover:bg-green-500/15",
+									)}
+								>
 									<Building2 className="h-3.5 w-3.5 text-green-600" />
-									<span className="font-medium text-green-700">{stats.attached}</span>
-									<span className="text-green-600">rattachés</span>
-								</div>
+									<span className="font-medium">
+										{facets.attachment.attached}
+									</span>
+									<span>rattachés</span>
+								</button>
 							)}
-							{stats.unattached > 0 && (
-								<div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 text-sm border border-orange-500/20">
-									<span className="font-medium text-orange-700">{stats.unattached}</span>
-									<span className="text-orange-600">non rattachés</span>
-								</div>
+							{facets.attachment.unattached > 0 && (
+								<button
+									type="button"
+									onClick={() =>
+										setAttachment(
+											activeAttachment === "unattached" ? null : "unattached",
+										)
+									}
+									className={cn(
+										"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors",
+										activeAttachment === "unattached"
+											? "bg-orange-500/20 border-orange-500/40 text-orange-700"
+											: "bg-orange-500/10 border-orange-500/20 text-orange-700 hover:bg-orange-500/15",
+									)}
+								>
+									<span className="font-medium">
+										{facets.attachment.unattached}
+									</span>
+									<span>non rattachés</span>
+								</button>
 							)}
 						</div>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 
-			{/* Continent Tabs */}
+			{/* Continent tabs */}
 			{continents.length > 0 && (
 				<div className="flex flex-wrap gap-1.5 p-1 bg-muted/50 rounded-xl">
 					<button
 						type="button"
-						onClick={() => setActiveContinent(null)}
+						onClick={() => setContinent(null)}
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 							activeContinent === null
@@ -281,7 +357,6 @@ export function ProfilesView() {
 								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 						)}
 					>
-						<span></span>
 						<span>Tous</span>
 						<Badge
 							variant="secondary"
@@ -290,15 +365,14 @@ export function ProfilesView() {
 								activeContinent === null && "bg-primary/10 text-primary",
 							)}
 						>
-							{continentCounts.get("all") || 0}
+							{facets?.total ?? 0}
 						</Badge>
 					</button>
-
 					{continents.map((continent) => (
 						<button
 							key={continent}
 							type="button"
-							onClick={() => setActiveContinent(continent)}
+							onClick={() => setContinent(continent)}
 							className={cn(
 								"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
 								activeContinent === continent
@@ -307,7 +381,9 @@ export function ProfilesView() {
 							)}
 						>
 							<span>{getContinentEmoji(continent)}</span>
-							<span className="hidden sm:inline">{getContinentLabel(continent)}</span>
+							<span className="hidden sm:inline">
+								{getContinentLabel(continent)}
+							</span>
 							<Badge
 								variant="secondary"
 								className={cn(
@@ -315,115 +391,216 @@ export function ProfilesView() {
 									activeContinent === continent && "bg-primary/10 text-primary",
 								)}
 							>
-								{continentCounts.get(continent) || 0}
+								{facets?.continents?.[continent] ?? 0}
 							</Badge>
 						</button>
 					))}
 				</div>
 			)}
 
-			{/* Country Sub-Tabs */}
-			{countryOptions.length > 0 && (
-				<div className="flex flex-wrap gap-1 px-1">
-					<button
-						type="button"
-						onClick={() => setSelectedCountry(null)}
-						className={cn(
-							"flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-							!selectedCountry
-								? "bg-primary/10 text-primary border border-primary/20"
-								: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
-						)}
-					>
-						<span></span>
-						<span>Tous les pays</span>
-						<span className="text-[10px] opacity-70 ml-0.5">
-							{activeContinent ? continentCounts.get(activeContinent) || 0 : profiles.length}
-						</span>
-					</button>
-					{countryOptions.map((opt) => (
+			{/* Country sub-tabs + filters row */}
+			<div className="flex flex-wrap items-center gap-3">
+				{countryOptions.length > 0 && (
+					<div className="flex flex-wrap gap-1">
 						<button
-							key={opt.code}
 							type="button"
-							onClick={() => setSelectedCountry(opt.code)}
+							onClick={() => setCountry(null)}
 							className={cn(
 								"flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-								selectedCountry === opt.code
+								!activeCountry
 									? "bg-primary/10 text-primary border border-primary/20"
 									: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
 							)}
 						>
-							<span>{opt.label}</span>
-							<span className="text-[10px] opacity-70 ml-0.5">{opt.count}</span>
+							<span>Tous les pays</span>
+							<span className="text-[10px] opacity-70 ml-0.5">
+								{activeContinent
+									? facets?.continents?.[activeContinent] ?? 0
+									: facets?.total ?? 0}
+							</span>
 						</button>
-					))}
-				</div>
-			)}
+						{countryOptions.map((opt) => (
+							<button
+								key={opt.code}
+								type="button"
+								onClick={() => setCountry(opt.code)}
+								className={cn(
+									"flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+									activeCountry === opt.code
+										? "bg-primary/10 text-primary border border-primary/20"
+										: "text-muted-foreground hover:text-foreground hover:bg-muted/80",
+								)}
+							>
+								<span>{opt.label}</span>
+								<span className="text-[10px] opacity-70 ml-0.5">
+									{opt.count}
+								</span>
+							</button>
+						))}
+					</div>
+				)}
 
-			{/* Content View */}
-			{viewMode === "table" ? (
+				{userTypeOptions.length > 0 && (
+					<div className="ml-auto flex items-center gap-2">
+						<Combobox
+							options={[
+								{
+									value: "__all__",
+									label: `Tous les statuts (${facets?.total ?? 0})`,
+								},
+								...userTypeOptions,
+							]}
+							value={activeUserType ?? "__all__"}
+							onValueChange={(v) =>
+								setUserType(v === "__all__" ? null : v)
+							}
+							placeholder="Statut"
+							searchPlaceholder="Filtrer…"
+							emptyText="Aucun statut."
+							className="h-9 w-[200px]"
+						/>
+						{hasActiveFilter && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-9 font-normal"
+								onClick={resetFilters}
+							>
+								Réinitialiser
+							</Button>
+						)}
+					</div>
+				)}
+			</div>
+
+			{/* Content */}
+			{mode === "table" ? (
 				<DataTable
 					columns={profileColumns}
-					data={filteredProfiles as any[]}
+					data={profiles as any[]}
 					searchKeys={["name"]}
 					searchPlaceholder="Rechercher par nom..."
-					filterableColumns={filterableColumns}
-					isLoading={isLoading && profiles.length === 0}
+					searchValue={searchInput}
+					onSearchChange={setSearchInput}
+					isLoading={isInitialLoad}
+					isPageTransitioning={isPageTransitioning}
+					totalRowCount={total}
+					pagination={pagination}
+					onPaginationChange={setPagination}
 				/>
 			) : (
 				<div className="flex flex-col gap-4">
-					{/* Search Bar for Grid View */}
-					<div className="relative max-w-sm">
-						<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-						<input
-							type="search"
-							placeholder="Rechercher par nom..."
-							className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+					{/* Grid mode: independent search input + manual page nav. */}
+					<div className="flex items-center justify-between gap-4 flex-wrap">
+						<div className="relative max-w-sm w-full">
+							<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+							<input
+								type="search"
+								placeholder="Rechercher par nom..."
+								className="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+								value={searchInput}
+								onChange={(e) => setSearchInput(e.target.value)}
+							/>
+						</div>
+						<GridPager
+							page={urlPage}
+							pageSize={urlPageSize}
+							total={total}
+							onChange={setPagination}
+							isLoading={isPageTransitioning}
 						/>
 					</div>
 
-					{isLoading && profiles.length === 0 ? (
+					{isInitialLoad ? (
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 							{Array.from({ length: 8 }).map((_, i) => (
 								<div
+									// biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder
 									key={i}
 									className="h-48 rounded-xl bg-muted/50 animate-pulse"
 								/>
 							))}
 						</div>
-					) : filteredProfiles.length === 0 ? (
+					) : profiles.length === 0 ? (
 						<div className="flex flex-col items-center justify-center py-20 text-center border rounded-xl bg-muted/20 border-dashed">
 							<Users className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
 							<h3 className="text-lg font-medium">Aucun profil trouvé</h3>
 							<p className="text-muted-foreground mt-1">
-								{debouncedSearch
-									? `Aucun résultat pour "${debouncedSearch}"`
+								{urlSearch
+									? `Aucun résultat pour "${urlSearch}"`
 									: activeContinent
 										? "Aucun profil dans cette région."
 										: "La base de données des profils est vide."}
 							</p>
 						</div>
 					) : (
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-							{filteredProfiles.map((profile: any) => (
+						<div
+							className={cn(
+								"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 transition-opacity duration-150",
+								isPageTransitioning && "opacity-40",
+							)}
+						>
+							{profiles.map((profile: any) => (
 								<ProfileCard key={profile._id} profile={profile} />
 							))}
 						</div>
 					)}
-				</div>
-			)}
 
-			{/* Load more indicator */}
-			{paginationStatus === "LoadingMore" && (
-				<div className="flex justify-center py-4">
-					<div className="flex items-center gap-2 text-sm text-muted-foreground">
-						<Loader2 className="h-4 w-4 animate-spin" />
-						<span>Chargement des profils...</span>
-					</div>
+					<GridPager
+						page={urlPage}
+						pageSize={urlPageSize}
+						total={total}
+						onChange={setPagination}
+						isLoading={isPageTransitioning}
+					/>
 				</div>
 			)}
 		</div>
-	);
+	)
+}
+
+/** Compact prev/next pager used in the grid view. */
+function GridPager({
+	page,
+	pageSize,
+	total,
+	onChange,
+	isLoading,
+}: {
+	page: number
+	pageSize: number
+	total: number
+	onChange: (s: PaginationState) => void
+	isLoading: boolean
+}) {
+	const pageCount = Math.max(1, Math.ceil(total / pageSize))
+	const display = page + 1
+	const canPrev = page > 0
+	const canNext = page < pageCount - 1
+	return (
+		<div className="flex items-center gap-2 text-sm text-muted-foreground">
+			{isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+			<span>
+				Page {display} sur {pageCount}
+			</span>
+			<Button
+				variant="outline"
+				size="sm"
+				className="h-8"
+				disabled={!canPrev || isLoading}
+				onClick={() => onChange({ pageIndex: page - 1, pageSize })}
+			>
+				Précédent
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				className="h-8"
+				disabled={!canNext || isLoading}
+				onClick={() => onChange({ pageIndex: page + 1, pageSize })}
+			>
+				Suivant
+			</Button>
+		</div>
+	)
 }

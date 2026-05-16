@@ -32,6 +32,10 @@ import {
   missedCallsByOrgStatus,
   missedCallsByOrgReason,
   requestsByOrgService,
+  usersByRole,
+  usersByStatus,
+  usersByCountry,
+  membershipsByUser,
 } from "../lib/aggregates";
 import triggers from "../lib/triggerSetup";
 import {
@@ -76,6 +80,14 @@ triggers.register("missedCalls", missedCallsByOrgReason.idempotentTrigger());
 
 // Public services catalog — featured service computation
 triggers.register("requests", requestsByOrgService.idempotentTrigger());
+
+// /users page facets — role / status / country / per-user membership counts.
+// idempotentTrigger handles namespace flips (role change, isActive flip) via
+// _replace automatically.
+triggers.register("users", usersByRole.idempotentTrigger());
+triggers.register("users", usersByStatus.idempotentTrigger());
+triggers.register("profiles", usersByCountry.idempotentTrigger());
+triggers.register("memberships", membershipsByUser.idempotentTrigger());
 
 // ============================================================================
 // REQUESTS TRIGGERS

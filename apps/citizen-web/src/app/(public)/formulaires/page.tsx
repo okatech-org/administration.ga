@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { JsonLd } from "@/components/seo/JsonLd"
+import { breadcrumbSchema } from "@/lib/json-ld"
 import { buildMetadata } from "@/lib/seo"
 import FormulairesPageClient from "./formulaires-page-client"
 
@@ -10,5 +12,15 @@ export const metadata: Metadata = buildMetadata({
 })
 
 export default function FormulairesPage() {
-  return <FormulairesPageClient />
+  return (
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: "Accueil", path: "/" },
+          { name: "Formulaires", path: "/formulaires" },
+        ])}
+      />
+      <FormulairesPageClient />
+    </>
+  )
 }

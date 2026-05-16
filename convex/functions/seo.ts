@@ -43,12 +43,17 @@ export const getSitemapEntries = query({
           slug: s.slug,
           updatedAt: s._creationTime,
         })),
-      posts: posts
-        .filter((p) => !!p.slug)
-        .map((p) => ({
-          slug: p.slug,
-          updatedAt: p.publishedAt ?? p._creationTime,
-        })),
+      posts: await Promise.all(
+        posts
+          .filter((p) => !!p.slug)
+          .map(async (p) => ({
+            slug: p.slug,
+            updatedAt: p.publishedAt ?? p._creationTime,
+            coverImageUrl: p.coverImageStorageId
+              ? await ctx.storage.getUrl(p.coverImageStorageId)
+              : null,
+          })),
+      ),
       orgs: orgs
         .filter((o) => !!o.slug && !isIntelligenceAgency(o))
         .map((o) => ({

@@ -29,6 +29,7 @@ type BuildMetadataInput = {
   publishedTime?: string
   modifiedTime?: string
   noindex?: boolean
+  languages?: Record<string, string>
 }
 
 export function buildMetadata({
@@ -40,6 +41,7 @@ export function buildMetadata({
   publishedTime,
   modifiedTime,
   noindex = false,
+  languages,
 }: BuildMetadataInput): Metadata {
   const url = path.startsWith("/") ? path : `/${path}`
   const ogImage = image ?? DEFAULT_OG_IMAGE
@@ -47,7 +49,10 @@ export function buildMetadata({
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      ...(languages ? { languages } : {}),
+    },
     openGraph: {
       type,
       title,

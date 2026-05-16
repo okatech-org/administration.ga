@@ -6,13 +6,14 @@ import { ArrowLeft, FileText } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { usePreloadedQuery, type Preloaded } from "convex/react"
+import { useConvexAuth, usePreloadedQuery, type Preloaded } from "convex/react"
 import { Button } from "@/components/ui/button"
 import {
   CATEGORY_CONFIG,
   isFullyOnline,
 } from "@/components/services/v2/categories"
-import { ServiceHero } from "@/components/services/v2/detail/hero"
+import { ServiceHero, type ServiceCtaState } from "@/components/services/v2/detail/hero"
+import { useConvexQuery } from "@/integrations/convex/hooks"
 import {
   DocumentsSection,
   FaqSection,
@@ -99,6 +100,38 @@ export function ServiceDetailClient({
 
   const fullyOnline = isFullyOnline(service)
 
+  // CTA « Démarrer la démarche » : seulement si l'utilisateur est connecté
+  // ET que son organisme de rattachement (inscription ou signalement actif)
+  // propose ce service. Sinon, on adapte le bouton.
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
+  const { data: eligibility } = useConvexQuery(
+    api.functions.services.getMyServiceEligibility,
+    authLoading ? "skip" : { serviceId: service._id },
+  )
+
+  const cta: ServiceCtaState = (() => {
+    if (authLoading || (isAuthenticated && eligibility === undefined)) {
+      return { kind: "loading" }
+    }
+    if (!eligibility || eligibility.status === "unauthenticated") {
+      return {
+        kind: "unauthenticated",
+        href: `/sign-in?redirect=${encodeURIComponent(`/services/${service.slug}`)}`,
+      }
+    }
+    if (eligibility.status === "eligible") {
+      const search = eligibility.orgSlug ? `?org=${eligibility.orgSlug}` : ""
+      return {
+        kind: "eligible",
+        href: `/my-space/services/${service.slug}/new${search}`,
+      }
+    }
+    if (eligibility.status === "no_attached_org") {
+      return { kind: "no_attached_org" }
+    }
+    return { kind: "not_offered" }
+  })()
+
   // Pricing affiché dans la sidebar / hero — extrait de pricingTable[standard]
   // ou null si pas de pricingTable. On affichera juste « — » sinon.
   const standardPricing = useMemo(() => {
@@ -138,7 +171,6 @@ export function ServiceDetailClient({
     },
   ]
 
-  const ctaHref = `/services/${service.slug}/new`
   const serviceContentHtml = service.content
     ? sanitizeHtml(getLocalizedValue(service.content, lang))
     : null
@@ -179,7 +211,7 @@ export function ServiceDetailClient({
           "services.detail.heroCtaBody",
           "Identité vérifiée par France Connect ou Consulat ID — signature électronique avancée acceptée.",
         )}
-        ctaHref={ctaHref}
+        cta={cta}
         secondaryCtaHref="/reps"
       />
 
@@ -260,7 +292,7 @@ export function ServiceDetailClient({
             pricingMain={standardPricing ?? undefined}
             pricingMinor={minorsPricing}
             isFullyOnline={fullyOnline}
-            ctaHref={ctaHref}
+            cta={cta}
           />
           <WhereCard />
           {service.formFilesWithUrls &&

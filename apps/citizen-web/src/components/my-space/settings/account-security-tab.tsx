@@ -1,12 +1,4 @@
-import {
-	Check,
-	KeyRound,
-	Loader2,
-	LogOut,
-	Mail,
-	Shield,
-	User,
-} from "lucide-react";
+import { LogOut, Shield, User } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatCard } from "@/components/my-space/flat-card";
@@ -21,11 +13,8 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { authClient } from "@/lib/auth-client";
-import { cn } from "@/lib/utils";
 import { PinCodeSection } from "./pin-code-section";
 
 interface AccountSecurityTabProps {
@@ -107,10 +96,7 @@ export function AccountSecurityTab({
 
 				{/* ─── Colonne droite ─── */}
 				<div className="flex flex-col gap-4">
-					{/* Mot de passe */}
-					<PasswordResetCard />
-
-					{/* Code PIN */}
+					{/* Code PIN — méthode principale de connexion rapide */}
 					<FlatCard>
 						<div className="p-4">
 							<PinCodeSection />
@@ -162,92 +148,3 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 	);
 }
 
-// ─── Mot de passe ────────────────────────────────────────────
-
-function PasswordResetCard() {
-	const { t } = useTranslation();
-	const { data: session } = authClient.useSession();
-	const [resetStep, setResetStep] = useState<"idle" | "otp_sent" | "done">("idle");
-	const [resetOtp, setResetOtp] = useState("");
-	const [resetNewPassword, setResetNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
-	const [resetLoading, setResetLoading] = useState(false);
-	const [resetError, setResetError] = useState<string | null>(null);
-	const [resetSuccess, setResetSuccess] = useState(false);
-
-	const handleSendResetOtp = async () => {
-		const email = session?.user?.email;
-		if (!email) return;
-		setResetError(null);
-		setResetLoading(true);
-		try {
-			const result = await authClient.emailOtp.sendVerificationOtp({ email, type: "forget-password" });
-			if (result.error) setResetError(result.error.message || t("settings.security.changeFailed"));
-			else setResetStep("otp_sent");
-		} catch { setResetError(t("settings.security.changeFailed")); }
-		finally { setResetLoading(false); }
-	};
-
-	const handleResetWithOtp = async (e: React.FormEvent) => {
-		e.preventDefault();
-		const email = session?.user?.email;
-		if (!email) return;
-		if (resetNewPassword.length < 8) { setResetError(t("settings.security.passwordTooShort")); return; }
-		if (resetNewPassword !== confirmPassword) { setResetError(t("settings.security.passwordMismatch")); return; }
-		setResetError(null);
-		setResetLoading(true);
-		try {
-			const result = await authClient.emailOtp.resetPassword({ email, otp: resetOtp, password: resetNewPassword });
-			if (result.error) setResetError(result.error.message || t("settings.security.changeFailed"));
-			else {
-				setResetSuccess(true);
-				setResetStep("done");
-				setResetOtp(""); setResetNewPassword(""); setConfirmPassword("");
-				setTimeout(() => { setResetSuccess(false); setResetStep("idle"); }, 4000);
-			}
-		} catch { setResetError(t("settings.security.changeFailed")); }
-		finally { setResetLoading(false); }
-	};
-
-	return (
-		<FlatCard>
-			<CardHeader icon={<KeyRound className="h-3.5 w-3.5" />} title={t("settings.security.changePassword")} />
-			<div className="space-y-3 p-3">
-				<p className="text-xs text-muted-foreground">{t("settings.security.changePasswordDesc")}</p>
-
-				{resetError && (
-					<div className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{resetError}</div>
-				)}
-				{resetSuccess && (
-					<div className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary flex items-center gap-2">
-						<Check className="size-3.5" />{t("settings.security.resetSuccess")}
-					</div>
-				)}
-
-				{resetStep === "idle" && (
-					<Button variant="outline" size="sm" onClick={handleSendResetOtp} disabled={resetLoading || !session?.user?.email} className="gap-2 w-full rounded-xl">
-						{resetLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Mail className="size-3.5" />}
-						{t("settings.security.sendResetCode")}
-					</Button>
-				)}
-
-				{resetStep === "otp_sent" && (
-					<form onSubmit={handleResetWithOtp} className="space-y-2.5">
-						<p className="text-xs text-muted-foreground">{t("settings.security.otpSentTo", { email: session?.user?.email })}</p>
-						<div className="space-y-1"><Label className="text-xs">{t("settings.security.otpCode")}</Label><Input value={resetOtp} onChange={(e) => setResetOtp(e.target.value)} placeholder="123456" required autoComplete="one-time-code" className="h-8 text-sm" /></div>
-						<div className="space-y-1"><Label className="text-xs">{t("settings.security.newPassword")}</Label><Input type="password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={8} autoComplete="new-password" className="h-8 text-sm" /></div>
-						<div className="space-y-1"><Label className="text-xs">{t("settings.security.confirmPassword")}</Label><Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} autoComplete="new-password" className="h-8 text-sm" /></div>
-						<div className="flex gap-2">
-							<Button type="submit" size="sm" disabled={resetLoading || !resetOtp || !resetNewPassword || !confirmPassword || resetNewPassword !== confirmPassword}>
-								{resetLoading && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}{t("settings.security.resetPassword")}
-							</Button>
-							<Button type="button" variant="ghost" size="sm" onClick={() => { setResetStep("idle"); setResetError(null); setResetOtp(""); setResetNewPassword(""); setConfirmPassword(""); }}>
-								{t("common.cancel")}
-							</Button>
-						</div>
-					</form>
-				)}
-			</div>
-		</FlatCard>
-	);
-}

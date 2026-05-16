@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getCountryName } from "@/lib/country-utils";
 import { cn } from "@/lib/utils";
 import { PublicUserType } from "@convex/lib/constants";
 import {
@@ -13,10 +14,108 @@ import {
 	Loader2,
 	Pencil,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getDocsForUserType } from "./DocumentsStep";
-import type { OnboardingData } from "../types";
+import {
+	birthSchema,
+	contactSchema,
+	contactsSchemaFor,
+	documentsSchemaFor,
+	familySchema,
+	nameSchema,
+	passportSchema,
+	professionSchema,
+} from "../lib/schemas";
+import { formatAddressDisplay, type OnboardingData } from "../types";
+import {
+	getDocsForUserType,
+	type RegistrationFiles,
+} from "./DocumentsStep";
+
+type StepKey = "identity" | "family" | "contacts" | "profession" | "documents";
+
+function computeIncompleteSteps(
+	data: OnboardingData,
+	files: RegistrationFiles,
+	userType: PublicUserType,
+): StepKey[] {
+	const incomplete: StepKey[] = [];
+
+	const identityChecks = [
+		nameSchema.safeParse({
+			firstName: data.firstName,
+			lastName: data.lastName,
+		}),
+		contactSchema.safeParse({ email: data.email, phone: data.phone }),
+		birthSchema.safeParse({
+			birthDate: data.birthDate,
+			birthPlace: data.birthPlace,
+			birthCountry: data.birthCountry,
+			gender: data.gender,
+			nationality: data.nationality,
+			nationalityAcquisition: data.nationalityAcquisition,
+			nip: data.nip,
+		}),
+		passportSchema.safeParse({
+			passportNumber: data.passportNumber,
+			passportIssuingAuthority: data.passportIssuingAuthority,
+			passportIssueDate: data.passportIssueDate,
+			passportExpiryDate: data.passportExpiryDate,
+		}),
+	];
+	if (identityChecks.some((r) => !r.success)) incomplete.push("identity");
+
+	const steps =
+		userType === PublicUserType.LongStay
+			? (["family", "contacts", "profession", "documents"] as const)
+			: (["contacts", "documents"] as const);
+
+	for (const step of steps) {
+		if (step === "family") {
+			if (
+				!familySchema.safeParse({
+					maritalStatus: data.maritalStatus,
+					spouseFirstName: data.spouseFirstName,
+					spouseLastName: data.spouseLastName,
+					fatherFirstName: data.fatherFirstName,
+					fatherLastName: data.fatherLastName,
+					motherFirstName: data.motherFirstName,
+					motherLastName: data.motherLastName,
+				}).success
+			) {
+				incomplete.push("family");
+			}
+		} else if (step === "contacts") {
+			const schema = contactsSchemaFor(userType);
+			const res = schema.safeParse({
+				address: data.address ?? {},
+				homeland: data.homeland,
+				emergencyContacts: data.emergencyContacts,
+			});
+			if (!res.success) incomplete.push("contacts");
+		} else if (step === "profession") {
+			if (
+				!professionSchema.safeParse({
+					workStatus: data.workStatus,
+					workTitle: data.workTitle,
+					workEmployer: data.workEmployer,
+				}).success
+			) {
+				incomplete.push("profession");
+			}
+		} else if (step === "documents") {
+			const schema = documentsSchemaFor(userType);
+			const docs = getDocsForUserType(userType);
+			const values: Record<string, File | string | undefined> = {};
+			for (const doc of docs) {
+				values[doc.key] = files[doc.key] ?? data.documents?.[doc.key];
+			}
+			if (!schema.safeParse(values).success) incomplete.push("documents");
+		}
+	}
+
+	return incomplete;
+}
 
 function ReviewSection({
 	title,
@@ -76,6 +175,7 @@ function Row({ label, value }: { label: string; value?: React.ReactNode }) {
 export function ReviewStep({
 	data,
 	userType,
+	files,
 	onJump,
 	onSubmit,
 	submitting,
@@ -83,13 +183,19 @@ export function ReviewStep({
 }: {
 	data: OnboardingData;
 	userType: PublicUserType;
-	onJump: (stepKey: "identity" | "family" | "contacts" | "profession" | "documents") => void;
+	files: RegistrationFiles;
+	onJump: (stepKey: StepKey) => void;
 	onSubmit: () => void;
 	submitting: boolean;
 	submitError: string | null;
 }) {
 	const { t } = useTranslation();
 	const [accepted, setAccepted] = useState(false);
+	const incompleteSteps = useMemo(
+		() => computeIncompleteSteps(data, files, userType),
+		[data, files, userType],
+	);
+	const canSubmit = accepted && !submitting && incompleteSteps.length === 0;
 
 	const isLongStay = userType === PublicUserType.LongStay;
 	const docs = getDocsForUserType(userType);
@@ -136,9 +242,15 @@ export function ReviewStep({
 				<Row label={t("onboarding.review.fields.fullName")} value={fullName} />
 				<Row label={t("onboarding.review.fields.birthDate")} value={data.birthDate} />
 				<Row label={t("onboarding.review.fields.birthPlace")} value={data.birthPlace} />
-				<Row label={t("onboarding.review.fields.birthCountry")} value={data.birthCountry} />
+				<Row
+					label={t("onboarding.review.fields.birthCountry")}
+					value={data.birthCountry ? getCountryName(data.birthCountry) : undefined}
+				/>
 				<Row label={t("onboarding.review.fields.gender")} value={genderLabel} />
-				<Row label={t("onboarding.review.fields.nationality")} value={data.nationality} />
+				<Row
+					label={t("onboarding.review.fields.nationality")}
+					value={data.nationality ? getCountryName(data.nationality) : undefined}
+				/>
 				<Row label={t("onboarding.review.fields.email")} value={data.email} />
 				<Row label={t("onboarding.review.fields.phone")} value={data.phone} />
 			</ReviewSection>
@@ -190,10 +302,23 @@ export function ReviewStep({
 				editLabel={editLabel}
 				onEdit={() => onJump("contacts")}
 			>
-				<Row label={t("onboarding.review.fields.address")} value={data.address?.full} />
-				<Row label={t("onboarding.review.fields.country")} value={data.address?.country} />
+				<Row
+					label={t("onboarding.review.fields.address")}
+					value={formatAddressDisplay(data.address)}
+				/>
+				<Row
+					label={t("onboarding.review.fields.country")}
+					value={
+						data.address?.country
+							? getCountryName(data.address.country)
+							: undefined
+					}
+				/>
 				{isLongStay && (
-					<Row label={t("onboarding.review.fields.homeland")} value={data.homeland?.full} />
+					<Row
+						label={t("onboarding.review.fields.homeland")}
+						value={formatAddressDisplay(data.homeland)}
+					/>
 				)}
 				<Row
 					label={t("onboarding.review.fields.emergencyContacts")}
@@ -285,6 +410,43 @@ export function ReviewStep({
 				</CardContent>
 			</Card>
 
+			{incompleteSteps.length > 0 && (
+				<Card className="border-destructive/40 bg-destructive/5">
+					<CardContent className="flex flex-col gap-3 p-4">
+						<div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+							<AlertTriangle className="size-4" />
+							<span suppressHydrationWarning>
+								{t("onboarding.review.incompleteTitle")}
+							</span>
+						</div>
+						<ul className="flex flex-col gap-1.5 text-sm">
+							{incompleteSteps.map((step) => (
+								<li
+									key={step}
+									className="flex items-center justify-between gap-2"
+								>
+									<span suppressHydrationWarning>
+										{t(`onboarding.shell.stepLabels.${step}`)}
+									</span>
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+										onClick={() => onJump(step)}
+									>
+										<Pencil className="size-3" />
+										<span suppressHydrationWarning>
+											{t("onboarding.review.editAction")}
+										</span>
+									</Button>
+								</li>
+							))}
+						</ul>
+					</CardContent>
+				</Card>
+			)}
+
 			<label
 				className={cn(
 					"flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card p-3 text-sm",
@@ -312,7 +474,7 @@ export function ReviewStep({
 			<Button
 				type="button"
 				className="h-12 w-full text-base"
-				disabled={!accepted || submitting}
+				disabled={!canSubmit}
 				onClick={onSubmit}
 			>
 				{submitting ? (

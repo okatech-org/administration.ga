@@ -13,10 +13,11 @@
     "./feature-flags": "./src/feature-flags.ts"
   },
   "dependencies": {
-    "isomorphic-dompurify": "^3.7.1",
+    "dompurify": "^3.2.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.2.0",
     "@workspace/tsconfig": "workspace:*",
     "typescript": "^5.9.3"
   }

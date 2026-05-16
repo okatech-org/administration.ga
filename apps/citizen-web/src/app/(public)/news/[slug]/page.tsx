@@ -11,6 +11,26 @@ type PageProps = {
   params: Promise<{ slug: string }>
 }
 
+export const revalidate = 3600
+
+export async function generateStaticParams() {
+  try {
+    const entries = await fetchQuery(api.functions.seo.getSitemapEntries, {})
+    return entries.posts.slice(0, 100).map((p) => ({ slug: p.slug }))
+  } catch (error) {
+    console.error("[news/[slug]] generateStaticParams failed", error)
+    return []
+  }
+}
+
+function pickFr(value: unknown): string {
+  if (typeof value === "string") return value
+  if (value && typeof value === "object" && "fr" in value) {
+    return String((value as { fr: string }).fr ?? "")
+  }
+  return ""
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -21,9 +41,14 @@ export async function generateMetadata({
     return { title: "Article introuvable", robots: { index: false } }
   }
 
+  const title = post.titleI18n ? pickFr(post.titleI18n) : post.title
+  const description = post.excerptI18n
+    ? pickFr(post.excerptI18n)
+    : post.excerpt
+
   return buildMetadata({
-    title: post.title,
-    description: post.excerpt,
+    title,
+    description,
     path: `/news/${slug}`,
     type: "article",
     image: post.coverImageUrl ?? undefined,
@@ -37,33 +62,44 @@ export async function generateMetadata({
 export default async function PostDetailPage({ params }: PageProps) {
   const { slug } = await params
 
-  const [post, preloaded] = await Promise.all([
+  const [post, preloaded, related] = await Promise.all([
     fetchQuery(api.functions.posts.getBySlug, { slug }),
     preloadQuery(api.functions.posts.getBySlug, { slug }),
+    fetchQuery(api.functions.posts.getRelated, { slug, limit: 3 }),
   ])
 
   if (!post) notFound()
+
+  const title = post.titleI18n ? pickFr(post.titleI18n) : post.title
+  const description = post.excerptI18n
+    ? pickFr(post.excerptI18n)
+    : post.excerpt
 
   return (
     <>
       <JsonLd
         data={articleSchema({
-          title: post.title,
-          description: post.excerpt,
+          title,
+          description,
           slug,
           image: post.coverImageUrl ?? undefined,
           publishedAt: post.publishedAt,
           updatedAt: post._creationTime,
+          articleSection: (post as { category?: string }).category,
+          keywords: (post as { tags?: string[] }).tags,
+          authorName:
+            (post as { authorName?: string }).authorName ?? undefined,
+          speakable: true,
         })}
       />
       <JsonLd
         data={breadcrumbSchema([
           { name: "Accueil", path: "/" },
           { name: "Actualités", path: "/news" },
-          { name: post.title, path: `/news/${slug}` },
+          { name: title, path: `/news/${slug}` },
         ])}
       />
-      <PostDetailClient preloaded={preloaded} />
+      <PostDetailClient preloaded={preloaded} related={related} />
     </>
   )
 }

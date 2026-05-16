@@ -247,7 +247,7 @@ function GlobalCallAlertInner({
 		const shouldRedirect = isOrgCall && pickupRedirect;
 		if (shouldRedirect) {
 			try {
-				await pickup(activeCallToDisplay._id);
+				await pickup((activeCallToDisplay as { _id: Id<"meetings"> })._id);
 				router.push("/icom?tab=icall");
 				return;
 			} catch {

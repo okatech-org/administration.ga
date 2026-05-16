@@ -126,9 +126,18 @@ export const listCatalog = query({
 
 /**
  * Stats agrégées du catalogue public.
- * Utilisé par le hero de /services pour les KPIs (total, % en ligne, délai
- * moyen, satisfaction) et pour les compteurs de filter pills par catégorie.
+ * Utilisé par le hero de /services pour les 4 KPIs (total, en ligne,
+ * délai moyen, temps gagné théorique) et pour les compteurs de filter
+ * pills par catégorie.
+ *
+ * Le « temps gagné » est une estimation théorique du gain par démarche
+ * réalisée en ligne plutôt qu'en présentiel : on retient 4 heures
+ * (déplacement aller-retour + temps d'attente sur place + saisie
+ * accélérée du formulaire numérique). Multiplié par le nombre de
+ * services 100 % en ligne, on obtient un total cumulé pour le réseau.
  */
+const TIME_SAVED_HOURS_PER_ONLINE_REQUEST = 4;
+
 export const getCatalogStats = query({
   args: {},
   handler: async (ctx) => {
@@ -156,7 +165,8 @@ export const getCatalogStats = query({
       onlineCount,
       expressCount,
       avgDays,
-      satisfactionPct: 96, // TODO: brancher sur une vraie source de feedback
+      // Temps gagné théorique par démarche en ligne (en heures).
+      timeSavedHoursPerOnlineRequest: TIME_SAVED_HOURS_PER_ONLINE_REQUEST,
       byCategory,
     };
   },
@@ -284,6 +294,80 @@ export const getById = query({
   args: { serviceId: v.id("services") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.serviceId);
+  },
+});
+
+/**
+ * Eligibility de l'utilisateur courant pour démarrer un service depuis la
+ * page publique. La page de détail (`/services/[slug]`) est consultable sans
+ * auth — cette query est donc publique et gère elle-même l'absence
+ * d'identity. Elle considère qu'un usager peut démarrer un service si :
+ *   1. il est authentifié ET
+ *   2. il dispose d'au moins un organisme de rattachement (inscription OU
+ *      signalement actif) qui propose ce service dans `orgServices` avec
+ *      `isActive: true`.
+ *
+ * Statuts renvoyés :
+ *   - `unauthenticated`  : pas de session → CTA = redirection vers /sign-in
+ *   - `no_attached_org`  : aucun organisme de rattachement actif
+ *   - `not_offered`      : aucun organisme rattaché ne propose ce service
+ *   - `eligible`         : OK, on renvoie `orgSlug` pour épingler la demande
+ */
+export const getMyServiceEligibility = query({
+  args: { serviceId: v.id("services") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { status: "unauthenticated" as const };
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authId", (q) => q.eq("authId", identity.subject))
+      .unique();
+    if (!user) return { status: "unauthenticated" as const };
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .unique();
+    if (!profile) return { status: "no_attached_org" as const };
+
+    const orgIds = new Set<Doc<"orgs">["_id"]>();
+
+    const registrations = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
+      .collect();
+    for (const r of registrations) {
+      if (r.status === "active") orgIds.add(r.orgId);
+    }
+
+    const notifications = await ctx.db
+      .query("consularNotifications")
+      .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
+      .collect();
+    for (const n of notifications) {
+      if (n.status === "active") orgIds.add(n.orgId);
+    }
+
+    if (orgIds.size === 0) return { status: "no_attached_org" as const };
+
+    for (const orgId of orgIds) {
+      const orgService = await ctx.db
+        .query("orgServices")
+        .withIndex("by_org_service", (q) =>
+          q.eq("orgId", orgId).eq("serviceId", args.serviceId),
+        )
+        .unique();
+      if (orgService && orgService.isActive) {
+        const org = await ctx.db.get(orgId);
+        return {
+          status: "eligible" as const,
+          orgSlug: org?.slug ?? null,
+        };
+      }
+    }
+
+    return { status: "not_offered" as const };
   },
 });
 

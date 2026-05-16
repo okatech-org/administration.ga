@@ -41,10 +41,10 @@ export function ServicesFilterBand({
 
   return (
     <div className="sticky top-0 z-20 border-b border-[var(--pub-border)] bg-[var(--pub-bg)]/95 backdrop-blur-sm">
-      <div className="mx-auto max-w-[1280px] px-8 pt-7 pb-5">
-        <div className="flex items-center gap-3 border-b border-[var(--pub-border)] pb-2">
+      <div className="mx-auto max-w-[1280px] px-8 py-3">
+        <div className="flex items-center gap-2.5 rounded-full border border-[var(--pub-border)] bg-[var(--pub-surface)] py-1.5 pr-1.5 pl-4">
           <Search
-            className="size-[18px] text-[var(--pub-text-muted)]"
+            className="size-[16px] shrink-0 text-[var(--pub-text-muted)]"
             aria-hidden="true"
           />
           <input
@@ -53,13 +53,19 @@ export function ServicesFilterBand({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={t(
               "services.filterband.searchPlaceholder",
-              "Rechercher un service par nom — passeport, mariage, fiscalité, certification…",
+              "Rechercher un service — passeport, mariage, certification…",
             )}
-            className="flex-1 border-0 bg-transparent py-3 text-[15px] text-[var(--pub-text)] placeholder:text-[var(--pub-text-faint)] focus:outline-none"
+            className="flex-1 border-0 bg-transparent py-1.5 text-[14px] text-[var(--pub-text)] placeholder:text-[var(--pub-text-faint)] focus:outline-none"
           />
+          <button
+            type="button"
+            className="shrink-0 rounded-full bg-[var(--pub-gabon-blue)] px-4 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--pub-gabon-blue-deep)]"
+          >
+            {t("services.filterband.searchCta", "Rechercher")}
+          </button>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+        <div className="mt-2.5 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <FilterPill
             icon={LayoutGrid}
             label={t("services.allCategories", "Tous")}

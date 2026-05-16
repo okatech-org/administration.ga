@@ -258,6 +258,7 @@ export default function IAstedCitizenPage() {
   const tabLabelMap: Record<TabId, string> = {
     ichat: "iChat",
     icall: "iAppel",
+    imeeting: "iRéunion",
     icontact: "iContact",
   }
   const crumbLabel = tabLabelMap[activeTab]

@@ -41,6 +41,10 @@ import {
   missedCallsByOrgStatus,
   missedCallsByOrgReason,
   requestsByOrgService,
+  usersByRole,
+  usersByStatus,
+  usersByCountry,
+  membershipsByUser,
 } from "../lib/aggregates";
 
 // Small batch size to stay well under 16MB read limit
@@ -301,6 +305,105 @@ export const rebuildRegistrations = internalMutation({
   },
 });
 
+// ─── /users page facets ──────────────────────────────────────────────
+
+export const backfillUsersByRole = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "users", usersByRole,
+      internal.migrations.backfillAggregates.backfillUsersByRole, args.cursor);
+  },
+});
+
+export const backfillUsersByStatus = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "users", usersByStatus,
+      internal.migrations.backfillAggregates.backfillUsersByStatus, args.cursor);
+  },
+});
+
+export const backfillUsersByCountry = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "profiles", usersByCountry,
+      internal.migrations.backfillAggregates.backfillUsersByCountry, args.cursor);
+  },
+});
+
+export const backfillMembershipsByUser = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await chainedBackfill(ctx, "memberships", membershipsByUser,
+      internal.migrations.backfillAggregates.backfillMembershipsByUser, args.cursor);
+  },
+});
+
+/**
+ * Rebuild a single /users-facet aggregate (clear + chained backfill).
+ *
+ *   npx convex run migrations/backfillAggregates:rebuildUsersByRole
+ *   npx convex run migrations/backfillAggregates:rebuildUsersByStatus
+ *   npx convex run migrations/backfillAggregates:rebuildUsersByCountry
+ *   npx convex run migrations/backfillAggregates:rebuildMembershipsByUser
+ */
+export const rebuildUsersByRole = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    console.log(" Clearing usersByRole aggregate...");
+    await usersByRole.clearAll(ctx);
+    await ctx.scheduler.runAfter(0, internal.migrations.backfillAggregates.backfillUsersByRole, {});
+  },
+});
+
+export const rebuildUsersByStatus = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    console.log(" Clearing usersByStatus aggregate...");
+    await usersByStatus.clearAll(ctx);
+    await ctx.scheduler.runAfter(0, internal.migrations.backfillAggregates.backfillUsersByStatus, {});
+  },
+});
+
+export const rebuildUsersByCountry = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    console.log(" Clearing usersByCountry aggregate...");
+    await usersByCountry.clearAll(ctx);
+    await ctx.scheduler.runAfter(0, internal.migrations.backfillAggregates.backfillUsersByCountry, {});
+  },
+});
+
+export const rebuildMembershipsByUser = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    console.log(" Clearing membershipsByUser aggregate...");
+    await membershipsByUser.clearAll(ctx);
+    await ctx.scheduler.runAfter(0, internal.migrations.backfillAggregates.backfillMembershipsByUser, {});
+  },
+});
+
+/**
+ * Backfill all /users-facet aggregates in one call.
+ *
+ *   npx convex run migrations/backfillAggregates:backfillUsersFacets
+ */
+export const backfillUsersFacets = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const fns = [
+      internal.migrations.backfillAggregates.backfillUsersByRole,
+      internal.migrations.backfillAggregates.backfillUsersByStatus,
+      internal.migrations.backfillAggregates.backfillUsersByCountry,
+      internal.migrations.backfillAggregates.backfillMembershipsByUser,
+    ];
+    for (let i = 0; i < fns.length; i++) {
+      await ctx.scheduler.runAfter(i * 5000, fns[i], {});
+    }
+    console.log(` Scheduled ${fns.length} /users facet backfills`);
+  },
+});
+
 // ── Run all (schedules each table sequentially with delays) ─────────
 
 export const backfillAll = internalMutation({
@@ -331,6 +434,10 @@ export const backfillAll = internalMutation({
       internal.migrations.backfillAggregates.backfillMissedCallsStatus,
       internal.migrations.backfillAggregates.backfillMissedCallsReason,
       internal.migrations.backfillAggregates.backfillRequestsByOrgService,
+      internal.migrations.backfillAggregates.backfillUsersByRole,
+      internal.migrations.backfillAggregates.backfillUsersByStatus,
+      internal.migrations.backfillAggregates.backfillUsersByCountry,
+      internal.migrations.backfillAggregates.backfillMembershipsByUser,
     ];
 
     // Stagger starts by 5 seconds each to avoid concurrent batches
@@ -369,6 +476,10 @@ export const clearAll = internalMutation({
     await documentsByOwnerExpiry.clearAll(ctx);
     await missedCallsByOrgStatus.clearAll(ctx);
     await missedCallsByOrgReason.clearAll(ctx);
+    await usersByRole.clearAll(ctx);
+    await usersByStatus.clearAll(ctx);
+    await usersByCountry.clearAll(ctx);
+    await membershipsByUser.clearAll(ctx);
     console.log(" All aggregates cleared");
   },
 });

@@ -6,7 +6,6 @@ export const metadata: Metadata = buildMetadata({
   description:
     "Politique de confidentialité de Consulat.ga — traitement des données personnelles, droits des utilisateurs et conformité réglementaire.",
   path: "/confidentialite",
-  noindex: true,
 })
 
 export default function PrivacyPage() {

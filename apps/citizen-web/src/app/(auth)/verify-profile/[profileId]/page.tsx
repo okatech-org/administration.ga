@@ -124,7 +124,7 @@ export default function VerifyProfilePage() {
 									</>
 								)}
 							</div>
-							{record.authorized && (
+							{(record as any).authorized && (
 								<Badge
 									variant="secondary"
 									className="bg-primary/10 text-primary"
@@ -139,9 +139,9 @@ export default function VerifyProfilePage() {
 						{/* Profile Photo & Basic Info */}
 						<div className="flex items-center gap-4">
 							<div className="w-20 h-24 bg-muted rounded-md overflow-hidden border border-border flex-shrink-0 flex items-center justify-center">
-								{record.photoUrl ? (
+								{(record as any).photoUrl ? (
 									<img
-										src={record.photoUrl}
+										src={(record as any).photoUrl}
 										alt=""
 										className="w-full h-full object-cover"
 									/>
@@ -154,10 +154,10 @@ export default function VerifyProfilePage() {
 									{documentTypeLabel}
 								</p>
 								<h3 className="font-bold text-lg uppercase truncate">
-									{record.identity?.lastName || "\u2014"}
+									{(record as any).identity?.lastName || "\u2014"}
 								</h3>
 								<p className="text-md font-medium text-gray-700 dark:text-gray-300 truncate">
-									{record.identity?.firstName || "\u2014"}
+									{(record as any).identity?.firstName || "\u2014"}
 								</p>
 								{displayId && (
 									<p className="text-sm text-muted-foreground mt-1 font-mono">
@@ -225,7 +225,7 @@ export default function VerifyProfilePage() {
 						)}
 
 						{/* Admin detailed view */}
-						{!record.authorized ? (
+						{!(record as any).authorized ? (
 							<div className="pt-4 border-t flex items-center justify-center gap-2 text-sm text-muted-foreground">
 								<Lock className="h-4 w-4" />
 								Details masques au public
