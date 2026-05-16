@@ -7,13 +7,11 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
 	Building2,
-	Globe,
 	Loader2,
 	Phone,
 	PhoneCall,
 	PhoneMissed,
 	Search,
-	Shield,
 	Users,
 	Video,
 } from "lucide-react";
@@ -24,18 +22,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ActiveCallDialog } from "@/components/meetings/active-call-dialog";
-import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
+import { useContactSearch } from "@/hooks/useContactSearch";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { cn } from "@/lib/utils";
+import { BO_SEGMENTS } from "./segments";
 
 type SubTab = "audio" | "video";
-
-const CALL_SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
-	{ id: "all", label: "Tous", icon: Users },
-	{ id: "team", label: "Équipe", icon: Shield },
-	{ id: "network", label: "Réseau", icon: Globe },
-];
 
 interface BackofficeCallTabProps {
 	orgId: Id<"orgs"> | null;
@@ -103,14 +96,30 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-			<div className="p-2 border-b space-y-1.5 shrink-0">
+			<div className="p-3 border-b space-y-2 shrink-0">
 				<div className="relative">
-					<Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-					<Input value={filters.searchTerm} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher (nom, poste, org)..." className="h-7 pl-7 text-xs" />
+					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+					<Input
+						value={filters.searchTerm}
+						onChange={(e) => setSearch(e.target.value)}
+						placeholder="Rechercher (nom, poste, org)..."
+						className="h-9 pl-8 text-sm"
+					/>
 				</div>
-				<div className="flex items-center gap-1">
-					{CALL_SOURCE_SEGMENTS.map((seg) => (
-						<button key={seg.id} type="button" onClick={() => setSource(seg.id)} className={cn("text-[9px] px-1.5 py-0.5 rounded-md font-medium transition-colors", filters.source === seg.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+				<div className="flex items-center gap-1 overflow-x-auto">
+					{BO_SEGMENTS.map((seg) => (
+						<button
+							key={seg.id}
+							type="button"
+							onClick={() => setSource(seg.id)}
+							title={seg.hint}
+							className={cn(
+								"text-xs px-2.5 py-1 rounded-md font-medium transition-colors shrink-0",
+								filters.source === seg.id
+									? "bg-primary text-primary-foreground"
+									: "text-muted-foreground hover:bg-muted",
+							)}
+						>
 							{seg.label}
 						</button>
 					))}
@@ -119,54 +128,82 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 
 			<ScrollArea className="flex-1 min-h-0">
 				{contactsLoading ? (
-					<div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+					<div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
 				) : groups.length > 0 ? (
 					<div className="divide-y">
 						{groups.map((group: any) => (
 							<div key={group.org.id} className="py-1">
-								<div className="flex items-center gap-2 px-3 py-1">
-									<Building2 className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-									<span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider truncate">{group.org.name}</span>
-									{group.org.country && <span className="text-[7px] text-muted-foreground/60">{group.org.country}</span>}
+								<div className="flex items-center gap-2 px-3 py-1.5">
+									<Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+									<span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
+										{group.org.name}
+									</span>
+									{group.org.country && (
+										<span className="text-[9px] text-muted-foreground/60">
+											{group.org.country}
+										</span>
+									)}
 								</div>
 								{group.contacts.map((c: any) => {
 									const isPendingThis = pendingCallUserId === c.userId;
 									const disabled = !!pendingCallUserId || !!globalActiveMeetingId;
 									return (
-										<div key={c.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted/30">
-											<Avatar className="h-7 w-7">
+										<div key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted/30">
+											<Avatar className="h-8 w-8 shrink-0">
 												<AvatarImage src={c.avatar} />
-												<AvatarFallback className={cn("text-[8px]", c.source === "team" ? "bg-primary/10 text-primary" : "bg-blue-500/10 text-blue-600")}>
-													{c.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
+												<AvatarFallback
+													className={cn(
+														"text-[10px]",
+														c.source === "team"
+															? "bg-primary/10 text-primary"
+															: c.source === "citizen"
+																? "bg-amber-500/10 text-amber-600"
+																: c.source === "foreigner"
+																	? "bg-rose-500/10 text-rose-600"
+																	: "bg-blue-500/10 text-blue-600",
+													)}
+												>
+													{c.name
+														?.split(" ")
+														.map((w: string) => w[0])
+														.join("")
+														.toUpperCase()
+														.slice(0, 2)}
 												</AvatarFallback>
 											</Avatar>
 											<div className="flex-1 min-w-0">
-												<div className="flex items-center gap-1">
-													<p className="text-[11px] font-bold truncate">{c.lastName}</p>
-													<p className="text-[11px] text-foreground/80 truncate">{c.firstName}</p>
+												<div className="flex items-center gap-1.5">
+													<p className="text-xs font-bold truncate">{c.lastName}</p>
+													<p className="text-xs text-foreground/80 truncate">{c.firstName}</p>
 												</div>
-												<p className="text-[9px] text-muted-foreground truncate">{c.position}</p>
+												<p className="text-[10px] text-muted-foreground truncate">
+													{c.position}
+												</p>
 											</div>
 											<div className="flex items-center gap-0.5 shrink-0">
 												<Button
 													size="icon"
 													variant="ghost"
-													className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/10"
+													className="h-8 w-8 text-emerald-500 hover:bg-emerald-500/10"
 													disabled={disabled}
 													title="Appel audio"
 													onClick={() => handleCall(c.userId, "audio")}
 												>
-													{isPendingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+													{isPendingThis ? (
+														<Loader2 className="h-3.5 w-3.5 animate-spin" />
+													) : (
+														<Phone className="h-3.5 w-3.5" />
+													)}
 												</Button>
 												<Button
 													size="icon"
 													variant="ghost"
-													className="h-6 w-6 text-blue-500 hover:bg-blue-500/10"
+													className="h-8 w-8 text-blue-500 hover:bg-blue-500/10"
 													disabled={disabled}
 													title="Appel vidéo"
 													onClick={() => handleCall(c.userId, "video")}
 												>
-													<Video className="h-3 w-3" />
+													<Video className="h-3.5 w-3.5" />
 												</Button>
 											</div>
 										</div>
@@ -177,34 +214,55 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 					</div>
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
-						<Users className="h-6 w-6 text-muted-foreground/30 mb-2" />
-						<p className="text-[11px] text-muted-foreground">{filters.searchTerm ? "Aucun résultat" : "Aucun contact"}</p>
+						<Users className="h-8 w-8 text-muted-foreground/30 mb-2" />
+						<p className="text-xs text-muted-foreground">
+							{filters.searchTerm ? "Aucun résultat" : "Aucun contact"}
+						</p>
 					</div>
 				)}
 
 				<div className="border-t">
 					{isPending ? (
-						<div className="flex items-center justify-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+						<div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
 					) : callHistory.length === 0 ? (
 						<div className="flex flex-col items-center py-6 text-center">
-							<Phone className="h-6 w-6 text-muted-foreground/30 mb-2" />
-							<p className="text-[11px] text-muted-foreground">Aucun appel récent</p>
+							<Phone className="h-8 w-8 text-muted-foreground/30 mb-2" />
+							<p className="text-xs text-muted-foreground">Aucun appel récent</p>
 						</div>
 					) : (
-						<div className="p-1.5">
-							<p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-1">Récents</p>
+						<div className="p-2">
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1.5">
+								Récents
+							</p>
 							{callHistory.map((item: any) => {
 								const isEnded = item.status === "ended";
 								const date = new Date(item.startedAt ?? item._creationTime);
-								const duration = item.startedAt && item.endedAt ? Math.floor((item.endedAt - item.startedAt) / 60000) : 0;
+								const duration =
+									item.startedAt && item.endedAt
+										? Math.floor((item.endedAt - item.startedAt) / 60000)
+										: 0;
 								return (
-									<div key={item._id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/30">
-										<div className={cn("h-5 w-5 rounded-full flex items-center justify-center shrink-0", isEnded ? "bg-emerald-500/10" : "bg-red-500/10")}>
-											{isEnded ? <PhoneCall className="h-2.5 w-2.5 text-emerald-500" /> : <PhoneMissed className="h-2.5 w-2.5 text-red-500" />}
+									<div key={item._id} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-muted/30">
+										<div
+											className={cn(
+												"h-6 w-6 rounded-full flex items-center justify-center shrink-0",
+												isEnded ? "bg-emerald-500/10" : "bg-red-500/10",
+											)}
+										>
+											{isEnded ? (
+												<PhoneCall className="h-3 w-3 text-emerald-500" />
+											) : (
+												<PhoneMissed className="h-3 w-3 text-red-500" />
+											)}
 										</div>
 										<div className="flex-1 min-w-0">
-											<p className="text-[10px] font-medium truncate">{item.title ?? "Appel"}</p>
-											<p className="text-[8px] text-muted-foreground">{date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}{duration > 0 && ` · ${duration}min`}</p>
+											<p className="text-xs font-medium truncate">
+												{item.title ?? "Appel"}
+											</p>
+											<p className="text-[10px] text-muted-foreground">
+												{date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+												{duration > 0 && ` · ${duration}min`}
+											</p>
 										</div>
 									</div>
 								);

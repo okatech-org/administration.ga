@@ -90,8 +90,13 @@ export function BackofficeIAstedWindow() {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<IAstedTabId>("ichat");
 
-	// Org selector (remplace OrgProvider côté backoffice)
-	const { activeOrgId, OrgSelector } = useOrgSelector();
+	// Org selector (remplace OrgProvider côté backoffice). On garde `activeOrgId`
+	// pour les actions qui doivent cibler une org source (ex. `callUser`), mais
+	// on ne rend plus le picker dans le subHeaderSlot : un Super Admin a déjà
+	// accès à TOUT l'annuaire via la recherche/voix, pas besoin de cantonner
+	// l'iAsted à une représentation. Le hook fournit toujours un orgId par
+	// défaut (premier de la liste) pour les actions qui en exigent un.
+	const { activeOrgId } = useOrgSelector();
 
 	// Dérivation du rôle effectif (pour gating UI)
 	const { isSuperAdmin, isBackOffice } = useSuperAdminData();
@@ -264,11 +269,6 @@ export function BackofficeIAstedWindow() {
 				title="iAsted"
 				subtitle={tabSubtitleForBackoffice(activeTab)}
 				headerIcon={<Shield />}
-				subHeaderSlot={
-					<div className="px-3 py-1.5">
-						<OrgSelector />
-					</div>
-				}
 				open={open}
 				onOpenChange={setOpen}
 				activeTab={activeTab}

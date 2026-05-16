@@ -451,9 +451,13 @@ Vous pouvez **agir directement** sur la plateforme :
 
 1. **Trouver un contact** : \`find_contact_by_name\` — TOUJOURS utiliser AVANT
    toute action ciblant une personne pour résoudre l'identifiant exact.
-   Si plusieurs candidats sont retournés, énumérez-les brièvement à voix haute
-   ("J'ai trouvé Sophie Mbeng à Paris et Sophie Ndong à Madrid, laquelle ?")
-   et attendez la précision. **Ne devinez jamais.**
+   L'outil couvre TOUT l'annuaire selon la surface : Back-Office (équipe + admins
+   plateforme), Corps Diplomatique (autres représentations), Ressortissants
+   gabonais et Étrangers (profils consulaires) — cross-org en back-office.
+   Tolérant aux accents, à la casse et aux tirets : « pellen lakoumba » matche
+   « PELLEN-LAKOUMBA ». Si plusieurs candidats sont retournés, énumérez-les
+   brièvement à voix haute ("J'ai trouvé Sophie Mbeng à Paris et Sophie Ndong
+   à Madrid, laquelle ?") et attendez la précision. **Ne devinez jamais.**
 
 2. **Lancer un appel** : \`launch_call_with_contact\` — l'appel se déclenche
    immédiatement. Pas de confirmation supplémentaire requise (l'action est

@@ -555,21 +555,54 @@ async function findContactByName(
 	}
 	const orgScope = args.orgId ?? context.orgId;
 	try {
+		// Scope aligné sur le hook manuel correspondant à la surface :
+		//  - agent      → "jurisdiction" (équipe + réseau + profils consulaires)
+		//  - backoffice → "backoffice"   (vue globale cross-org, sans myOrgId
+		//                                  restrictif sinon les profils managed
+		//                                  par d'autres orgs sont invisibles)
+		//  - citizen    → "org"          (un citoyen ne voit que sa propre org)
+		const scopeForSurface =
+			context.surface === "backoffice"
+				? ("backoffice" as const)
+				: context.surface === "agent"
+					? ("jurisdiction" as const)
+					: ("org" as const);
+
+		// En backoffice on ne passe PAS myOrgId : sinon
+		// `loadCitizensByOrgAndJurisdiction` restreint aux profils managés par
+		// myOrgId — c'est la source du bug où un profil consulaire géré par
+		// une autre org que celle sélectionnée par l'admin reste invisible.
+		const myOrgIdForVoice =
+			context.surface === "backoffice" ? undefined : orgScope;
+
 		const results = await ctx.runQuery(api.functions.contactSearch.searchContacts, {
 			searchTerm,
-			myOrgId: orgScope,
-			scope: context.surface === "backoffice" ? ("backoffice" as const) : ("org" as const),
-			limit: 5,
+			myOrgId: myOrgIdForVoice,
+			scope: scopeForSurface,
+			limit: 10,
 		});
-		const contacts = Array.isArray(results) ? results : (results?.contacts ?? []);
-		if (contacts.length === 0) {
+		// Le retour de searchContacts est `{ total, groups: [{org, contacts: [...]}] }`.
+		// Le voice tool s'attend à une liste plate — on aplatit ici plutôt que
+		// d'appeler une seconde query.
+		const groups = (results as any)?.groups ?? [];
+		const flat: any[] = Array.isArray(results)
+			? results
+			: Array.isArray((results as any)?.contacts)
+				? (results as any).contacts
+				: [];
+		if (flat.length === 0) {
+			for (const g of groups) {
+				for (const c of g.contacts ?? []) flat.push(c);
+			}
+		}
+		if (flat.length === 0) {
 			return {
 				success: true,
 				message: `Aucun contact trouvé pour « ${searchTerm} ».`,
 				data: { candidates: [] },
 			};
 		}
-		const summary = contacts
+		const summary = flat
 			.slice(0, 5)
 			.map(
 				(c: any, i: number) =>
@@ -579,11 +612,11 @@ async function findContactByName(
 		return {
 			success: true,
 			message:
-				contacts.length === 1
-					? `Contact trouvé : ${contacts[0].name ?? `${contacts[0].lastName} ${contacts[0].firstName}`}.`
-					: `${contacts.length} contacts correspondent :\n${summary}\nPrécisez lequel.`,
+				flat.length === 1
+					? `Contact trouvé : ${flat[0].name ?? `${flat[0].lastName} ${flat[0].firstName}`}.`
+					: `${flat.length} contacts correspondent :\n${summary}\nPrécisez lequel.`,
 			data: {
-				candidates: contacts.slice(0, 5).map((c: any) => ({
+				candidates: flat.slice(0, 5).map((c: any) => ({
 					userId: c.userId,
 					name: c.name ?? `${c.lastName ?? ""} ${c.firstName ?? ""}`.trim(),
 					position: c.position,

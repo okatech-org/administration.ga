@@ -327,19 +327,24 @@ const BUSINESS_TOOLS: GatedTool[] = [
 			type: "function",
 			name: "find_contact_by_name",
 			description:
-				"Recherche un ou plusieurs contacts par nom (prénom, nom, ou les deux) dans l'organisation active. " +
-				"À utiliser AVANT toute action ciblant un utilisateur (appel, message, réunion) pour résoudre l'identifiant exact. " +
-				"Retourne jusqu'à 5 candidats — si plusieurs résultats, l'agent doit demander à l'utilisateur de préciser.",
+				"Recherche un ou plusieurs contacts par nom (prénom, nom, ou les deux). " +
+				"Couvre TOUT l'annuaire selon la surface appelante : " +
+				"Back-Office (équipe + admins plateforme), Corps Diplomatique (autres représentations), " +
+				"Ressortissants gabonais et Étrangers (profils consulaires) — cross-org en back-office. " +
+				"À utiliser AVANT toute action ciblant un utilisateur (appel, message, réunion) " +
+				"pour résoudre l'identifiant exact. Tolérant aux accents et ponctuation : " +
+				"'pellen lakoumba' matche 'PELLEN-LAKOUMBA' avec ou sans accents. " +
+				"Retourne jusqu'à 10 candidats — si plusieurs résultats, l'agent doit demander à l'utilisateur de préciser.",
 			parameters: {
 				type: "object",
 				properties: {
 					name: {
 						type: "string",
-						description: "Nom partiel ou complet à rechercher (ex : 'Sophie', 'Mbeng', 'Marc Loussou').",
+						description: "Nom partiel ou complet à rechercher (ex : 'Sophie', 'Mbeng', 'Marc Loussou', 'Pellen-Lakoumba').",
 					},
 					orgId: {
 						type: "string",
-						description: "ID Convex de l'organisation à scoper (optionnel — par défaut l'org active).",
+						description: "ID Convex de l'organisation à scoper (optionnel — ignoré en surface backoffice qui scanne tout l'annuaire).",
 					},
 				},
 				required: ["name"],

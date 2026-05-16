@@ -15,7 +15,6 @@ import {
 	Download,
 	Edit3,
 	FileText,
-	Globe,
 	ImageIcon,
 	Loader2,
 	MessageSquare,
@@ -24,7 +23,6 @@ import {
 	Pin,
 	Search,
 	Send,
-	Shield,
 	Trash2,
 	User,
 	Users,
@@ -51,21 +49,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
+import { useContactSearch } from "@/hooks/useContactSearch";
 import type { useBackofficeAIChat } from "@/hooks/useBackofficeAIChat";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
 import { parseIntent, resolveNavigationTarget } from "../IntentProcessor";
 import { getSuggestions } from "../SpatialAwareness";
+import { BO_SEGMENTS } from "./segments";
 
 const IASTED_CONTACT = { id: "__iasted__", name: "iAsted", subtitle: "Agent IA Diplomate", isAI: true };
-
-const SOURCE_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
-	{ id: "all", label: "Tous", icon: Users },
-	{ id: "team", label: "Équipe", icon: Shield },
-	{ id: "network", label: "Réseau", icon: Globe },
-	{ id: "citizens", label: "Citoyens", icon: Users },
-];
 
 interface BackofficeChatTabProps {
 	orgId: Id<"orgs"> | null;
@@ -454,7 +446,7 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 			<div className="p-2 border-b space-y-1.5 shrink-0">
 				<div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" /><Input value={filters.searchTerm} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher (nom, email, poste, org)..." className="h-8 pl-8 text-xs" /></div>
-				<div className="flex items-center gap-1">{SOURCE_SEGMENTS.map((seg) => (<button key={seg.id} type="button" onClick={() => setSource(seg.id)} className={cn("text-[10px] px-2 py-0.5 rounded-md font-medium transition-colors", filters.source === seg.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{seg.label}</button>))}</div>
+				<div className="flex items-center gap-1 overflow-x-auto">{BO_SEGMENTS.map((seg) => (<button key={seg.id} type="button" onClick={() => setSource(seg.id)} title={seg.hint} className={cn("text-xs px-2.5 py-1 rounded-md font-medium transition-colors shrink-0", filters.source === seg.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{seg.label}</button>))}</div>
 			</div>
 
 			<ScrollArea viewportRef={viewportRef} className="flex-1 min-h-0">

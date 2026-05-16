@@ -16,7 +16,12 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMemo, useState } from "react";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 
-export type ContactSource = "team" | "network" | "citizens" | "administration";
+export type ContactSource =
+	| "team"
+	| "network"
+	| "citizens"
+	| "foreigners"
+	| "administration";
 
 export interface ContactFilters {
 	searchTerm: string;
@@ -41,7 +46,7 @@ export interface ContactResultItem {
 	orgName: string;
 	orgCountry?: string;
 	orgType?: string;
-	source: "team" | "network" | "citizen" | "administration";
+	source: "team" | "network" | "citizen" | "foreigner" | "administration";
 }
 
 export interface ContactGroup {
