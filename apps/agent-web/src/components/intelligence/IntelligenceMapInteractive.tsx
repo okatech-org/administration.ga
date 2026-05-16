@@ -3,23 +3,24 @@
 /**
  * IntelligenceMapInteractive — Carte du module Renseignement souverain.
  *
- * Calque sur `apps/backoffice-web/src/components/admin/users-map-view.tsx` :
- * filtres alignés (Combobox primitive), stats overlay top-right, légende
- * bottom-left, popup avec wrapper opaque + chrome Mapbox neutralisé via
- * scoped CSS.
+ * Délègue le rendu Mapbox au composant partagé `<ClusteredMap>` de
+ * `@workspace/map` (source GeoJSON clusterisée + 3 layers WebGL). Cette
+ * vue ne contient plus que la logique métier intelligence :
  *
- * Source de données : `intelligence.getMapData` — retourne profils citoyens
- * (avec coords) + cibles diplomatiques (sans coords, fallback capitale).
+ *  - data fetching Convex (intelligence.getMapData) + résolution des
+ *    capitales en fallback pour les points sans GPS,
+ *  - filtres locaux (type, genre, géolocalisation, continent, pays) +
+ *    stats overlay,
+ *  - popup HTML maison avec lien vers la fiche cible.
  */
 
 import { api } from "@convex/_generated/api";
 import "mapbox-gl/dist/mapbox-gl.css";
-import * as mapboxgl from "mapbox-gl";
+import "@workspace/map/styles.css";
 import {
 	Baby,
 	Building2,
 	Globe,
-	Loader2,
 	MapPin,
 	MapPinOff,
 	Target,
@@ -27,11 +28,16 @@ import {
 	Users,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { PageHeader } from "@workspace/agent-features/components/my-space";
 import { useOrg } from "@workspace/agent-features/shell";
+import {
+	ClusteredMap,
+	type ClusteredMapFlyTo,
+	type ClusteredMapPoint,
+} from "@workspace/map/clustered-map";
 import { Button } from "@workspace/ui/components/button";
 import {
 	Combobox,
@@ -54,23 +60,20 @@ type TargetKind = "profile" | "child_profile" | "diplomatic_target" | "agent";
 type GeoSource = "gps" | "fallback";
 type Gender = "male" | "female" | "unknown";
 
-interface MapPoint {
-	id: string;
-	kind: TargetKind;
-	geoSource: GeoSource;
-	gender: Gender;
+interface IntelPointData {
 	label: string;
 	country?: string;
-	coords: [number, number];
+	geoSource: GeoSource;
+	gender: Gender;
 	targetType: string;
 	targetId: string;
 }
 
 const KIND_COLORS: Record<TargetKind, string> = {
-	profile: "#e11d48", // rose
-	child_profile: "#f59e0b", // amber
+	profile: "#e11d48",          // rose
+	child_profile: "#f59e0b",    // amber
 	diplomatic_target: "#0ea5e9", // sky
-	agent: "#10b981", // emerald
+	agent: "#10b981",            // emerald
 };
 
 const KIND_LABEL: Record<TargetKind, string> = {
@@ -112,12 +115,6 @@ export default function IntelligenceMapInteractive() {
 	const { activeOrgId } = useOrg();
 	const { theme } = useTheme();
 
-	const mapContainer = useRef<HTMLDivElement>(null);
-	const map = useRef<mapboxgl.Map | null>(null);
-	const markersRef = useRef<mapboxgl.Marker[]>([]);
-	const [mapReady, setMapReady] = useState(false);
-
-	// Filtres
 	const [kindFilter, setKindFilter] = useState<"all" | TargetKind>("all");
 	const [geoFilter, setGeoFilter] = useState<"all" | GeoSource>("all");
 	const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female">(
@@ -133,26 +130,29 @@ export default function IntelligenceMapInteractive() {
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
 
-	// ── Build raw point list (avant filtres) ──
-	const allPoints = useMemo<MapPoint[]>(() => {
+	// Build the unfiltered point list. Points without GPS fall back to the
+	// org country's capital coords; that distinction is preserved as
+	// `geoSource` in the per-point `data` payload.
+	const allPoints = useMemo<ClusteredMapPoint[]>(() => {
 		if (!serverPoints) return [];
-		const out: MapPoint[] = [];
+		const out: ClusteredMapPoint[] = [];
 		for (const p of serverPoints) {
 			const kind = p.targetType as TargetKind;
-			const gender = normalizeGender(
-				(p as { gender?: string | null }).gender,
-			);
+			const gender = normalizeGender((p as { gender?: string | null }).gender);
+			const baseData: IntelPointData = {
+				label: p.label || "(sans nom)",
+				country: p.country,
+				geoSource: "gps",
+				gender,
+				targetType: p.targetType,
+				targetId: p.targetId,
+			};
 			if (p.lat !== undefined && p.lng !== undefined) {
 				out.push({
 					id: `${p.targetType}:${p.targetId}`,
 					kind,
-					geoSource: "gps",
-					gender,
-					label: p.label || "(sans nom)",
-					country: p.country,
 					coords: [p.lng, p.lat],
-					targetType: p.targetType,
-					targetId: p.targetId,
+					data: baseData as unknown as Record<string, unknown>,
 				});
 				continue;
 			}
@@ -161,13 +161,8 @@ export default function IntelligenceMapInteractive() {
 				out.push({
 					id: `${p.targetType}:${p.targetId}`,
 					kind,
-					geoSource: "fallback",
-					gender,
-					label: p.label || "(sans nom)",
-					country: p.country,
 					coords: cap,
-					targetType: p.targetType,
-					targetId: p.targetId,
+					data: { ...baseData, geoSource: "fallback" } as unknown as Record<string, unknown>,
 				});
 			}
 		}
@@ -175,41 +170,44 @@ export default function IntelligenceMapInteractive() {
 	}, [serverPoints]);
 
 	const continents = useMemo<Continent[]>(() => {
-		const codes = allPoints.map((p) => p.country).filter(Boolean) as string[];
+		const codes = allPoints
+			.map((p) => (p.data as unknown as IntelPointData).country)
+			.filter(Boolean) as string[];
 		return getActiveContinents(codes);
 	}, [allPoints]);
 
 	const countryOptions = useMemo(() => {
 		const m = new Map<string, { code: string; label: string; count: number }>();
 		for (const p of allPoints) {
-			if (!p.country) continue;
-			if (activeContinent && getContinent(p.country) !== activeContinent)
+			const country = (p.data as unknown as IntelPointData).country;
+			if (!country) continue;
+			if (activeContinent && getContinent(country) !== activeContinent)
 				continue;
-			if (!m.has(p.country)) {
-				m.set(p.country, {
-					code: p.country,
-					label: `${getCountryFlag(p.country)} ${getCountryName(p.country)}`,
+			if (!m.has(country)) {
+				m.set(country, {
+					code: country,
+					label: `${getCountryFlag(country)} ${getCountryName(country)}`,
 					count: 0,
 				});
 			}
-			m.get(p.country)!.count += 1;
+			m.get(country)!.count += 1;
 		}
 		return [...m.values()].sort((a, b) => a.label.localeCompare(b.label));
 	}, [allPoints, activeContinent]);
 
-	// Reset country quand on change de continent
 	useEffect(() => setSelectedCountry(null), [activeContinent]);
 
-	const filteredPoints = useMemo<MapPoint[]>(() => {
+	const filteredPoints = useMemo<ClusteredMapPoint[]>(() => {
 		return allPoints.filter((p) => {
+			const data = p.data as unknown as IntelPointData;
 			if (kindFilter !== "all" && p.kind !== kindFilter) return false;
-			if (geoFilter !== "all" && p.geoSource !== geoFilter) return false;
-			if (genderFilter !== "all" && p.gender !== genderFilter) return false;
+			if (geoFilter !== "all" && data.geoSource !== geoFilter) return false;
+			if (genderFilter !== "all" && data.gender !== genderFilter) return false;
 			if (activeContinent) {
-				if (!p.country || getContinent(p.country) !== activeContinent)
+				if (!data.country || getContinent(data.country) !== activeContinent)
 					return false;
 			}
-			if (selectedCountry && p.country !== selectedCountry) return false;
+			if (selectedCountry && data.country !== selectedCountry) return false;
 			return true;
 		});
 	}, [
@@ -223,136 +221,56 @@ export default function IntelligenceMapInteractive() {
 
 	const stats = useMemo(() => {
 		const total = filteredPoints.length;
-		const withGps = filteredPoints.filter((p) => p.geoSource === "gps").length;
+		const withGps = filteredPoints.filter(
+			(p) => (p.data as unknown as IntelPointData).geoSource === "gps",
+		).length;
 		const fallback = total - withGps;
 		const countries = new Set(
-			filteredPoints.map((p) => p.country).filter(Boolean),
+			filteredPoints
+				.map((p) => (p.data as unknown as IntelPointData).country)
+				.filter(Boolean),
 		).size;
 		return { total, withGps, fallback, countries };
 	}, [filteredPoints]);
 
-	// ── Initialisation Mapbox ──
-	useEffect(() => {
-		if (!mapContainer.current) return;
-		if (map.current) return;
-		if (!MAPBOX_CONFIG.accessToken) return;
-
-		const isDark = theme === "dark";
-		const style = isDark ? MAPBOX_CONFIG.styleDark : MAPBOX_CONFIG.styleLight;
-
-		map.current = new mapboxgl.Map({
-			container: mapContainer.current,
-			style,
-			center: [10, 20],
-			zoom: 1.5,
-			projection: "globe" as never,
-			interactive: true,
-			attributionControl: false,
-			accessToken: MAPBOX_CONFIG.accessToken,
-		});
-
-		// Contrôles natifs Mapbox : zoom +/- + boussole + échelle.
-		// Calque sur la carte super-admin pour une UX cohérente entre les
-		// deux vues.
-		map.current.addControl(
-			new mapboxgl.NavigationControl({ visualizePitch: false }),
-			"top-left",
-		);
-		map.current.addControl(
-			new mapboxgl.ScaleControl({ maxWidth: 120, unit: "metric" }),
-			"bottom-right",
-		);
-
-		map.current.on("style.load", () => {
-			map.current?.setFog({
-				color: isDark ? "rgb(10, 10, 20)" : "rgb(220, 220, 230)",
-				"high-color": isDark ? "rgb(20, 20, 40)" : "rgb(180, 180, 200)",
-				"horizon-blend": 0.05,
-				"star-intensity": isDark ? 0.6 : 0,
-			});
-			setMapReady(true);
-			setTimeout(() => map.current?.resize(), 50);
-		});
-
-		return () => {
-			markersRef.current.forEach((m) => m.remove());
-			markersRef.current = [];
-			map.current?.remove();
-			map.current = null;
-			setMapReady(false);
-		};
-	}, [theme]);
-
-	// ── Markers + popups (calque users-map-view) ──
-	useEffect(() => {
-		if (!map.current || !mapReady) return;
-		const m = map.current;
-
-		markersRef.current.forEach((mk) => mk.remove());
-		markersRef.current = [];
-
-		for (const point of filteredPoints) {
-			const color = KIND_COLORS[point.kind];
-
-			const el = document.createElement("div");
-			el.className = "intel-map-marker";
-			el.style.cursor = "pointer";
-			el.innerHTML = `
-				<div style="position: relative; width: 28px; height: 28px;">
-					<div style="position: absolute; inset: 0; border-radius: 9999px; background-color: ${color}; opacity: 0.25; animation: ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></div>
-					<div style="position: relative; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: ${color}; color: #ffffff; font-weight: 700; font-size: 13px; border: 2px solid #ffffff; box-shadow: 0 4px 8px rgba(0,0,0,0.3); ${point.geoSource === "fallback" ? "opacity: 0.75;" : ""}">${point.gender !== "unknown" ? GENDER_GLYPH[point.gender] : ""}</div>
-				</div>
-			`;
-
-			// Wrapper opaque (slate-950) sur fond transparent du popup Mapbox.
-			// Même pattern que users-map-view : le chrome Mapbox est neutralisé
-			// via le className `intel-map-popup` + le <style> scoped plus bas.
-			const popup = new mapboxgl.Popup({
-				offset: 18,
-				closeButton: true,
-				className: "intel-map-popup",
-			}).setHTML(
-				`<div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden;">
-					<div style="padding: 10px 14px; border-bottom: 1px solid #1e293b;">
-						<span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #ffffff; background-color: ${color}; padding: 2px 8px; border-radius: 9999px;">${KIND_LABEL[point.kind]}${point.gender !== "unknown" ? ` &middot; ${GENDER_GLYPH[point.gender]}` : ""}${point.geoSource === "fallback" ? " &middot; capitale" : ""}</span>
-					</div>
-					<div style="padding: 12px 14px;">
-						<div style="font-weight: 600; font-size: 14px; color: #f8fafc; margin-bottom: 4px; line-height: 1.3;">${escapeHtml(point.label)}</div>
-						${point.country ? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">${escapeHtml(getCountryName(point.country))}</div>` : ""}
-						<a href="/agence/profiles/${escapeHtml(point.targetType)}/${escapeHtml(point.targetId)}" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: ${color}; text-decoration: none; padding-top: 4px;">Voir la fiche &rarr;</a>
-					</div>
-				</div>`,
-			);
-
-			const marker = new mapboxgl.Marker({ element: el })
-				.setLngLat(point.coords)
-				.setPopup(popup)
-				.addTo(m);
-
-			markersRef.current.push(marker);
-		}
-	}, [filteredPoints, mapReady]);
-
-	// ── Recentrage sur sélection ──
-	useEffect(() => {
-		if (!map.current || !mapReady) return;
+	// ── flyTo (continent average / country capital / world) ──
+	const flyTo = useMemo<ClusteredMapFlyTo | null>(() => {
 		if (selectedCountry) {
 			const c = getCapitalCoords(selectedCountry);
-			if (c) map.current.flyTo({ center: c, zoom: 4 });
-		} else if (activeContinent && filteredPoints.length > 0) {
+			return c ? { center: c, zoom: 4 } : null;
+		}
+		if (activeContinent && filteredPoints.length > 0) {
 			const avgLng =
 				filteredPoints.reduce((s, p) => s + p.coords[0], 0) /
 				filteredPoints.length;
 			const avgLat =
 				filteredPoints.reduce((s, p) => s + p.coords[1], 0) /
 				filteredPoints.length;
-			map.current.flyTo({ center: [avgLng, avgLat], zoom: 2.5 });
-		} else {
-			map.current.flyTo({ center: [10, 20], zoom: 1.6 });
+			return { center: [avgLng, avgLat], zoom: 2.5 };
 		}
-	}, [selectedCountry, activeContinent, mapReady, filteredPoints]);
+		return { center: [10, 20], zoom: 1.6 };
+	}, [selectedCountry, activeContinent, filteredPoints]);
 
-	// ── Pas de token ──
+	const renderPopup = useCallback((point: ClusteredMapPoint) => {
+		const data = point.data as unknown as IntelPointData;
+		const kind = point.kind as TargetKind;
+		const color = KIND_COLORS[kind];
+		const fallbackTag =
+			data.geoSource === "fallback" ? " &middot; capitale" : "";
+		const genderTag =
+			data.gender !== "unknown" ? ` &middot; ${GENDER_GLYPH[data.gender]}` : "";
+		return `<div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px; background-color: #020617; border: 1px solid #1e293b; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); overflow: hidden;">
+			<div style="padding: 10px 14px; border-bottom: 1px solid #1e293b;">
+				<span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #ffffff; background-color: ${color}; padding: 2px 8px; border-radius: 9999px;">${KIND_LABEL[kind]}${genderTag}${fallbackTag}</span>
+			</div>
+			<div style="padding: 12px 14px;">
+				<div style="font-weight: 600; font-size: 14px; color: #f8fafc; margin-bottom: 4px; line-height: 1.3;">${escapeHtml(data.label)}</div>
+				${data.country ? `<div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">${escapeHtml(getCountryName(data.country))}</div>` : ""}
+				<a href="/agence/profiles/${escapeHtml(data.targetType)}/${escapeHtml(data.targetId)}" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: ${color}; text-decoration: none; padding-top: 4px;">Voir la fiche &rarr;</a>
+			</div>
+		</div>`;
+	}, []);
+
 	if (!MAPBOX_CONFIG.accessToken) {
 		return (
 			<div className="flex flex-col items-center justify-center gap-3 p-8 text-center">
@@ -369,7 +287,7 @@ export default function IntelligenceMapInteractive() {
 		);
 	}
 
-	// ── Options dropdown ──
+	// ── Dropdown options ──
 	const ALL = "__all__";
 
 	const kindDropdownOptions: ComboboxOption[] = [
@@ -386,11 +304,11 @@ export default function IntelligenceMapInteractive() {
 		{ value: ALL, label: `Toutes (${allPoints.length})` },
 		{
 			value: "gps",
-			label: `GPS précis (${allPoints.filter((p) => p.geoSource === "gps").length})`,
+			label: `GPS précis (${allPoints.filter((p) => (p.data as unknown as IntelPointData).geoSource === "gps").length})`,
 		},
 		{
 			value: "fallback",
-			label: `Capitale (${allPoints.filter((p) => p.geoSource === "fallback").length})`,
+			label: `Capitale (${allPoints.filter((p) => (p.data as unknown as IntelPointData).geoSource === "fallback").length})`,
 		},
 	];
 
@@ -398,11 +316,11 @@ export default function IntelligenceMapInteractive() {
 		{ value: ALL, label: `Tous (${allPoints.length})` },
 		{
 			value: "male",
-			label: `♂ Hommes (${allPoints.filter((p) => p.gender === "male").length})`,
+			label: `♂ Hommes (${allPoints.filter((p) => (p.data as unknown as IntelPointData).gender === "male").length})`,
 		},
 		{
 			value: "female",
-			label: `♀ Femmes (${allPoints.filter((p) => p.gender === "female").length})`,
+			label: `♀ Femmes (${allPoints.filter((p) => (p.data as unknown as IntelPointData).gender === "female").length})`,
 		},
 	];
 
@@ -412,7 +330,9 @@ export default function IntelligenceMapInteractive() {
 			value: c,
 			label: `${CONTINENT_META[c].label} (${
 				allPoints.filter(
-					(p) => p.country && getContinent(p.country) === c,
+					(p) =>
+						(p.data as unknown as IntelPointData).country &&
+						getContinent((p.data as unknown as IntelPointData).country!) === c,
 				).length
 			})`,
 		})),
@@ -449,7 +369,6 @@ export default function IntelligenceMapInteractive() {
 				subtitle="Répartition mondiale des profils surveillés, mineurs, contacts diplomatiques et agents."
 			/>
 
-			{/* Filter row */}
 			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
 				<MapFilterField label="Type">
 					<Combobox
@@ -534,86 +453,58 @@ export default function IntelligenceMapInteractive() {
 				</MapFilterField>
 			</div>
 
-			{/* Scoped CSS — neutralise le chrome Mapbox pour que notre wrapper
-			    opaque ne soit pas encadré par une bulle blanche par défaut. */}
-			<style
-				dangerouslySetInnerHTML={{
-					__html: `
-						.mapboxgl-popup.intel-map-popup .mapboxgl-popup-content {
-							background: transparent !important;
-							padding: 0 !important;
-							box-shadow: none !important;
-							border-radius: 12px;
-						}
-						.mapboxgl-popup.intel-map-popup .mapboxgl-popup-tip {
-							border-top-color: #020617 !important;
-							border-bottom-color: #020617 !important;
-						}
-						.mapboxgl-popup.intel-map-popup .mapboxgl-popup-close-button {
-							color: #94a3b8;
-							font-size: 18px;
-							padding: 4px 8px;
-							right: 4px;
-							top: 4px;
-						}
-						.mapboxgl-popup.intel-map-popup .mapboxgl-popup-close-button:hover {
-							color: #f8fafc;
-							background: transparent;
-						}
-					`,
-				}}
+			<ClusteredMap
+				accessToken={MAPBOX_CONFIG.accessToken}
+				styleLight={MAPBOX_CONFIG.styleLight}
+				styleDark={MAPBOX_CONFIG.styleDark}
+				theme={theme === "dark" ? "dark" : "light"}
+				points={filteredPoints}
+				kindColors={KIND_COLORS}
+				renderPopup={renderPopup}
+				flyTo={flyTo}
+				initialCenter={[10, 20]}
+				initialZoom={1.5}
+				className="relative h-[600px] w-full overflow-hidden rounded-xl border bg-muted/20"
+				loading={isPending ? "Chargement…" : false}
+				overlay={
+					<>
+						<div className="absolute right-4 top-4 z-10 flex flex-wrap items-center gap-1.5 rounded-lg border bg-background/95 px-2 py-1.5 text-xs shadow-lg backdrop-blur">
+							<StatChip icon={MapPin} label="affichés" value={stats.total} />
+							<StatChip icon={Target} label="GPS" value={stats.withGps} />
+							{stats.fallback > 0 && (
+								<StatChip
+									icon={MapPinOff}
+									label="capitale"
+									value={stats.fallback}
+									tone="warning"
+								/>
+							)}
+							<StatChip icon={Globe} label="pays" value={stats.countries} />
+						</div>
+
+						{filteredPoints.length === 0 && !isPending && (
+							<div className="absolute left-1/2 top-16 z-10 -translate-x-1/2 rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
+								<p className="font-medium">
+									{hasActiveFilter
+										? "Aucun point ne correspond aux filtres."
+										: "Aucune cible sur cet organisme."}
+								</p>
+							</div>
+						)}
+
+						<div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1.5 rounded-lg border bg-background/95 p-3 text-xs shadow-lg backdrop-blur">
+							<LegendItem color={KIND_COLORS.profile} label="Profil citoyen" />
+							<LegendItem color={KIND_COLORS.child_profile} label="Mineur" />
+							<LegendItem
+								color={KIND_COLORS.diplomatic_target}
+								label="Cible diplomatique"
+							/>
+							<LegendItem color={KIND_COLORS.agent} label="Agent" />
+						</div>
+					</>
+				}
 			/>
 
-			{/* Carte */}
-			<div className="relative h-[600px] w-full overflow-hidden rounded-xl border bg-muted/20">
-				<div ref={mapContainer} className="absolute inset-0 h-full w-full" />
-
-				{/* Stats overlay top-right */}
-				<div className="absolute right-4 top-4 z-10 flex flex-wrap items-center gap-1.5 rounded-lg border bg-background/95 px-2 py-1.5 text-xs shadow-lg backdrop-blur">
-					<StatChip icon={MapPin} label="affichés" value={stats.total} />
-					<StatChip icon={Target} label="GPS" value={stats.withGps} />
-					{stats.fallback > 0 && (
-						<StatChip
-							icon={MapPinOff}
-							label="capitale"
-							value={stats.fallback}
-							tone="warning"
-						/>
-					)}
-					<StatChip icon={Globe} label="pays" value={stats.countries} />
-				</div>
-
-				{(isPending || !mapReady) && (
-					<div className="absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-background/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur">
-						<Loader2 className="h-3.5 w-3.5 animate-spin" />
-						<span>{isPending ? "Chargement…" : "Initialisation…"}</span>
-					</div>
-				)}
-
-				{mapReady && filteredPoints.length === 0 && !isPending && (
-					<div className="absolute left-1/2 top-16 z-10 -translate-x-1/2 rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
-						<p className="font-medium">
-							{hasActiveFilter
-								? "Aucun point ne correspond aux filtres."
-								: "Aucune cible sur cet organisme."}
-						</p>
-					</div>
-				)}
-
-				{/* Légende bottom-left */}
-				<div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1.5 rounded-lg border bg-background/95 p-3 text-xs shadow-lg backdrop-blur">
-					<LegendItem color={KIND_COLORS.profile} label="Profil citoyen" />
-					<LegendItem color={KIND_COLORS.child_profile} label="Mineur" />
-					<LegendItem
-						color={KIND_COLORS.diplomatic_target}
-						label="Cible diplomatique"
-					/>
-					<LegendItem color={KIND_COLORS.agent} label="Agent" />
-				</div>
-			</div>
-
-			{/* Chips toggle type — affichage rapide d'une catégorie. Cliquer
-			    deux fois sur la même chip réactive « Tous ». */}
 			<div className="flex flex-wrap items-center gap-2">
 				<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mr-1">
 					Affichage rapide
@@ -751,4 +642,3 @@ function KindChip({
 		</button>
 	);
 }
-

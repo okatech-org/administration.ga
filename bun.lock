@@ -129,6 +129,7 @@
         "@workspace/i18n": "workspace:*",
         "@workspace/iasted": "workspace:*",
         "@workspace/livekit": "workspace:*",
+        "@workspace/map": "workspace:*",
         "@workspace/posthog-shared": "workspace:*",
         "@workspace/routing": "workspace:*",
         "@workspace/settings-form": "workspace:*",
