@@ -4124,7 +4124,7 @@
 				"emailPlaceholder": "vous@exemple.com",
 				"emailHelp": "Vous recevrez un code de vérification à 6 chiffres.",
 				"phone": "Téléphone",
-				"phonePlaceholder": "+33 6 12 34 56 78",
+				"phonePlaceholder": "+33612345678",
 				"privacy": "Vos coordonnées sont chiffrées. En continuant, vous acceptez les",
 				"privacyTerms": "conditions d'utilisation",
 				"privacyAnd": "et la",
