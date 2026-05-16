@@ -422,7 +422,7 @@ function SignInPageContent() {
 									type="tel"
 									value={phoneValue}
 									onChange={(e) => setPhoneValue(e.target.value)}
-									placeholder="+33 6 12 34 56 78"
+									placeholder="+33612345678"
 									autoComplete="tel"
 									enterKeyHint="next"
 									autoFocus
