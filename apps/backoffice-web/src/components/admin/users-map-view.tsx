@@ -311,6 +311,24 @@ export function UsersMapView() {
 			cluster: true,
 			clusterMaxZoom: 12,
 			clusterRadius: 50,
+			// Aggregate each kind so we can color the cluster by what's
+			// dominant inside. Mapbox sums the right-hand expression across
+			// every feature in the cluster — see
+			// https://docs.mapbox.com/style-spec/reference/sources/#cluster-properties
+			clusterProperties: {
+				adults: [
+					"+",
+					["case", ["==", ["get", "kind"], "citizen_adult"], 1, 0],
+				],
+				children: [
+					"+",
+					["case", ["==", ["get", "kind"], "citizen_child"], 1, 0],
+				],
+				agents: [
+					"+",
+					["case", ["==", ["get", "kind"], "agent"], 1, 0],
+				],
+			},
 		});
 
 		m.addLayer({
@@ -319,15 +337,28 @@ export function UsersMapView() {
 			source: SOURCE_ID,
 			filter: ["has", "point_count"],
 			paint: {
-				// Color + size step in three tiers (10 → 50 → 200+). Slate-blue
-				// halo keeps clusters distinct from the per-point kind colors.
+				// Color by dominant kind inside the cluster: whichever of
+				// adults / children / agents has the highest count wins. The
+				// `["max", a, b, c]` expression returns the largest of the
+				// three aggregated counts, then a chain of equality cases
+				// resolves to the matching KIND_COLORS entry.
 				"circle-color": [
-					"step",
-					["get", "point_count"],
-					"rgba(59, 130, 246, 0.55)", 10,
-					"rgba(59, 130, 246, 0.7)", 50,
-					"rgba(37, 99, 235, 0.8)",
+					"case",
+					[
+						"==",
+						["get", "agents"],
+						["max", ["get", "adults"], ["get", "children"], ["get", "agents"]],
+					],
+					KIND_COLORS.agent,
+					[
+						"==",
+						["get", "children"],
+						["max", ["get", "adults"], ["get", "children"], ["get", "agents"]],
+					],
+					KIND_COLORS.citizen_child,
+					KIND_COLORS.citizen_adult,
 				],
+				// Size steps with point_count (10 → 50 → 200+).
 				"circle-radius": [
 					"step",
 					["get", "point_count"],
@@ -335,7 +366,8 @@ export function UsersMapView() {
 					18, 50,
 					24,
 				],
-				"circle-stroke-color": "rgba(255, 255, 255, 0.6)",
+				"circle-opacity": 0.75,
+				"circle-stroke-color": "rgba(255, 255, 255, 0.7)",
 				"circle-stroke-width": 1.5,
 			},
 		});
