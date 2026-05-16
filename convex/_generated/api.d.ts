@@ -76,6 +76,8 @@ import type * as crons_correspondanceSla from "../crons/correspondanceSla.js";
 import type * as crons_expiration from "../crons/expiration.js";
 import type * as crons_posthogHealthCheck from "../crons/posthogHealthCheck.js";
 import type * as functions_admin from "../functions/admin.js";
+import type * as functions_adminSkills from "../functions/adminSkills.js";
+import type * as functions_adminSkillsActions from "../functions/adminSkillsActions.js";
 import type * as functions_agentNotes from "../functions/agentNotes.js";
 import type * as functions_agentPresence from "../functions/agentPresence.js";
 import type * as functions_agentSchedules from "../functions/agentSchedules.js";
@@ -277,6 +279,7 @@ import type * as migrations_backfillProfessionSkills from "../migrations/backfil
 import type * as migrations_backfillProfileAttachment from "../migrations/backfillProfileAttachment.js";
 import type * as migrations_backfillProfileCoordinates from "../migrations/backfillProfileCoordinates.js";
 import type * as migrations_backfillRequestResidencePermit from "../migrations/backfillRequestResidencePermit.js";
+import type * as migrations_backfillSkillsAggregates from "../migrations/backfillSkillsAggregates.js";
 import type * as migrations_cleanupPaymentsRefs from "../migrations/cleanupPaymentsRefs.js";
 import type * as migrations_fixIdentityPhotos from "../migrations/fixIdentityPhotos.js";
 import type * as migrations_fixOwnerIds from "../migrations/fixOwnerIds.js";
@@ -487,6 +490,8 @@ declare const fullApi: ApiFromModules<{
   "crons/expiration": typeof crons_expiration;
   "crons/posthogHealthCheck": typeof crons_posthogHealthCheck;
   "functions/admin": typeof functions_admin;
+  "functions/adminSkills": typeof functions_adminSkills;
+  "functions/adminSkillsActions": typeof functions_adminSkillsActions;
   "functions/agentNotes": typeof functions_agentNotes;
   "functions/agentPresence": typeof functions_agentPresence;
   "functions/agentSchedules": typeof functions_agentSchedules;
@@ -688,6 +693,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/backfillProfileAttachment": typeof migrations_backfillProfileAttachment;
   "migrations/backfillProfileCoordinates": typeof migrations_backfillProfileCoordinates;
   "migrations/backfillRequestResidencePermit": typeof migrations_backfillRequestResidencePermit;
+  "migrations/backfillSkillsAggregates": typeof migrations_backfillSkillsAggregates;
   "migrations/cleanupPaymentsRefs": typeof migrations_cleanupPaymentsRefs;
   "migrations/fixIdentityPhotos": typeof migrations_fixIdentityPhotos;
   "migrations/fixOwnerIds": typeof migrations_fixOwnerIds;

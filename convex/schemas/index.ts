@@ -155,3 +155,12 @@ export { aiCapabilityConfigTable } from "./aiCapabilityConfig";
 
 // Public — abonnements newsletter
 export { newsletterSubscriptionsTable } from "./newsletterSubscriptions";
+
+// Super-admin /skills — dénormalisation skills + stats + historique runs IA
+export {
+  cvSkillItemsTable,
+  aiSuggestedSkillItemsTable,
+  skillCatalogStatsTable,
+  professionTitleStatsTable,
+  aiEnrichmentRunsTable,
+} from "./skillsAggregation";

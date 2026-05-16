@@ -36,8 +36,18 @@ import {
   usersByStatus,
   usersByCountry,
   membershipsByUser,
+  profilesByCategory,
+  profilesByProfessionStatus,
+  profilesByEnrichmentStatus,
+  cvSkillItemsByLevel,
 } from "../lib/aggregates";
 import triggers from "../lib/triggerSetup";
+import {
+  cvDenormalizeTrigger,
+  cvSkillItemsStatsTrigger,
+  profilesDenormalizeTrigger,
+  aiSuggestedItemsStatsTrigger,
+} from "./skillsAggregation";
 import {
   onRequestChanged,
   onDocumentUploaded,
@@ -82,12 +92,35 @@ triggers.register("missedCalls", missedCallsByOrgReason.idempotentTrigger());
 triggers.register("requests", requestsByOrgService.idempotentTrigger());
 
 // /users page facets — role / status / country / per-user membership counts.
-// idempotentTrigger handles namespace flips (role change, isActive flip) via
-// _replace automatically.
+// Role + status changes flip namespaces, which `idempotentTrigger` handles via
+// `_replace` (delete from old namespace + insert into new).
 triggers.register("users", usersByRole.idempotentTrigger());
 triggers.register("users", usersByStatus.idempotentTrigger());
 triggers.register("profiles", usersByCountry.idempotentTrigger());
 triggers.register("memberships", membershipsByUser.idempotentTrigger());
+
+// ============================================================================
+// /skills page — dénormalisation cv.skills / aiSuggestedSkills + aggregates
+// ============================================================================
+// Ordre IMPORTANT : la dénormalisation (cv → cvSkillItems et
+// profiles → aiSuggestedSkillItems) DOIT s'exécuter avant les triggers
+// d'agrégats sur cvSkillItems / aiSuggestedSkillItems pour que le doc
+// dérivé soit déjà inséré quand le compteur le voit. Les triggers
+// `Triggers` s'exécutent dans l'ordre d'enregistrement.
+
+// Étape 1 — dénormalisation
+triggers.register("cv", cvDenormalizeTrigger);
+triggers.register("profiles", profilesDenormalizeTrigger);
+
+// Étape 2 — aggregates idempotents sur profiles
+triggers.register("profiles", profilesByCategory.idempotentTrigger());
+triggers.register("profiles", profilesByProfessionStatus.idempotentTrigger());
+triggers.register("profiles", profilesByEnrichmentStatus.idempotentTrigger());
+
+// Étape 3 — aggregates + stats sur les tables dénormalisées
+triggers.register("cvSkillItems", cvSkillItemsByLevel.idempotentTrigger());
+triggers.register("cvSkillItems", cvSkillItemsStatsTrigger);
+triggers.register("aiSuggestedSkillItems", aiSuggestedItemsStatsTrigger);
 
 // ============================================================================
 // REQUESTS TRIGGERS

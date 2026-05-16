@@ -116,6 +116,11 @@ import {
   aiAgentPresenceTable,
   aiCapabilityConfigTable,
   newsletterSubscriptionsTable,
+  cvSkillItemsTable,
+  aiSuggestedSkillItemsTable,
+  skillCatalogStatsTable,
+  professionTitleStatsTable,
+  aiEnrichmentRunsTable,
 } from "./schemas";
 
 export default defineSchema({
@@ -249,4 +254,10 @@ export default defineSchema({
   aiAgentPresence: aiAgentPresenceTable,
   aiCapabilityConfig: aiCapabilityConfigTable,
   newsletterSubscriptions: newsletterSubscriptionsTable,
+  // Super-admin /skills — dénormalisation + stats + historique runs IA
+  cvSkillItems: cvSkillItemsTable,
+  aiSuggestedSkillItems: aiSuggestedSkillItemsTable,
+  skillCatalogStats: skillCatalogStatsTable,
+  professionTitleStats: professionTitleStatsTable,
+  aiEnrichmentRuns: aiEnrichmentRunsTable,
 });
