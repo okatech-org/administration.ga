@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@convex/_generated/api";
 import { Icon } from "@/components/dashboard-v2/icon";
-import { PageHeader } from "@/components/dashboard-v2/page-header";
+import { ToolbarSlot } from "@/components/dashboard-v2/toolbar-slot";
 import {
 	useAuthenticatedConvexQuery,
 	useAuthenticatedPaginatedQuery,
@@ -1371,35 +1371,57 @@ export default function SuperadminDashboard() {
 						/>
 					)}
 
-					{/* ── Header ─────────────────────────────────────────── */}
-					<PageHeader
-						icon="Landmark"
-						title="Centre de Commandement"
-						subtitle={
-							<span className="row items-center" style={{ gap: 10 }}>
-								<span>Vue stratégique globale du réseau diplomatique</span>
-								<GabonStripe />
-							</span>
-						}
-						actions={
-							<>
-								<SystemHealthPill health={systemHealth} />
-								<PeriodFilter value={period} onChange={setPeriod} />
-								<button
-									type="button"
-									className="btn btn-sm btn-soft"
-									onClick={refresh}
-									disabled={refreshing}
+					{/* ── Top-bar slot : pill santé + refresh à côté de la cloche ── */}
+					<ToolbarSlot>
+						<SystemHealthPill health={systemHealth} />
+						<button
+							type="button"
+							className="btn btn-sm btn-soft"
+							onClick={refresh}
+							disabled={refreshing}
+						>
+							<Icon
+								name={refreshing ? "Loader" : "RefreshCcw"}
+								size={14}
+							/>
+							{refreshing ? "…" : "Rafraîchir"}
+						</button>
+					</ToolbarSlot>
+
+					{/* ── Page header (maquette : eyebrow + tricolore / h2 / filtre) ── */}
+					<div
+						style={{
+							display: "flex",
+							alignItems: "flex-end",
+							justifyContent: "space-between",
+							gap: 16,
+							flexWrap: "wrap",
+						}}
+					>
+						<div>
+							<div className="row items-center" style={{ gap: 10 }}>
+								<span
+									className="uppercase"
+									style={{ color: "var(--text-muted)" }}
 								>
-									<Icon
-										name={refreshing ? "Loader" : "RefreshCcw"}
-										size={14}
-									/>
-									{refreshing ? "…" : "Rafraîchir"}
-								</button>
-							</>
-						}
-					/>
+									Vue stratégique globale
+								</span>
+								<GabonStripe />
+							</div>
+							<h2
+								style={{
+									fontSize: 18,
+									fontWeight: 600,
+									letterSpacing: "-0.01em",
+									marginTop: 4,
+									color: "var(--text)",
+								}}
+							>
+								Indicateurs clés du réseau diplomatique
+							</h2>
+						</div>
+						<PeriodFilter value={period} onChange={setPeriod} />
+					</div>
 
 					{/* ── KPI strip (5 cards) ────────────────────────────── */}
 					<div

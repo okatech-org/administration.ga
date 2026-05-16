@@ -109,7 +109,15 @@ export function AutoBreadcrumb() {
 		<DashboardToolbar
 			breadcrumb={effectiveCrumbs}
 			backHref={null}
-			right={<NotificationsBell />}
+			right={
+				<>
+					{/* Slot pour les actions injectées par la page courante via
+					    `<ToolbarSlot>`. `display:contents` rend le span
+					    transparent au flex parent. */}
+					<span data-toolbar-slot style={{ display: "contents" }} />
+					<NotificationsBell />
+				</>
+			}
 		/>
 	);
 }
