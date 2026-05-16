@@ -571,9 +571,10 @@ export function useRealtimeVoice({
 				if (!audioElRef.current) {
 					const el = document.createElement("audio");
 					el.autoplay = true;
-					// iOS Safari : property + attribute pour autoriser la lecture
-					// inline sans bascule fullscreen.
-					el.playsInline = true;
+					// iOS Safari : attribut `playsinline` requis pour autoriser la
+					// lecture inline sans bascule fullscreen. La propriété typée
+					// `playsInline` n'existe que sur HTMLVideoElement — pour audio
+					// on utilise uniquement setAttribute (équivalent fonctionnel).
 					el.setAttribute("playsinline", "true");
 					// Invisible mais présent dans <body> — requis pour la lecture
 					// fiable d'un srcObject MediaStream.
