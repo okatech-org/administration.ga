@@ -35,8 +35,6 @@
   --popover-foreground: var(--text);
   --primary: var(--gabon-blue-v2);
   --primary-foreground: #ffffff;
-  --secondary: var(--surface-3);
-  --secondary-foreground: var(--text);
   --muted: var(--surface-2);
   --muted-foreground: var(--text-muted);
   --accent: var(--gabon-blue-v2);
@@ -198,7 +196,9 @@
 .dash-v2 h4 { font-size: 13px; }
 .dash-v2 p { margin: 0; }
 .dash-v2 button { font-family: inherit; cursor: pointer; }
-.dash-v2 a { color: inherit; text-decoration: none; }
+@layer base {
+  .dash-v2 a { color: inherit; text-decoration: none; }
+}
 
 /* ── Typo helpers ───────────────────────────────────────────────── */
 .dash-v2 .text-mono { font-family: var(--mono-v2); }
