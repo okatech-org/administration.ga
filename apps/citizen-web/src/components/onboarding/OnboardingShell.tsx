@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer"
 import Header from "@/components/Header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useRegistrationStorage } from "@/hooks/useRegistrationStorage"
 import { PublicUserType } from "@convex/lib/constants"
 import { useConvex } from "convex/react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -18,6 +19,10 @@ import {
 import { useRegistrationAnalytics } from "@/lib/useRegistrationAnalytics"
 import { DesktopRecapSidebar } from "./DesktopRecapSidebar"
 import { DesktopStepsSidebar } from "./DesktopStepsSidebar"
+import {
+  clearGuestSession,
+  getOrCreateGuestSessionId,
+} from "./lib/guestSession"
 import {
   STEPS_BY_TYPE,
   type IdentityPhase,
@@ -145,25 +150,81 @@ export function OnboardingShell() {
   const [data, setData] = useState<OnboardingData>({})
   const [draftLoaded, setDraftLoaded] = useState(!initialType)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
-  // Fichiers en mémoire — non persistés (File n'est pas sérialisable).
-  // Si l'utilisateur recharge la page, il devra re-téléverser.
+  // Fichiers en cache mémoire. Source de vérité = IndexedDB
+  // (`regStorage`). On miroite ici pour avoir un accès synchrone côté UI.
+  // Hydraté au mount depuis IDB ; les uploads/suppressions sont mirrorés
+  // dans IDB pour survivre aux refresh et fermetures d'onglet.
   const [files, setFiles] = useState<RegistrationFiles>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submittedRef, setSubmittedRef] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const setFile = useCallback((key: string, file: File) => {
-    setFiles((prev) => ({ ...prev, [key]: file }))
-  }, [])
+  // Identifiant stable de la session d'inscription, persisté dans
+  // localStorage. Sert de clé de partition pour IndexedDB (fichiers) et
+  // pour le rate-limit de l'extraction IA.
+  const [guestSessionId] = useState(() => getOrCreateGuestSessionId())
+  const regStorage = useRegistrationStorage(guestSessionId)
+  const hydratedRef = useRef(false)
 
-  const removeFile = useCallback((key: string) => {
-    setFiles((prev) => {
-      const next = { ...prev }
-      delete next[key]
-      return next
-    })
-  }, [])
+  const setFile = useCallback(
+    (key: string, file: File) => {
+      setFiles((prev) => ({ ...prev, [key]: file }))
+      // Persiste le binaire dans IndexedDB. Fire-and-forget : l'UI ne doit
+      // pas bloquer sur l'écriture. Une erreur dégrade vers le comportement
+      // précédent (fichier en mémoire seulement).
+      regStorage.saveFile(key, file).catch((err) => {
+        console.error("Failed to persist file to IndexedDB:", err)
+      })
+    },
+    [regStorage],
+  )
+
+  const removeFile = useCallback(
+    (key: string) => {
+      setFiles((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      regStorage.removeFile(key).catch((err) => {
+        console.error("Failed to remove file from IndexedDB:", err)
+      })
+    },
+    [regStorage],
+  )
+
+  // Hydrate `files` depuis IndexedDB une fois la DB ouverte. Repeuple aussi
+  // `data.documents` pour que l'UI (cases vertes + recap) reflète l'état
+  // réel des binaires plutôt que des noms persistés à part.
+  useEffect(() => {
+    if (!regStorage.isReady) return
+    if (hydratedRef.current) return
+    hydratedRef.current = true
+    regStorage
+      .getAllFiles()
+      .then((map) => {
+        if (map.size === 0) return
+        const hydratedFiles: RegistrationFiles = {}
+        const documents: Record<string, string> = {}
+        for (const [docType, info] of map.entries()) {
+          // Reconstruit un File depuis le Blob stocké pour conserver
+          // l'API File (name, type) attendue par le pipeline d'upload.
+          hydratedFiles[docType] = new File([info.blob], info.filename, {
+            type: info.mimeType,
+          })
+          documents[docType] = info.filename
+        }
+        setFiles((prev) => ({ ...hydratedFiles, ...prev }))
+        setData((prev) => ({
+          ...prev,
+          documents: { ...documents, ...(prev.documents ?? {}) },
+        }))
+      })
+      .catch((err) => {
+        console.error("Failed to hydrate files from IndexedDB:", err)
+      })
+  }, [regStorage])
 
   // Sync URL when userType changes (without scroll reset)
   useEffect(() => {
@@ -308,8 +369,13 @@ export function OnboardingShell() {
     setSubmittedRef(null)
     setIsSubmitted(false)
     setSubmitError(null)
+    // Purge les fichiers IDB et la session d'inscription en cours — on
+    // recommence à zéro avec un nouvel identifiant.
+    regStorage.clearRegistration().catch(() => {})
+    clearGuestSession()
+    hydratedRef.current = false
     router.replace("/register", { scroll: false })
-  }, [router])
+  }, [regStorage, router])
 
   const handleJumpByKey = useCallback(
     (key: OnboardingStepKey) => {
@@ -337,10 +403,14 @@ export function OnboardingShell() {
         has_children: false,
         jurisdiction_country: data.address?.country,
       })
-      // Purge le brouillon — soumission réussie.
+      // Purge le brouillon + les fichiers IDB + la session — soumission
+      // réussie. Évite qu'un retour ultérieur sur /register ne re-injecte
+      // d'anciens documents dans une nouvelle inscription.
       if (typeof window !== "undefined") {
         localStorage.removeItem(`${DRAFT_KEY_PREFIX}${userType}`)
       }
+      await regStorage.clearRegistration().catch(() => {})
+      clearGuestSession()
     } catch (err) {
       console.error("Submit error:", err)
       setSubmitError(
@@ -351,7 +421,7 @@ export function OnboardingShell() {
     } finally {
       setSubmitting(false)
     }
-  }, [convex, data, files, userType, t, analytics])
+  }, [convex, data, files, userType, t, analytics, regStorage])
 
   if (isSubmitted) {
     return (

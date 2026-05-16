@@ -130,14 +130,22 @@ export type OnboardingData = {
 export type OnboardingProfileType = PublicUserType;
 
 /**
- * Champs sensibles qui NE doivent JAMAIS être persistés (localStorage,
- * sessionStorage, IndexedDB-meta). Filtrés à l'écriture du draft.
+ * Champs exclus de la persistance localStorage du draft.
+ *
+ * - Sensibles (credentials) : password, otp, pin, pinConfirm.
+ * - Éphémères : `documents` (= mapping doc → filename) ne doit JAMAIS être
+ *   persisté dans le draft. Les fichiers binaires vivent dans IndexedDB
+ *   (`useRegistrationStorage`) ; persister uniquement le filename donnerait
+ *   l'illusion d'un upload (case verte) après refresh alors que le blob
+ *   réel a disparu, et la soumission partirait avec des documents vides.
+ *   `data.documents` est repeuplé au mount depuis IndexedDB.
  */
 export const SENSITIVE_KEYS: ReadonlyArray<keyof OnboardingData> = [
 	"password",
 	"otp",
 	"pin",
 	"pinConfirm",
+	"documents",
 ];
 
 export function stripSensitive(data: OnboardingData): OnboardingData {

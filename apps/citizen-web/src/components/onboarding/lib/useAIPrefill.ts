@@ -4,23 +4,7 @@ import { api } from "@convex/_generated/api";
 import { useAction } from "convex/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { OnboardingData } from "../types";
-
-const GUEST_SESSION_KEY = "consulat_guest_session_id";
-
-function getOrCreateGuestSessionId(): string {
-	if (typeof window === "undefined") return "";
-	try {
-		const existing = localStorage.getItem(GUEST_SESSION_KEY);
-		if (existing) return existing;
-		const fresh = (crypto.randomUUID?.() ?? `g_${Date.now()}_${Math.random()}`)
-			.replace(/-/g, "")
-			.slice(0, 32);
-		localStorage.setItem(GUEST_SESSION_KEY, fresh);
-		return fresh;
-	} catch {
-		return `g_${Date.now()}`;
-	}
-}
+import { getOrCreateGuestSessionId } from "./guestSession";
 
 type ExtractionResult = {
 	success: boolean;

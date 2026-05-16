@@ -4,8 +4,12 @@
  * - sessionStorage for form field data (saved per-step on "Next" click)
  * - IndexedDB for binary file blobs (documents)
  *
- * This ensures no data is sent to Convex until final submission,
- * preventing orphaned documents and preserving data across page refreshes.
+ * Files survive page refreshes — uploads are only sent to Convex at final
+ * submission, preventing orphaned storage objects.
+ *
+ * Records are partitioned by `ownerKey` (typically a guest session ID or
+ * the user's email). The legacy schema named this column `email`; the
+ * IndexedDB keyPath is preserved for backward compatibility.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +24,7 @@ const FILE_STORE = "files";
 const LS_PREFIX = "reg_draft_";
 
 interface StoredFile {
+  /** Partition key — guest session ID or email. Schema name kept for IDB compat. */
   email: string;
   docType: string;
   filename: string;
@@ -59,7 +64,7 @@ export interface LocalFileInfo {
   previewUrl?: string;
 }
 
-export function useRegistrationStorage(email: string | undefined) {
+export function useRegistrationStorage(ownerKey: string | undefined) {
   const dbRef = useRef<IDBDatabase | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -94,8 +99,8 @@ export function useRegistrationStorage(email: string | undefined) {
   /** Save form data for a specific step */
   const saveStepData = useCallback(
     (step: number, data: Record<string, unknown>) => {
-      if (!email) return;
-      const key = `${LS_PREFIX}${email}`;
+      if (!ownerKey) return;
+      const key = `${LS_PREFIX}${ownerKey}`;
 
       try {
         const existing = sessionStorage.getItem(key);
@@ -109,14 +114,14 @@ export function useRegistrationStorage(email: string | undefined) {
         console.error("Failed to save step data:", err);
       }
     },
-    [email],
+    [ownerKey],
   );
 
   /** Save a snapshot of the current form data (for auto-save on blur) */
   const saveFormSnapshot = useCallback(
     (step: number, data: Record<string, unknown>) => {
-      if (!email) return;
-      const key = `${LS_PREFIX}${email}`;
+      if (!ownerKey) return;
+      const key = `${LS_PREFIX}${ownerKey}`;
 
       try {
         const existing = sessionStorage.getItem(key);
@@ -129,7 +134,7 @@ export function useRegistrationStorage(email: string | undefined) {
         console.error("Failed to save form snapshot:", err);
       }
     },
-    [email],
+    [ownerKey],
   );
 
   /** Get all stored form data */
@@ -137,8 +142,8 @@ export function useRegistrationStorage(email: string | undefined) {
     steps: Record<string, Record<string, unknown>>;
     lastStep: number;
   } | null => {
-    if (!email) return null;
-    const key = `${LS_PREFIX}${email}`;
+    if (!ownerKey) return null;
+    const key = `${LS_PREFIX}${ownerKey}`;
 
     try {
       const stored = sessionStorage.getItem(key);
@@ -160,7 +165,7 @@ export function useRegistrationStorage(email: string | undefined) {
     } catch {
       return null;
     }
-  }, [email]);
+  }, [ownerKey]);
 
   // ========================================================================
   // File Storage (IndexedDB)
@@ -169,14 +174,14 @@ export function useRegistrationStorage(email: string | undefined) {
   /** Save a file blob to IndexedDB */
   const saveFile = useCallback(
     async (docType: string, file: File): Promise<void> => {
-      if (!email || !dbRef.current) return;
+      if (!ownerKey || !dbRef.current) return;
 
       return new Promise((resolve, reject) => {
         const tx = dbRef.current!.transaction(FILE_STORE, "readwrite");
         const store = tx.objectStore(FILE_STORE);
 
         const record: StoredFile = {
-          email,
+          email: ownerKey,
           docType,
           filename: file.name,
           mimeType: file.type,
@@ -189,7 +194,7 @@ export function useRegistrationStorage(email: string | undefined) {
         request.onerror = () => reject(request.error);
       });
     },
-    [email],
+    [ownerKey],
   );
 
   /** Get a stored file from IndexedDB */
@@ -197,12 +202,12 @@ export function useRegistrationStorage(email: string | undefined) {
     async (
       docType: string,
     ): Promise<(LocalFileInfo & { blob: Blob }) | null> => {
-      if (!email || !dbRef.current) return null;
+      if (!ownerKey || !dbRef.current) return null;
 
       return new Promise((resolve, reject) => {
         const tx = dbRef.current!.transaction(FILE_STORE, "readonly");
         const store = tx.objectStore(FILE_STORE);
-        const request = store.get([email, docType]);
+        const request = store.get([ownerKey, docType]);
 
         request.onsuccess = () => {
           const result = request.result as StoredFile | undefined;
@@ -226,20 +231,20 @@ export function useRegistrationStorage(email: string | undefined) {
         request.onerror = () => reject(request.error);
       });
     },
-    [email],
+    [ownerKey],
   );
 
-  /** Get all stored files for this email */
+  /** Get all stored files for this owner key */
   const getAllFiles = useCallback(async (): Promise<
     Map<string, LocalFileInfo & { blob: Blob }>
   > => {
-    if (!email || !dbRef.current) return new Map();
+    if (!ownerKey || !dbRef.current) return new Map();
 
     return new Promise((resolve, reject) => {
       const tx = dbRef.current!.transaction(FILE_STORE, "readonly");
       const store = tx.objectStore(FILE_STORE);
       const index = store.index("by_email");
-      const request = index.getAll(email);
+      const request = index.getAll(ownerKey);
 
       request.onsuccess = () => {
         const results = request.result as StoredFile[];
@@ -263,23 +268,23 @@ export function useRegistrationStorage(email: string | undefined) {
 
       request.onerror = () => reject(request.error);
     });
-  }, [email]);
+  }, [ownerKey]);
 
   /** Remove a file from IndexedDB */
   const removeFile = useCallback(
     async (docType: string): Promise<void> => {
-      if (!email || !dbRef.current) return;
+      if (!ownerKey || !dbRef.current) return;
 
       return new Promise((resolve, reject) => {
         const tx = dbRef.current!.transaction(FILE_STORE, "readwrite");
         const store = tx.objectStore(FILE_STORE);
-        const request = store.delete([email, docType]);
+        const request = store.delete([ownerKey, docType]);
 
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
     },
-    [email],
+    [ownerKey],
   );
 
   // ========================================================================
@@ -288,18 +293,18 @@ export function useRegistrationStorage(email: string | undefined) {
 
   /** Clear all registration data (sessionStorage + IndexedDB) */
   const clearRegistration = useCallback(async () => {
-    if (!email) return;
+    if (!ownerKey) return;
 
     // Clear sessionStorage
-    sessionStorage.removeItem(`${LS_PREFIX}${email}`);
+    sessionStorage.removeItem(`${LS_PREFIX}${ownerKey}`);
 
-    // Clear IndexedDB files for this email
+    // Clear IndexedDB files for this owner key
     if (dbRef.current) {
       try {
         const tx = dbRef.current.transaction(FILE_STORE, "readwrite");
         const store = tx.objectStore(FILE_STORE);
         const index = store.index("by_email");
-        const request = index.getAllKeys(email);
+        const request = index.getAllKeys(ownerKey);
 
         request.onsuccess = () => {
           const keys = request.result;
@@ -315,7 +320,7 @@ export function useRegistrationStorage(email: string | undefined) {
     // Revoke all preview URLs
     objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     objectUrlsRef.current = [];
-  }, [email]);
+  }, [ownerKey]);
 
   // ========================================================================
   // Utility: Convert file to base64 (for AI scan)
@@ -361,3 +366,5 @@ export function useRegistrationStorage(email: string | undefined) {
     clearRegistration,
   };
 }
+
+export type RegistrationStorage = ReturnType<typeof useRegistrationStorage>;
