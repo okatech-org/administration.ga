@@ -12,7 +12,6 @@
   --surface: #ffffff;
   --surface-2: #fbfaf6;
   --surface-3: #f3efe4;
-  --border: #e6e2d8;
   --border-strong: #d2cdbf;
   --border-soft: #efebe0;
 
@@ -20,6 +19,34 @@
   --text: #14130f;
   --text-muted: #6a665b;
   --text-faint: #9a9588;
+
+  /* ── Bridge des tokens shadcn / Tailwind v4 ────────────────────────
+     Les composants shadcn (Button, Card, Input, Badge…) consomment ces
+     variables. En les redéfinissant ici, on bascule tout le visuel des
+     pages héritées dans le warm-beige sans toucher leur code.
+     `--background-dashboard` reste utilisé pour les fonds de page (cf.
+     l'ancien `bg-background-dashboard` côté pages Slate v3). */
+  --background: var(--bg);
+  --background-dashboard: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--gabon-blue-v2);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--gabon-blue-v2);
+  --accent-foreground: #ffffff;
+  --destructive: var(--danger-v2);
+  --destructive-foreground: #ffffff;
+  --border: var(--border-soft);
+  --border-light: var(--border-soft);
+  --input: var(--border-strong);
+  --ring: var(--gabon-blue-v2);
 
   /* Gabon */
   --gabon-blue-v2: #0b4f9c;

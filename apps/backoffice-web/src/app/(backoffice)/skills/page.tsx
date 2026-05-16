@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { DashboardToolbar } from "@/components/dashboard-v2/dashboard-toolbar";
 import { Icon } from "@/components/dashboard-v2/icon";
 import { PageHeader } from "@/components/dashboard-v2/page-header";
 import { CATEGORIES } from "@/components/skills-v2/mock-data";
@@ -34,10 +33,6 @@ export default function SkillsPage() {
 	const rawTab = searchParams.get("tab") as TabId | null;
 	const active: TabId = TAB_IDS.includes(rawTab as TabId) ? (rawTab as TabId) : DEFAULT_TAB;
 
-	// Changement de tab via l'onglet : on PURGE tous les autres params pour
-	// que les filtres soient scopés à l'onglet courant et ne fuitent pas
-	// vers un autre. Comportement attendu : "Réinitialiser" implicite au
-	// changement de tab.
 	const setActive = useCallback(
 		(id: string) => {
 			const params = new URLSearchParams();
@@ -48,9 +43,6 @@ export default function SkillsPage() {
 		[router],
 	);
 
-	// Navigation cross-tab avec pré-remplissage : utilisé par les cartes
-	// catégorie (TabCategories) et par "Voir tous" (TabCatalog) pour
-	// ouvrir TabSearch déjà filtré. Pose le minimum nécessaire dans l'URL.
 	const setActiveWithPrefill = useCallback(
 		(tab: TabId, prefill: Record<string, string> = {}) => {
 			const params = new URLSearchParams();
@@ -65,8 +57,6 @@ export default function SkillsPage() {
 	);
 
 	const openCategory = (catId: string) => {
-		// Le filtre catégorie de TabSearch attend un label (cf. options du
-		// Combobox), pas l'id. On résout via la mock data.
 		const cat = CATEGORIES.find((c) => c.id === catId);
 		setActiveWithPrefill("search", { category: cat?.label ?? "" });
 	};
@@ -87,53 +77,34 @@ export default function SkillsPage() {
 	);
 
 	return (
-		<div className="dash-v2">
-			<div className="v2-page">
-				<DashboardToolbar
-					backHref="/"
-					breadcrumb={[
-						{ label: t("superadmin.skills.backoffice"), href: "/" },
-						{ label: t("superadmin.skills.title") },
-					]}
-					right={
-						<>
-							<button type="button" className="btn btn-sm btn-soft">
-								<Icon name="Download" size={14} />
-								{t("superadmin.skills.actions.export")}
-							</button>
-							<button type="button" className="btn btn-icon btn-soft" aria-label="Notifications">
-								<Icon name="Bell" size={16} />
-							</button>
-						</>
-					}
-				/>
-				<div className="v2-page-body">
-					<div className="stack stack-4">
-						<PageHeader
-							icon={TAB_ICONS[active]}
-							title={t("superadmin.skills.title")}
-							subtitle={t(`superadmin.skills.subtitles.${active}`)}
-							actions={
-								<>
-									<button type="button" className="btn btn-sm btn-soft">
-										<Icon name="RefreshCcw" size={14} />
-										{t("superadmin.skills.actions.refresh")}
-									</button>
-									<button type="button" className="btn btn-sm btn-primary">
-										<Icon name="Sparkles" size={14} />
-										{t("superadmin.skills.actions.runAi")}
-									</button>
-								</>
-							}
-						/>
-						<TabSwitcher tabs={tabs} value={active} onChange={setActive} />
-						<div>
-							{active === "overview" && <TabOverview />}
-							{active === "categories" && <TabCategories onOpenCategory={openCategory} />}
-							{active === "catalog" && <TabCatalog onOpenProfiles={openProfilesForSkill} />}
-							{active === "search" && <TabSearch />}
-							{active === "health" && <TabHealth />}
-						</div>
+		<div className="v2-page">
+			{/* Le breadcrumb est injecté par AutoBreadcrumb dans le layout. */}
+			<div className="v2-page-body">
+				<div className="stack stack-4">
+					<PageHeader
+						icon={TAB_ICONS[active]}
+						title={t("superadmin.skills.title")}
+						subtitle={t(`superadmin.skills.subtitles.${active}`)}
+						actions={
+							<>
+								<button type="button" className="btn btn-sm btn-soft">
+									<Icon name="RefreshCcw" size={14} />
+									{t("superadmin.skills.actions.refresh")}
+								</button>
+								<button type="button" className="btn btn-sm btn-primary">
+									<Icon name="Sparkles" size={14} />
+									{t("superadmin.skills.actions.runAi")}
+								</button>
+							</>
+						}
+					/>
+					<TabSwitcher tabs={tabs} value={active} onChange={setActive} />
+					<div>
+						{active === "overview" && <TabOverview />}
+						{active === "categories" && <TabCategories onOpenCategory={openCategory} />}
+						{active === "catalog" && <TabCatalog onOpenProfiles={openProfilesForSkill} />}
+						{active === "search" && <TabSearch />}
+						{active === "health" && <TabHealth />}
 					</div>
 				</div>
 			</div>

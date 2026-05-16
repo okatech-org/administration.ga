@@ -209,7 +209,7 @@ export default function OrgDetailPage() {
 	// ── Loading ─────────────────────────────────────────────────
 	if (isOrgLoading) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 				<div className="flex items-center gap-4">
 					<Skeleton className="h-9 w-24" />
 				</div>
@@ -234,7 +234,7 @@ export default function OrgDetailPage() {
 			? t("superadmin.common.error")
 			: t("superadmin.common.notFoundOrRestricted")
 		return (
-			<div className="flex flex-1 flex-col items-center justify-center gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col items-center justify-center gap-4 px-7 pt-6 pb-[60px]">
 				<Building2 className="h-12 w-12 text-muted-foreground/30" />
 				<p className="text-muted-foreground">{message}</p>
 				<Button
@@ -255,7 +255,7 @@ export default function OrgDetailPage() {
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+		<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 			{/* ── Breadcrumbs accessibles (Phase F3.2) ─────────────── */}
 			<nav aria-label="Fil d'Ariane" className="text-xs text-muted-foreground">
 				<ol className="flex items-center gap-1.5">

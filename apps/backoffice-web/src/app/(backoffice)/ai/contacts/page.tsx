@@ -36,7 +36,7 @@ export default function AIContactsFullscreenPage() {
 	};
 
 	return (
-		<div className="flex h-full flex-1 flex-col gap-4 p-3 md:p-4">
+		<div className="flex h-full flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 			<PageHeader
 				icon={<Users className="h-5 w-5" />}
 				title="iContact"

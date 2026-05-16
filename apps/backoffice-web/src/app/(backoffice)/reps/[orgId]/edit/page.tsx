@@ -133,7 +133,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 
 	if (isLoading) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 				<Skeleton className="h-8 w-64" />
 				<Skeleton className="h-4 w-48" />
 				<FlatCard className="max-w-2xl">
@@ -149,7 +149,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 
 	if (!org) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 				<Button
 					variant="ghost"
 					size="sm"
@@ -164,7 +164,7 @@ function EditOrganizationForm({ orgId }: EditOrganizationFormProps) {
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+		<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 			<PageHeader
 				icon={<ArrowLeft className="h-5 w-5" />}
 				title={t("superadmin.organizations.form.edit")}

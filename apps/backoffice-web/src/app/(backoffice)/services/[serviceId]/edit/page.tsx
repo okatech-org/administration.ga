@@ -170,7 +170,7 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 
 	if (isLoading) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 				<Skeleton className="h-8 w-64" />
 				<FlatCard className="flex-1">
 					<div className="p-3 lg:p-4 space-y-4">
@@ -186,7 +186,7 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 
 	if (!service) {
 		return (
-			<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+			<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 				<PageHeader
 					title={t("superadmin.common.noData")}
 					showBackButton
@@ -198,7 +198,7 @@ function EditServiceForm({ serviceId }: EditServiceFormProps) {
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-3 md:p-4">
+		<div className="flex flex-1 flex-col gap-4 px-7 pt-6 pb-[60px]">
 			<PageHeader
 				icon={<Briefcase className="h-5 w-5" />}
 				title={t("superadmin.common.edit")}
