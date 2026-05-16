@@ -7,9 +7,9 @@
 
 .dash-v2 {
   /* Surfaces */
-  --bg: #f7f6f2;
+  --bg: #ffffff;
   --bg-deep: #efece4;
-  --surface: #ffffff;
+  --surface: #f7f6f2;
   --surface-2: #fbfaf6;
   --surface-3: #f3efe4;
   --border-strong: #d2cdbf;
@@ -106,9 +106,9 @@
    (cf. next-themes attribute="class"). */
 .dark .dash-v2,
 .dash-v2.dark {
-  --bg: #14130f;
+  --bg: #1c1a14;
   --bg-deep: #0a0907;
-  --surface: #1c1a14;
+  --surface: #14130f;
   --surface-2: #24211a;
   --surface-3: #2c2820;
   --border: #2c2820;
