@@ -30,6 +30,7 @@ import {
 } from "./lib/onboardingFlow"
 import type { StepHandle } from "./lib/stepHandle"
 import { submitRegistration } from "./lib/submitRegistration"
+import { clampStepToCompletion } from "./lib/validateSteps"
 import { OnboardingMobileActionBar } from "./MobileActionBar"
 import { OnboardingMobileHeader } from "./MobileHeader"
 import { OnboardingMobileProgressHeader } from "./MobileProgressHeader"
@@ -166,6 +167,17 @@ export function OnboardingShell() {
   const [guestSessionId] = useState(() => getOrCreateGuestSessionId())
   const regStorage = useRegistrationStorage(guestSessionId)
   const hydratedRef = useRef(false)
+  // Devient `true` une fois l'hydration IndexedDB terminée (succès, vide,
+  // ou erreur). Utilisé pour gater la restauration de l'étape depuis l'URL
+  // et le rendu du body : on évite d'afficher Identité 1/6 si l'URL
+  // demande Documents 5/6.
+  const [hydrated, setHydrated] = useState(false)
+  // Mémorisé une seule fois au mount — l'URL est ensuite la conséquence
+  // de stepIndex, pas l'inverse. Sans ça la restauration boucle.
+  const requestedStepKeyRef = useRef<string | null>(
+    typeof window !== "undefined" ? searchParams.get("step") : null,
+  )
+  const stepRestoredRef = useRef(false)
 
   const setFile = useCallback(
     (key: string, file: File) => {
@@ -224,6 +236,9 @@ export function OnboardingShell() {
       .catch((err) => {
         console.error("Failed to hydrate files from IndexedDB:", err)
       })
+      .finally(() => {
+        setHydrated(true)
+      })
   }, [regStorage])
 
   // Sync URL when userType changes (without scroll reset)
@@ -267,6 +282,47 @@ export function OnboardingShell() {
     () => (userType ? STEPS_BY_TYPE[userType] : []),
     [userType]
   )
+
+  // Restauration de l'étape depuis `?step=<key>` une seule fois, une fois
+  // que le draft localStorage ET les fichiers IndexedDB sont chargés. On
+  // clampe vers la première étape antérieure incomplète pour éviter qu'un
+  // utilisateur arrivant via une URL partagée (ou avec un draft purgé)
+  // n'atterrisse sur Documents/Review avec un dossier vide.
+  useEffect(() => {
+    if (stepRestoredRef.current) return
+    if (!userType || !draftLoaded || !hydrated) return
+    stepRestoredRef.current = true
+    const requested = requestedStepKeyRef.current
+    if (!requested) return
+    const idx = steps.findIndex((s) => s.key === requested)
+    if (idx <= 0) return
+    const clamped = clampStepToCompletion(steps, idx, data, files, userType)
+    if (clamped !== 0) setStepIndex(clamped)
+    // Si on snap vers une étape antérieure faute de données, réécrit
+    // l'URL pour qu'elle reflète l'état réel — sinon un refresh redonne
+    // une URL menteuse qui re-snap à l'identique en boucle.
+    const clampedKey = steps[clamped]?.key
+    if (clampedKey && clampedKey !== requested) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set("step", clampedKey)
+      router.replace(`/register?${params.toString()}`, { scroll: false })
+    }
+  }, [userType, draftLoaded, hydrated, steps, data, files, router, searchParams])
+
+  // Synchronise l'URL quand l'utilisateur navigue dans le wizard. Ne
+  // déclenche qu'une fois le mount terminé pour ne pas écraser le `step`
+  // entrant avant qu'il soit lu par l'effet de restauration.
+  useEffect(() => {
+    if (!userType) return
+    if (!stepRestoredRef.current) return
+    const currentKey = steps[stepIndex]?.key
+    if (!currentKey) return
+    const urlKey = searchParams.get("step")
+    if (urlKey === currentKey) return
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("step", currentKey)
+    router.replace(`/register?${params.toString()}`, { scroll: false })
+  }, [userType, stepIndex, steps, router, searchParams])
 
   const currentStep = steps[stepIndex]
   const stepTitle = currentStep
@@ -374,6 +430,10 @@ export function OnboardingShell() {
     regStorage.clearRegistration().catch(() => {})
     clearGuestSession()
     hydratedRef.current = false
+    // Reset des marqueurs de restauration : un futur retour sur /register
+    // ne doit pas hériter d'un `step=` calculé pour l'ancienne session.
+    requestedStepKeyRef.current = null
+    stepRestoredRef.current = false
     router.replace("/register", { scroll: false })
   }, [regStorage, router])
 
@@ -462,10 +522,12 @@ export function OnboardingShell() {
 
   const stepBody = (() => {
     if (!currentStep) return null
-    // Wait for the draft to be read from localStorage before mounting the
-    // step component — otherwise useForm captures empty defaultValues and
-    // wipes out the persisted data on the user's first interaction.
-    if (!draftLoaded) {
+    // Wait for the draft to be read from localStorage AND the IndexedDB
+    // file blobs to be hydrated before mounting the step component.
+    // Otherwise (a) `useForm` would capture empty defaultValues and wipe
+    // persisted data on first interaction, and (b) a `?step=documents`
+    // entry would flash Identity 1/6 before snapping to the restored step.
+    if (!draftLoaded || !hydrated) {
       return (
         <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
           <span suppressHydrationWarning>…</span>

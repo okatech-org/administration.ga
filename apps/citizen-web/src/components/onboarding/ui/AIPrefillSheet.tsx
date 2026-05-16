@@ -192,7 +192,12 @@ export function AIPrefillSheet({
 				if (!o) handleClose();
 			}}
 		>
-			<DialogContent className="max-w-[520px] gap-0 p-0">{body}</DialogContent>
+			{/* `max-h` + `flex flex-col` donnent une hauteur définie au Dialog
+				sur desktop, sans quoi le footer sticky de `DoneStage` se calait
+				au milieu visuel (pas de scroll ancestor à qui s'ancrer). */}
+			<DialogContent className="flex max-h-[85svh] max-w-[520px] flex-col gap-0 overflow-hidden p-0">
+				{body}
+			</DialogContent>
 		</Dialog>
 	);
 }
@@ -427,7 +432,10 @@ function DoneStage({
 		.filter((e) => e.value.length > 0);
 
 	return (
-		<div className="flex h-full max-h-[85svh] flex-col">
+		// Hauteur définie par le conteneur (Dialog ou BottomSheet) ; ici on
+		// se contente d'occuper la hauteur disponible pour pouvoir scroller
+		// le contenu et laisser le footer collé en bas.
+		<div className="flex h-full min-h-0 flex-col">
 			{/* Zone scrollable : entête + liste des champs extraits + note */}
 			<div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
 				<div className="flex items-center gap-3">
