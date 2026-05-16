@@ -1691,7 +1691,102 @@
 			"deployment": {
 				"title": "Déploiement des Représentations",
 				"description": "Couverture géographique et progression du réseau diplomatique"
-			}
+			},
+			"kpiSection": "Indicateurs clés du réseau diplomatique",
+			"kpi": {
+				"userHint": "comptes actifs",
+				"orgHint": "ambassades & consulats",
+				"orgRate": "{{rate}} % activées",
+				"requestsHint": "{{count}} en attente",
+				"registrationsHint": "registre consulaire",
+				"associations": "Associations",
+				"associationsHint": "diaspora & sociétés",
+				"companiesFallback": "{{count}} entreprises",
+				"delta": "+{{n}} / {{period}}"
+			},
+			"sections": {
+				"pipeline": "Pipeline de traitement",
+				"pipelineHint": "Répartition des demandes par étape du workflow consulaire",
+				"performance": "Performance globale",
+				"performanceHint": "Taux de résolution des demandes",
+				"resolution": "Taux de résolution",
+				"resolutionSub": "{{done}} terminées sur {{total}}",
+				"requestsByStatusHint": "Répartition circulaire des {{count}} dossiers",
+				"registrations": "Inscriptions consulaires",
+				"registrationsHint": "État du registre · {{count}} dossiers",
+				"alerts": "Alertes & événements",
+				"alertsHint_one": "{{count}} notification à examiner",
+				"alertsHint_other": "{{count}} notifications à examiner",
+				"noAlerts": "Aucune alerte active",
+				"topReps": "Top représentations",
+				"topRepsHint": "{{active}} actives sur {{total}}",
+				"noReps": "Aucune représentation",
+				"quickAccess": "Accès rapides",
+				"quickAccessHint": "Actions super-admin",
+				"activityHint": "Flux temps réel des événements du réseau",
+				"noActivity": "Aucune activité récente",
+				"health": "Santé système",
+				"healthHint": "Composants critiques surveillés"
+			},
+			"actions": {
+				"refresh": "Rafraîchir",
+				"dailyReport": "Rapport du jour",
+				"aiSummary": "Synthèse IA",
+				"registry": "Registre",
+				"journal": "Journal",
+				"monitoring": "Monitoring",
+				"seeAll": "Voir tout",
+				"dismiss": "Masquer"
+			},
+			"periods": {
+				"total": "Total",
+				"24h": "24 h",
+				"7j": "7 j",
+				"30j": "30 j",
+				"90j": "90 j",
+				"year": "Année"
+			},
+			"systemHealth": {
+				"healthy": "Système nominal",
+				"degraded": "Système dégradé",
+				"critical": "Alerte critique"
+			},
+			"hero": {
+				"greeting": "Bonjour",
+				"subtitle": "vue stratégique du réseau",
+				"summary": "{{reps}} représentations connectées · {{users}} ressortissants actifs",
+				"urgentSuffix": " · {{urgent}} demandes prioritaires requièrent une attention"
+			},
+			"posts_one": "{{count}} poste",
+			"posts_other": "{{count}} postes",
+			"quickAccessLinks": {
+				"newRep": "Ajouter représentation",
+				"newAgent": "Créer un agent",
+				"newService": "Nouveau service",
+				"auditLogs": "Journaux d'audit",
+				"monitoring": "Monitoring temps réel",
+				"support": "Centre de support"
+			},
+			"registrationStatus": {
+				"requested": "En attente",
+				"active": "Active",
+				"expired": "Expirée",
+				"unknown": "Autre"
+			},
+			"healthCards": {
+				"globalLabel": "État global",
+				"globalSub": "Surveillance temps réel",
+				"queueLabel": "Signaux en attente",
+				"queueSub": "File de traitement",
+				"alertsLabel": "Alertes 24 h",
+				"alertsSub": "Priorité critique",
+				"eventsLabel": "Événements sécurité",
+				"eventsSub": "24 dernières heures",
+				"healthy": "Nominal",
+				"degraded": "Dégradé",
+				"critical": "Critique"
+			},
+			"live": "Live"
 		},
 		"nav": {
 			"dashboard": "Tableau de bord",

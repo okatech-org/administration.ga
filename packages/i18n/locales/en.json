@@ -917,7 +917,102 @@
 			"addUser": "Add User",
 			"addOrg": "Add Organization",
 			"addService": "Add Service",
-			"viewLogs": "View Logs"
+			"viewLogs": "View Logs",
+			"kpiSection": "Diplomatic network key indicators",
+			"kpi": {
+				"userHint": "active accounts",
+				"orgHint": "embassies & consulates",
+				"orgRate": "{{rate}}% activated",
+				"requestsHint": "{{count}} pending",
+				"registrationsHint": "consular registry",
+				"associations": "Associations",
+				"associationsHint": "diaspora & companies",
+				"companiesFallback": "{{count}} companies",
+				"delta": "+{{n}} / {{period}}"
+			},
+			"sections": {
+				"pipeline": "Processing pipeline",
+				"pipelineHint": "Requests distribution by consular workflow stage",
+				"performance": "Overall performance",
+				"performanceHint": "Request resolution rate",
+				"resolution": "Resolution rate",
+				"resolutionSub": "{{done}} completed out of {{total}}",
+				"requestsByStatusHint": "Donut breakdown of {{count}} cases",
+				"registrations": "Consular registrations",
+				"registrationsHint": "Registry status · {{count}} cases",
+				"alerts": "Alerts & events",
+				"alertsHint_one": "{{count}} notification to review",
+				"alertsHint_other": "{{count}} notifications to review",
+				"noAlerts": "No active alerts",
+				"topReps": "Top representations",
+				"topRepsHint": "{{active}} active out of {{total}}",
+				"noReps": "No representation",
+				"quickAccess": "Quick access",
+				"quickAccessHint": "Super-admin actions",
+				"activityHint": "Live network event stream",
+				"noActivity": "No recent activity",
+				"health": "System health",
+				"healthHint": "Monitored critical components"
+			},
+			"actions": {
+				"refresh": "Refresh",
+				"dailyReport": "Daily report",
+				"aiSummary": "AI summary",
+				"registry": "Registry",
+				"journal": "Journal",
+				"monitoring": "Monitoring",
+				"seeAll": "See all",
+				"dismiss": "Dismiss"
+			},
+			"periods": {
+				"total": "Total",
+				"24h": "24 h",
+				"7j": "7 d",
+				"30j": "30 d",
+				"90j": "90 d",
+				"year": "Year"
+			},
+			"systemHealth": {
+				"healthy": "System nominal",
+				"degraded": "System degraded",
+				"critical": "Critical alert"
+			},
+			"hero": {
+				"greeting": "Hello",
+				"subtitle": "network strategic view",
+				"summary": "{{reps}} representations connected · {{users}} active citizens",
+				"urgentSuffix": " · {{urgent}} priority requests require attention"
+			},
+			"posts_one": "{{count}} post",
+			"posts_other": "{{count}} posts",
+			"quickAccessLinks": {
+				"newRep": "Add representation",
+				"newAgent": "Create an agent",
+				"newService": "New service",
+				"auditLogs": "Audit logs",
+				"monitoring": "Real-time monitoring",
+				"support": "Support center"
+			},
+			"registrationStatus": {
+				"requested": "Pending",
+				"active": "Active",
+				"expired": "Expired",
+				"unknown": "Other"
+			},
+			"healthCards": {
+				"globalLabel": "Global status",
+				"globalSub": "Real-time monitoring",
+				"queueLabel": "Pending signals",
+				"queueSub": "Processing queue",
+				"alertsLabel": "Alerts 24h",
+				"alertsSub": "Critical priority",
+				"eventsLabel": "Security events",
+				"eventsSub": "Last 24 hours",
+				"healthy": "Nominal",
+				"degraded": "Degraded",
+				"critical": "Critical"
+			},
+			"live": "Live"
 		},
 		"nav": {
 			"dashboard": "Dashboard",

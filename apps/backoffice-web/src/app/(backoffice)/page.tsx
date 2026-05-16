@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "@convex/_generated/api";
 import { Icon } from "@/components/dashboard-v2/icon";
 import { ToolbarSlot } from "@/components/dashboard-v2/toolbar-slot";
+import { FlagIcon } from "@/components/ui/flag-icon";
 import {
 	useAuthenticatedConvexQuery,
 	useAuthenticatedPaginatedQuery,
@@ -38,67 +40,23 @@ const TONE_VAR: Record<Tone, { color: string; tint: string }> = {
 };
 
 type PeriodId = "total" | "24h" | "7j" | "30j" | "90j" | "year";
-// Pour l'instant seul "Total" est actif — les fenêtres temporelles s'appuient
-// sur des agrégats encore non backfillés (cf. plan), elles seront ré-activées
-// une fois le backfill effectué. Les libellés restent visibles à titre
-// indicatif pour communiquer la feature à venir.
-const PERIODS: { id: PeriodId; label: string; ms: number; enabled: boolean }[] = [
-	{ id: "total", label: "Total", ms: 0, enabled: true },
-	{ id: "24h", label: "24 h", ms: 24 * 60 * 60 * 1000, enabled: false },
-	{ id: "7j", label: "7 j", ms: 7 * 24 * 60 * 60 * 1000, enabled: false },
-	{ id: "30j", label: "30 j", ms: 30 * 24 * 60 * 60 * 1000, enabled: false },
-	{ id: "90j", label: "90 j", ms: 90 * 24 * 60 * 60 * 1000, enabled: false },
-	{ id: "year", label: "Année", ms: 365 * 24 * 60 * 60 * 1000, enabled: false },
+const PERIODS: { id: PeriodId; label: string; ms: number }[] = [
+	{ id: "total", label: "Total", ms: 0 },
+	{ id: "24h", label: "24 h", ms: 24 * 60 * 60 * 1000 },
+	{ id: "7j", label: "7 j", ms: 7 * 24 * 60 * 60 * 1000 },
+	{ id: "30j", label: "30 j", ms: 30 * 24 * 60 * 60 * 1000 },
+	{ id: "90j", label: "90 j", ms: 90 * 24 * 60 * 60 * 1000 },
+	{ id: "year", label: "Année", ms: 365 * 24 * 60 * 60 * 1000 },
 ];
 
-const ORG_TYPE_LABELS: Record<string, string> = {
-	embassy: "Ambassade",
-	high_representation: "Haute Représentation",
-	general_consulate: "Consulat Général",
-	high_commission: "Haut-Commissariat",
-	permanent_mission: "Mission Permanente",
-	third_party: "Partenaire Tiers",
-	consulate: "Consulat",
-	honorary_consulate: "Consulat Honoraire",
-};
+// Noms de pays + drapeaux : on s'appuie sur les clés i18n
+// `superadmin.countryCodes.${code}` et le composant `<FlagIcon>` partagé
+// (`@/components/ui/flag-icon` → `@workspace/ui/components/flag-icon`).
+// Aucune table locale à maintenir.
 
-const COUNTRY_FLAGS: Record<string, string> = {
-	FR: "🇫🇷", BE: "🇧🇪", US: "🇺🇸", CN: "🇨🇳", MA: "🇲🇦",
-	CD: "🇨🇩", CM: "🇨🇲", ES: "🇪🇸", GB: "🇬🇧", DE: "🇩🇪",
-	IT: "🇮🇹", SN: "🇸🇳", CG: "🇨🇬", CI: "🇨🇮", GA: "🇬🇦",
-	JP: "🇯🇵", BR: "🇧🇷", CA: "🇨🇦", SA: "🇸🇦", AE: "🇦🇪",
-	ZA: "🇿🇦", GQ: "🇬🇶", NG: "🇳🇬", EG: "🇪🇬", RU: "🇷🇺",
-	IN: "🇮🇳", TR: "🇹🇷", TG: "🇹🇬", BJ: "🇧🇯", GH: "🇬🇭",
-	KE: "🇰🇪", PT: "🇵🇹",
-};
-
-const COUNTRY_NAMES: Record<string, string> = {
-	FR: "France", BE: "Belgique", US: "États-Unis", CN: "Chine",
-	MA: "Maroc", CD: "RD Congo", CM: "Cameroun", ES: "Espagne",
-	GB: "Royaume-Uni", DE: "Allemagne", IT: "Italie", SN: "Sénégal",
-	CG: "Congo", CI: "Côte d'Ivoire", GA: "Gabon", JP: "Japon",
-	BR: "Brésil", CA: "Canada", SA: "Arabie Saoudite", AE: "Émirats",
-	ZA: "Afrique du Sud", GQ: "Guinée Équat.", NG: "Nigeria",
-	EG: "Égypte", RU: "Russie", IN: "Inde", TR: "Turquie",
-	TG: "Togo", BJ: "Bénin", GH: "Ghana", KE: "Kenya", PT: "Portugal",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-	draft: "Brouillon",
-	submitted: "Soumis",
-	pending: "En attente",
-	pending_completion: "Compléments",
-	edited: "Modifié",
-	under_review: "Examen",
-	processing: "Traitement",
-	in_production: "Production",
-	validated: "Validé",
-	appointment_scheduled: "RDV",
-	ready_for_pickup: "Prêt",
-	completed: "Terminé",
-	cancelled: "Annulé",
-	rejected: "Rejeté",
-};
+// Status labels viennent de `fields.requestStatus.options.*` via t()
+// (déjà internationalisé dans le projet). On garde uniquement le mapping
+// status → tone localement.
 
 const STATUS_TONE: Record<string, Tone> = {
 	draft: "muted",
@@ -117,12 +75,6 @@ const STATUS_TONE: Record<string, Tone> = {
 	rejected: "danger",
 };
 
-const REG_STATUS_LABELS: Record<string, string> = {
-	requested: "En attente",
-	active: "Active",
-	expired: "Expirée",
-	unknown: "Autre",
-};
 const REG_STATUS_TONE: Record<string, Tone> = {
 	requested: "warning",
 	active: "success",
@@ -163,6 +115,18 @@ function niceCeil(n: number): number {
 // Small UI atoms
 // ════════════════════════════════════════════════════════════════════════════
 
+function EmptyState() {
+	const { t } = useTranslation();
+	return (
+		<div
+			className="text-sm text-muted ta-center"
+			style={{ padding: "32px 0" }}
+		>
+			{t("superadmin.common.noData", "Aucune donnée disponible")}
+		</div>
+	);
+}
+
 function ToneDot({ tone = "info", size = 8 }: { tone?: Tone; size?: number }) {
 	return (
 		<span
@@ -195,6 +159,7 @@ function PeriodFilter({
 	value: PeriodId;
 	onChange: (id: PeriodId) => void;
 }) {
+	const { t } = useTranslation();
 	return (
 		<div
 			style={{
@@ -208,21 +173,11 @@ function PeriodFilter({
 		>
 			{PERIODS.map((p) => {
 				const active = p.id === value;
-				const disabled = !p.enabled;
 				return (
 					<button
 						key={p.id}
 						type="button"
-						disabled={disabled}
-						aria-disabled={disabled}
-						title={
-							disabled
-								? "Bientôt disponible — pour l'instant, seul le total est affiché."
-								: undefined
-						}
-						onClick={() => {
-							if (!disabled) onChange(p.id);
-						}}
+						onClick={() => onChange(p.id)}
 						style={{
 							appearance: "none",
 							background: active ? "var(--ink-900)" : "transparent",
@@ -230,22 +185,17 @@ function PeriodFilter({
 							// texte doit s'inverser en miroir → `var(--bg)` (≈ blanc en
 							// light, ≈ noir en dark). Hardcoder `#fff` ferait blanc-sur-
 							// beige-clair en dark mode.
-							color: active
-								? "var(--bg)"
-								: disabled
-									? "var(--text-faint)"
-									: "var(--text-muted)",
+							color: active ? "var(--bg)" : "var(--text-muted)",
 							border: "none",
 							borderRadius: 100,
 							padding: "6px 14px",
 							fontSize: 12,
 							fontWeight: 500,
-							cursor: disabled ? "not-allowed" : "pointer",
+							cursor: "pointer",
 							letterSpacing: "-0.005em",
-							opacity: disabled ? 0.5 : 1,
 						}}
 					>
-						{p.label}
+						{t(`superadmin.dashboard.periods.${p.id}`, p.label)}
 					</button>
 				);
 			})}
@@ -254,20 +204,21 @@ function PeriodFilter({
 }
 
 function SystemHealthPill({ health }: { health?: string }) {
-	const map: Record<string, { tone: Tone; label: string }> = {
-		HEALTHY: { tone: "success", label: "Système nominal" },
-		DEGRADED: { tone: "warning", label: "Système dégradé" },
-		CRITICAL: { tone: "danger", label: "Alerte critique" },
+	const { t } = useTranslation();
+	const TONE_BY_HEALTH: Record<string, { tone: Tone; key: string }> = {
+		HEALTHY: { tone: "success", key: "healthy" },
+		DEGRADED: { tone: "warning", key: "degraded" },
+		CRITICAL: { tone: "danger", key: "critical" },
 	};
-	const cfg = map[health ?? "HEALTHY"] ?? map.HEALTHY!;
-	const t = TONE_VAR[cfg.tone];
+	const cfg = TONE_BY_HEALTH[health ?? "HEALTHY"] ?? TONE_BY_HEALTH.HEALTHY!;
+	const tv = TONE_VAR[cfg.tone];
 	return (
 		<span
 			className="row items-center"
 			style={{
 				gap: 8,
 				padding: "4px 10px",
-				background: t.tint,
+				background: tv.tint,
 				borderRadius: 100,
 			}}
 		>
@@ -276,12 +227,12 @@ function SystemHealthPill({ health }: { health?: string }) {
 					width: 7,
 					height: 7,
 					borderRadius: "50%",
-					background: t.color,
-					boxShadow: `0 0 0 4px ${t.tint}`,
+					background: tv.color,
+					boxShadow: `0 0 0 4px ${tv.tint}`,
 				}}
 			/>
-			<span style={{ fontSize: 12, fontWeight: 600, color: t.color }}>
-				{cfg.label}
+			<span style={{ fontSize: 12, fontWeight: 600, color: tv.color }}>
+				{t(`superadmin.dashboard.systemHealth.${cfg.key}`)}
 			</span>
 		</span>
 	);
@@ -302,14 +253,16 @@ function WelcomeBanner({
 	urgentPending: number;
 	onDismiss: () => void;
 }) {
+	const { t, i18n } = useTranslation();
+	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
 	const now = useMemo(() => new Date(), []);
-	const dateLabel = now.toLocaleDateString("fr-FR", {
+	const dateLabel = now.toLocaleDateString(locale, {
 		weekday: "long",
 		day: "numeric",
 		month: "long",
 		year: "numeric",
 	});
-	const timeLabel = now.toLocaleTimeString("fr-FR", {
+	const timeLabel = now.toLocaleTimeString(locale, {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
@@ -375,9 +328,9 @@ function WelcomeBanner({
 							color: "#fff",
 						}}
 					>
-						Bonjour
+						{t("superadmin.dashboard.hero.greeting")}
 						<span style={{ color: "rgba(255,255,255,0.7)", fontWeight: 400 }}>
-							{" "}— vue stratégique du réseau
+							{" "}— {t("superadmin.dashboard.hero.subtitle")}
 						</span>
 					</h1>
 					<div
@@ -389,9 +342,14 @@ function WelcomeBanner({
 							maxWidth: 720,
 						}}
 					>
-						{fmt(totalReps)} représentations connectées · {fmt(totalUsers)} ressortissants actifs
+						{t("superadmin.dashboard.hero.summary", {
+							reps: fmt(totalReps),
+							users: fmt(totalUsers),
+						})}
 						{urgentPending > 0
-							? ` · ${fmt(urgentPending)} demandes prioritaires requièrent une attention`
+							? t("superadmin.dashboard.hero.urgentSuffix", {
+									urgent: fmt(urgentPending),
+								})
 							: ""}
 						.
 					</div>
@@ -407,7 +365,7 @@ function WelcomeBanner({
 						}}
 					>
 						<Icon name="FileText" size={14} />
-						Rapport du jour
+						{t("superadmin.dashboard.actions.dailyReport")}
 					</button>
 					<button
 						type="button"
@@ -423,13 +381,13 @@ function WelcomeBanner({
 						}}
 					>
 						<Icon name="Sparkles" size={14} />
-						Synthèse IA
+						{t("superadmin.dashboard.actions.aiSummary")}
 					</button>
 					<button
 						type="button"
 						onClick={onDismiss}
 						className="btn btn-icon"
-						aria-label="Masquer"
+						aria-label={t("superadmin.dashboard.actions.dismiss")}
 						style={{
 							background: "rgba(255,255,255,0.08)",
 							color: "rgba(255,255,255,0.7)",
@@ -459,7 +417,7 @@ type Kpi = {
 };
 
 function KpiCard({ k, loading }: { k: Kpi; loading?: boolean }) {
-	const t = TONE_VAR[k.tone];
+	const tv = TONE_VAR[k.tone];
 	return (
 		<div className="card card-pad" style={{ position: "relative", overflow: "hidden" }}>
 			<span
@@ -470,7 +428,7 @@ function KpiCard({ k, loading }: { k: Kpi; loading?: boolean }) {
 					top: 14,
 					bottom: 14,
 					width: 3,
-					background: t.color,
+					background: tv.color,
 					borderRadius: "0 3px 3px 0",
 				}}
 			/>
@@ -507,8 +465,8 @@ function KpiCard({ k, loading }: { k: Kpi; loading?: boolean }) {
 						width: 38,
 						height: 38,
 						borderRadius: 10,
-						background: t.tint,
-						color: t.color,
+						background: tv.tint,
+						color: tv.color,
 						display: "grid",
 						placeItems: "center",
 						flexShrink: 0,
@@ -522,8 +480,8 @@ function KpiCard({ k, loading }: { k: Kpi; loading?: boolean }) {
 					<span
 						className="pill pill-mono"
 						style={{
-							background: t.tint,
-							color: t.color,
+							background: tv.tint,
+							color: tv.color,
 							borderColor: "transparent",
 						}}
 					>
@@ -552,7 +510,7 @@ function CardHead({
 	tone?: Tone;
 	actions?: React.ReactNode;
 }) {
-	const t = TONE_VAR[tone];
+	const tv = TONE_VAR[tone];
 	return (
 		<div className="card-head">
 			<div className="row items-center" style={{ gap: 10, minWidth: 0 }}>
@@ -561,8 +519,8 @@ function CardHead({
 						width: 30,
 						height: 30,
 						borderRadius: 8,
-						background: t.tint,
-						color: t.color,
+						background: tv.tint,
+						color: tv.color,
 						display: "grid",
 						placeItems: "center",
 						flexShrink: 0,
@@ -616,14 +574,7 @@ function HBarChart({
 	ticks?: number;
 }) {
 	if (!data.length) {
-		return (
-			<div
-				className="text-sm text-muted ta-center"
-				style={{ padding: "32px 0" }}
-			>
-				Aucune donnée
-			</div>
-		);
+		return <EmptyState />;
 	}
 	const max = Math.max(...data.map((d) => d.count));
 	const niceMax = niceCeil(max);
@@ -636,7 +587,7 @@ function HBarChart({
 			<div className="stack" style={{ gap: 14 }}>
 				{data.map((d) => {
 					const pct = (d.count / niceMax) * 100;
-					const t = TONE_VAR[d.tone];
+					const tv = TONE_VAR[d.tone];
 					return (
 						<div
 							key={d.id}
@@ -681,7 +632,7 @@ function HBarChart({
 									style={{
 										width: `${Math.max(1.5, pct)}%`,
 										height: "100%",
-										background: t.color,
+										background: tv.color,
 										borderRadius: 6,
 										position: "relative",
 										overflow: "hidden",
@@ -751,14 +702,7 @@ function VBarChart({
 	height?: number;
 }) {
 	if (!data.length) {
-		return (
-			<div
-				className="text-sm text-muted ta-center"
-				style={{ padding: "32px 0" }}
-			>
-				Aucune inscription
-			</div>
-		);
+		return <EmptyState />;
 	}
 	const max = Math.max(...data.map((d) => d.count));
 	const niceMax = niceCeil(max);
@@ -815,7 +759,7 @@ function VBarChart({
 					>
 						{data.map((d) => {
 							const h = (d.count / niceMax) * 100;
-							const t = TONE_VAR[d.tone];
+							const tv = TONE_VAR[d.tone];
 							return (
 								<div
 									key={d.id}
@@ -845,7 +789,7 @@ function VBarChart({
 											width: "64%",
 											height: `${h}%`,
 											minHeight: 4,
-											background: t.color,
+											background: tv.color,
 											borderRadius: "8px 8px 0 0",
 											boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.08)",
 											position: "relative",
@@ -879,7 +823,7 @@ function VBarChart({
 					}}
 				>
 					{data.map((d) => {
-						const t = TONE_VAR[d.tone];
+						const tv = TONE_VAR[d.tone];
 						return (
 							<div
 								key={d.id}
@@ -901,7 +845,7 @@ function VBarChart({
 										width: 8,
 										height: 8,
 										borderRadius: "50%",
-										background: t.color,
+										background: tv.color,
 									}}
 								/>
 								<span>{d.label}</span>
@@ -1028,16 +972,10 @@ function Donut({
 	size?: number;
 	thickness?: number;
 }) {
+	const { t } = useTranslation();
 	const total = data.reduce((s, d) => s + d.count, 0);
 	if (total === 0) {
-		return (
-			<div
-				className="text-sm text-muted ta-center"
-				style={{ padding: "32px 0" }}
-			>
-				Aucune donnée
-			</div>
-		);
+		return <EmptyState />;
 	}
 	const r = (size - thickness) / 2;
 	const cx = size / 2;
@@ -1046,7 +984,7 @@ function Donut({
 	let offset = 0;
 	return (
 		<svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-			<title>Répartition par statut</title>
+			<title>{t("superadmin.dashboard.requestsByStatus")}</title>
 			<circle
 				cx={cx}
 				cy={cy}
@@ -1109,6 +1047,7 @@ function Donut({
 // ════════════════════════════════════════════════════════════════════════════
 
 export default function SuperadminDashboard() {
+	const { t } = useTranslation();
 	const [period, setPeriod] = useState<PeriodId>("total");
 	const [showWelcome, setShowWelcome] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
@@ -1170,8 +1109,12 @@ export default function SuperadminDashboard() {
 		{ initialNumItems: 7 },
 	);
 
-	const periodLabel =
-		PERIODS.find((p) => p.id === period)?.label.toLowerCase() ?? "30 j";
+	const periodLabel = t(
+		`superadmin.dashboard.periods.${period}`,
+		PERIODS.find((p) => p.id === period)?.label ?? "",
+	).toLowerCase();
+	const fmtDelta = (n: number) =>
+		t("superadmin.dashboard.kpi.delta", { n: fmt(n), period: periodLabel });
 
 	// ── KPI strip ─────────────────────────────────────────────────────────
 	const sb = stats?.requests?.statusBreakdown ?? {};
@@ -1183,61 +1126,67 @@ export default function SuperadminDashboard() {
 	const kpis: Kpi[] = [
 		{
 			id: "ressortissants",
-			label: "Ressortissants",
+			label: t("superadmin.dashboard.stats.users"),
 			value: stats?.users?.total ?? 0,
 			delta:
 				deltas && typeof deltas.usersDelta === "number"
-					? `+${fmt(deltas.usersDelta)} / ${periodLabel}`
+					? fmtDelta(deltas.usersDelta)
 					: undefined,
-			hint: "comptes actifs",
+			hint: t("superadmin.dashboard.kpi.userHint"),
 			icon: "Users",
 			tone: "info",
 		},
 		{
 			id: "representations",
-			label: "Représentations",
+			label: t("superadmin.dashboard.stats.organizations"),
 			value: stats?.deployment?.totalOrgs ?? stats?.orgs?.total ?? 0,
 			delta:
 				typeof stats?.deployment?.activationRate === "number"
-					? `${stats.deployment.activationRate} % activées`
+					? t("superadmin.dashboard.kpi.orgRate", {
+							rate: stats.deployment.activationRate,
+						})
 					: undefined,
-			hint: "ambassades & consulats",
+			hint: t("superadmin.dashboard.kpi.orgHint"),
 			icon: "Building2",
 			tone: "warning",
 		},
 		{
 			id: "demandes",
-			label: "Demandes",
+			label: t("superadmin.dashboard.stats.requests"),
 			value: totalReqs,
 			delta:
 				deltas && typeof deltas.requestsDelta === "number"
-					? `+${fmt(deltas.requestsDelta)} / ${periodLabel}`
+					? fmtDelta(deltas.requestsDelta)
 					: undefined,
-			hint: `${fmt(urgentPending)} en attente`,
+			hint: t("superadmin.dashboard.kpi.requestsHint", {
+				count: urgentPending,
+			}),
 			icon: "FileText",
 			tone: "cyan",
 		},
 		{
 			id: "inscriptions",
-			label: "Inscriptions",
+			label: t("superadmin.dashboard.stats.registrations"),
 			value: stats?.registrations?.total ?? 0,
 			delta:
 				deltas && typeof deltas.registrationsDelta === "number"
-					? `+${fmt(deltas.registrationsDelta)} / ${periodLabel}`
+					? fmtDelta(deltas.registrationsDelta)
 					: undefined,
-			hint: "registre consulaire",
+			hint: t("superadmin.dashboard.kpi.registrationsHint"),
 			icon: "IdCard",
 			tone: "green",
 		},
 		{
 			id: "associations",
-			label: "Associations",
+			label: t("superadmin.dashboard.kpi.associations"),
 			value: stats?.associations?.total ?? 0,
 			delta:
 				deltas && typeof deltas.associationsDelta === "number"
-					? `+${fmt(deltas.associationsDelta)} / ${periodLabel}`
-					: `${fmt(stats?.companies?.total ?? 0)} entreprises`,
-			hint: "diaspora & sociétés",
+					? fmtDelta(deltas.associationsDelta)
+					: t("superadmin.dashboard.kpi.companiesFallback", {
+							count: stats?.companies?.total ?? 0,
+						}),
+			hint: t("superadmin.dashboard.kpi.associationsHint"),
 			icon: "Handshake",
 			tone: "purple",
 		},
@@ -1259,16 +1208,20 @@ export default function SuperadminDashboard() {
 		completed: completedCount,
 		rejected: (sb.rejected ?? 0) + (sb.cancelled ?? 0),
 	};
+	// Status labels viennent de `fields.requestStatus.options.*` (déjà
+	// internationalisé). Mapping local → status convex pour la pipeline.
+	const statusLabel = (key: string) =>
+		t(`fields.requestStatus.options.${key}`, key);
 	const pipelineBars: BarDatum[] = [
-		{ id: "draft", label: "Brouillon", count: pipelineSrc.draft ?? 0, tone: "muted" },
-		{ id: "submitted", label: "Soumis", count: pipelineSrc.submitted ?? 0, tone: "info" },
-		{ id: "pending", label: "En attente", count: pipelineSrc.pending ?? 0, tone: "warning" },
-		{ id: "review", label: "Examen", count: pipelineSrc.underReview ?? 0, tone: "cyan" },
-		{ id: "production", label: "Production", count: pipelineSrc.inProduction ?? 0, tone: "purple" },
-		{ id: "validated", label: "Validé", count: pipelineSrc.validated ?? 0, tone: "green" },
-		{ id: "ready", label: "Prêt", count: pipelineSrc.readyForPickup ?? 0, tone: "teal" },
-		{ id: "completed", label: "Terminé", count: pipelineSrc.completed ?? 0, tone: "success" },
-		{ id: "rejected", label: "Rejeté", count: pipelineSrc.rejected ?? 0, tone: "danger" },
+		{ id: "draft", label: statusLabel("draft"), count: pipelineSrc.draft ?? 0, tone: "muted" },
+		{ id: "submitted", label: statusLabel("submitted"), count: pipelineSrc.submitted ?? 0, tone: "info" },
+		{ id: "pending", label: statusLabel("pending"), count: pipelineSrc.pending ?? 0, tone: "warning" },
+		{ id: "review", label: statusLabel("under_review"), count: pipelineSrc.underReview ?? 0, tone: "cyan" },
+		{ id: "production", label: statusLabel("in_production"), count: pipelineSrc.inProduction ?? 0, tone: "purple" },
+		{ id: "validated", label: statusLabel("validated"), count: pipelineSrc.validated ?? 0, tone: "green" },
+		{ id: "ready", label: statusLabel("ready_for_pickup"), count: pipelineSrc.readyForPickup ?? 0, tone: "teal" },
+		{ id: "completed", label: statusLabel("completed"), count: pipelineSrc.completed ?? 0, tone: "success" },
+		{ id: "rejected", label: statusLabel("rejected"), count: pipelineSrc.rejected ?? 0, tone: "danger" },
 	].filter((b) => b.count > 0);
 
 	// ── Donut (statuts) ──────────────────────────────────────────────────
@@ -1276,7 +1229,7 @@ export default function SuperadminDashboard() {
 		.filter(([, n]) => (n as number) > 0)
 		.map(([status, n]) => ({
 			id: status,
-			label: STATUS_LABELS[status] ?? status,
+			label: statusLabel(status),
 			count: n as number,
 			tone: STATUS_TONE[status] ?? "muted",
 		}))
@@ -1287,7 +1240,7 @@ export default function SuperadminDashboard() {
 	const regBars: BarDatum[] = Object.entries(regBy)
 		.map(([status, n]) => ({
 			id: status,
-			label: REG_STATUS_LABELS[status] ?? status,
+			label: t(`superadmin.dashboard.registrationStatus.${status}`, status),
 			count: n as number,
 			tone: REG_STATUS_TONE[status] ?? "muted",
 		}))
@@ -1319,7 +1272,9 @@ export default function SuperadminDashboard() {
 			tone: "warning" as Tone,
 			icon: "ShieldAlert",
 			title: e.action,
-			text: e.entiteType ?? "Événement sécurité",
+			text:
+				e.entiteType ??
+				t("superadmin.dashboard.healthCards.eventsLabel"),
 			when: timeAgo(e.timestamp),
 		})),
 	];
@@ -1330,14 +1285,14 @@ export default function SuperadminDashboard() {
 	const healthCards: { id: string; label: string; value: string; sub: string; tone: Tone }[] = [
 		{
 			id: "global",
-			label: "État global",
+			label: t("superadmin.dashboard.healthCards.globalLabel"),
 			value:
 				systemHealth === "HEALTHY"
-					? "Nominal"
+					? t("superadmin.dashboard.healthCards.healthy")
 					: systemHealth === "DEGRADED"
-						? "Dégradé"
-						: "Critique",
-			sub: "Surveillance temps réel",
+						? t("superadmin.dashboard.healthCards.degraded")
+						: t("superadmin.dashboard.healthCards.critical"),
+			sub: t("superadmin.dashboard.healthCards.globalSub"),
 			tone:
 				systemHealth === "HEALTHY"
 					? "success"
@@ -1347,9 +1302,9 @@ export default function SuperadminDashboard() {
 		},
 		{
 			id: "queue",
-			label: "Signaux en attente",
+			label: t("superadmin.dashboard.healthCards.queueLabel"),
 			value: fmt(queueDepth),
-			sub: "File de traitement",
+			sub: t("superadmin.dashboard.healthCards.queueSub"),
 			tone:
 				queueDepth > 100
 					? "danger"
@@ -1359,17 +1314,17 @@ export default function SuperadminDashboard() {
 		},
 		{
 			id: "alerts",
-			label: "Alertes 24 h",
+			label: t("superadmin.dashboard.healthCards.alertsLabel"),
 			value: fmt(stats?.security?.totalAlerts24h ?? 0),
-			sub: "Priorité critique",
+			sub: t("superadmin.dashboard.healthCards.alertsSub"),
 			tone:
 				(stats?.security?.totalAlerts24h ?? 0) > 0 ? "danger" : "success",
 		},
 		{
 			id: "events",
-			label: "Événements sécurité",
+			label: t("superadmin.dashboard.healthCards.eventsLabel"),
 			value: fmt(stats?.security?.totalSecurityEvents24h ?? 0),
-			sub: "24 dernières heures",
+			sub: t("superadmin.dashboard.healthCards.eventsSub"),
 			tone:
 				(stats?.security?.totalSecurityEvents24h ?? 0) > 0
 					? "warning"
@@ -1379,12 +1334,12 @@ export default function SuperadminDashboard() {
 
 	// ── Quick actions ────────────────────────────────────────────────────
 	const quickActions: { id: string; icon: string; label: string; href: string; tone: Tone }[] = [
-		{ id: "new-rep", icon: "Building2", label: "Ajouter représentation", href: "/reps/new", tone: "info" },
-		{ id: "new-user", icon: "UserPlus", label: "Créer un agent", href: "/users", tone: "purple" },
-		{ id: "new-svc", icon: "FileText", label: "Nouveau service", href: "/services/new", tone: "teal" },
-		{ id: "audit", icon: "BookOpen", label: "Journaux d'audit", href: "/audit-logs", tone: "warning" },
-		{ id: "monitor", icon: "Activity", label: "Monitoring temps réel", href: "/monitoring", tone: "success" },
-		{ id: "support", icon: "Bell", label: "Centre de support", href: "/support", tone: "danger" },
+		{ id: "new-rep", icon: "Building2", label: t("superadmin.dashboard.quickAccessLinks.newRep"), href: "/reps/new", tone: "info" },
+		{ id: "new-user", icon: "UserPlus", label: t("superadmin.dashboard.quickAccessLinks.newAgent"), href: "/users", tone: "purple" },
+		{ id: "new-svc", icon: "FileText", label: t("superadmin.dashboard.quickAccessLinks.newService"), href: "/services/new", tone: "teal" },
+		{ id: "audit", icon: "BookOpen", label: t("superadmin.dashboard.quickAccessLinks.auditLogs"), href: "/audit-logs", tone: "warning" },
+		{ id: "monitor", icon: "Activity", label: t("superadmin.dashboard.quickAccessLinks.monitoring"), href: "/monitoring", tone: "success" },
+		{ id: "support", icon: "Bell", label: t("superadmin.dashboard.quickAccessLinks.support"), href: "/support", tone: "danger" },
 	];
 
 	return (
@@ -1413,7 +1368,9 @@ export default function SuperadminDashboard() {
 								name={refreshing ? "Loader" : "RefreshCcw"}
 								size={14}
 							/>
-							{refreshing ? "…" : "Rafraîchir"}
+							{refreshing
+								? "…"
+								: t("superadmin.dashboard.actions.refresh")}
 						</button>
 					</ToolbarSlot>
 
@@ -1433,7 +1390,7 @@ export default function SuperadminDashboard() {
 									className="uppercase"
 									style={{ color: "var(--text-muted)" }}
 								>
-									Vue stratégique globale
+									{t("superadmin.dashboard.welcome")}
 								</span>
 								<GabonStripe />
 							</div>
@@ -1446,7 +1403,7 @@ export default function SuperadminDashboard() {
 									color: "var(--text)",
 								}}
 							>
-								Indicateurs clés du réseau diplomatique
+								{t("superadmin.dashboard.kpiSection")}
 							</h2>
 						</div>
 						<PeriodFilter value={period} onChange={setPeriod} />
@@ -1478,12 +1435,12 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="Activity"
-								title="Pipeline de traitement"
-								hint="Répartition des demandes par étape du workflow consulaire"
+								title={t("superadmin.dashboard.sections.pipeline")}
+								hint={t("superadmin.dashboard.sections.pipelineHint")}
 								tone="info"
 								actions={
 									<span className="pill pill-mono">
-										{pipelineBars.length} étapes
+										{pipelineBars.length}
 									</span>
 								}
 							/>
@@ -1495,8 +1452,8 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="Gauge"
-								title="Performance globale"
-								hint="Taux de résolution des demandes"
+								title={t("superadmin.dashboard.sections.performance")}
+								hint={t("superadmin.dashboard.sections.performanceHint")}
 								tone="success"
 							/>
 							<div
@@ -1510,8 +1467,11 @@ export default function SuperadminDashboard() {
 							>
 								<HalfGauge
 									pct={completionRate}
-									label="Taux de résolution"
-									sub={`${fmt(completedCount)} terminées sur ${fmt(totalReqs)}`}
+									label={t("superadmin.dashboard.sections.resolution")}
+									sub={t("superadmin.dashboard.sections.resolutionSub", {
+										done: fmt(completedCount),
+										total: fmt(totalReqs),
+									})}
 									tone="success"
 								/>
 								<div className="divider w-full" />
@@ -1539,7 +1499,7 @@ export default function SuperadminDashboard() {
 											className="text-xs text-muted"
 											style={{ marginTop: 2 }}
 										>
-											Terminées
+											{t("fields.requestStatus.options.completed")}
 										</div>
 									</div>
 									<div
@@ -1565,7 +1525,7 @@ export default function SuperadminDashboard() {
 											className="text-xs text-muted"
 											style={{ marginTop: 2 }}
 										>
-											En attente
+											{t("fields.requestStatus.options.pending")}
 										</div>
 									</div>
 									<div
@@ -1591,7 +1551,7 @@ export default function SuperadminDashboard() {
 											className="text-xs text-muted"
 											style={{ marginTop: 2 }}
 										>
-											Rejetées
+											{t("fields.requestStatus.options.rejected")}
 										</div>
 									</div>
 								</div>
@@ -1611,8 +1571,11 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="FileText"
-								title="Demandes par statut"
-								hint={`Répartition circulaire des ${fmt(totalReqs)} dossiers`}
+								title={t("superadmin.dashboard.requestsByStatus")}
+								hint={t(
+									"superadmin.dashboard.sections.requestsByStatusHint",
+									{ count: fmt(totalReqs) },
+								)}
 								tone="cyan"
 							/>
 							<div
@@ -1628,7 +1591,7 @@ export default function SuperadminDashboard() {
 								<Donut
 									data={donutData}
 									centerValue={fmt(totalReqs)}
-									centerLabel="Demandes"
+									centerLabel={t("superadmin.dashboard.stats.requests")}
 								/>
 								<div
 									style={{
@@ -1669,12 +1632,15 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="IdCard"
-								title="Inscriptions consulaires"
-								hint={`État du registre · ${fmt(stats?.registrations?.total ?? 0)} dossiers`}
+								title={t("superadmin.dashboard.sections.registrations")}
+								hint={t(
+									"superadmin.dashboard.sections.registrationsHint",
+									{ count: fmt(stats?.registrations?.total ?? 0) },
+								)}
 								tone="green"
 								actions={
 									<Link href="/profiles" className="btn btn-text btn-sm">
-										Registre
+										{t("superadmin.dashboard.actions.registry")}
 										<Icon name="ChevronRight" size={12} />
 									</Link>
 								}
@@ -1697,12 +1663,14 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="AlertTriangle"
-								title="Alertes & événements"
-								hint={`${alertItems.length} notification${alertItems.length > 1 ? "s" : ""} à examiner`}
+								title={t("superadmin.dashboard.sections.alerts")}
+								hint={t("superadmin.dashboard.sections.alertsHint", {
+									count: alertItems.length,
+								})}
 								tone="warning"
 								actions={
 									<Link href="/monitoring" className="btn btn-text btn-sm">
-										Tout voir
+										{t("superadmin.dashboard.actions.seeAll")}
 										<Icon name="ChevronRight" size={12} />
 									</Link>
 								}
@@ -1722,12 +1690,12 @@ export default function SuperadminDashboard() {
 									>
 										<Icon name="ShieldCheck" size={24} />
 										<div style={{ marginTop: 6 }}>
-											Aucune alerte active
+											{t("superadmin.dashboard.sections.noAlerts")}
 										</div>
 									</div>
 								) : (
 									alertItems.map((a) => {
-										const t = TONE_VAR[a.tone];
+										const tv = TONE_VAR[a.tone];
 										return (
 											<div
 												key={a.id}
@@ -1745,8 +1713,8 @@ export default function SuperadminDashboard() {
 														width: 32,
 														height: 32,
 														borderRadius: 9,
-														background: t.tint,
-														color: t.color,
+														background: tv.tint,
+														color: tv.color,
 														display: "grid",
 														placeItems: "center",
 														flexShrink: 0,
@@ -1793,12 +1761,15 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="Building2"
-								title="Top représentations"
-								hint={`${fmt(stats?.deployment?.activeOrgs ?? 0)} actives sur ${fmt(stats?.deployment?.totalOrgs ?? 0)}`}
+								title={t("superadmin.dashboard.sections.topReps")}
+								hint={t("superadmin.dashboard.sections.topRepsHint", {
+									active: fmt(stats?.deployment?.activeOrgs ?? 0),
+									total: fmt(stats?.deployment?.totalOrgs ?? 0),
+								})}
 								tone="info"
 								actions={
 									<Link href="/reps" className="btn btn-text btn-sm">
-										Voir tout
+										{t("superadmin.dashboard.actions.seeAll")}
 										<Icon name="ChevronRight" size={12} />
 									</Link>
 								}
@@ -1809,7 +1780,7 @@ export default function SuperadminDashboard() {
 										className="ta-center text-sm text-muted"
 										style={{ padding: "32px 0" }}
 									>
-										Aucune représentation
+										{t("superadmin.dashboard.sections.noReps")}
 									</div>
 								) : (
 									topReps.map((r) => {
@@ -1824,15 +1795,11 @@ export default function SuperadminDashboard() {
 													borderTop: "1px solid var(--border-soft)",
 												}}
 											>
-												<span
-													style={{
-														fontSize: 22,
-														lineHeight: 1,
-														flexShrink: 0,
-													}}
-												>
-													{COUNTRY_FLAGS[r.code] ?? "🌐"}
-												</span>
+												<FlagIcon
+													countryCode={r.code}
+													size={24}
+													className="w-6 !h-auto rounded-sm shrink-0"
+												/>
 												<div style={{ flex: 1, minWidth: 0 }}>
 													<div
 														className="row items-center"
@@ -1845,10 +1812,17 @@ export default function SuperadminDashboard() {
 																color: "var(--text)",
 															}}
 														>
-															{COUNTRY_NAMES[r.code] ?? r.code}
+															{t(
+																`superadmin.countryCodes.${r.code}`,
+																r.code,
+															)}
 														</span>
 														<span className="text-xs text-muted">
-															{r.count} poste{r.count > 1 ? "s" : ""}
+															{t("superadmin.dashboard.posts", {
+																count: r.count,
+																defaultValue: "{{count}} poste",
+																defaultValue_other: "{{count}} postes",
+															})}
 														</span>
 													</div>
 													<div
@@ -1880,8 +1854,8 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="Zap"
-								title="Accès rapides"
-								hint="Actions super-admin"
+								title={t("superadmin.dashboard.sections.quickAccess")}
+								hint={t("superadmin.dashboard.sections.quickAccessHint")}
 								tone="purple"
 							/>
 							<div
@@ -1893,7 +1867,7 @@ export default function SuperadminDashboard() {
 								}}
 							>
 								{quickActions.map((a) => {
-									const t = TONE_VAR[a.tone];
+									const tv = TONE_VAR[a.tone];
 									return (
 										<Link
 											key={a.id}
@@ -1916,8 +1890,8 @@ export default function SuperadminDashboard() {
 													width: 32,
 													height: 32,
 													borderRadius: 9,
-													background: t.tint,
-													color: t.color,
+													background: tv.tint,
+													color: tv.color,
 													display: "grid",
 													placeItems: "center",
 													flexShrink: 0,
@@ -1954,8 +1928,8 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="Activity"
-								title="Activité récente"
-								hint="Flux temps réel des événements du réseau"
+								title={t("superadmin.dashboard.recentActivity")}
+								hint={t("superadmin.dashboard.sections.activityHint")}
 								tone="teal"
 								actions={
 									<>
@@ -1975,10 +1949,10 @@ export default function SuperadminDashboard() {
 													background: "var(--success-v2)",
 												}}
 											/>
-											Live
+											{t("superadmin.dashboard.live")}
 										</span>
 										<Link href="/audit-logs" className="btn btn-text btn-sm">
-											Journal
+											{t("superadmin.dashboard.actions.journal")}
 											<Icon name="ChevronRight" size={12} />
 										</Link>
 									</>
@@ -1990,7 +1964,7 @@ export default function SuperadminDashboard() {
 										className="ta-center text-sm text-muted"
 										style={{ padding: "32px 0" }}
 									>
-										Aucune activité récente
+										{t("superadmin.dashboard.sections.noActivity")}
 									</div>
 								) : (
 									auditLogs.map((log: any) => {
@@ -2001,11 +1975,15 @@ export default function SuperadminDashboard() {
 												: log.action?.includes("update")
 													? "info"
 													: "muted";
-										const t = TONE_VAR[tone];
+										const tv = TONE_VAR[tone];
+										const systemLabel = t(
+											"superadmin.dashboard.activity.system",
+											"Système",
+										);
 										const userName = log.user
 											? `${log.user.firstName ?? ""} ${log.user.lastName ?? ""}`.trim() ||
-												"Système"
-											: "Système";
+												systemLabel
+											: systemLabel;
 										const initials =
 											userName
 												.split(" ")
@@ -2029,8 +2007,8 @@ export default function SuperadminDashboard() {
 													// (les tokens v2 inversent en dark mode, donc `var(--xxx-v2)`
 													// devient clair et serait illisible sur fond blanc).
 													style={{
-														background: t.tint,
-														color: t.color,
+														background: tv.tint,
+														color: tv.color,
 													}}
 												>
 													{initials}
@@ -2048,7 +2026,11 @@ export default function SuperadminDashboard() {
 															{userName}
 														</span>
 														<span style={{ color: "var(--text-muted)" }}>
-															{" "}— {log.action}
+															{" "}—{" "}
+															{t(
+																`superadmin.auditLogs.actions.${log.action}`,
+																log.action,
+															)}
 														</span>
 													</div>
 													<div
@@ -2068,12 +2050,12 @@ export default function SuperadminDashboard() {
 						<div className="card">
 							<CardHead
 								icon="HeartPulse"
-								title="Santé système"
-								hint="Composants critiques surveillés"
+								title={t("superadmin.dashboard.sections.health")}
+								hint={t("superadmin.dashboard.sections.healthHint")}
 								tone="success"
 								actions={
 									<Link href="/monitoring" className="btn btn-text btn-sm">
-										Monitoring
+										{t("superadmin.dashboard.actions.monitoring")}
 										<Icon name="ArrowUpRight" size={12} />
 									</Link>
 								}
@@ -2087,7 +2069,7 @@ export default function SuperadminDashboard() {
 								}}
 							>
 								{healthCards.map((h) => {
-									const t = TONE_VAR[h.tone];
+									const tv = TONE_VAR[h.tone];
 									return (
 										<div
 											key={h.id}
@@ -2122,7 +2104,7 @@ export default function SuperadminDashboard() {
 													style={{
 														fontSize: 12.5,
 														fontWeight: 600,
-														color: t.color,
+														color: tv.color,
 													}}
 												>
 													{h.value}
