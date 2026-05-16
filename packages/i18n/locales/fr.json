@@ -1786,7 +1786,23 @@
 				"degraded": "Dégradé",
 				"critical": "Critique"
 			},
-			"live": "Live"
+			"live": "Live",
+			"aiSummary": {
+				"poweredBy": "Synthèse générée par Gemini",
+				"generate": "Générer",
+				"regenerate": "Régénérer",
+				"generating": "Génération en cours",
+				"errorTitle": "Impossible de générer la synthèse"
+			},
+			"dailyReport": {
+				"systemState": "État système",
+				"last30days": "30 jours glissants",
+				"criticalAlerts": "Alertes critiques (24 h)",
+				"confidential": "Document confidentiel · usage interne",
+				"downloadPdf": "Télécharger PDF",
+				"generating": "Génération…",
+				"footer": "Généré automatiquement le {{date}} à {{time}} · Document confidentiel — usage interne Consulat.ga"
+			}
 		},
 		"nav": {
 			"dashboard": "Tableau de bord",

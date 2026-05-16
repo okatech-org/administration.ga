@@ -41,6 +41,7 @@ import type * as ai_capabilitiesData from "../ai/capabilitiesData.js";
 import type * as ai_capabilityRegistry from "../ai/capabilityRegistry.js";
 import type * as ai_chat from "../ai/chat.js";
 import type * as ai_contextStore from "../ai/contextStore.js";
+import type * as ai_dashboardAI from "../ai/dashboardAI.js";
 import type * as ai_diplomaticAI from "../ai/diplomaticAI.js";
 import type * as ai_dispatcher from "../ai/dispatcher.js";
 import type * as ai_documentAnalysis from "../ai/documentAnalysis.js";
@@ -455,6 +456,7 @@ declare const fullApi: ApiFromModules<{
   "ai/capabilityRegistry": typeof ai_capabilityRegistry;
   "ai/chat": typeof ai_chat;
   "ai/contextStore": typeof ai_contextStore;
+  "ai/dashboardAI": typeof ai_dashboardAI;
   "ai/diplomaticAI": typeof ai_diplomaticAI;
   "ai/dispatcher": typeof ai_dispatcher;
   "ai/documentAnalysis": typeof ai_documentAnalysis;

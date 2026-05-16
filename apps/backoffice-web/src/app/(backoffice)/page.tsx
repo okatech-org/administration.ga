@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 import { api } from "@convex/_generated/api";
 import { Icon } from "@/components/dashboard-v2/icon";
 import { ToolbarSlot } from "@/components/dashboard-v2/toolbar-slot";
+import { AiSummarySheet } from "@/components/dashboard-v2/ai-summary-sheet";
+import { DailyReportSheet } from "@/components/dashboard-v2/daily-report-sheet";
 import { FlagIcon } from "@/components/ui/flag-icon";
 import {
 	useAuthenticatedConvexQuery,
@@ -247,11 +249,15 @@ function WelcomeBanner({
 	totalUsers,
 	urgentPending,
 	onDismiss,
+	onDailyReport,
+	onAiSummary,
 }: {
 	totalReps: number;
 	totalUsers: number;
 	urgentPending: number;
 	onDismiss: () => void;
+	onDailyReport: () => void;
+	onAiSummary: () => void;
 }) {
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language?.startsWith("en") ? "en-US" : "fr-FR";
@@ -358,6 +364,7 @@ function WelcomeBanner({
 					<button
 						type="button"
 						className="btn btn-sm"
+						onClick={onDailyReport}
 						style={{
 							background: "rgba(255,255,255,0.14)",
 							color: "#fff",
@@ -370,6 +377,7 @@ function WelcomeBanner({
 					<button
 						type="button"
 						className="btn btn-sm"
+						onClick={onAiSummary}
 						style={{
 							background: "#fff",
 							// Fond du hero verrouillé en bleu foncé (gradient hardcodé) →
@@ -1051,6 +1059,8 @@ export default function SuperadminDashboard() {
 	const [period, setPeriod] = useState<PeriodId>("total");
 	const [showWelcome, setShowWelcome] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
+	const [dailyReportOpen, setDailyReportOpen] = useState(false);
+	const [aiSummaryOpen, setAiSummaryOpen] = useState(false);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
@@ -1352,8 +1362,20 @@ export default function SuperadminDashboard() {
 							totalUsers={stats?.users?.total ?? 0}
 							urgentPending={urgentPending}
 							onDismiss={dismissWelcome}
+							onDailyReport={() => setDailyReportOpen(true)}
+							onAiSummary={() => setAiSummaryOpen(true)}
 						/>
 					)}
+
+					<DailyReportSheet
+						open={dailyReportOpen}
+						onOpenChange={setDailyReportOpen}
+						stats={stats}
+					/>
+					<AiSummarySheet
+						open={aiSummaryOpen}
+						onOpenChange={setAiSummaryOpen}
+					/>
 
 					{/* ── Top-bar slot : pill santé + refresh à côté de la cloche ── */}
 					<ToolbarSlot>
