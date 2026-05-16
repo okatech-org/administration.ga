@@ -93,24 +93,21 @@ export function TabSearch() {
 	const reset = () =>
 		resetUrl(["q", "category", "skill", "level", "cont", "country", "status"]);
 
-	// Pas de fetch tant qu'aucun filtre n'est précisé — éviter d'afficher
-	// la diaspora entière par défaut. Le user doit cibler.
-	const hasAnyFilter = activeCount > 0;
+	// Query toujours active : on affiche les profils paginés par défaut,
+	// les filtres restreignent au fur et à mesure.
 	const { results, status, loadMore } = usePaginatedQuery(
 		api.functions.adminSkills.searchProfiles,
-		hasAnyFilter
-			? {
-				filters: {
-					search: q || undefined,
-					category: catVal !== ALL ? catVal : undefined,
-					skill: skillVal !== ALL ? skillVal : undefined,
-					level: levelVal !== ALL ? levelVal : undefined,
-					country: paysVal !== ALL ? paysVal : undefined,
-					continent: contVal !== ALL ? contVal : undefined,
-					workStatus: statusVal !== ALL ? statusVal : undefined,
-				},
-			}
-			: "skip",
+		{
+			filters: {
+				search: q || undefined,
+				category: catVal !== ALL ? catVal : undefined,
+				skill: skillVal !== ALL ? skillVal : undefined,
+				level: levelVal !== ALL ? levelVal : undefined,
+				country: paysVal !== ALL ? paysVal : undefined,
+				continent: contVal !== ALL ? contVal : undefined,
+				workStatus: statusVal !== ALL ? statusVal : undefined,
+			},
+		},
 		{ initialNumItems: PAGE_SIZE },
 	);
 
@@ -228,14 +225,10 @@ export function TabSearch() {
 			<div className="row items-center justify-between" style={{ gap: 12, flexWrap: "wrap" }}>
 				<div className="row items-center" style={{ gap: 10 }}>
 					<h2>
-						{!hasAnyFilter
-							? "—"
-							: loadingFirst
-								? "…"
-								: results.length.toLocaleString("fr-FR")}{" "}
+						{loadingFirst ? "…" : results.length.toLocaleString("fr-FR")}{" "}
 						<span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: 13 }}>
 							{t("superadmin.skills.search.result", { count: results.length })}
-							{hasAnyFilter && canLoadMore ? " +" : ""}
+							{canLoadMore ? " +" : ""}
 						</span>
 					</h2>
 					{activeCount > 0 && (
@@ -249,7 +242,7 @@ export function TabSearch() {
 						type="button"
 						className="btn btn-sm btn-soft"
 						onClick={onExport}
-						disabled={!hasAnyFilter || results.length === 0}
+						disabled={results.length === 0}
 					>
 						<Icon name="Download" size={14} />
 						{t("superadmin.skills.actions.exportCsv")}
@@ -257,19 +250,7 @@ export function TabSearch() {
 				</div>
 			</div>
 
-			{!hasAnyFilter ? (
-				<div className="card card-pad-lg ta-center" style={{ padding: "60px 24px" }}>
-					<Icon name="Search" size={32} color="var(--text-faint)" />
-					<div style={{ marginTop: 14, fontSize: 15, fontWeight: 600 }}>
-						Précisez votre recherche
-					</div>
-					<div className="text-sm text-muted" style={{ marginTop: 4, maxWidth: 480, marginInline: "auto" }}>
-						La diaspora compte plusieurs milliers de profils — utilisez les filtres
-						ci-dessus (compétence, catégorie, pays, niveau…) pour cibler les personnes
-						que vous cherchez.
-					</div>
-				</div>
-			) : loadingFirst ? (
+			{loadingFirst ? (
 				<div className="card card-pad-lg ta-center" style={{ padding: "60px 24px" }}>
 					<Icon name="Loader" size={28} color="var(--text-faint)" />
 					<div className="text-sm text-muted" style={{ marginTop: 12 }}>
@@ -285,10 +266,12 @@ export function TabSearch() {
 					<div className="text-sm text-muted" style={{ marginTop: 4 }}>
 						{t("superadmin.skills.search.emptyHint")}
 					</div>
-					<button type="button" className="btn btn-sm btn-soft" style={{ marginTop: 14 }} onClick={reset}>
-						<Icon name="RefreshCcw" size={12} />
-						{t("superadmin.skills.search.resetFilters")}
-					</button>
+					{activeCount > 0 && (
+						<button type="button" className="btn btn-sm btn-soft" style={{ marginTop: 14 }} onClick={reset}>
+							<Icon name="RefreshCcw" size={12} />
+							{t("superadmin.skills.search.resetFilters")}
+						</button>
+					)}
 				</div>
 			) : (
 				<div className="stack stack-2">

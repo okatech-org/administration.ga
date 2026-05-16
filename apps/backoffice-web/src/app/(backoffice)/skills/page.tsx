@@ -5,7 +5,6 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/dashboard-v2/icon";
 import { PageHeader } from "@/components/dashboard-v2/page-header";
-import { CATEGORIES } from "@/components/skills-v2/mock-data";
 import { TabCatalog } from "@/components/skills-v2/tab-catalog";
 import { TabCategories } from "@/components/skills-v2/tab-categories";
 import { TabHealth } from "@/components/skills-v2/tab-health";
@@ -57,8 +56,10 @@ export default function SkillsPage() {
 	);
 
 	const openCategory = (catId: string) => {
-		const cat = CATEGORIES.find((c) => c.id === catId);
-		setActiveWithPrefill("search", { category: cat?.label ?? "" });
+		// On passe l'id canonique (ex: "tech"), pas le label "Tech" — c'est
+		// ce que le filtre URL `category` attend (cf. TabSearch + la query
+		// `searchProfiles` côté backend qui matche sur profession.category).
+		setActiveWithPrefill("search", { category: catId });
 	};
 
 	const openProfilesForSkill = (skillName: string) => {
