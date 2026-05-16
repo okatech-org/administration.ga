@@ -29,7 +29,7 @@ if (
 		},
 		before_send: scrubPII,
 	});
-	posthog.register({ platform: "users" });
+	posthog.register({ platform: "citizen" });
 }
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
