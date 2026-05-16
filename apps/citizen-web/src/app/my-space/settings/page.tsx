@@ -153,7 +153,7 @@ function SettingsPageContent() {
   return (
     <SettingsLayout
       title={t("mySpace.screens.settings.heading")}
-      description={t("settings.description")}
+      description={t("mySpace.screens.settings.subtitle")}
       groups={groups}
       activeTab={activeTab}
       onTabChange={handleTabChange}

@@ -44,8 +44,8 @@ export function SettingsLayout({
       : []
 
   return (
-    <div className="flex min-h-full w-full flex-1 flex-col overflow-auto">
-      <div className="mb-4">
+    <div className="flex w-full flex-1 flex-col min-h-full md:h-full md:min-h-0 md:overflow-hidden">
+      <div className="mb-4 shrink-0">
         <PageHeader
           title={title}
           subtitle={description}
@@ -53,7 +53,7 @@ export function SettingsLayout({
         />
       </div>
 
-      <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border bg-[#FDFCFA] shadow-sm md:flex-row dark:bg-[#21201E]/77">
+      <div className="flex flex-1 min-h-0 flex-col rounded-2xl border bg-[#FDFCFA] shadow-sm md:flex-row md:overflow-hidden dark:bg-[#21201E]/77">
         {/* Sidebar → horizontal scroll on mobile */}
         <aside className="flex w-full shrink-0 flex-row gap-1 overflow-x-auto border-b bg-muted/20 px-2 py-2 md:w-56 md:flex-col md:border-r md:border-b-0 md:p-4 lg:w-64">
           {resolvedGroups.map((group, gi) => (

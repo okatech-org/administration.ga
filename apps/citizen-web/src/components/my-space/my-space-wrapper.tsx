@@ -47,7 +47,7 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
             "theme-homeomorphism"
         )}
       >
-        <div className="hidden md:block">
+        <div className="hidden md:block p-2 pr-0">
           <MySpaceSidebar />
         </div>
 
