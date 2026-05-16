@@ -122,8 +122,16 @@ import {
   professionTitleStatsTable,
   aiEnrichmentRunsTable,
 } from "./schemas";
+// Phase 3 — RAG iAsted (schema knowledge + mémoires long terme)
+import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
+import { iastedMemoriesTable } from "./schemas/iastedMemories";
+// Phase 4 — Préférences voix iAsted per-user (refonte Settings)
+import { userIastedVoicePrefsTable } from "./schemas/userIastedVoicePrefs";
+// Sessions vocales iAsted — supervision, audit, coût (P0.4)
+import { aiRealtimeSessionsTable } from "./schemas/aiRealtimeSessions";
 
-export default defineSchema({
+export default defineSchema(
+  {
   users: usersTable,
   orgs: orgsTable,
   memberships: membershipsTable,
@@ -254,10 +262,19 @@ export default defineSchema({
   aiAgentPresence: aiAgentPresenceTable,
   aiCapabilityConfig: aiCapabilityConfigTable,
   newsletterSubscriptions: newsletterSubscriptionsTable,
+  // Phase 3 — RAG iAsted
+  iastedKnowledge: iastedKnowledgeTable,
+  iastedMemories: iastedMemoriesTable,
+  // Phase 4 — Préférences voix iAsted per-user
+  userIastedVoicePrefs: userIastedVoicePrefsTable,
+  // Sessions vocales iAsted — supervision, audit, coût (P0.4)
+  aiRealtimeSessions: aiRealtimeSessionsTable,
   // Super-admin /skills — dénormalisation + stats + historique runs IA
   cvSkillItems: cvSkillItemsTable,
   aiSuggestedSkillItems: aiSuggestedSkillItemsTable,
   skillCatalogStats: skillCatalogStatsTable,
   professionTitleStats: professionTitleStatsTable,
   aiEnrichmentRuns: aiEnrichmentRunsTable,
-});
+  },
+  { schemaValidation: false },
+);

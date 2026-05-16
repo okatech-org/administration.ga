@@ -20,9 +20,11 @@ export { useCitizenContext } from "./use-citizen-context"
 export {
 	usePageContext,
 	useRegisterPageAction,
+	useRegisterPageField,
 	useShellContext,
 } from "./use-page-context"
 export type {
 	UsePageContextInput,
 	UseShellContextInput,
 } from "./use-page-context"
+export type { FieldSpec } from "../stores/page-context-store"

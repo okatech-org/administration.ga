@@ -6,17 +6,15 @@
 import type { Id } from "@convex/_generated/dataModel";
 import {
 	Building2,
-	Globe,
 	Loader2,
 	Mail,
 	MessageSquare,
 	Phone,
 	Search,
-	Shield,
 	Users,
 	Video,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { CitizenProfileDrawer } from "@workspace/iasted";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,17 +29,9 @@ import {
 	useContactSearch,
 	type ContactGroup,
 	type ContactResultItem,
-	type ContactSource,
 } from "@/hooks/useContactSearch";
 import { cn } from "@/lib/utils";
-
-const SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: typeof Users }> = [
-	{ id: "all", label: "Tous", icon: Users },
-	{ id: "team", label: "Mon équipe", icon: Shield },
-	{ id: "network", label: "Réseau", icon: Globe },
-	{ id: "citizens", label: "Ressortissants", icon: Users },
-	{ id: "administration", label: "Administration", icon: Shield },
-];
+import { BO_SEGMENTS } from "./segments";
 
 const ORG_TYPES = [
 	{ value: "", label: "Tous types" },
@@ -167,14 +157,15 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 					/>
 				</div>
 
-				<div className="flex items-center gap-1">
-					{SEGMENTS.map((seg) => (
+				<div className="flex items-center gap-1 overflow-x-auto">
+					{BO_SEGMENTS.map((seg) => (
 						<button
 							key={seg.id}
 							type="button"
 							onClick={() => setSource(seg.id)}
+							title={seg.hint}
 							className={cn(
-								"text-[10px] px-2 py-1 rounded-md font-medium transition-colors",
+								"text-xs px-2.5 py-1 rounded-md font-medium transition-colors shrink-0",
 								filters.source === seg.id
 									? "bg-primary text-primary-foreground"
 									: "text-muted-foreground hover:bg-muted",
@@ -242,9 +233,11 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 														? "bg-primary/10 text-primary"
 														: contact.source === "citizen"
 															? "bg-amber-500/10 text-amber-600"
-															: contact.source === "administration"
-																? "bg-slate-600/10 text-slate-700"
-																: "bg-blue-500/10 text-blue-600",
+															: contact.source === "foreigner"
+																? "bg-rose-500/10 text-rose-600"
+																: contact.source === "administration"
+																	? "bg-slate-600/10 text-slate-700"
+																	: "bg-blue-500/10 text-blue-600",
 												)}>
 													{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
 												</AvatarFallback>
@@ -259,17 +252,21 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 															? "text-primary border-primary/20"
 															: contact.source === "citizen"
 																? "text-amber-600 border-amber-500/20"
-																: contact.source === "administration"
-																	? "text-slate-700 border-slate-500/30"
-																	: "text-blue-600 border-blue-500/20",
+																: contact.source === "foreigner"
+																	? "text-rose-600 border-rose-500/20"
+																	: contact.source === "administration"
+																		? "text-slate-700 border-slate-500/30"
+																		: "text-blue-600 border-blue-500/20",
 													)}>
 														{contact.source === "team"
-															? "Équipe"
+															? "Back-Office"
 															: contact.source === "citizen"
-																? "Citoyen"
-																: contact.source === "administration"
-																	? "Admin"
-																	: "Réseau"}
+																? "Ressortissant"
+																: contact.source === "foreigner"
+																	? "Étranger"
+																	: contact.source === "administration"
+																		? "Admin"
+																		: "Corps Dipl."}
 													</Badge>
 												</div>
 												{contact.position && <p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>}

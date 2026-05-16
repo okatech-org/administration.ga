@@ -752,12 +752,13 @@ export const seedDiplomaticNetwork = mutation({
         }
 
         // Build address with required fields (postalCode defaults to empty string)
-        const address = {
+        const address: any = {
           street: org.address.street,
           city: org.address.city,
           postalCode: "", // Not available in source data
           country: org.country,
         };
+        if (org.coordinates) address.coordinates = org.coordinates;
 
         // Insert the organization with optional fields
         // Using 'as any' to bypass strict type checking for this one-time seed script
@@ -768,7 +769,6 @@ export const seedDiplomaticNetwork = mutation({
           country: org.country,
           timezone: org.timezone,
           address,
-          ...(org.coordinates && { coordinates: org.coordinates }),
           ...(org.jurisdictionCountries && { 
             jurisdictionCountries: org.jurisdictionCountries 
           }),

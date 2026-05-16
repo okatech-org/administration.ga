@@ -19,9 +19,41 @@ import type { QueryCtx } from "../_generated/server";
 import { authQuery } from "../lib/customFunctions";
 import { getMembership, isBackOfficeUser } from "../lib/auth";
 import { error, ErrorCode } from "../lib/errors";
-import { UserRole } from "../lib/constants";
+import { UserRole, PublicUserType } from "../lib/constants";
 import { canViewCitizenContacts } from "../lib/permissions";
 import { membershipsByOrg } from "../lib/aggregates";
+
+// Types de profils consulaires gabonais (ressortissants) vs étrangers.
+// La distinction métier s'appuie sur `userType` (cf. PublicUserType enum).
+const GABONESE_PROFILE_TYPES = new Set<string>([
+	PublicUserType.LongStay,
+	PublicUserType.ShortStay,
+]);
+const FOREIGN_PROFILE_TYPES = new Set<string>([
+	PublicUserType.VisaTourism,
+	PublicUserType.VisaBusiness,
+	PublicUserType.VisaLongStay,
+	PublicUserType.AdminServices,
+]);
+
+/**
+ * Normalisation Unicode pour comparaisons de recherche tolérantes :
+ * - décomposition NFD + suppression des marques diacritiques (accents)
+ * - lowercase
+ * - tirets/underscores remplacés par des espaces (« PELLEN-LAKOUMBA » == « pellen lakoumba »)
+ * - whitespace écrasé
+ * Utilisé pour aligner la recherche vocale (Whisper transcrit souvent sans
+ * accents ni ponctuation) sur la frappe manuelle.
+ */
+function normalizeForSearch(s: string): string {
+	return s
+		.normalize("NFD")
+		.replace(/[̀-ͯ]/g, "")
+		.toLowerCase()
+		.replace(/[-_]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
 
 // Types d'organisations considérés comme « diplomatiques » pour le scope all-diplomatic
 const DIPLOMATIC_ORG_TYPES = new Set<string>([
@@ -55,7 +87,7 @@ export interface ContactResult {
 	orgName: string;
 	orgCountry?: string;
 	orgType?: string;
-	source: "team" | "network" | "citizen" | "administration";
+	source: "team" | "network" | "citizen" | "foreigner" | "administration";
 }
 
 type ContactScope = "org" | "jurisdiction" | "all-diplomatic" | "backoffice";
@@ -303,6 +335,7 @@ export const searchContacts = authQuery({
 				v.literal("team"),
 				v.literal("network"),
 				v.literal("citizens"),
+				v.literal("foreigners"),
 				v.literal("administration"),
 			),
 		),
@@ -333,6 +366,7 @@ export const searchContacts = authQuery({
 		const isTeamOnly = args.source === "team";
 		const isNetworkOnly = args.source === "network";
 		const isCitizensOnly = args.source === "citizens";
+		const isForeignersOnly = args.source === "foreigners";
 		const isAdministrationOnly = args.source === "administration";
 
 		// ── 1. Charger les orgs actives ──
@@ -362,7 +396,10 @@ export const searchContacts = authQuery({
 
 		// ── 3. Membres des orgs (team + network) ──
 		const shouldLoadMembers =
-			!isCitizensOnly && !isAdministrationOnly && orgScope.length > 0;
+			!isCitizensOnly &&
+			!isForeignersOnly &&
+			!isAdministrationOnly &&
+			orgScope.length > 0;
 		if (shouldLoadMembers) {
 			const orgScopeIds = orgScope.map((o) => o._id as Id<"orgs">);
 			const members = await loadOrgMembers(ctx, orgScopeIds, {
@@ -415,8 +452,10 @@ export const searchContacts = authQuery({
 			}
 		}
 
-		// ── 4. Profils citoyens (ressortissants) ──
-		// Scope "all-diplomatic" = uniquement le corps diplomatique → pas de citoyens.
+		// ── 4. Profils consulaires (ressortissants gabonais + étrangers) ──
+		// Scope "all-diplomatic" = uniquement le corps diplomatique → pas de profils.
+		// Les deux sources `citizens` et `foreigners` tirent depuis la même table
+		// `profiles`, distinguées ensuite via `userType` (Gabonese vs Foreign).
 		const shouldLoadCitizens =
 			!isTeamOnly &&
 			!isNetworkOnly &&
@@ -482,6 +521,20 @@ export const searchContacts = authQuery({
 				const user = profileUsers[i];
 				if (!user || user.isActive === false || user.deletedAt) continue;
 
+				// Classification gabonais vs étranger via `userType` (cf. enum
+				// PublicUserType). Les segments « Ressortissants » et « Étrangers »
+				// sont exclusifs ; quand l'utilisateur cible explicitement l'un,
+				// on saute l'autre.
+				const userType = (p as any).userType as string | undefined;
+				const isGaboneseProfile = userType
+					? GABONESE_PROFILE_TYPES.has(userType)
+					: true; // legacy : profils sans userType présumés gabonais
+				const isForeignProfile = userType
+					? FOREIGN_PROFILE_TYPES.has(userType)
+					: false;
+				if (isCitizensOnly && !isGaboneseProfile) continue;
+				if (isForeignersOnly && !isForeignProfile) continue;
+
 				const residenceCountry =
 					p.countryOfResidence ?? (p.addresses as any)?.residence?.country;
 
@@ -498,13 +551,20 @@ export const searchContacts = authQuery({
 					nameLower.split(" ").slice(0, -1).join(" ") ??
 					"";
 
-				// Pour backoffice, rattacher le citoyen à son org gestionnaire (si connue) sinon bucket "Ressortissants"
+				// Pour backoffice, rattacher le profil à son org gestionnaire si connue,
+				// sinon bucket dédié « Ressortissants » ou « Étrangers ».
 				const managedOrg = p.managedByOrgId
 					? orgMap.get(p.managedByOrgId as string)
 					: undefined;
+				const fallbackBucketId = isForeignProfile
+					? "__foreigners__"
+					: "__citizens__";
+				const fallbackBucketName = isForeignProfile
+					? "Étrangers"
+					: "Ressortissants";
 
 				results.push({
-					id: `citizen-${p._id}`,
+					id: `${isForeignProfile ? "foreigner" : "citizen"}-${p._id}`,
 					userId: p.userId as string,
 					lastName,
 					firstName,
@@ -512,24 +572,39 @@ export const searchContacts = authQuery({
 					email: user.email ?? (p.contacts as any)?.email,
 					phone: user.phone ?? (p.contacts as any)?.phone,
 					avatar: user.avatarUrl ?? undefined,
-					orgId: managedOrg ? (managedOrg._id as string) : "__citizens__",
-					orgName: managedOrg ? managedOrg.name : "Ressortissants",
+					orgId: managedOrg ? (managedOrg._id as string) : fallbackBucketId,
+					orgName: managedOrg ? managedOrg.name : fallbackBucketName,
 					orgCountry: residenceCountry,
 					orgType: managedOrg?.type,
-					source: "citizen",
+					source: isForeignProfile ? "foreigner" : "citizen",
 				});
 			}
 		}
 
 		// ── 5. Admins plateforme (scope backoffice uniquement) ──
+		// En backoffice, les admins plateforme sont remontés dans le bucket
+		// « Back-Office » (source "team") aux côtés des membres de l'org. Ils
+		// restent listés quand le segment "team" est sélectionné, ou en vue
+		// globale ("all"). Le segment "administration" reste exposé pour la
+		// rétrocompatibilité (utilisateurs internes plateforme uniquement).
 		const shouldLoadAdmins =
 			scope === "backoffice" &&
-			!isTeamOnly &&
 			!isNetworkOnly &&
-			!isCitizensOnly;
+			!isCitizensOnly &&
+			!isForeignersOnly;
 
 		if (shouldLoadAdmins) {
 			const admins = await loadPlatformAdmins(ctx, Math.min(limit, 500));
+			// En backoffice, les admins sont fusionnés dans le bucket Back-Office
+			// (source "team") sauf si l'utilisateur a explicitement sélectionné
+			// le segment historique "administration".
+			const adminSource: ContactResult["source"] = isAdministrationOnly
+				? "administration"
+				: "team";
+			const adminOrgId = isAdministrationOnly ? "__admins__" : "__backoffice__";
+			const adminOrgName = isAdministrationOnly
+				? "Administration plateforme"
+				: "Back-Office";
 			for (const u of admins) {
 				const nameLower = u.name ?? u.email ?? "";
 				const lastName = (
@@ -548,26 +623,30 @@ export const searchContacts = authQuery({
 					phone: u.phone,
 					avatar: u.avatarUrl ?? undefined,
 					positionGrade: u.role,
-					orgId: "__admins__",
-					orgName: "Administration plateforme",
-					source: "administration",
+					orgId: adminOrgId,
+					orgName: adminOrgName,
+					source: adminSource,
 				});
 			}
 		}
 
 		// ── 6. Filtrer par texte libre ──
+		// Normalisation Unicode (NFD + suppression accents) + remplacement
+		// tirets/underscores : la recherche vocale Whisper restitue souvent
+		// sans accents ni ponctuation, on aligne la frappe manuelle sur la
+		// voix en comparant des chaînes normalisées.
 		let filtered = results;
 		if (args.searchTerm) {
-			const q = args.searchTerm.toLowerCase();
+			const q = normalizeForSearch(args.searchTerm);
 			filtered = results.filter(
 				(c) =>
-					c.name.toLowerCase().includes(q) ||
-					c.lastName.toLowerCase().includes(q) ||
-					c.firstName.toLowerCase().includes(q) ||
-					c.email?.toLowerCase().includes(q) ||
-					c.phone?.toLowerCase().includes(q) ||
-					c.position?.toLowerCase().includes(q) ||
-					c.orgName.toLowerCase().includes(q),
+					normalizeForSearch(c.name).includes(q) ||
+					normalizeForSearch(c.lastName).includes(q) ||
+					normalizeForSearch(c.firstName).includes(q) ||
+					normalizeForSearch(c.email ?? "").includes(q) ||
+					normalizeForSearch(c.phone ?? "").includes(q) ||
+					normalizeForSearch(c.position ?? "").includes(q) ||
+					normalizeForSearch(c.orgName).includes(q),
 			);
 		}
 
@@ -577,6 +656,7 @@ export const searchContacts = authQuery({
 			team: 1,
 			network: 2,
 			citizen: 3,
+			foreigner: 4,
 		};
 
 		const byUserId = new Map<string, ContactResult>();
@@ -593,9 +673,18 @@ export const searchContacts = authQuery({
 			if (preferAdminBucket && currentRank < existingRank) {
 				byUserId.set(c.userId, c);
 			} else if (!preferAdminBucket) {
-				// Hors backoffice : team > network > citizen (inverser administration qui n'existe pas ici)
+				// Hors backoffice : team > network > citizen > foreigner
+				// (administration n'existe pas hors backoffice)
 				const rank = (s: ContactResult["source"]) =>
-					s === "team" ? 0 : s === "network" ? 1 : s === "citizen" ? 2 : 3;
+					s === "team"
+						? 0
+						: s === "network"
+							? 1
+							: s === "citizen"
+								? 2
+								: s === "foreigner"
+									? 3
+									: 4;
 				if (rank(c.source) < rank(existing.source)) {
 					byUserId.set(c.userId, c);
 				}
@@ -605,11 +694,11 @@ export const searchContacts = authQuery({
 		const deduplicated = Array.from(byUserId.values()).slice(0, limit);
 
 		// ── 8. Grouper par org pour l'affichage ──
-		// Cas spécial : quand l'utilisateur filtre explicitement sur "citizens",
-		// on regroupe TOUS les ressortissants sous un unique bucket "Ressortissants"
-		// (nom de l'org gestionnaire = redondant, et sépare artificiellement les
-		// citoyens managedBy des citoyens purement en juridiction).
+		// Cas spéciaux : quand l'utilisateur filtre explicitement sur
+		// "citizens" ou "foreigners", on regroupe tous les profils ciblés
+		// sous un unique bucket dédié (« Ressortissants » / « Étrangers »).
 		const flattenCitizens = isCitizensOnly;
+		const flattenForeigners = isForeignersOnly;
 
 		const grouped: Record<
 			string,
@@ -629,10 +718,24 @@ export const searchContacts = authQuery({
 			if (flattenCitizens && contact.source === "citizen") {
 				// Tab "Ressortissants" : un seul groupe pour tous les citoyens
 				key = "__citizens__";
-			} else if (contact.source === "citizen" && contact.orgId === "__citizens__") {
+			} else if (flattenForeigners && contact.source === "foreigner") {
+				// Tab "Étrangers" : un seul groupe pour tous les profils étrangers
+				key = "__foreigners__";
+			} else if (
+				contact.source === "citizen" &&
+				contact.orgId === "__citizens__"
+			) {
 				key = "__citizens__";
+			} else if (
+				contact.source === "foreigner" &&
+				contact.orgId === "__foreigners__"
+			) {
+				key = "__foreigners__";
 			} else if (contact.source === "administration") {
 				key = "__admins__";
+			} else if (contact.orgId === "__backoffice__") {
+				// Admins remontés dans Back-Office (scope backoffice par défaut)
+				key = "__backoffice__";
 			} else {
 				key = contact.orgId;
 			}
@@ -643,9 +746,19 @@ export const searchContacts = authQuery({
 						org: { id: "__citizens__", name: "Ressortissants" },
 						contacts: [],
 					};
+				} else if (key === "__foreigners__") {
+					grouped[key] = {
+						org: { id: "__foreigners__", name: "Étrangers" },
+						contacts: [],
+					};
 				} else if (key === "__admins__") {
 					grouped[key] = {
 						org: { id: "__admins__", name: "Administration plateforme" },
+						contacts: [],
+					};
+				} else if (key === "__backoffice__") {
+					grouped[key] = {
+						org: { id: "__backoffice__", name: "Back-Office" },
 						contacts: [],
 					};
 				} else {

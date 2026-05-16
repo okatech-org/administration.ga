@@ -40,6 +40,7 @@ import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { PostCallNoteDrawer } from "@workspace/iasted";
 import { CallCenterShell } from "../call-center";
 import { DirectCallView } from "../meetings/DirectCallView";
+import { IAstedLiveKitBridge } from "../iasted-bridge";
 import { useOrg } from "../../shell/org-provider";
 import { useContactSearch, type ContactSource } from "../../hooks/useContactSearch";
 import { useCallCenter } from "../../hooks/use-call-center";
@@ -578,6 +579,7 @@ function LegacyCallTab() {
 								className="flex flex-col flex-1"
 							>
 								<DirectCallView onHangUp={handleHangUp} />
+								<IAstedLiveKitBridge />
 							</LiveKitRoom>
 						</div>
 					) : (

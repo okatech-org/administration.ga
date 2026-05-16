@@ -283,6 +283,50 @@ export const CircleMenu = ({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
+	// Pilotage vocal via iAsted : ouvre/ferme/bascule l'éventail à la demande
+	// du tool `open_app_menu`. L'event est émis par `useIAstedHost.dispatchUiAction`.
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const detail = (e as CustomEvent<{ open?: boolean }>).detail;
+			const shouldOpen = detail?.open ?? !isOpen;
+			if (shouldOpen && !isOpen) playOpenAnimation();
+			else if (!shouldOpen && isOpen) playCloseAnimation();
+		};
+		window.addEventListener("iasted:fan-toggle", handler);
+		return () => window.removeEventListener("iasted:fan-toggle", handler);
+	}, [isOpen, playOpenAnimation, playCloseAnimation]);
+
+	// Raccourci clavier d'accessibilité — Option+Space (ou Alt+Space) toggle la
+	// session vocale. Plus accessible que Cmd+Shift+V pour les utilisateurs avec
+	// motricité réduite ou clavier non-standard.
+	useEffect(() => {
+		const handler = (event: KeyboardEvent) => {
+			const isAltSpace =
+				event.altKey && !event.metaKey && !event.ctrlKey && event.code === "Space";
+			if (!isAltSpace) return;
+			const target = event.target as HTMLElement | null;
+			const tag = target?.tagName;
+			if (
+				tag === "INPUT" ||
+				tag === "TEXTAREA" ||
+				(target && (target as HTMLElement).isContentEditable)
+			) {
+				return;
+			}
+			event.preventDefault();
+			// Réutilise le bouton trigger : effet identique au clic.
+			if (isVoiceConnected && onVoiceHangUp) {
+				onVoiceHangUp();
+			} else if (!isOpen) {
+				void playOpenAnimation();
+			} else {
+				void playCloseAnimation();
+			}
+		};
+		window.addEventListener("keydown", handler);
+		return () => window.removeEventListener("keydown", handler);
+	}, [isOpen, isVoiceConnected, onVoiceHangUp, playOpenAnimation, playCloseAnimation]);
+
 	const handleTriggerClick = () => {
 		// Si un long-press vient d'être déclenché, on annule le clic suivant
 		// (sinon le tap qui suit le maintien rouvrirait/fermerait le menu).

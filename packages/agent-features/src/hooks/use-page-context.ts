@@ -2,6 +2,7 @@ import { usePathname } from "@workspace/routing";
 import { useEffect, useMemo, useRef } from "react";
 import {
 	pageContextStore,
+	type FieldSpec,
 	type PageAction,
 	type PageContextSnapshot,
 	type PageEntity,
@@ -101,6 +102,60 @@ export function useRegisterPageAction(
 		const unregister = pageContextStore.registerAction(id, wrapped);
 		return unregister;
 	}, [id]);
+}
+
+/**
+ * Enregistre un champ de formulaire pilotable à la voix par iAsted.
+ *
+ * - Le `setter` reçoit la valeur dictée (déjà normalisée pour les selects via
+ *   fuzzy match sur les `options.label`).
+ * - Le `getCurrentValue` permet à iAsted de lire la valeur courante (« quel
+ *   prénom ai-je saisi ? »).
+ * - Le `validator` peut throw une erreur claire — iAsted la lit à voix haute.
+ *
+ * Désinscrit automatiquement au démontage.
+ *
+ * Exemple :
+ * ```tsx
+ * useRegisterPageField("profile.firstName", {
+ *   type: "text",
+ *   label: "Prénom",
+ *   setter: (v) => setFirstName(String(v)),
+ *   getCurrentValue: () => firstName,
+ *   required: true,
+ *   formId: "profile",
+ * });
+ * ```
+ */
+export function useRegisterPageField(id: string, spec: FieldSpec): void {
+	const specRef = useRef(spec);
+	specRef.current = spec;
+
+	useEffect(() => {
+		// Wrapper pour permettre au store d'appeler le setter sans capturer
+		// la version au moment de l'enregistrement.
+		const wrappedSpec: FieldSpec = {
+			...spec,
+			setter: (value) => specRef.current.setter(value),
+			getCurrentValue: spec.getCurrentValue
+				? () => specRef.current.getCurrentValue?.()
+				: undefined,
+			validator: spec.validator
+				? (value) => specRef.current.validator?.(value)
+				: undefined,
+		};
+		const unregister = pageContextStore.registerField(id, wrappedSpec);
+		return unregister;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		id,
+		spec.type,
+		spec.label,
+		spec.formId,
+		spec.required,
+		// options sérialisés pour détecter les changements de shape
+		JSON.stringify(spec.options ?? []),
+	]);
 }
 
 export type UseShellContextInput = {

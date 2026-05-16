@@ -16,9 +16,12 @@
  * ensuite via DataChannel — c'est l'établissement initial qui est limité.
  */
 
-// Pas de `"use node"` : on reste dans le runtime Convex V8 isolate, qui
-// supporte `fetch` natif et l'accès à `process.env`. Cela évite la
-// dépendance Node.js sur le deployment local et accélère le démarrage.
+// Runtime Node.js requis : iSGEN/mairie.ga ont prouvé que le fetch vers
+// `/v1/realtime/sessions` doit s'exécuter dans le runtime Node.js, pas dans
+// le V8 isolate de Convex. Le V8 isolate sérialise différemment les headers
+// ou le body, ce qui faisait répondre OpenAI avec `beta_api_shape_disabled`
+// même quand la clé OpenAI était valide.
+"use node";
 
 import { v } from "convex/values";
 import { action } from "../_generated/server";
@@ -27,7 +30,14 @@ import type { Id } from "../_generated/dataModel";
 import { rateLimiter } from "./rateLimiter";
 import type { RealtimeSessionResponse, RealtimeVoice } from "./realtimeTypes";
 
-const DEFAULT_MODEL = "gpt-4o-realtime-preview-2024-12-17";
+// OpenAI Realtime model. La branche `gpt-4o-realtime-preview-*` (Beta) est
+// déprécée côté API publique mais reste utilisée par mairie.ga sans erreur :
+// le « beta_api_shape_disabled » côté gabon-diplomatie vient probablement
+// d'une politique côté COMPTE/CLÉ OpenAI (pas du code). On conserve le shape
+// historique tant que la clé OpenAI utilisée ne supporte pas la GA.
+// Modèle GA (Aug 2025), remplace `gpt-4o-realtime-preview-*` déprécié.
+// DOIT correspondre au DEFAULT_MODEL du hook client (packages/iasted/.../use-realtime-voice.ts).
+const DEFAULT_MODEL = "gpt-realtime";
 const DEFAULT_VOICE: RealtimeVoice = "ash";
 const SUPPORTED_VOICES: ReadonlySet<RealtimeVoice> = new Set<RealtimeVoice>([
 	"alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse",
@@ -102,6 +112,13 @@ export const create = action({
 			},
 		);
 
+		// ── 6.5. Lecture des préférences voix utilisateur (Phase 4) ─
+		// Les préférences influencent : voix par défaut, locale, persona injecté.
+		const voicePrefs = await ctx.runQuery(
+			(internal as any).ai.voicePreferences.getVoicePrefsForUser,
+			{ userId: user._id as Id<"users"> },
+		);
+
 		// ── 7. Build du system prompt diplomatique ────────────────
 		const promptResult = await ctx.runQuery(
 			internal.ai.iastedRealtimePrompt.buildPrompt,
@@ -110,69 +127,116 @@ export const create = action({
 				orgId: args.orgId,
 				surface: args.surface,
 				toolNames,
-				locale: args.locale,
+				locale: args.locale ?? voicePrefs?.preferredLocale,
 			},
 		);
 
 		// ── 8. Validation de la voix demandée ─────────────────────
-		const requestedVoice = args.voice as RealtimeVoice | undefined;
+		// Priorité : arg explicite > pref user > default.
+		const userPreferred = voicePrefs?.preferredVoice as RealtimeVoice | undefined;
+		const requestedVoice = (args.voice as RealtimeVoice | undefined) ?? userPreferred;
 		const voice: RealtimeVoice =
 			requestedVoice && SUPPORTED_VOICES.has(requestedVoice)
 				? requestedVoice
 				: DEFAULT_VOICE;
 
 		// ── 9. Appel OpenAI Realtime API ──────────────────────────
+		// Endpoint identique à celui utilisé par mairie.ga (Supabase function
+		// `get-realtime-token`). Si la clé OpenAI utilisée a accès à la Beta,
+		// cet appel renvoie un client_secret. Sinon, OpenAI renvoie
+		// `beta_api_shape_disabled` : il faut alors migrer la clé / le compte
+		// OpenAI vers la GA (Aug 2025) côté dashboard OpenAI.
 		try {
-			const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${apiKey}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					model: DEFAULT_MODEL,
-					voice,
-					instructions: promptResult.prompt,
-					tool_choice: "auto",
-					tools,
-					input_audio_format: "pcm16",
-					output_audio_format: "pcm16",
-					input_audio_transcription: { model: "whisper-1" },
-					turn_detection: {
-						type: "server_vad",
-						threshold: 0.5,
-						prefix_padding_ms: 300,
-						silence_duration_ms: 700,
+			const response = await fetch(
+				"https://api.openai.com/v1/realtime/sessions",
+				{
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${apiKey}`,
+						"Content-Type": "application/json",
 					},
-				}),
-			});
+					body: JSON.stringify({
+						model: DEFAULT_MODEL,
+						voice,
+						instructions: promptResult.prompt,
+						tool_choice: "auto",
+						tools,
+						input_audio_format: "pcm16",
+						output_audio_format: "pcm16",
+						input_audio_transcription: { model: "whisper-1" },
+						turn_detection: {
+							type: "server_vad",
+							threshold: 0.5,
+							prefix_padding_ms: 300,
+							silence_duration_ms: 700,
+						},
+					}),
+				},
+			);
 
 			if (!response.ok) {
 				const errorBody = await response.text();
 				console.error("[realtimeToken] OpenAI API error:", response.status, errorBody);
+				// Si OpenAI dit que la Beta API est déprécié, on signale la
+				// cause exacte au client pour un message d'erreur explicite.
+				if (
+					response.status === 400 &&
+					errorBody.includes("beta_api_shape_disabled")
+				) {
+					return {
+						available: false,
+						error: "OPENAI_BETA_DISABLED",
+					};
+				}
 				return {
 					available: false,
 					error: `OPENAI_ERROR_${response.status}`,
 				};
 			}
 
+			// Réponse legacy : `{ id, client_secret: { value, expires_at }, ... }`
 			const data = (await response.json()) as {
 				id?: string;
 				client_secret?: { value?: string; expires_at?: number };
+				value?: string;
+				expires_at?: number;
+				session?: { id?: string };
 			};
 
-			const ephemeralKey = data.client_secret?.value;
-			const sessionId = data.id;
-			if (!ephemeralKey || !sessionId) {
+			// Compat avec deux shapes (legacy nested + GA flat)
+			const ephemeralKey = data.client_secret?.value ?? data.value;
+			const sessionId =
+				data.id ?? data.session?.id ?? `sess_${Date.now()}`;
+			if (!ephemeralKey) {
 				return {
 					available: false,
 					error: "OPENAI_INVALID_RESPONSE",
 				};
 			}
 
-			const expiresAt = data.client_secret?.expires_at
-				? new Date(data.client_secret.expires_at * 1000).toISOString()
+			const expiresAtTs =
+				data.client_secret?.expires_at ?? data.expires_at;
+			const expiresAt = expiresAtTs
+				? new Date(expiresAtTs * 1000).toISOString()
 				: undefined;
+
+			// ── 10. Persiste la session côté Convex (supervision + coût) ──
+			try {
+				await ctx.runMutation(
+					internal.ai.realtimeSessions.insertActiveInternal,
+					{
+						externalSessionId: sessionId,
+						userId: user._id as Id<"users">,
+						orgId: args.orgId,
+						surface: args.surface,
+						model: DEFAULT_MODEL,
+						voice,
+					},
+				);
+			} catch (sessionErr) {
+				// Logging only — ne bloque pas la création de session si tracking KO.
+				console.warn("[realtimeToken] session tracking insert failed:", sessionErr);
+			}
 
 			return {
 				available: true,
@@ -194,3 +258,4 @@ export const create = action({
 		}
 	},
 });
+

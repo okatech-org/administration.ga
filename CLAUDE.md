@@ -57,6 +57,53 @@ const { onConnected, onDisconnected, markUserHangUp } =
 - `use-chat-attachments` : state local + validation client (taille 50 Mo, MIME) pour les fichiers joints d'un composer. Retourne `addFiles/remove/clear/consumeForUpload` — l'upload vers Convex storage est delegue a l'appelant.
 - `safe-markdown` : wrapper `<SafeMarkdown>` avec `rehype-sanitize` strict. A utiliser a la place de `<Markdown>` de `react-markdown` pour tout contenu genere par Mr Ray / iAsted IA / utilisateurs.
 
+## Etendre l'agent vocal iAsted (Mode God)
+
+Pour ajouter une nouvelle capacite vocale a iAsted, suivre ces 3 etapes :
+
+### 1. Declarer le tool dans le registry
+
+Editer `convex/ai/realtimeTools.ts` et ajouter une entree dans `BUSINESS_TOOLS` :
+
+```ts
+{
+  requiredTask: TaskCode.meetings.create, // null si pas de gating supplementaire
+  superadminOnly: false,                  // true pour les actions superadmin
+  surfaceOnly: "backoffice",              // "agent" / "backoffice" / undefined
+  tool: {
+    type: "function",
+    name: "my_new_tool",
+    description: "Ce que fait l'outil + REGLES de confirmation orale.",
+    parameters: {
+      type: "object",
+      properties: { /* ... */ },
+      required: ["..."],
+    },
+  },
+},
+```
+
+### 2. Implementer le dispatcher
+
+Editer `convex/ai/realtimeToolExecutor.ts` :
+- Ajouter un `case "my_new_tool"` dans `dispatchBusinessTool`.
+- Ecrire la fonction qui appelle la mutation/query existante via `ctx.runMutation(api.functions.x.y, args)` ou `ctx.runQuery`.
+- Retourner un `RealtimeToolResult` (`success`, `message`, optionnellement `uiAction` et `data`).
+- Re-mapper les erreurs Convex (CANNOT_REMOVE_SELF, INSUFFICIENT_PERMISSIONS) en messages parlants.
+
+### 3. Annoncer la capacite dans le system prompt
+
+Editer `convex/ai/iastedRealtimePrompt.ts` dans la section appropriee (`CAPACITES D'ORCHESTRATION`, `CAPACITES D'ADMINISTRATION`, etc.) :
+- Quand utiliser l'outil.
+- Regles de confirmation orale (simple recap, double confirmation pour actions destructives).
+- Parametres attendus + ordre canonique (find_contact AVANT launch_call, etc.).
+
+### Securite et garde-fous
+- Auth + RBAC sont re-verifies a l'execution dans le dispatcher.
+- Preferer une mutation Convex existante AVEC ses guards (self-action, rank hierarchy, SuperAdmin protection) plutot que d'ecrire des controles manuels.
+- Tout tool destructif doit avoir une **double confirmation orale obligatoire** annoncee dans le prompt.
+- Audit log automatique : `auditLog` + `aiActivityLog` doivent etre alimentes pour toute action mutative.
+
 ### Decisions de non-extraction
 
 Trois items du plan d'audit n'ont PAS ete extraits dans les packages partages. Decisions documentees ici pour eviter qu'un futur contributeur refasse l'analyse :

@@ -17,6 +17,12 @@ import type { CircleMenuProps } from "./types";
 
 export type { CircleMenuItemConfig, CircleMenuProps } from "./types";
 export { IAstedTrigger3D, type IAstedTrigger3DProps } from "./IAstedTrigger3D";
+export { IAstedButtonFull, type IAstedButtonFullProps } from "./IAstedButtonFull";
+export {
+	IAstedFanMenu,
+	type IAstedFanMenuItem,
+	type IAstedFanMenuProps,
+} from "./IAstedFanMenu";
 
 /**
  * CircleMenu — variante animée par défaut, statique si

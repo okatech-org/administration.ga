@@ -55,6 +55,9 @@ export function useIAstedHost(): IAstedVoiceController {
 	// catch d'`activateVoice` qui passe le bouton en mode dégradé.
 	const createToken = useAction((api as any).ai.realtimeToken.create);
 	const executeTool = useAction((api as any).ai.realtimeToolExecutor.executeRealtimeTool);
+	const recordSessionEnd = useAction(
+		(api as any).ai.realtimeSessions.recordSessionEnd,
+	);
 
 	const [available, setAvailable] = useState(true);
 	const [unavailableReason, setUnavailableReason] = useState<string | undefined>();
@@ -122,6 +125,66 @@ export function useIAstedHost(): IAstedVoiceController {
 					});
 					break;
 				}
+				case "open_app_menu": {
+					window.dispatchEvent(
+						new CustomEvent("iasted:fan-toggle", { detail: { open: true } }),
+					);
+					break;
+				}
+				case "open_iasted_tab": {
+					const tab = uiAction.payload?.tab as string | undefined;
+					window.dispatchEvent(
+						new CustomEvent("iasted:open", { detail: { tab: tab ?? "ichat" } }),
+					);
+					break;
+				}
+				case "livekit_control": {
+					window.dispatchEvent(
+						new CustomEvent("iasted:livekit-control", {
+							detail: uiAction.payload,
+						}),
+					);
+					break;
+				}
+				case "set_accessibility_mode": {
+					const enabled = !!uiAction.payload?.enabled;
+					try {
+						window.localStorage?.setItem(
+							"iasted.accessibility_mode",
+							enabled ? "true" : "false",
+						);
+					} catch {
+						/* ignore */
+					}
+					toast.info(
+						enabled
+							? "Mode accessibilité activé. La prochaine session utilisera ce mode."
+							: "Mode accessibilité désactivé.",
+					);
+					break;
+				}
+				case "form_control": {
+					const payload = uiAction.payload as {
+						action?: "fill" | "clear" | "submit" | "read_state";
+						fieldId?: string;
+						formId?: string;
+						value?: unknown;
+					};
+					if (!payload?.action) break;
+					void pageContextStore
+						.applyFormFieldAction({
+							action: payload.action,
+							fieldId: payload.fieldId,
+							formId: payload.formId,
+							value: payload.value,
+						})
+						.catch((err) => {
+							console.warn("[iAsted] form_control failed", err);
+						});
+					break;
+				}
+				case "noop":
+					break;
 				case "draft_correspondence_intent":
 				case "generate_document_intent":
 				case "escalation_intent":
@@ -137,7 +200,28 @@ export function useIAstedHost(): IAstedVoiceController {
 		[router],
 	);
 
+	// Lecture du mode accessibilité — local storage côté client.
+	const accessibilityMode =
+		typeof window !== "undefined" &&
+		window.localStorage?.getItem("iasted.accessibility_mode") === "true";
+
 	const voice = useRealtimeVoice({
+		accessibilityMode,
+		onSessionEnd: useCallback(
+			async (metrics: {
+				externalSessionId: string;
+				durationSeconds: number;
+				toolCallCount: number;
+				endReason?: string;
+			}) => {
+				try {
+					await recordSessionEnd(metrics);
+				} catch (err) {
+					console.warn("[iAsted] recordSessionEnd failed", err);
+				}
+			},
+			[recordSessionEnd],
+		),
 		onToolCall: useCallback(
 			async (name: string, args: Record<string, unknown>): Promise<RealtimeToolResult> => {
 				// Délégation au backend pour re-vérifier les permissions + exécuter
@@ -177,7 +261,9 @@ export function useIAstedHost(): IAstedVoiceController {
 			[executeTool, activeOrgId, dispatchUiAction],
 		),
 		onError: useCallback((error: Error) => {
-			toast.error(`iAsted : ${error.message}`);
+			// Loggué seulement — `activateVoice` re-catch et affiche un toast
+			// contextuel (gestion micro, rate limit, etc.). Éviter le double toast.
+			console.warn("[iAsted] voice error:", error.message);
 		}, []),
 	});
 
@@ -203,6 +289,8 @@ export function useIAstedHost(): IAstedVoiceController {
 			return;
 		}
 
+		const connectingToast = toast.loading("Connexion à iAsted…");
+
 		try {
 			const session = await createToken({
 				surface: "agent",
@@ -217,6 +305,7 @@ export function useIAstedHost(): IAstedVoiceController {
 					reason === "NOT_CONFIGURED"
 						? "Mode vocal indisponible — clé OpenAI non configurée."
 						: `Mode vocal indisponible (${reason}).`,
+					{ id: connectingToast },
 				);
 				return;
 			}
@@ -238,15 +327,20 @@ export function useIAstedHost(): IAstedVoiceController {
 				voice: session.voice ?? "ash",
 				expiresAt: session.expiresAt,
 			});
-			toast.success("iAsted vous écoute");
+			toast.success("iAsted vous écoute", { id: connectingToast });
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Erreur inconnue";
 			if (message.startsWith("RATE_LIMITED:")) {
-				toast.warning(message.replace("RATE_LIMITED:", ""));
+				toast.warning(message.replace("RATE_LIMITED:", ""), { id: connectingToast });
 			} else if (message === "INSUFFICIENT_PERMISSIONS") {
-				toast.warning("Vous n'avez pas la permission d'utiliser le mode vocal.");
+				toast.warning("Vous n'avez pas la permission d'utiliser le mode vocal.", { id: connectingToast });
+			} else if (message.includes("Permission denied") || message.includes("NotAllowedError")) {
+				toast.error(
+					"Accès microphone refusé. Autorisez l'accès au microphone dans les paramètres du navigateur.",
+					{ id: connectingToast, duration: 8000 },
+				);
 			} else {
-				toast.error(`Échec de connexion : ${message}`);
+				toast.error(`Échec de connexion : ${message}`, { id: connectingToast });
 			}
 		}
 	}, [available, unavailableReason, voice, createToken, activeOrgId]);

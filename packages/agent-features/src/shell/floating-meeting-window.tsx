@@ -29,6 +29,7 @@ import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { MeetingStageView } from "../components/meetings-livekit/MeetingStageView";
+import { IAstedLiveKitBridge } from "../components/iasted-bridge";
 import { useActiveMeetingConnection } from "../hooks/use-active-meeting-connection";
 
 interface FloatingMeetingWindowProps {
@@ -199,6 +200,7 @@ export function FloatingMeetingWindow({
 					onHangUp={handleHangUp}
 				/>
 			)}
+			<IAstedLiveKitBridge />
 		</LiveKitRoom>
 	);
 

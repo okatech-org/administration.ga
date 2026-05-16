@@ -103,7 +103,14 @@ function DevAccountSwitcherInner() {
 				description: account.email,
 			});
 			await new Promise((r) => setTimeout(r, 500));
-			window.location.reload();
+			// Force un fresh load complet (vs reload) — le WebSocket Convex retient
+			// l'auth de la session précédente, et un simple reload ne le réinitialise
+			// pas toujours. Naviguer via href "/" force un fresh load qui réinitialise
+			// tout l'état JS (WS, react-query cache, etc.).
+			const target = window.location.pathname.startsWith("/sign-in")
+				? "/"
+				: window.location.pathname;
+			window.location.href = target;
 		} catch (err: unknown) {
 			const message =
 				err instanceof Error ? err.message : "Erreur de connexion";
@@ -119,7 +126,7 @@ function DevAccountSwitcherInner() {
 			<DialogTrigger asChild>
 				<button
 					type="button"
-					className="fixed bottom-4 left-4 z-9999 flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-2 text-xs font-bold text-black transition-all hover:bg-violet-400 hover:scale-105 active:scale-95"
+					className="fixed top-3 right-3 z-[10000] flex items-center gap-1.5 rounded-full bg-violet-500 px-3 py-2 text-xs font-bold text-black transition-all hover:bg-violet-400 hover:scale-105 active:scale-95 shadow-lg"
 					title="Dev Account Switcher"
 				>
 					<Bug className="size-4" />
