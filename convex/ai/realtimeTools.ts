@@ -45,13 +45,21 @@ const UI_TOOLS: RealtimeVoiceTool[] = [
 	{
 		type: "function",
 		name: "open_chat",
-		description: "Ouvre la fenêtre de chat texte iAsted (transcription visible).",
+		description:
+			"Ouvre l'onglet iChat (chat texte iAsted, transcription visible). " +
+			"À INVOQUER UNIQUEMENT si l'utilisateur prononce explicitement « chat », « iChat », « discussion », " +
+			"« messagerie » ou « fenêtre DE CHAT » (avec le qualificateur « de chat »). " +
+			"NE PAS invoquer si l'utilisateur dit juste « fenêtre » (singulier, sans qualificateur) — utiliser `open_app_menu`. " +
+			"NE PAS invoquer si l'utilisateur dit « fenêtre des contacts / d'appels / des réunions / vocale / des réglages » " +
+			"— utiliser `open_iasted_tab` avec le tab correspondant.",
 		parameters: { type: "object", properties: {}, required: [] },
 	},
 	{
 		type: "function",
 		name: "close_chat",
-		description: "Ferme la fenêtre de chat texte pour revenir au mode vocal pur.",
+		description:
+			"Ferme l'onglet iChat (chat texte) pour revenir au mode vocal pur. " +
+			"Expressions : « ferme le chat », « ferme iChat », « ferme la fenêtre de chat », « masque le chat ».",
 		parameters: { type: "object", properties: {}, required: [] },
 	},
 	{
@@ -115,32 +123,47 @@ const UI_TOOLS: RealtimeVoiceTool[] = [
 		type: "function",
 		name: "open_app_menu",
 		description:
-			"Ouvre l'ÉVENTAIL iAsted (CircleMenu fan) — déploie les 6 boutons d'accès rapide autour de la sphère : iChat, iContact, iAppel, iRéunion, Vocal, Réglages. " +
+			"Ouvre l'ÉVENTAIL iAsted (CircleMenu fan) — déploie les 6 boutons d'accès rapide autour de la sphère : iChat, iContact, iAppel, iRéunion, iVocal, Réglages. " +
 			"À INVOQUER quand l'utilisateur dit (variantes acceptées) : " +
+			"« ouvre la fenêtre », « affiche la fenêtre », « montre la fenêtre », « déploie la fenêtre », « déroule la fenêtre » (singulier, SANS qualificateur « de chat / des contacts / d'appels / des réunions / vocale / des réglages »), " +
+			"« ouvre une fenêtre », « affiche une fenêtre », « ouvre la / une fenêtre iAsted », " +
 			"« ouvre tes options », « affiche tes options », « montre tes options », « donne-moi tes options », " +
+			"« ouvre ses options », « affiche ses options », « montre ses options » (3e personne), " +
+			"« ouvre mes options » (1re personne — l'utilisateur parle DE lui), " +
 			"« ouvre l'éventail », « affiche l'éventail », « déploie l'éventail », « déroule l'éventail », " +
 			"« ouvre tes fenêtres », « affiche tes fenêtres », « montre tes fenêtres », " +
 			"« ouvre ton menu », « affiche ton menu », « montre ton menu », « déploie ton menu », « déroule ton menu », " +
+			"« ouvre le menu » (sans possessif — action directe sur l'éventail, plus de demande de précision), " +
 			"« ouvre ton panneau », « affiche ton panneau », « ouvre le panneau iAsted », " +
 			"« qu'est-ce que tu sais faire » (en complément d'une réponse vocale), « montre-moi ce que tu peux faire ». " +
-			"NE PAS invoquer pour : « ouvre le chat » (utiliser `open_chat`), « ouvre mes contacts / appels / réunions » (utiliser `open_iasted_tab`), " +
-			"« ouvre le menu principal / la navigation » (= menu latéral de l'application, hors-périmètre — répondre que ce n'est pas pilotable vocalement). " +
-			"Règle de désambiguïsation : si l'utilisateur dit simplement « ouvre le menu » sans possessif (« ton/tes »), DEMANDER « l'éventail iAsted ou le menu de l'application ? » avant d'agir.",
+			"RÈGLE D'OR : le mot « fenêtre » SEUL (sans qualificateur explicite « de chat » / « des contacts » / « d'appels » / « des réunions » / « vocale » / « des réglages ») désigne TOUJOURS l'éventail iAsted. " +
+			"De même, « le menu » seul désigne l'éventail (l'ancien comportement « demander précision » est supprimé : action directe). " +
+			"NE PAS invoquer pour : « ouvre le chat » / « ouvre iChat » / « ouvre la fenêtre de chat » (utiliser `open_chat`), " +
+			"« ouvre la fenêtre des contacts / d'appels / des réunions / vocale / des réglages » (utiliser `open_iasted_tab`), " +
+			"« ouvre mes contacts / appels / réunions / réglages » (utiliser `open_iasted_tab`), " +
+			"« ouvre le menu principal / la navigation latérale / la sidebar » (= menu latéral de l'application, hors-périmètre — répondre que ce n'est pas pilotable vocalement).",
 		parameters: { type: "object", properties: {}, required: [] },
 	},
 	{
 		type: "function",
 		name: "open_iasted_tab",
 		description:
-			"Ouvre la fenêtre iAsted sur un onglet précis. Utile pour basculer rapidement vers une fonction (contacts, appels, réunions, réglages). " +
-			"Onglets disponibles : 'ichat' (chat texte), 'icontact' (annuaire), 'icall' (appels et historique), 'imeeting' (réunions), 'ivocal' (transcription vocale), 'isettings' (réglages).",
+			"Ouvre un onglet précis de l'iAsted. Utile pour basculer rapidement vers une fonction (contacts, appels, réunions, réglages, vocal, chat). " +
+			"Onglets disponibles : 'ichat' (chat texte), 'icontact' (annuaire), 'icall' (appels et historique), 'imeeting' (réunions), 'ivoice' (iVocal — conversation vocale temps réel + transcription), 'isettings' (réglages). " +
+			"Triggers vocaux (le mot « fenêtre » DOIT être qualifié pour cibler un onglet précis ; sinon utiliser `open_app_menu`) : " +
+			"• tab='icontact' : « ouvre mes contacts », « affiche les contacts », « va dans les contacts », « ouvre la fenêtre des contacts / de contacts ». " +
+			"• tab='icall' : « ouvre les appels », « affiche l'historique des appels », « ouvre la fenêtre d'appels / des appels ». " +
+			"• tab='imeeting' : « ouvre les réunions », « va dans les réunions », « ouvre la fenêtre des réunions / de réunion ». " +
+			"• tab='ivoice' : « ouvre iVocal », « ouvre le vocal », « ouvre la conversation vocale », « ouvre la transcription », « affiche la transcription vocale », « ouvre la fenêtre vocale / de transcription / de l'assistant vocal ». " +
+			"• tab='isettings' : « ouvre les réglages », « affiche les paramètres », « ouvre la fenêtre des réglages / de réglages / des paramètres ». " +
+			"• tab='ichat' : « ouvre la fenêtre de chat » / « va dans le chat » (équivalent à `open_chat` ; préférer `open_chat` pour la cohérence).",
 		parameters: {
 			type: "object",
 			properties: {
 				tab: {
 					type: "string",
 					description:
-						"Identifiant de l'onglet à ouvrir : 'ichat' | 'icontact' | 'icall' | 'imeeting' | 'ivocal' | 'isettings'.",
+						"Identifiant de l'onglet à ouvrir : 'ichat' | 'icontact' | 'icall' | 'imeeting' | 'ivoice' | 'isettings'.",
 				},
 			},
 			required: ["tab"],
@@ -327,14 +350,18 @@ const BUSINESS_TOOLS: GatedTool[] = [
 			type: "function",
 			name: "find_contact_by_name",
 			description:
-				"Recherche un ou plusieurs contacts par nom (prénom, nom, ou les deux). " +
-				"Couvre TOUT l'annuaire selon la surface appelante : " +
-				"Back-Office (équipe + admins plateforme), Corps Diplomatique (autres représentations), " +
-				"Ressortissants gabonais et Étrangers (profils consulaires) — cross-org en back-office. " +
-				"À utiliser AVANT toute action ciblant un utilisateur (appel, message, réunion) " +
-				"pour résoudre l'identifiant exact. Tolérant aux accents et ponctuation : " +
-				"'pellen lakoumba' matche 'PELLEN-LAKOUMBA' avec ou sans accents. " +
-				"Retourne jusqu'à 10 candidats — si plusieurs résultats, l'agent doit demander à l'utilisateur de préciser.",
+				"OUTIL UNIVERSEL de résolution d'identité — à utiliser AVANT TOUTE action " +
+				"ciblant une personne (appel, message, réunion, ajout à un appel actif), " +
+				"qu'il s'agisse d'un agent diplomatique, d'un admin back-office, d'un " +
+				"RESSORTISSANT GABONAIS ou d'un profil ÉTRANGER. Couvre l'ensemble de " +
+				"l'annuaire : équipe, Corps Diplomatique, profils consulaires, admins " +
+				"plateforme — cross-org en back-office. Recherche tolérante aux accents, " +
+				"à la casse et aux tirets : « pellen » matche « PELLEN-LAKOUMBA », " +
+				"« sophie mbeng » matche « Sophie Mbeng ». Retourne jusqu'à 5 candidats — " +
+				"si plusieurs résultats, demander à l'utilisateur de préciser. " +
+				"NE PAS confondre avec `search_consular_registrations` qui interroge le " +
+				"registre consulaire formel (inscription, n° de carte) et ne sert qu'à " +
+				"la consultation administrative — pas à initier une action.",
 			parameters: {
 				type: "object",
 				properties: {
@@ -466,7 +493,9 @@ const BUSINESS_TOOLS: GatedTool[] = [
 		tool: {
 			type: "function",
 			name: "open_conversation_with_user",
-			description: "Ouvre la fenêtre de chat texte sur un contact spécifique (UI-only, pas d'envoi).",
+			description:
+				"Ouvre l'onglet iChat (chat texte) sur un contact spécifique (UI-only, pas d'envoi). " +
+				"Expressions : « ouvre la conversation avec X », « affiche le chat avec X », « ouvre le chat avec X ».",
 			parameters: {
 				type: "object",
 				properties: {

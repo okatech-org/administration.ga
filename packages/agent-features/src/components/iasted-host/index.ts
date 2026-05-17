@@ -55,7 +55,8 @@ export type {
 export { StreamingExplanationCard } from "./StreamingExplanationCard";
 
 // ─── Voice UI ─────────────────────────────────────────────────
-export { VoiceChatOverlay } from "./VoiceChatOverlay";
+// VoiceChatOverlay supprimé : composant orphelin (full-screen overlay
+// Gemini Live) remplacé par l'onglet iVocal de l'iAsted (VoiceTab).
 export { VoiceButton, VoiceChatContent, VoiceInputArea } from "./VoiceButton";
 
 // ─── Intent / Spatial Awareness ──────────────────────────────
