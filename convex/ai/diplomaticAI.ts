@@ -1204,6 +1204,335 @@ Retourne un objet JSON avec :
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+// 6bis. ENRICH PROJECT FRAMEWORK — Cadre logique bailleurs (7 sections)
+// ═════════════════════════════════════════════════════════════════════════════
+
+type ProjectDoc = {
+  _id: Id<"diplomaticProjects">;
+  title: string;
+  reference: string;
+  projectType: string;
+  description?: string;
+  targetId: Id<"diplomaticTargets">;
+  planId?: Id<"diplomaticPlans">;
+  budget?: string;
+  objectives: Array<{ title: string; status: string }>;
+  stakeholders: Array<{ name: string; role: string; organization: string }>;
+};
+
+export const enrichProjectFramework = action({
+  args: {
+    orgId: v.id("orgs"),
+    projectId: v.id("diplomaticProjects"),
+  },
+  handler: async (ctx, args): Promise<{ projectId: Id<"diplomaticProjects"> }> => {
+    const project: ProjectDoc | null = await ctx.runQuery(
+      api.functions.diplomaticAffairs.getProject,
+      { projectId: args.projectId },
+    );
+    if (!project) throw new Error("Projet introuvable");
+
+    const target: TargetDoc | null = await ctx.runQuery(
+      api.functions.diplomaticAffairs.getTarget,
+      { targetId: project.targetId },
+    );
+    if (!target) throw new Error("Cible introuvable");
+
+    // Charger le plan stratégique lié pour enrichir le contexte
+    let planContext = "";
+    if (project.planId) {
+      const plans: PlanDoc[] = await ctx.runQuery(
+        api.functions.diplomaticAffairs.getPlansByTarget,
+        { targetId: project.targetId },
+      );
+      const plan = plans.find((p: PlanDoc) => p._id === project.planId);
+      if (plan) {
+        planContext = `
+PLAN STRATÉGIQUE ASSOCIÉ:
+- Titre: ${plan.title}
+- Catégorie: ${plan.category}
+- Résumé: ${plan.summary ?? ""}
+${plan.aiGeneratedContent ? `- Besoins du Gabon: ${plan.aiGeneratedContent.countryNeeds.slice(0, 5).join("; ")}
+- Bénéfices mutuels: ${plan.aiGeneratedContent.mutualBenefits.slice(0, 5).join("; ")}
+- Risques identifiés: ${plan.aiGeneratedContent.risks.slice(0, 5).join("; ")}` : ""}`;
+      }
+    }
+
+    const typeLabels: Record<string, string> = {
+      cooperation_agreement: "accord de coopération",
+      commercial_contract: "contrat commercial",
+      technical_assistance: "assistance technique",
+      cultural_exchange: "échange culturel",
+      infrastructure: "projet d'infrastructure",
+      other: "projet",
+    };
+
+    const prompt = `Tu es un expert senior en montage de projets de coopération internationale,
+spécialiste du cadre logique des bailleurs de fonds (AFD, Banque Mondiale, UE, BAD).
+
+PROJET À ENRICHIR:
+- Titre: ${project.title}
+- Référence: ${project.reference}
+- Type: ${typeLabels[project.projectType] ?? project.projectType}
+- Description: ${project.description ?? ""}
+- Budget estimé: ${project.budget ?? "À définir"}
+- Objectifs: ${project.objectives.map((o) => o.title).join("; ")}
+- Parties prenantes initiales: ${project.stakeholders.map((s) => `${s.name} (${s.role}, ${s.organization})`).join("; ")}
+
+PARTENAIRE:
+- Nom: ${target.name}
+- Secteur: ${target.sector ?? "Non spécifié"}
+- Pays: ${target.country ?? "Non spécifié"}
+- Description: ${target.description ?? ""}
+${planContext}
+
+MISSION:
+Produis un cadre logique complet conforme aux standards des bailleurs de fonds internationaux.
+Le document doit être prêt à être soumis pour validation et financement.
+
+Retourne UNIQUEMENT un objet JSON valide STRICT avec cette structure (TOUS les champs sont obligatoires) :
+
+{
+  "cadreLogique": {
+    "objectifGeneral": "objectif de développement de haut niveau (1 phrase)",
+    "objectifSpecifique": "résultat direct attendu du projet (1 phrase)",
+    "resultatsAttendus": [
+      {
+        "resultat": "résultat précis",
+        "indicateurs": [
+          { "indicateur": "nom de l'indicateur", "valeurCible": "ex: 500 personnes formées", "moyenVerification": "ex: rapports trimestriels" }
+        ],
+        "activites": ["activité 1", "activité 2"]
+      }
+    ] (3-5 résultats),
+    "hypotheses": ["hypothèse externe 1", "hypothèse 2"] (3-5 hypothèses)
+  },
+  "budgetDetaille": {
+    "montantTotal": "ex: 1 500 000",
+    "devise": "EUR ou XAF",
+    "repartition": [
+      { "poste": "Investissement matériel", "montant": "500 000", "financeur": "Gabon", "pourcentage": 33 }
+    ] (5-8 postes, somme des pourcentages = 100),
+    "sourceFinancement": [
+      { "source": "AFD", "instrument": "Subvention", "montant": "800 000", "conditions": "co-financement requis" }
+    ] (2-4 sources)
+  },
+  "calendrier": {
+    "phases": [
+      {
+        "phase": "Phase 1 - Préparation",
+        "description": "description courte",
+        "debut": "M1",
+        "fin": "M3",
+        "livrables": ["livrable 1", "livrable 2"],
+        "jalons": ["jalon 1"]
+      }
+    ] (3-5 phases),
+    "dureeTotal": "ex: 24 mois"
+  },
+  "cadreJuridique": {
+    "typeAccord": "ex: Accord bilatéral de coopération",
+    "baseJuridique": "ex: Convention OCDE, Accord-cadre Gabon-France de 2018",
+    "autorisationsRequises": ["décret présidentiel", "approbation parlementaire"] (2-4 items),
+    "clausesEssentielles": ["souveraineté gabonaise", "transfert de compétences"] (4-6 clauses)
+  },
+  "suiviEvaluation": {
+    "mecanismeSuivi": "ex: Comité de pilotage trimestriel + audit annuel externe",
+    "frequenceRapports": "trimestrielle",
+    "indicateursPerformance": [
+      { "kpi": "Taux de réalisation des activités", "cible": "95%", "frequenceMesure": "trimestrielle" }
+    ] (4-6 KPIs),
+    "evaluationFinale": "ex: Évaluation indépendante à mi-parcours et finale"
+  },
+  "impact": {
+    "economique": ["impact économique 1", "impact 2"] (3-5 items),
+    "social": ["impact social 1", "impact 2"] (3-5 items),
+    "environnemental": ["impact environnemental 1"] (2-4 items),
+    "emploisEstimes": "ex: 250 emplois directs + 600 indirects",
+    "beneficiairesEstimes": "ex: 50 000 personnes"
+  },
+  "risquesProjet": [
+    {
+      "categorie": "politique" | "financier" | "technique" | "juridique" | "social" | "environnemental",
+      "risque": "description du risque",
+      "probabilite": "faible" | "moyenne" | "elevee",
+      "impact": "faible" | "moyen" | "eleve",
+      "mitigation": "mesure de mitigation concrète",
+      "responsable": "rôle du responsable"
+    }
+  ] (6-10 risques, couvrir toutes les catégories)
+}
+
+CONTRAINTES STRICTES:
+1. Les enums "categorie", "probabilite", "impact" doivent EXACTEMENT correspondre aux valeurs ci-dessus.
+2. Les montants doivent être réalistes pour le contexte gabonais.
+3. Le cadre logique doit s'aligner sur les priorités du Gabon (diversification, industrialisation, emplois jeunes, souveraineté, durabilité).
+4. Pas de placeholders du type "TBD" ou "À définir" — propose des valeurs réalistes que l'utilisateur pourra ajuster.`;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = (await generateJSON(prompt)) as any;
+
+    // ─── Helpers de normalisation ─────────────────────────────────────────
+    const toStringArray = (arr: unknown): string[] => {
+      if (!Array.isArray(arr)) return [];
+      return arr
+        .map((item) =>
+          typeof item === "string" ? item : JSON.stringify(item),
+        )
+        .filter((s) => s.length > 0);
+    };
+    const toStr = (val: unknown): string =>
+      typeof val === "string" ? val : val ? JSON.stringify(val) : "";
+    const toNum = (val: unknown, fallback = 0): number => {
+      const n = typeof val === "number" ? val : Number(val);
+      return Number.isFinite(n) ? n : fallback;
+    };
+
+    const validCategorie = [
+      "politique",
+      "financier",
+      "technique",
+      "juridique",
+      "social",
+      "environnemental",
+    ];
+    const validProba = ["faible", "moyenne", "elevee"];
+    const validImpact = ["faible", "moyen", "eleve"];
+
+    // Normaliser la structure avec fallbacks robustes
+    const framework = {
+      cadreLogique: {
+        objectifGeneral: toStr(raw.cadreLogique?.objectifGeneral),
+        objectifSpecifique: toStr(raw.cadreLogique?.objectifSpecifique),
+        resultatsAttendus: Array.isArray(raw.cadreLogique?.resultatsAttendus)
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            raw.cadreLogique.resultatsAttendus.map((r: any) => ({
+              resultat: toStr(r.resultat),
+              indicateurs: Array.isArray(r.indicateurs)
+                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  r.indicateurs.map((ind: any) => ({
+                    indicateur: toStr(ind.indicateur),
+                    valeurCible: toStr(ind.valeurCible),
+                    moyenVerification: toStr(ind.moyenVerification),
+                  }))
+                : [],
+              activites: toStringArray(r.activites),
+            }))
+          : [],
+        hypotheses: toStringArray(raw.cadreLogique?.hypotheses),
+      },
+      budgetDetaille: {
+        montantTotal: toStr(raw.budgetDetaille?.montantTotal),
+        devise: toStr(raw.budgetDetaille?.devise) || "EUR",
+        repartition: Array.isArray(raw.budgetDetaille?.repartition)
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            raw.budgetDetaille.repartition.map((p: any) => ({
+              poste: toStr(p.poste),
+              montant: toStr(p.montant),
+              financeur: toStr(p.financeur),
+              pourcentage: toNum(p.pourcentage, 0),
+            }))
+          : [],
+        sourceFinancement: Array.isArray(raw.budgetDetaille?.sourceFinancement)
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            raw.budgetDetaille.sourceFinancement.map((s: any) => ({
+              source: toStr(s.source),
+              instrument: toStr(s.instrument),
+              montant: toStr(s.montant),
+              conditions: s.conditions ? toStr(s.conditions) : undefined,
+            }))
+          : [],
+      },
+      calendrier: {
+        phases: Array.isArray(raw.calendrier?.phases)
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            raw.calendrier.phases.map((ph: any) => ({
+              phase: toStr(ph.phase),
+              description: toStr(ph.description),
+              debut: toStr(ph.debut),
+              fin: toStr(ph.fin),
+              livrables: toStringArray(ph.livrables),
+              jalons: toStringArray(ph.jalons),
+            }))
+          : [],
+        dureeTotal: toStr(raw.calendrier?.dureeTotal),
+      },
+      cadreJuridique: {
+        typeAccord: toStr(raw.cadreJuridique?.typeAccord),
+        baseJuridique: toStr(raw.cadreJuridique?.baseJuridique),
+        autorisationsRequises: toStringArray(
+          raw.cadreJuridique?.autorisationsRequises,
+        ),
+        clausesEssentielles: toStringArray(
+          raw.cadreJuridique?.clausesEssentielles,
+        ),
+      },
+      suiviEvaluation: {
+        mecanismeSuivi: toStr(raw.suiviEvaluation?.mecanismeSuivi),
+        frequenceRapports: toStr(raw.suiviEvaluation?.frequenceRapports),
+        indicateursPerformance: Array.isArray(
+          raw.suiviEvaluation?.indicateursPerformance,
+        )
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            raw.suiviEvaluation.indicateursPerformance.map((kpi: any) => ({
+              kpi: toStr(kpi.kpi),
+              cible: toStr(kpi.cible),
+              frequenceMesure: toStr(kpi.frequenceMesure),
+            }))
+          : [],
+        evaluationFinale: toStr(raw.suiviEvaluation?.evaluationFinale),
+      },
+      impact: {
+        economique: toStringArray(raw.impact?.economique),
+        social: toStringArray(raw.impact?.social),
+        environnemental: toStringArray(raw.impact?.environnemental),
+        emploisEstimes: raw.impact?.emploisEstimes
+          ? toStr(raw.impact.emploisEstimes)
+          : undefined,
+        beneficiairesEstimes: raw.impact?.beneficiairesEstimes
+          ? toStr(raw.impact.beneficiairesEstimes)
+          : undefined,
+      },
+      risquesProjet: Array.isArray(raw.risquesProjet)
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          raw.risquesProjet.map((r: any) => ({
+            categorie: (validCategorie.includes(r.categorie)
+              ? r.categorie
+              : "technique") as
+              | "politique"
+              | "financier"
+              | "technique"
+              | "juridique"
+              | "social"
+              | "environnemental",
+            risque: toStr(r.risque),
+            probabilite: (validProba.includes(r.probabilite)
+              ? r.probabilite
+              : "moyenne") as "faible" | "moyenne" | "elevee",
+            impact: (validImpact.includes(r.impact)
+              ? r.impact
+              : "moyen") as "faible" | "moyen" | "eleve",
+            mitigation: toStr(r.mitigation),
+            responsable: toStr(r.responsable),
+          }))
+        : [],
+      sourceStrategicPlanId: project.planId,
+    };
+
+    // Sauvegarder le cadre logique enrichi
+    await ctx.runMutation(
+      api.functions.diplomaticAffairs.enrichProjectWithFramework,
+      {
+        projectId: args.projectId,
+        framework,
+      },
+    );
+
+    return { projectId: args.projectId };
+  },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 // 7. EXTRACT PRIORITIES FROM DOCUMENT — Import de documents
 // ═════════════════════════════════════════════════════════════════════════════
 

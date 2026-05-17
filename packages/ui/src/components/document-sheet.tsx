@@ -29,6 +29,7 @@
 import { FileText, FileType, Image as ImageIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "../lib/utils";
+import { PdfViewer } from "./pdf-viewer";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
 /** Dimensions A4 en px @ 96dpi — base du rendu « naturel » avant scale. */
@@ -379,12 +380,38 @@ export function DocumentSheetFile({
 		mimeType?.startsWith("image/") ||
 		/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(fileName);
 
-	const iframeRef = useCallback((el: HTMLIFrameElement | null) => {
-		applyCSS(el, {
-			width: `${A4_WIDTH_PX}px`,
-			height: `${A4_HEIGHT_PX}px`,
-		});
-	}, []);
+	// Pour les PDF, on rend la 1re page via PdfViewer (canvas) — pas d'iframe.
+	// Pour les images, <img> object-cover. Pour le reste, icône + nom.
+	const clickable = typeof onClick === "function";
+	const interactiveProps = clickable
+		? {
+				role: "button" as const,
+				tabIndex: 0,
+				onClick: () => {
+					onClick();
+				},
+				onKeyDown: (e: KeyboardEvent) => {
+					if (e.key === "Enter" || e.key === " ") onClick();
+				},
+			}
+		: {};
+
+	if (isPdf && url) {
+		return (
+			<div
+				{...interactiveProps}
+				aria-label={ariaLabel ?? `Ouvrir ${fileName}`}
+				className={cn(
+					"relative w-full overflow-hidden border border-border bg-white shadow-sm transition aspect-[210/297] dark:border-border/60",
+					clickable &&
+						"cursor-pointer hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/60",
+				)}
+			>
+				<PdfViewer url={url} mode="thumbnail" />
+				{overlays}
+			</div>
+		);
+	}
 
 	return (
 		<DocumentSheet
@@ -393,14 +420,7 @@ export function DocumentSheetFile({
 			overlays={overlays}
 			ariaLabel={ariaLabel ?? `Ouvrir ${fileName}`}
 		>
-			{isPdf && url ? (
-				<iframe
-					ref={iframeRef}
-					src={`${url}#view=FitH&toolbar=0&navpanes=0`}
-					title={fileName}
-					className="pointer-events-none h-full w-full border-0"
-				/>
-			) : isImage && url ? (
+			{isImage && url ? (
 				// biome-ignore lint/a11y/useAltText: alt défini dans props
 				<img
 					src={url}

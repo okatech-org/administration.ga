@@ -121,6 +121,7 @@ export type {
 	PageEntityLike,
 	PageActionLike,
 	ShellContextLike,
+	PanelContextLike,
 } from "./lib/format-page-context";
 
 // Components — Primitives
@@ -181,6 +182,11 @@ export {
 	type VoiceFloatingTranscriptionProps,
 } from "./components/voice/VoiceFloatingTranscription";
 export { VoiceTab } from "./components/voice/VoiceTab";
+export {
+	IAstedDocumentCard,
+	type IAstedDocumentCardProps,
+	type IAstedDocumentCardData,
+} from "./components/voice/IAstedDocumentCard";
 
 // Components — Config (backoffice)
 export {

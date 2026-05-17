@@ -25,8 +25,12 @@ import {
 	Video,
 	X,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "@workspace/agent-features/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,9 +55,19 @@ const MEETING_SEGMENTS: Array<{ id: ContactSource | "all"; label: string; icon: 
 
 interface BackofficeMeetingTabProps {
 	orgId: Id<"orgs"> | null;
+	/** ID d'une réunion à rejoindre automatiquement au mount (fourni par iAsted
+	 * via le buffer `pendingMeetingId` de `BackofficeIAstedWindow`). */
+	autoJoinMeetingId?: string | null;
+	/** Callback appelé une fois l'auto-join consommé pour que le parent vide
+	 * le buffer et évite un re-trigger. */
+	onAutoJoinConsumed?: () => void;
 }
 
-export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
+export function BackofficeMeetingTab({
+	orgId,
+	autoJoinMeetingId,
+	onAutoJoinConsumed,
+}: BackofficeMeetingTabProps) {
 	const [view, setView] = useState<ViewState>("list");
 	const [activeMeetingId, setActiveMeetingId] = useState<Id<"meetings"> | null>(null);
 	const [meetingName, setMeetingName] = useState("");
@@ -110,6 +124,192 @@ export function BackofficeMeetingTab({ orgId }: BackofficeMeetingTabProps) {
 	const handleEndForAll = async () => { if (!activeMeetingId) return; try { await endMeeting({ meetingId: activeMeetingId }); toast.success("Réunion terminée pour tous"); } catch {} await handleDisconnect(); };
 	const handleCopyLink = () => { if (!activeMeetingId) return; navigator.clipboard.writeText(`${window.location.origin}/meetings?join=${activeMeetingId}`); setCopiedLink(true); toast.success("Lien copié !"); setTimeout(() => setCopiedLink(false), 2000); };
 	const toggleParticipant = (userId: string) => { setSelectedParticipants((prev) => { const next = new Set(prev); if (next.has(userId)) next.delete(userId); else next.add(userId); return next; }); };
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const segmentLabel = useMemo(
+		() => MEETING_SEGMENTS.find((s) => s.id === contactFilters.source)?.label ?? "Tous",
+		[contactFilters.source],
+	);
+	const panelEntities = useMemo(() => {
+		const out: Array<{
+			id: string;
+			type: string;
+			label: string;
+			data?: Record<string, unknown>;
+		}> = [];
+		for (const m of activeMeetings.slice(0, 5)) {
+			out.push({
+				id: (m as any)._id as string,
+				type: "active_meeting",
+				label: (m as any).title ?? "Réunion en cours",
+			});
+		}
+		for (const m of scheduledMeetings.slice(0, 5)) {
+			out.push({
+				id: (m as any)._id as string,
+				type: "scheduled_meeting",
+				label: (m as any).title ?? "Réunion planifiée",
+			});
+		}
+		for (const g of contactGroups) {
+			for (const c of (g.contacts as any[]).slice(0, 5)) {
+				out.push({
+					id: c.userId as string,
+					type: "contact",
+					label: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || (c.name as string) || c.userId,
+					data: { org: g.org.name as string },
+				});
+				if (out.length >= 40) break;
+			}
+			if (out.length >= 40) break;
+		}
+		return out;
+	}, [activeMeetings, scheduledMeetings, contactGroups]);
+	usePanelContext({
+		panelId: "iasted.imeeting.backoffice",
+		tabId: "imeeting",
+		surface: "backoffice",
+		title: "iRéunion — Visioconférence BO",
+		summary: `Vue « ${view} ». ${activeMeetings.length} en cours · ${scheduledMeetings.length} planifiée(s). Segment contacts « ${segmentLabel} », recherche « ${contactFilters.searchTerm || "(vide)"} ».`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "imeeting.start_create",
+				label: "Démarrer la création d'une réunion",
+				description: "Ouvre le formulaire de création (titre, participants, planification).",
+			},
+			{
+				id: "imeeting.cancel_create",
+				label: "Annuler la création",
+				description: "Ferme le formulaire de création et revient à la liste.",
+			},
+			{
+				id: "imeeting.set_title",
+				label: "Définir le titre de la réunion",
+				description: "Remplit le titre du formulaire de création.",
+				params: { title: { type: "string" } },
+			},
+			{
+				id: "imeeting.toggle_participant",
+				label: "Ajouter ou retirer un participant",
+				description: "Bascule la sélection d'un participant (id exact d'un contact visible).",
+				params: { contactId: { type: "string" } },
+			},
+			{
+				id: "imeeting.set_segment",
+				label: "Filtrer les contacts par segment",
+				description: "Bascule sur 'all', 'team' (Équipe), 'network' (Réseau).",
+				params: { segment: { type: "string" } },
+			},
+			{
+				id: "imeeting.search_contacts",
+				label: "Rechercher dans les contacts",
+				description: "Filtre la liste des contacts pour ajouter à la réunion.",
+				params: { query: { type: "string" } },
+			},
+			{
+				id: "imeeting.create_now",
+				label: "Créer la réunion maintenant",
+				description: "Soumet le formulaire de création. CONFIRMATION REQUISE si > 2 participants.",
+				requiresConfirmation: true,
+			},
+			{
+				id: "imeeting.join",
+				label: "Rejoindre une réunion",
+				description: "Rejoint la salle d'attente d'une réunion (id exact d'une entité 'active_meeting' ou 'scheduled_meeting').",
+				params: { meetingId: { type: "string" } },
+			},
+			{
+				id: "imeeting.hangup",
+				label: "Raccrocher la réunion en cours",
+				description: "Quitte la réunion active.",
+			},
+			{
+				id: "imeeting.end_for_all",
+				label: "Terminer la réunion pour tous",
+				description: "Termine la réunion active pour tous les participants. CONFIRMATION REQUISE.",
+				requiresConfirmation: true,
+			},
+		],
+	});
+
+	useRegisterPageAction("imeeting.start_create", async () => {
+		setView("create");
+		return { success: true, message: "Formulaire de création ouvert." };
+	});
+	useRegisterPageAction("imeeting.cancel_create", async () => {
+		resetForm();
+		setView("list");
+		return { success: true, message: "Création annulée." };
+	});
+	useRegisterPageAction("imeeting.set_title", async (params) => {
+		const t = String(params?.title ?? "").trim();
+		setMeetingName(t);
+		return { success: true, message: `Titre : « ${t} ».` };
+	});
+	useRegisterPageAction("imeeting.toggle_participant", async (params) => {
+		const id = String(params?.contactId ?? "");
+		if (!id) return { success: false, message: "contactId manquant." };
+		toggleParticipant(id);
+		return { success: true, message: `Participant ${id} basculé.` };
+	});
+	useRegisterPageAction("imeeting.set_segment", async (params) => {
+		const raw = String(params?.segment ?? "");
+		const next: ContactSource | "all" =
+			raw === "team" || raw === "network" || raw === "all" ? (raw as any) : "all";
+		setContactSource(next);
+		return { success: true, message: `Segment contacts : « ${next} ».` };
+	});
+	useRegisterPageAction("imeeting.search_contacts", async (params) => {
+		const q = String(params?.query ?? "").trim();
+		setContactSearch(q);
+		return { success: true, message: `Recherche : « ${q || "(vide)"} ».` };
+	});
+	useRegisterPageAction("imeeting.create_now", async () => {
+		await handleCreate();
+		return { success: true, message: "Réunion créée." };
+	});
+	useRegisterPageAction("imeeting.join", async (params) => {
+		const id = String(params?.meetingId ?? "");
+		if (!id) return { success: false, message: "meetingId manquant." };
+		handleJoin(id as Id<"meetings">);
+		return { success: true, message: "Salle d'attente ouverte." };
+	});
+	useRegisterPageAction("imeeting.hangup", async () => {
+		await handleDisconnect();
+		return { success: true, message: "Réunion quittée." };
+	});
+	useRegisterPageAction("imeeting.end_for_all", async () => {
+		await handleEndForAll();
+		return { success: true, message: "Réunion terminée pour tous." };
+	});
+
+	// Auto-join : quand iAsted lance une réunion par voix, on saute le
+	// pré-join et on connecte LiveKit immédiatement (in-call direct).
+	// `connect(id)` prend le meetingId en paramètre — pas besoin d'attendre
+	// la propagation du state `activeMeetingId`. La vue `prejoin` transitoire
+	// affiche le spinner « Connexion… » pendant le handshake LiveKit.
+	useEffect(() => {
+		if (!autoJoinMeetingId) return;
+		const id = autoJoinMeetingId as Id<"meetings">;
+		setActiveMeetingId(id);
+		setView("prejoin");
+		let cancelled = false;
+		void (async () => {
+			try {
+				await connect(id);
+				if (!cancelled) setView("incall");
+			} catch (err) {
+				console.error("[iAsted] auto-join meeting failed", err);
+				// On reste sur prejoin : l'utilisateur peut cliquer Rejoindre
+				// manuellement (isConnecting redevient false → bouton actif).
+			}
+		})();
+		onAutoJoinConsumed?.();
+		return () => {
+			cancelled = true;
+		};
+	}, [autoJoinMeetingId, connect, onAutoJoinConsumed]);
 
 	if (!orgId) {
 		return (<div className="flex-1 flex items-center justify-center p-6 text-center"><p className="text-xs text-muted-foreground">Sélectionnez une organisation pour gérer les réunions.</p></div>);

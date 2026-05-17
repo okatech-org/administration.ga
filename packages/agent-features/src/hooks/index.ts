@@ -19,6 +19,7 @@ export { useCallCenter } from "./use-call-center"
 export { useCitizenContext } from "./use-citizen-context"
 export {
 	usePageContext,
+	usePanelContext,
 	useRegisterPageAction,
 	useRegisterPageField,
 	useShellContext,
@@ -27,4 +28,4 @@ export type {
 	UsePageContextInput,
 	UseShellContextInput,
 } from "./use-page-context"
-export type { FieldSpec } from "../stores/page-context-store"
+export type { FieldSpec, PanelContextSnapshot } from "../stores/page-context-store"

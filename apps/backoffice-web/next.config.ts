@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
     "@workspace/i18n",
     "@workspace/shared",
     "@workspace/posthog-shared",
+    "@workspace/routing",
     "@workspace/agent-features",
     "@convex-dev/better-auth",
     "@convex-dev/react-query",

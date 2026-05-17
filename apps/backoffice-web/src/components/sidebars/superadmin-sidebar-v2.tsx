@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	Activity,
+	Archive,
 	Award,
 	BookOpen,
 	Building2,
@@ -51,6 +52,13 @@ type NavItem = {
 	moduleCode?: string;
 	badge?: string;
 	count?: number;
+	/**
+	 * Sous-items affichés en accordéon. Quand présents, cliquer sur l'item
+	 * parent déploie la liste au lieu de naviguer ; les enfants restent des
+	 * liens normaux. Utilisé pour iCorrespondance (Réseau / Exploitation /
+	 * Réglages).
+	 */
+	children?: NavItem[];
 };
 
 type NavSection = {
@@ -133,11 +141,37 @@ export function SuperadminSidebarV2() {
 					url: "/icorrespondance",
 					icon: FolderOpen,
 					moduleCode: "correspondence",
+					children: [
+						{
+							title: "Réseau",
+							url: "/icorrespondance/network",
+							icon: Globe2,
+							moduleCode: "correspondence",
+						},
+						{
+							title: "Exploitation",
+							url: "/icorrespondance/operate",
+							icon: FolderOpen,
+							moduleCode: "correspondence",
+						},
+						{
+							title: "Réglages",
+							url: "/icorrespondance/settings",
+							icon: Settings,
+							moduleCode: "correspondence",
+						},
+					],
 				},
 				{
 					title: "iDocument",
 					url: "/idocument",
 					icon: FileText,
+					moduleCode: "documents",
+				},
+				{
+					title: "iArchive",
+					url: "/iarchive",
+					icon: Archive,
 					moduleCode: "documents",
 				},
 				{
@@ -262,26 +296,13 @@ export function SuperadminSidebarV2() {
 				{groups.map((section) => (
 					<div className="sa-section" key={section.label}>
 						<div className="sa-section-label">{section.label}</div>
-						{section.items.map((item) => {
-							const active = isActive(item.url);
-							const Icon = item.icon;
-							return (
-								<Link
-									key={item.url}
-									href={item.url}
-									className={cn("sa-item", active && "is-active")}
-								>
-									<Icon size={16} strokeWidth={2} />
-									<span className="sa-item-label">{item.title}</span>
-									{item.badge && (
-										<span className="sa-item-badge">{item.badge}</span>
-									)}
-									{typeof item.count === "number" && (
-										<span className="sa-item-count">{item.count}</span>
-									)}
-								</Link>
-							);
-						})}
+						{section.items.map((item) => (
+							<SidebarItem
+								key={item.url}
+								item={item}
+								isActive={isActive}
+							/>
+						))}
 					</div>
 				))}
 			</nav>
@@ -373,5 +394,91 @@ export function SuperadminSidebarV2() {
 				</AlertDialogContent>
 			</AlertDialog>
 		</aside>
+	);
+}
+
+/**
+ * Item sidebar individuel — gère le cas "feuille" (Link normal) ET le cas
+ * "groupe expandable" quand `item.children` est défini. Le groupe est
+ * auto-déplié si l'URL active correspond à un de ses enfants.
+ */
+function SidebarItem({
+	item,
+	isActive,
+}: {
+	item: NavItem;
+	isActive: (url: string) => boolean;
+}) {
+	const hasChildren = item.children && item.children.length > 0;
+	const childActive = hasChildren
+		? item.children!.some((c) => isActive(c.url))
+		: false;
+	const [open, setOpen] = useState(childActive);
+	const active = !hasChildren && isActive(item.url);
+	const Icon = item.icon;
+
+	// Si la route active passe à un enfant après le mount (navigation
+	// directe), on déplie automatiquement.
+	useEffect(() => {
+		if (childActive) setOpen(true);
+	}, [childActive]);
+
+	if (!hasChildren) {
+		return (
+			<Link
+				href={item.url}
+				className={cn("sa-item", active && "is-active")}
+			>
+				<Icon size={16} strokeWidth={2} />
+				<span className="sa-item-label">{item.title}</span>
+				{item.badge && <span className="sa-item-badge">{item.badge}</span>}
+				{typeof item.count === "number" && (
+					<span className="sa-item-count">{item.count}</span>
+				)}
+			</Link>
+		);
+	}
+
+	return (
+		<>
+			<button
+				type="button"
+				onClick={() => setOpen((v) => !v)}
+				className={cn("sa-item", childActive && "is-active")}
+				aria-expanded={open}
+			>
+				<Icon size={16} strokeWidth={2} />
+				<span className="sa-item-label">{item.title}</span>
+				<ChevronDown
+					size={14}
+					className={cn(
+						"transition-transform",
+						open && "rotate-180",
+					)}
+					style={{ color: "var(--text-muted)" }}
+				/>
+			</button>
+			{open ? (
+				<div className="sa-subnav" style={{ paddingLeft: 28 }}>
+					{item.children!.map((child) => {
+						const ChildIcon = child.icon;
+						const childIsActive = isActive(child.url);
+						return (
+							<Link
+								key={child.url}
+								href={child.url}
+								className={cn(
+									"sa-item",
+									childIsActive && "is-active",
+								)}
+							>
+								<ChildIcon size={14} strokeWidth={2} />
+								<span className="sa-item-label">{child.title}</span>
+							</Link>
+						);
+					})}
+				</div>
+			) : null}
+		</>
 	);
 }

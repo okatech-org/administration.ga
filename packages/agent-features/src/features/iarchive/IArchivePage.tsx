@@ -3,7 +3,7 @@
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Link } from "@workspace/routing";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useOrg } from "../../shell/org-provider";
 import {
@@ -403,7 +403,31 @@ function ArchivedDocCard({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 
-export default function IArchivePage() {
+/**
+ * Surface API publique de la feature iArchive, indépendante du shell agent-web.
+ * Voir `IDocumentBaseProps` pour la même sémantique.
+ */
+export interface IArchiveBaseProps {
+	orgId: Id<"orgs"> | null;
+	orgType?: string;
+	permissionMode?: "membership" | "superadmin";
+	headerRightSlot?: ReactNode;
+}
+
+export function IArchiveBase(props: IArchiveBaseProps) {
+	const {
+		orgId: activeOrgId,
+		orgType: _orgType,
+		permissionMode: _permissionMode = "membership",
+		headerRightSlot: _headerRightSlot,
+	} = props;
+	// orgType/permissionMode/headerRightSlot sont déclarés dans la surface pour
+	// parité avec IDocumentBase et préparer les évolutions (libellés dynamiques,
+	// rendu du slot). iArchive n'effectue actuellement aucun check de permission
+	// côté front : les mutations Convex re-vérifient toutes les actions.
+	void _orgType;
+	void _permissionMode;
+	void _headerRightSlot;
 	// ─── State ──────────────────────────────────────────────
 	const [viewMode, setViewMode] = useState<ViewMode>("grid");
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -413,7 +437,12 @@ export default function IArchivePage() {
 	const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 	const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null);
 
-	const { activeOrgId } = useOrg();
+	// Reset des filtres quand l'org cible change (back-office multi-org).
+	useEffect(() => {
+		setSelectedCategory(null);
+		setSearch("");
+		setStatusFilter("all");
+	}, [activeOrgId]);
 
 	// ─── Convex data ───────────────────────────────────────
 	const { data: archivedDocs = [] } = useAuthenticatedConvexQuery(
@@ -980,5 +1009,20 @@ export default function IArchivePage() {
 				document={viewerDoc}
 			/>
 		</motion.div>
+	);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WRAPPER — agent-web : tire orgId + orgType depuis l'OrgProvider
+// ═══════════════════════════════════════════════════════════════
+
+export default function IArchivePage() {
+	const { activeOrgId, activeOrg } = useOrg();
+	return (
+		<IArchiveBase
+			orgId={activeOrgId}
+			orgType={(activeOrg as { type?: string } | null)?.type}
+			permissionMode="membership"
+		/>
 	);
 }

@@ -952,7 +952,9 @@
         "activityHint": "Live network event stream",
         "noActivity": "No recent activity",
         "health": "System health",
-        "healthHint": "Monitored critical components"
+        "healthHint": "Monitored critical components",
+        "repsCount_one": "{{count}} mission",
+        "repsCount_other": "{{count}} missions"
       },
       "actions": {
         "refresh": "Refresh",
@@ -7043,6 +7045,9 @@
       "edit": "Edit",
       "send": "Send",
       "reply": "Reply",
+      "transmit": "Transmit",
+      "return": "Return to sender",
+      "quickActions": "Quick actions",
       "assign": "Assign",
       "reassign": "Reassign",
       "restore": "Restore",
@@ -7084,7 +7089,9 @@
       "recu": "Received",
       "en_attente": "Pending",
       "approuve": "Approved",
-      "repondu": "Replied"
+      "repondu": "Replied",
+      "transmis": "Transmitted",
+      "retourne": "Returned"
     },
     "types": {
       "note_verbale": "Note Verbale",
@@ -7158,6 +7165,44 @@
       "searchPlaceholder": "Search an agent…",
       "empty": "No agent found",
       "toastAssigned": "Correspondence assigned"
+    },
+    "transmit": {
+      "title": "Transmit correspondence",
+      "hint": "The dossier is transmitted to an agent or another organisation in the system. A PDF transmission slip (bordereau) is generated automatically for cross-organisation transmissions.",
+      "tabAgent": "To an agent",
+      "tabOrg": "To an organisation",
+      "orgSearchPlaceholder": "Search an organisation…",
+      "agentSearchPlaceholder": "Search an agent…",
+      "commentLabel": "Transmission note",
+      "commentPlaceholder": "e.g. for processing and reply by …",
+      "documentsLabel": "Documents to include",
+      "includeBordereau": "Transmission slip (PDF)",
+      "bordereauOn": "Will be generated",
+      "bordereauOff": "Will not be generated",
+      "confidentialWarning": "This correspondence is marked confidential or secret. An external transmission is recorded in the audit log and requires your explicit confirmation.",
+      "confidentialConfirm": "I confirm the transmission of this confidential correspondence.",
+      "submit": "Transmit",
+      "toastAssigned": "Correspondence assigned to the agent",
+      "toastForwarded": "Correspondence transmitted — slip being generated",
+      "toastError": "Error during transmission"
+    },
+    "returnToSender": {
+      "title": "Return to sender",
+      "hint": "The dossier is returned to its original sender with your reason. It will appear in their \"Received\" and your dossier will be archived.",
+      "recipientLabel": "Return to",
+      "categoryLabel": "Reason",
+      "categoryOptions": {
+        "incomplete": "Incomplete file",
+        "rejected": "Rejection",
+        "wrong_recipient": "Wrong recipient",
+        "other": "Other reason"
+      },
+      "reasonLabel": "Details *",
+      "reasonPlaceholder": "Specify missing pieces, rejection reason, or the correct recipient…",
+      "reasonMinHint": "Minimum 10 characters",
+      "submit": "Return",
+      "toastReturned": "Correspondence returned to sender",
+      "toastError": "Error during return"
     },
     "import": {
       "title": "Import from iDocument",

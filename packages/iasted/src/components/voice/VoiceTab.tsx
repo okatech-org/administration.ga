@@ -1,31 +1,56 @@
 /**
- * VoiceTab — Onglet « Assistant Vocal » de la fenêtre iAsted.
+ * VoiceTab — Onglet « iVocal » de la fenêtre iAsted.
  *
  * Composant 100% agnostique du provider : ne dépend que du contrat
  * canonique `IAstedVoiceController` publié via `IAstedVoiceContext`.
  *
  * Trois états :
  *  - Provider indisponible : message d'erreur explicite (`unavailableReason`)
- *  - Session inactive : CTA « Démarrer la conversation vocale »
+ *  - Session inactive : auto-démarre la session puis affiche la transcription
+ *    (legacy CTA conservé en fallback si l'auto-start échoue).
  *  - Session active : indicateur d'état + transcription (si capability) +
  *    carte de confirmation (si `pendingConfirmation`) + bouton Raccrocher
+ *
+ * Auto-start : à l'ouverture du tab, si le provider est disponible mais la
+ * session n'est pas connectée (et pas en cours de connexion), `activateVoice`
+ * est appelé automatiquement pour entamer immédiatement la transcription.
+ * C'est le comportement attendu quand l'utilisateur ouvre iVocal — soit en
+ * cliquant l'item de l'éventail, soit par commande vocale (dans ce cas la
+ * session est déjà active et l'auto-start est un no-op).
  *
  * À monter comme `tabContent.ivoice` dans `IAstedWindow` / `CitizenIAstedWindow`.
  */
 
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Mic, PhoneOff, AlertTriangle, Check, X, Loader2 } from "lucide-react";
 import { useIAstedVoiceController } from "../../hooks/use-iasted-voice-context";
+import { IAstedDocumentCard } from "./IAstedDocumentCard";
 
 export function VoiceTab() {
 	const controller = useIAstedVoiceController();
+	const autoStartedRef = useRef(false);
+
+	// Auto-démarrage de la session vocale à l'ouverture du tab iVocal.
+	// Garde-fous :
+	//  - `controller.available` (provider configuré et autorisé)
+	//  - `voiceState === "idle"` (pas en cours de connexion ou déjà connecté)
+	//  - `autoStartedRef` (une seule tentative par cycle de montage du tab)
+	useEffect(() => {
+		if (!controller) return;
+		if (autoStartedRef.current) return;
+		if (!controller.available) return;
+		if (controller.voiceState !== "idle") return;
+		autoStartedRef.current = true;
+		void controller.activateVoice();
+	}, [controller]);
 
 	if (!controller) {
 		return (
 			<EmptyState
 				icon={<AlertTriangle className="h-8 w-8 text-amber-500" />}
-				title="Assistant vocal non disponible"
+				title="iVocal non disponible"
 				message="Aucun provider vocal n'est configuré dans cette application."
 			/>
 		);
@@ -57,7 +82,7 @@ export function VoiceTab() {
 					<Mic className="h-7 w-7 text-violet-600 dark:text-violet-400" />
 				</div>
 				<div className="space-y-1">
-					<h3 className="text-sm font-semibold">Assistant Vocal iAsted</h3>
+					<h3 className="text-sm font-semibold">iVocal — iAsted</h3>
 					<p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
 						Discutez à voix haute avec iAsted. Naviguez, posez des
 						questions, déclenchez des actions — comme un appel à un
@@ -183,6 +208,12 @@ export function VoiceTab() {
 					</div>
 				)}
 			</div>
+
+			{/* Cartes des documents générés par iAsted pendant la session.
+			    Le composant écoute `iasted:document-created` (window event émis
+			    par `useIAstedHost.dispatchUiAction`) et reste muet tant
+			    qu'aucun document n'a été produit. */}
+			<IAstedDocumentCard />
 
 			{/* Carte de confirmation (Gemini Live uniquement) */}
 			{controller.pendingConfirmation && (

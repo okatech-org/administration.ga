@@ -1152,21 +1152,42 @@ function OrgLocalPriorityDialog({
   const [priorities, setPriorities] = useState<PriorityItem[]>(
     localDoc?.priorities ?? []
   )
+  const [hostCountry, setHostCountry] = useState(localDoc?.hostCountry ?? "")
+  const [hostCountryCode, setHostCountryCode] = useState(
+    localDoc?.hostCountryCode ?? ""
+  )
+  const [coveredCountries, setCoveredCountries] = useState<
+    Array<{ name: string; code?: string }>
+  >(localDoc?.coveredCountries ?? [])
   const [localSearch, setLocalSearch] = useState("")
   const [initialized, setInitialized] = useState(false)
 
   if (localDoc && !initialized) {
     setPriorities(localDoc.priorities)
+    setHostCountry(localDoc.hostCountry ?? "")
+    setHostCountryCode(localDoc.hostCountryCode ?? "")
+    setCoveredCountries(localDoc.coveredCountries ?? [])
     setInitialized(true)
   }
 
+  const canSave = hostCountry.trim().length > 0
+
   const handleSave = async () => {
+    if (!canSave) {
+      toast.error("Le pays hôte est obligatoire pour activer la recherche IA")
+      return
+    }
     try {
       await setLocal({
         orgId,
-        hostCountry: localDoc?.hostCountry ?? "",
-        hostCountryCode: localDoc?.hostCountryCode ?? "",
-        coveredCountries: localDoc?.coveredCountries,
+        hostCountry: hostCountry.trim(),
+        hostCountryCode: hostCountryCode.trim().toUpperCase() || undefined,
+        coveredCountries: coveredCountries
+          .map((c) => ({
+            name: c.name.trim(),
+            code: c.code?.trim().toUpperCase() || undefined,
+          }))
+          .filter((c) => c.name.length > 0),
         priorities: priorities.filter((p) => p.title.trim()),
       })
       toast.success(`Priorités de ${orgName} enregistrées`)
@@ -1234,7 +1255,7 @@ function OrgLocalPriorityDialog({
             <Button
               size="sm"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || !canSave}
               className="gap-1.5"
             >
               {saving ? (
@@ -1244,6 +1265,126 @@ function OrgLocalPriorityDialog({
               )}
               Enregistrer
             </Button>
+          </div>
+
+          {/* Pays hôte et juridiction — indispensables à la recherche IA */}
+          <div className="space-y-3 rounded-lg border bg-card p-4">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium">Juridiction de la représentation</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_120px]">
+              <div className="space-y-1.5">
+                <Label className="text-[10px]">Pays hôte *</Label>
+                <Input
+                  value={hostCountry}
+                  onChange={(e) => setHostCountry(e.target.value)}
+                  placeholder="France, Espagne, Belgique..."
+                  className="h-9 text-xs"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Indispensable pour la recherche IA de cibles.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px]">Code ISO</Label>
+                <Input
+                  value={hostCountryCode}
+                  onChange={(e) =>
+                    setHostCountryCode(e.target.value.toUpperCase().slice(0, 2))
+                  }
+                  placeholder="FR"
+                  maxLength={2}
+                  className="h-9 text-xs uppercase"
+                />
+                <p className="text-[10px] text-muted-foreground">2 lettres</p>
+              </div>
+            </div>
+
+            {/* Pays couverts (juridiction élargie) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px]">
+                  Pays couverts (juridiction élargie)
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 text-[10px]"
+                  onClick={() =>
+                    setCoveredCountries((prev) => [
+                      ...prev,
+                      { name: "", code: "" },
+                    ])
+                  }
+                >
+                  <Plus className="h-3 w-3" />
+                  Ajouter un pays
+                </Button>
+              </div>
+              {coveredCountries.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground">
+                  Aucun pays supplémentaire. La représentation couvre uniquement
+                  le pays hôte.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {coveredCountries.map((country, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2"
+                    >
+                      <Input
+                        value={country.name}
+                        onChange={(e) =>
+                          setCoveredCountries((prev) =>
+                            prev.map((c, i) =>
+                              i === idx ? { ...c, name: e.target.value } : c
+                            )
+                          )
+                        }
+                        placeholder="Nom du pays"
+                        className="h-8 flex-1 text-xs"
+                      />
+                      <Input
+                        value={country.code ?? ""}
+                        onChange={(e) =>
+                          setCoveredCountries((prev) =>
+                            prev.map((c, i) =>
+                              i === idx
+                                ? {
+                                    ...c,
+                                    code: e.target.value
+                                      .toUpperCase()
+                                      .slice(0, 2),
+                                  }
+                                : c
+                            )
+                          )
+                        }
+                        placeholder="ISO"
+                        maxLength={2}
+                        className="h-8 w-16 text-xs uppercase"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() =>
+                          setCoveredCountries((prev) =>
+                            prev.filter((_, i) => i !== idx)
+                          )
+                        }
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Grille compacte de priorités locales */}

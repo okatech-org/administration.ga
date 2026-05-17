@@ -30,6 +30,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "@workspace/agent-features/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -205,6 +209,58 @@ export function CitizenCallTab() {
 	const callStatus = activeMeeting?.callStatus;
 	const meetingStatus = activeMeeting?.status;
 	const isHeld = callStatus === "on_hold";
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const panelEntities = useMemo(
+		() =>
+			orgIds.slice(0, 20).map((orgId) => ({
+				id: orgId,
+				type: "org",
+				label: "Représentation",
+			})),
+		[orgIds],
+	);
+	usePanelContext({
+		panelId: "iasted.icall.citizen",
+		tabId: "icall",
+		surface: "citizen",
+		title: "iAppel — Appeler une représentation",
+		summary: isInCall
+			? `Appel en cours avec ${activeCallLabel ?? "la représentation"}.`
+			: `${orgIds.length} représentation(s) disponible(s) pour un appel audio.`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "iappel.call_org",
+				label: "Appeler une représentation",
+				description:
+					"Lance un appel audio vers une représentation (id Convex d'une org visible). callLineId optionnel.",
+				params: {
+					orgId: { type: "string" },
+					callLineId: { type: "string" },
+				},
+			},
+			{
+				id: "iappel.hangup",
+				label: "Raccrocher l'appel en cours",
+				description: "Termine l'appel actif.",
+			},
+		],
+	});
+	useRegisterPageAction("iappel.call_org", async (params) => {
+		const orgId = String(params?.orgId ?? "");
+		if (!orgId) return { success: false, message: "orgId manquant." };
+		const callLineId = params?.callLineId ? String(params.callLineId) : undefined;
+		await handleCallOrg(orgId, callLineId);
+		return { success: true, message: "Appel lancé." };
+	});
+	useRegisterPageAction("iappel.hangup", async () => {
+		if (!activeMeetingId) {
+			return { success: false, message: "Aucun appel en cours." };
+		}
+		await handleHangUp();
+		return { success: true, message: "Appel terminé." };
+	});
 
 	// Auto-cleanup quand l'agent met fin à l'appel (raccroche, refuse,
 	// missed/timeout). Source de vérité = serveur Convex.

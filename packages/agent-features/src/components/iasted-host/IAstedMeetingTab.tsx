@@ -21,9 +21,13 @@ import {
 	Video,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "@workspace/routing";
 import { toast } from "sonner";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -227,6 +231,119 @@ export function IAstedMeetingTab() {
 			return next;
 		});
 	}, []);
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const panelEntities = useMemo(() => {
+		const out: Array<{
+			id: string;
+			type: string;
+			label: string;
+			data?: Record<string, unknown>;
+		}> = [];
+		for (const m of activeMeetings.slice(0, 5)) {
+			out.push({
+				id: (m as any)._id as string,
+				type: "active_meeting",
+				label: (m as any).title ?? "Réunion en cours",
+			});
+		}
+		for (const m of scheduledMeetings.slice(0, 10)) {
+			out.push({
+				id: (m as any)._id as string,
+				type: "scheduled_meeting",
+				label: (m as any).title ?? "Réunion planifiée",
+			});
+		}
+		return out.slice(0, 40);
+	}, [activeMeetings, scheduledMeetings]);
+	usePanelContext({
+		panelId: "iasted.imeeting.agent",
+		tabId: "imeeting",
+		surface: "agent",
+		title: "iRéunion — Visioconférence",
+		summary: `Vue « ${view} ». ${activeMeetings.length} en cours · ${scheduledMeetings.length} planifiée(s) · ${recentMeetings.length} récente(s).`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "imeeting.start_create",
+				label: "Démarrer la création d'une réunion",
+				description: "Ouvre le formulaire de création.",
+			},
+			{
+				id: "imeeting.cancel_create",
+				label: "Annuler la création",
+				description: "Ferme le formulaire de création et revient à la liste.",
+			},
+			{
+				id: "imeeting.set_title",
+				label: "Définir le titre de la réunion",
+				description: "Remplit le titre du formulaire.",
+				params: { title: { type: "string" } },
+			},
+			{
+				id: "imeeting.toggle_participant",
+				label: "Ajouter ou retirer un participant",
+				description: "Bascule la sélection d'un participant (id Convex d'utilisateur).",
+				params: { contactId: { type: "string" } },
+			},
+			{
+				id: "imeeting.create_now",
+				label: "Créer la réunion maintenant",
+				description: "Soumet le formulaire. CONFIRMATION REQUISE si > 2 participants.",
+				requiresConfirmation: true,
+			},
+			{
+				id: "imeeting.open",
+				label: "Ouvrir une réunion",
+				description: "Ouvre la salle d'une réunion existante (id exact d'une entité 'active_meeting' ou 'scheduled_meeting').",
+				params: { meetingId: { type: "string" } },
+			},
+			{
+				id: "imeeting.cancel",
+				label: "Annuler une réunion planifiée",
+				description: "Annule une réunion planifiée. CONFIRMATION REQUISE.",
+				params: { meetingId: { type: "string" } },
+				requiresConfirmation: true,
+			},
+		],
+	});
+
+	useRegisterPageAction("imeeting.start_create", async () => {
+		setView("create");
+		return { success: true, message: "Formulaire de création ouvert." };
+	});
+	useRegisterPageAction("imeeting.cancel_create", async () => {
+		resetForm();
+		setView("list");
+		return { success: true, message: "Création annulée." };
+	});
+	useRegisterPageAction("imeeting.set_title", async (params) => {
+		const t = String(params?.title ?? "").trim();
+		setMeetingName(t);
+		return { success: true, message: `Titre : « ${t} ».` };
+	});
+	useRegisterPageAction("imeeting.toggle_participant", async (params) => {
+		const id = String(params?.contactId ?? "");
+		if (!id) return { success: false, message: "contactId manquant." };
+		toggleParticipant(id);
+		return { success: true, message: `Participant ${id} basculé.` };
+	});
+	useRegisterPageAction("imeeting.create_now", async () => {
+		await handleCreate();
+		return { success: true, message: "Réunion créée." };
+	});
+	useRegisterPageAction("imeeting.open", async (params) => {
+		const id = String(params?.meetingId ?? "");
+		if (!id) return { success: false, message: "meetingId manquant." };
+		openMeeting(id as Id<"meetings">);
+		return { success: true, message: "Salle ouverte." };
+	});
+	useRegisterPageAction("imeeting.cancel", async (params) => {
+		const id = String(params?.meetingId ?? "");
+		if (!id) return { success: false, message: "meetingId manquant." };
+		await cancelMeeting({ meetingId: id as Id<"meetings"> });
+		return { success: true, message: "Réunion annulée." };
+	});
 
 	// ════════════════════════════════════════════════════════════
 	// VUE: CRÉATION (formulaire complet)

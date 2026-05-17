@@ -192,6 +192,15 @@ export function useIAstedHost(): IAstedVoiceController {
 					// Ces intents sont informatifs — l'utilisateur doit finaliser dans l'UI.
 					// On pourrait ouvrir un panneau de confirmation ici si nécessaire.
 					break;
+				case "iasted_document_created": {
+					// iAsted vient de générer un document (PDF officiel) et l'a archivé
+					// dans iDocument › « iAsted Documents ». Émet un event écouté par
+					// la fenêtre vocale pour afficher la carte d'action.
+					window.dispatchEvent(
+						new CustomEvent("iasted:document-created", { detail: uiAction.payload }),
+					);
+					break;
+				}
 				default:
 					// Tool UI non reconnu — silencieux, le modèle a déjà la confirmation textuelle.
 					break;

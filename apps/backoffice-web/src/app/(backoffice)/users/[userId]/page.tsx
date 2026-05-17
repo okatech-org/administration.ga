@@ -42,8 +42,21 @@ import { useTranslation } from "react-i18next";
 import { DiplomaticProfileEditDialog } from "@/components/admin/diplomatic-profile-edit-dialog";
 import { MenuPreviewCard } from "@/components/admin/menu-preview-card";
 import { MemberPermissionsDialog } from "@/components/org/member-permissions-dialog";
+import { MemberModulesDialog } from "@/components/admin/member-modules-dialog";
 import { UserRoleDialog } from "@/components/admin/user-role-dialog";
 import { UserModulesDialog } from "@/components/admin/user-modules-dialog";
+import {
+	AgentDiplomaticProfileSection,
+	AgentPostingsHistorySection,
+	AgentPerformanceSection,
+	AgentSignatureSection,
+} from "@/components/admin/agent-sections";
+import {
+	CitizenConsularRegistrationSection,
+	CitizenRequestsSection,
+	CitizenDocumentsSection,
+	CitizenConsularCardSection,
+} from "@/components/admin/citizen-sections";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +108,11 @@ export default function UserDetailPage() {
 		diplomaticProfile: any;
 	} | null>(null);
 	const [showModulesDialog, setShowModulesDialog] = useState(false);
+	const [modulesMembership, setModulesMembership] = useState<{
+		membershipId: Id<"memberships">;
+		orgId: Id<"orgs">;
+		orgName: string;
+	} | null>(null);
 
 	const { data: user, isPending: isLoadingUser } = useAuthenticatedConvexQuery(
 		api.functions.admin.getUser,
@@ -115,6 +133,14 @@ export default function UserDetailPage() {
 	const userRole = (user as any)?.role as string || "user";
 	const isBackOfficeOrAgent = ["admin", "admin_system", "intel_agent", "education_agent", "super_admin"].includes(userRole);
 	const canManage = canManageUser(userRole);
+
+	// Catégorie A vs B (cf. convex/lib/userCategory.ts) :
+	// A = au moins 1 membership active → corps administratif (agent/admin)
+	// B = aucune membership active → ressortissant
+	const activeMemberships = (memberships ?? []).filter((m: any) => !m.deletedAt);
+	const isCorpsAdmin = activeMemberships.length > 0;
+	// Pendant le chargement, on suppose corps admin (évite flash Profils enfants pour un agent)
+	const isCitizen = !isLoadingMemberships && !isCorpsAdmin;
 
 	const { data: moduleData } = useAuthenticatedConvexQuery(
 		api.functions.admin.getUserModules,
@@ -397,6 +423,22 @@ export default function UserDetailPage() {
 								</dd>
 							</div>
 							<div className="flex items-center justify-between">
+								<dt className="text-sm text-muted-foreground">Type de compte</dt>
+								<dd>
+									{isLoadingMemberships ? (
+										<Skeleton className="h-5 w-24" />
+									) : isCorpsAdmin ? (
+										<Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-700 border-blue-300 dark:text-blue-400 dark:border-blue-500/30">
+											Corps administratif
+										</Badge>
+									) : (
+										<Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:text-emerald-400 dark:border-emerald-500/30">
+											Ressortissant
+										</Badge>
+									)}
+								</dd>
+							</div>
+							<div className="flex items-center justify-between">
 								<dt className="text-sm text-muted-foreground">Statut du compte</dt>
 								<dd>
 									<Badge variant={user.isActive ? "default" : "outline"}>
@@ -444,7 +486,8 @@ export default function UserDetailPage() {
 				</FlatCard>
 			</div>
 
-			{/* Organizations Card */}
+			{/* Organizations Card — corps administratif uniquement */}
+			{(isCorpsAdmin || isLoadingMemberships) && (
 			<FlatCard>
 				<div className="p-3 lg:p-4">
 					<SectionHeader
@@ -496,6 +539,21 @@ export default function UserDetailPage() {
 												variant="ghost"
 												size="icon"
 												className="h-7 w-7"
+												title="Activer / configurer les modules sur cette représentation"
+												onClick={() =>
+													setModulesMembership({
+														membershipId: membership._id as Id<"memberships">,
+														orgId: membership.orgId as Id<"orgs">,
+														orgName: membership.org?.name || "—",
+													})
+												}
+											>
+												<Layers className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-7 w-7"
 												title={t("permissions.dialog.title")}
 												onClick={() =>
 													setPermsMembership({
@@ -529,9 +587,44 @@ export default function UserDetailPage() {
 					)}
 				</div>
 			</FlatCard>
+			)}
 
-			{/* Child Profiles Card */}
-			<ChildProfilesSection userId={userId as Id<"users">} canManage={canManage} />
+			{/* ─── Sections Corps administratif (Agent) ─── */}
+			{isCorpsAdmin && (
+				<>
+					<AgentDiplomaticProfileSection
+						userId={userId as Id<"users">}
+						userName={`${user.firstName} ${user.lastName}`}
+					/>
+					<div className="grid gap-4 md:grid-cols-2">
+						<AgentPerformanceSection
+							userId={userId as Id<"users">}
+							userName={`${user.firstName} ${user.lastName}`}
+						/>
+						<AgentPostingsHistorySection
+							userId={userId as Id<"users">}
+							userName={`${user.firstName} ${user.lastName}`}
+						/>
+					</div>
+					<AgentSignatureSection
+						userId={userId as Id<"users">}
+						userName={`${user.firstName} ${user.lastName}`}
+					/>
+				</>
+			)}
+
+			{/* ─── Sections Ressortissant (Citoyen) ─── */}
+			{isCitizen && (
+				<>
+					<div className="grid gap-4 md:grid-cols-2">
+						<CitizenConsularRegistrationSection userId={userId as Id<"users">} />
+						<CitizenConsularCardSection userId={userId as Id<"users">} />
+					</div>
+					<CitizenRequestsSection userId={userId as Id<"users">} />
+					<CitizenDocumentsSection userId={userId as Id<"users">} />
+					<ChildProfilesSection userId={userId as Id<"users">} canManage={canManage} />
+				</>
+			)}
 
 			{/* Modules Card (Back-office/Agent users only) */}
 			{isBackOfficeOrAgent && moduleData && (
@@ -634,6 +727,17 @@ export default function UserDetailPage() {
 					membershipId={permsMembership.membershipId}
 					memberName={`${user.firstName} ${user.lastName} @ ${permsMembership.name}`}
 					memberRole={permsMembership.role}
+				/>
+			)}
+
+			{modulesMembership && (
+				<MemberModulesDialog
+					open={!!modulesMembership}
+					onOpenChange={(open) => !open && setModulesMembership(null)}
+					membershipId={modulesMembership.membershipId}
+					orgId={modulesMembership.orgId}
+					memberName={`${user.firstName} ${user.lastName}`}
+					orgName={modulesMembership.orgName}
 				/>
 			)}
 

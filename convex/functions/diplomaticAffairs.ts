@@ -14,6 +14,7 @@ import {
   targetStatusValidator,
   priorityValidator,
   strategicAnalysisValidator,
+  projectFrameworkValidator,
 } from "../schemas/diplomaticAffairs";
 import { internal } from "../_generated/api";
 import {
@@ -1083,6 +1084,15 @@ export const getProjectsByTarget = authQuery({
   },
 });
 
+export const getProject = authQuery({
+  args: { projectId: v.id("diplomaticProjects") },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project || project.deletedAt) return null;
+    return project;
+  },
+});
+
 export const createProject = authMutation({
   args: {
     orgId: v.id("orgs"),
@@ -1184,6 +1194,56 @@ export const requestProjectPdfGeneration = authMutation({
       0,
       internal.functions.diplomaticFoldersActions.generateProjectDocument,
       { projectId: args.projectId, targetId: project.targetId },
+    );
+
+    return { scheduled: true };
+  },
+});
+
+/** Enregistre le cadre logique enrichi d'un projet et régénère le PDF associé */
+export const enrichProjectWithFramework = authMutation({
+  args: {
+    projectId: v.id("diplomaticProjects"),
+    framework: projectFrameworkValidator,
+  },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new Error("Projet introuvable");
+
+    await ctx.db.patch(args.projectId, {
+      projectFramework: args.framework,
+      updatedAt: Date.now(),
+    });
+
+    // Régénérer le PDF du projet pour intégrer le cadre logique
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticFoldersActions.generateProjectDocument,
+      { projectId: args.projectId, targetId: project.targetId },
+    );
+
+    return { projectId: args.projectId };
+  },
+});
+
+/** Déclenche la génération du PDF pour un rapport → dossier de la première cible référencée */
+export const requestReportPdfGeneration = authMutation({
+  args: { reportId: v.id("diplomaticReports") },
+  handler: async (ctx, args) => {
+    const report = await ctx.db.get(args.reportId);
+    if (!report) throw new Error("Rapport introuvable");
+
+    const targetId = report.targetIds?.[0];
+    if (!targetId) {
+      throw new Error(
+        "Le rapport doit référencer au moins une cible pour être exporté",
+      );
+    }
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.functions.diplomaticFoldersActions.generateReportDocument,
+      { reportId: args.reportId, targetId },
     );
 
     return { scheduled: true };

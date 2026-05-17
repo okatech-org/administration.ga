@@ -55,6 +55,9 @@ import { CorrespondanceDetail } from "./_shared/CorrespondanceDetail";
 import type { InlineAISuggestionProps } from "./_shared/CorrespondanceDetail";
 import { InternalManifestExport } from "./_shared/InternalManifestExport";
 import { PostalManifestExport } from "./_shared/PostalManifestExport";
+import { RespondDialog } from "./_shared/RespondDialog";
+import { ReturnToSenderDialog } from "./_shared/ReturnToSenderDialog";
+import { TransmitDialog } from "./_shared/TransmitDialog";
 
 type ActiveTab = "correspondance" | "dossiers" | "dashboard";
 
@@ -1345,6 +1348,12 @@ export default function ICorrespondancePage({
 	// ─── New correspondance wizard ──────────────────────────
 	const [showNewCorrWizard, setShowNewCorrWizard] = useState(false);
 
+	// ─── Actions rapides depuis la vignette dossier ─────────
+	const [quickAction, setQuickAction] = useState<{
+		itemId: Id<"correspondanceItems">;
+		kind: "respond" | "transmit" | "return";
+	} | null>(null);
+
 	// ─── Breadcrumb path ────────────────────────────────────
 	const breadcrumbPath = useMemo(() => {
 		if (!currentFolderId) return [];
@@ -1882,6 +1891,21 @@ export default function ICorrespondancePage({
 															isCopy={corr.isCopy}
 															recipientStatus={corr.recipientStatus}
 															onClick={() => setOpenDetailId(corr.id)}
+															onQuickAction={(action) =>
+																setQuickAction({
+																	itemId: corr.id as Id<"correspondanceItems">,
+																	kind: action,
+																})
+															}
+															quickActions={
+																corr.status === "received" && !corr.isCopy
+																	? {
+																			respond: true,
+																			transmit: true,
+																			return: true,
+																		}
+																	: undefined
+															}
 														/>
 													))}
 												</div>
@@ -2332,6 +2356,16 @@ export default function ICorrespondancePage({
 				itemType={infoItemType}
 			/>
 
+			{/* ── Actions rapides depuis les vignettes dossier ── */}
+			{quickAction && activeOrgId ? (
+				<QuickActionDispatcher
+					itemId={quickAction.itemId}
+					kind={quickAction.kind}
+					currentOrgId={activeOrgId as Id<"orgs">}
+					onClose={() => setQuickAction(null)}
+				/>
+			) : null}
+
 			{/* ── Rename folder dialog ── */}
 			{renameFolderId !== null && (
 				<div
@@ -2449,5 +2483,100 @@ export default function ICorrespondancePage({
 				</div>
 			)}
 		</motion.div>
+	);
+}
+
+// ─── Dispatcher d'actions rapides (depuis la vignette dossier) ──────────────
+// Charge l'item complet à la demande puis monte le dialog approprié sans
+// passer par la vue détail. Évite le prop drilling : un seul wrapper par
+// action rapide en cours.
+function QuickActionDispatcher({
+	itemId,
+	kind,
+	currentOrgId,
+	onClose,
+}: {
+	itemId: Id<"correspondanceItems">;
+	kind: "respond" | "transmit" | "return";
+	currentOrgId: Id<"orgs">;
+	onClose: () => void;
+}) {
+	const { data: item, isPending } = useAuthenticatedConvexQuery(
+		api.functions.correspondance.getItem,
+		{ itemId },
+	);
+
+	if (isPending || !item) return null;
+
+	if (kind === "respond") {
+		return (
+			<RespondDialog
+				open
+				onClose={onClose}
+				originalItem={{
+					_id: item._id as Id<"correspondanceItems">,
+					reference: item.reference,
+					title: item.title,
+					type: item.type as
+						| "note_verbale"
+						| "lettre_officielle"
+						| "circulaire"
+						| "telegramme"
+						| "memorandum"
+						| "communique",
+					priority: item.priority as
+						| "normal"
+						| "urgent"
+						| "confidentiel"
+						| undefined,
+				}}
+			/>
+		);
+	}
+
+	if (kind === "transmit") {
+		return (
+			<TransmitDialog
+				open
+				onClose={onClose}
+				item={{
+					_id: item._id as Id<"correspondanceItems">,
+					reference: item.reference,
+					title: item.title,
+					priority: item.priority as
+						| "normal"
+						| "urgent"
+						| "confidentiel"
+						| undefined,
+					confidentialite: item.confidentialite as
+						| "standard"
+						| "confidentiel"
+						| "secret"
+						| undefined,
+					documents: (item.documents ?? []).map((d: any) => ({
+						storageId: d.storageId,
+						filename: d.filename,
+						label: d.label,
+						sizeBytes: d.sizeBytes,
+						isMainDocument: !!d.isMainDocument,
+					})),
+				}}
+				currentOrgId={currentOrgId}
+			/>
+		);
+	}
+
+	return (
+		<ReturnToSenderDialog
+			open
+			onClose={onClose}
+			item={{
+				_id: item._id as Id<"correspondanceItems">,
+				reference: item.reference,
+				title: item.title,
+				senderName: item.senderName,
+				senderOrg: item.senderOrg,
+			}}
+		/>
 	);
 }

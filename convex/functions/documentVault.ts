@@ -21,6 +21,7 @@ import {
   documentsByOwnerExpiry,
 } from "../lib/aggregates";
 import { DocumentTypeCategory } from "../lib/constants";
+import { getDefaultFoldersForOrgType } from "../lib/iDocumentDefaultFolders";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERIES
@@ -521,11 +522,123 @@ export const createFolder = authMutation({
   },
 });
 
-/** Créer les dossiers système si absents pour une org */
+/**
+ * Mettre à jour la politique d'archivage d'un dossier (rétention,
+ * confidentialité, événement de départ du compteur). Héritée optionnellement
+ * vers les enfants (sous-dossiers + documents).
+ */
+export const updateFolderArchivePolicy = authMutation({
+  args: {
+    folderId: v.id("documentFolders"),
+    archiveCategorySlug: v.optional(v.string()),
+    confidentiality: v.optional(v.string()),
+    retentionYears: v.optional(v.number()),
+    countingStartEvent: v.optional(v.string()),
+    inheritToChildren: v.optional(v.boolean()),
+    inheritToDocuments: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const folder = await ctx.db.get(args.folderId);
+    ensure(folder, ErrorCode.FOLDER_NOT_FOUND);
+    const now = Date.now();
+
+    const patch: Record<string, unknown> = { updatedAt: now };
+    if (args.archiveCategorySlug !== undefined) patch.archiveCategorySlug = args.archiveCategorySlug;
+    if (args.confidentiality !== undefined) patch.confidentiality = args.confidentiality;
+    if (args.retentionYears !== undefined) patch.retentionYears = args.retentionYears;
+    if (args.countingStartEvent !== undefined) patch.countingStartEvent = args.countingStartEvent;
+
+    await ctx.db.patch(args.folderId, patch);
+
+    let inheritedFolders = 0;
+    let inheritedDocs = 0;
+
+    // Héritage vers les sous-dossiers
+    if (args.inheritToChildren) {
+      const allOrgFolders = await ctx.db
+        .query("documentFolders")
+        .withIndex("by_org", (q) => q.eq("orgId", folder.orgId))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .collect();
+      const descendantIds = collectDescendantFolderIds(args.folderId, allOrgFolders);
+      for (const subId of descendantIds) {
+        await ctx.db.patch(subId, patch);
+        inheritedFolders++;
+      }
+    }
+
+    // Héritage vers les documents enfants directs (+ descendants si demandé)
+    if (args.inheritToDocuments) {
+      const directDocs = await ctx.db
+        .query("documents")
+        .withIndex("by_folder", (q) => q.eq("folderId", args.folderId))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .collect();
+      const docPatch: Record<string, unknown> = { updatedAt: now };
+      if (args.archiveCategorySlug !== undefined) docPatch.archiveCategorySlug = args.archiveCategorySlug;
+      if (args.confidentiality !== undefined) docPatch.confidentiality = args.confidentiality;
+      for (const doc of directDocs) {
+        await ctx.db.patch(doc._id, docPatch);
+        inheritedDocs++;
+      }
+      // Cas étendu : si inheritToChildren ET inheritToDocuments, on a déjà
+      // collecté `descendantIds`. On ré-applique aussi aux docs des sous-dossiers.
+      if (args.inheritToChildren) {
+        const allOrgFolders = await ctx.db
+          .query("documentFolders")
+          .withIndex("by_org", (q) => q.eq("orgId", folder.orgId))
+          .collect();
+        const descendantIds = collectDescendantFolderIds(args.folderId, allOrgFolders);
+        for (const subId of descendantIds) {
+          const subDocs = await ctx.db
+            .query("documents")
+            .withIndex("by_folder", (q) => q.eq("folderId", subId))
+            .filter((q) => q.eq(q.field("deletedAt"), undefined))
+            .collect();
+          for (const doc of subDocs) {
+            await ctx.db.patch(doc._id, docPatch);
+            inheritedDocs++;
+          }
+        }
+      }
+    }
+
+    await logAudit(ctx, {
+      orgId: folder.orgId,
+      folderId: args.folderId,
+      action: "update_archive_policy",
+      actorId: ctx.user._id,
+      detail: {
+        archiveCategorySlug: args.archiveCategorySlug,
+        confidentiality: args.confidentiality,
+        retentionYears: args.retentionYears,
+        countingStartEvent: args.countingStartEvent,
+        inheritedFolders,
+        inheritedDocs,
+      },
+    });
+
+    return { inheritedFolders, inheritedDocs };
+  },
+});
+
+/** Créer les dossiers système si absents pour une org.
+ *
+ * Les 3 dossiers système (Mes Documents, Brouillons, Poubelle) sont créés
+ * inconditionnellement. Le set de dossiers utilisateurs initiaux dépend du
+ * type d'org (cf. `lib/iDocumentDefaultFolders.ts`) :
+ *   - postes diplomatiques → set consulaire
+ *   - administration centrale (Ministry/IntelligenceAgency/ThirdParty/other)
+ *     → set adapté à la supervision (Notes & Circulaires, Directives, Audit, …)
+ */
 export const ensureSystemFolders = authMutation({
   args: { orgId: v.id("orgs") },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const org = await ctx.db.get(args.orgId);
+    if (!org) {
+      throw error(ErrorCode.ORG_NOT_FOUND, "Org introuvable");
+    }
     const existing = await ctx.db
       .query("documentFolders")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -543,14 +656,7 @@ export const ensureSystemFolders = authMutation({
       { name: "Poubelle", tags: [] },
     ];
 
-    const defaultFolders = [
-      { name: "Visas & Laissez-passer", tags: ["consulaire", "visa"] },
-      { name: "Passeports", tags: ["consulaire", "identité"] },
-      { name: "État Civil", tags: ["état-civil", "actes"] },
-      { name: "Coopération Internationale", tags: ["diplomatie", "accords"] },
-      { name: "Contentieux Diplomatique", tags: ["juridique", "contentieux"] },
-      { name: "Finances & Budget", tags: ["fiscal", "budget"] },
-    ];
+    const defaultFolders = getDefaultFoldersForOrgType(org.type);
 
     const createdIds: Id<"documentFolders">[] = [];
     const existingNames = new Set(existing.map((f) => f.name));

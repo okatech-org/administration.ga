@@ -77,11 +77,43 @@ export type ShellContextSnapshot = {
 	updatedAt: number;
 };
 
+/**
+ * Snapshot du layer « panel iAsted » — décrit l'onglet de la fenêtre
+ * flottante iAsted ouvert par l'utilisateur (iAppel, iContact, iChat,
+ * iRéunion, Réglages). Coexiste avec le snapshot page (la page derrière
+ * reste visible et continue d'exposer ses propres actions).
+ *
+ * Publié par chaque composant onglet via `usePanelContext`. Les actions
+ * listées DOIVENT être préfixées par le namespace du tab (`iappel.*`,
+ * `icontact.*`, `ichat.*`, `imeeting.*`, `isettings.*`) pour éviter les
+ * collisions avec les `actionId` des pages réelles.
+ */
+export type PanelContextSnapshot = {
+	/** Identifiant logique du panneau (ex. « iasted.icall »). */
+	panelId: string;
+	/** Tab actif (cf. IAstedTabId : ichat / icontact / icall / imeeting / isettings / ivoice). */
+	tabId: string;
+	/** Surface hôte (« backoffice » | « agent » | « citizen »). */
+	surface: "backoffice" | "agent" | "citizen";
+	/** Titre lisible du panneau (« iAppel — Téléphonie »). */
+	title: string;
+	/** Résumé en 1 phrase de l'état courant (filtre actif, recherche, totaux). */
+	summary: string;
+	/** Entités visibles dans le panneau (cap 40 — laisse de la marge à la page). */
+	visibleEntities: PageEntity[];
+	/** Actions UI déclenchables par l'IA via executePageAction. */
+	availableActions: PageAction[];
+	/** Timestamp de publication. */
+	updatedAt: number;
+};
+
 /** Limites de sécurité — protègent les tokens et les fuites de données. */
 export const PAGE_CONTEXT_LIMITS = {
 	MAX_ENTITIES: 50,
 	MAX_ACTIONS: 30,
 	MAX_SUMMARY_CHARS: 500,
+	/** Cap dédié au panel iAsted : laisse de la marge à la vraie page. */
+	MAX_PANEL_ENTITIES: 40,
 } as const;
 
 type PageActionHandler = (params?: Record<string, unknown>) => Promise<unknown>;
@@ -112,6 +144,7 @@ export type FieldSpec = {
 interface PageContextState {
 	snapshot: PageContextSnapshot | null;
 	shellSnapshot: ShellContextSnapshot | null;
+	panelSnapshot: PanelContextSnapshot | null;
 	actionHandlers: Map<string, PageActionHandler>;
 	fields: Map<string, FieldSpec>;
 }
@@ -119,6 +152,7 @@ interface PageContextState {
 const state: PageContextState = {
 	snapshot: null,
 	shellSnapshot: null,
+	panelSnapshot: null,
 	actionHandlers: new Map(),
 	fields: new Map(),
 };
@@ -127,10 +161,12 @@ const listeners = new Set<() => void>();
 
 let snapshotRef: PageContextSnapshot | null = null;
 let shellSnapshotRef: ShellContextSnapshot | null = null;
+let panelSnapshotRef: PanelContextSnapshot | null = null;
 
 function rebuild() {
 	snapshotRef = state.snapshot;
 	shellSnapshotRef = state.shellSnapshot;
+	panelSnapshotRef = state.panelSnapshot;
 }
 
 function emit() {
@@ -151,6 +187,10 @@ function getSnapshot() {
 
 function getShellSnapshot() {
 	return shellSnapshotRef;
+}
+
+function getPanelSnapshot() {
+	return panelSnapshotRef;
 }
 
 function clamp<T>(arr: T[], max: number): T[] {
@@ -217,6 +257,36 @@ export const pageContextStore = {
 
 	getShellSnapshot(): ShellContextSnapshot | null {
 		return state.shellSnapshot;
+	},
+
+	/**
+	 * Publie le snapshot du layer panel iAsted (onglet de la fenêtre flottante
+	 * actuellement ouvert). Le cap entités est `MAX_PANEL_ENTITIES` (40) pour
+	 * laisser de la marge au snapshot page derrière.
+	 */
+	setPanelSnapshot(input: PanelContextSnapshot | null) {
+		if (input === null) {
+			state.panelSnapshot = null;
+			emit();
+			return;
+		}
+		state.panelSnapshot = {
+			...input,
+			summary: clampString(input.summary, PAGE_CONTEXT_LIMITS.MAX_SUMMARY_CHARS),
+			visibleEntities: clamp(
+				input.visibleEntities,
+				PAGE_CONTEXT_LIMITS.MAX_PANEL_ENTITIES,
+			),
+			availableActions: clamp(
+				input.availableActions,
+				PAGE_CONTEXT_LIMITS.MAX_ACTIONS,
+			),
+		};
+		emit();
+	},
+
+	getPanelSnapshot(): PanelContextSnapshot | null {
+		return state.panelSnapshot;
 	},
 
 	/**
@@ -449,6 +519,7 @@ export const pageContextStore = {
 	clear() {
 		state.snapshot = null;
 		state.shellSnapshot = null;
+		state.panelSnapshot = null;
 		state.actionHandlers.clear();
 		state.fields.clear();
 		emit();
@@ -467,6 +538,11 @@ export function usePageContextSnapshot(): PageContextSnapshot | null {
 /** Hook React — read-only sur le snapshot shell (actions globales). */
 export function useShellContextSnapshot(): ShellContextSnapshot | null {
 	return useSyncExternalStore(subscribe, getShellSnapshot, getShellSnapshot);
+}
+
+/** Hook React — read-only sur le snapshot panel iAsted (onglet actif). */
+export function usePanelContextSnapshot(): PanelContextSnapshot | null {
+	return useSyncExternalStore(subscribe, getPanelSnapshot, getPanelSnapshot);
 }
 
 /**

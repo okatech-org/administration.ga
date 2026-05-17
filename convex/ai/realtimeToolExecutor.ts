@@ -207,13 +207,13 @@ function handleUITool(toolName: string, args: any): RealtimeToolResult {
 		case "open_chat":
 			return {
 				success: true,
-				message: "Ouverture de la fenêtre de chat",
+				message: "Ouverture du chat texte (iChat)",
 				uiAction: { type: "open_chat" },
 			};
 		case "close_chat":
 			return {
 				success: true,
-				message: "Fermeture de la fenêtre de chat",
+				message: "Fermeture du chat texte (iChat)",
 				uiAction: { type: "close_chat" },
 			};
 		case "stop_conversation":
@@ -263,14 +263,16 @@ function handleUITool(toolName: string, args: any): RealtimeToolResult {
 				"icontact",
 				"icall",
 				"imeeting",
-				"ivocal",
+				"ivoice",
 				"isettings",
 			]);
-			const tab = typeof args.tab === "string" ? args.tab : "";
+			// Rétro-compat : ancienne orthographe « ivocal » → « ivoice » canonique.
+			const rawTab = typeof args.tab === "string" ? args.tab : "";
+			const tab = rawTab === "ivocal" ? "ivoice" : rawTab;
 			if (!allowed.has(tab)) {
 				return {
 					success: false,
-					message: `Onglet inconnu : ${tab}. Onglets disponibles : ichat, icontact, icall, imeeting, ivocal, isettings.`,
+					message: `Onglet inconnu : ${rawTab}. Onglets disponibles : ichat, icontact, icall, imeeting, ivoice, isettings.`,
 				};
 			}
 			const labels: Record<string, string> = {
@@ -278,7 +280,7 @@ function handleUITool(toolName: string, args: any): RealtimeToolResult {
 				icontact: "iContact",
 				icall: "iAppel",
 				imeeting: "iRéunion",
-				ivocal: "transcription vocale",
+				ivoice: "iVocal",
 				isettings: "réglages",
 			};
 			return {
@@ -575,11 +577,29 @@ async function findContactByName(
 		const myOrgIdForVoice =
 			context.surface === "backoffice" ? undefined : orgScope;
 
+		// `limit: 100_000` — on charge l'intégralité du périmètre d'utilisateurs
+		// (équipe + réseau diplomatique + profils consulaires de la juridiction)
+		// avant d'appliquer le filtre par nom, puis on tronque à 5 candidats
+		// côté handler (`flat.slice(0, 5)` plus bas).
+		//
+		// Historiquement on passait `limit: 10`, mais ce paramètre est interprété
+		// par `searchContacts` comme la limite de CHARGEMENT (étape "membres" +
+		// `loadCitizens`), pas comme limite des résultats filtrés par nom. Sur
+		// une grande juridiction (Consulat Gabon France, 2 000+ profils), les
+		// ressortissants au-delà du 10e dans l'ordre naturel de l'index restaient
+		// invisibles à la recherche vocale alors qu'ils apparaissaient dans l'UI
+		// texte (qui ne passe pas de limit).
+		//
+		// Note perf : Convex `.take(n)` reste efficace sur des index, et `loadCitizens`
+		// (ligne 202 de contactSearch.ts) plafonne en interne. Au-delà de ~50 000
+		// profils par juridiction, basculer vers les search indexes Convex
+		// (`users.search_name`, `profiles.search_lastName`, `profiles.search_firstName`)
+		// pour faire la recherche en base sans charger toute la table.
 		const results = await ctx.runQuery(api.functions.contactSearch.searchContacts, {
 			searchTerm,
 			myOrgId: myOrgIdForVoice,
 			scope: scopeForSurface,
-			limit: 10,
+			limit: 100_000,
 		});
 		// Le retour de searchContacts est `{ total, groups: [{org, contacts: [...]}] }`.
 		// Le voice tool s'attend à une liste plate — on aplatit ici plutôt que
@@ -1297,44 +1317,211 @@ async function consultRequest(
 	}
 }
 
+// ── Helpers iAsted document generation ────────────────────────
+
+const CORRESPONDANCE_TYPE_LABELS: Record<string, string> = {
+	note_verbale: "Note verbale",
+	lettre_officielle: "Lettre officielle",
+	telegramme: "Télégramme",
+	accuse_reception: "Accusé de réception",
+	circulaire: "Circulaire",
+	memorandum: "Mémorandum",
+	communique: "Communiqué",
+};
+
+const TEMPLATE_LABELS: Record<string, string> = {
+	attestation_residence: "Attestation de résidence",
+	laissez_passer_consulaire: "Laissez-passer consulaire",
+	certificat_inscription_consulaire: "Certificat d'inscription consulaire",
+};
+
+/** Construit le corps formel de la correspondance à partir du sujet + points. */
+function buildLetterBody(subject: string, contentPoints?: string[]): string {
+	const points = (contentPoints ?? []).filter((p) => p && p.trim().length > 0);
+	const intro = `Objet : ${subject}\n\n`;
+	if (points.length === 0) {
+		return `${intro}Madame, Monsieur,\n\nJ'ai l'honneur de porter à votre attention l'objet susvisé.\n\nJe vous prie d'agréer, Madame, Monsieur, l'expression de ma haute considération.`;
+	}
+	const body = points
+		.map((p, i) => `${i + 1}. ${p}`)
+		.join("\n\n");
+	return `${intro}Madame, Monsieur,\n\nJ'ai l'honneur de porter à votre attention les éléments suivants :\n\n${body}\n\nJe vous prie d'agréer, Madame, Monsieur, l'expression de ma haute considération.`;
+}
+
 async function draftCorrespondence(
-	_ctx: any,
+	ctx: any,
 	args: { type: string; recipient: string; subject: string; contentPoints?: string[] },
-	_context: { orgId?: string },
+	context: { orgId?: string },
 ): Promise<RealtimeToolResult> {
-	const points = (args.contentPoints ?? []).map((p) => `- ${p}`).join("\n");
-	const body = `Brouillon de correspondance préparé :\n- Type : ${args.type}\n- Destinataire : ${args.recipient}\n- Objet : ${args.subject}\n${points ? `\nPoints :\n${points}` : ""}`;
-	// TODO: brancher sur `api.functions.correspondance.createDraft` quand
-	// stabilisé. Pour l'instant, on signale l'intention au client.
-	return {
-		success: true,
-		message: body,
-		uiAction: {
-			type: "draft_correspondence_intent",
-			payload: {
-				correspondanceType: args.type,
-				recipient: args.recipient,
-				subject: args.subject,
-				contentPoints: args.contentPoints ?? [],
+	if (!context.orgId) {
+		return { success: false, message: "Organisation active manquante. Sélectionnez une org avant de rédiger un courrier." };
+	}
+	if (!CORRESPONDANCE_TYPE_LABELS[args.type]) {
+		return {
+			success: false,
+			message: `Type de correspondance inconnu : ${args.type}. Types acceptés : ${Object.keys(CORRESPONDANCE_TYPE_LABELS).join(", ")}.`,
+		};
+	}
+
+	try {
+		// (1) Récupérer l'utilisateur courant pour les attributs origin
+		const me = await ctx.runQuery(api.functions.users.getMe);
+		if (!me) return { success: false, message: "Utilisateur introuvable." };
+
+		// (2) Créer le brouillon de correspondance (statut draft)
+		const senderName = me.name ?? me.email ?? "Agent diplomatique";
+		const body = buildLetterBody(args.subject, args.contentPoints);
+		const itemId = await ctx.runMutation(api.functions.correspondance.createItem, {
+			orgId: context.orgId as any,
+			title: args.subject,
+			type: args.type as any,
+			priority: "normal" as any,
+			senderName,
+			recipientName: args.recipient,
+			comment: body,
+			direction: "outgoing" as any,
+			tags: ["source:iasted"],
+		});
+
+		// (3) Générer le PDF officiel formaté (template diplomatique)
+		const pdfResult = await ctx.runAction(
+			api.functions.correspondancePdfGeneration.generateOfficialPdf,
+			{ itemId },
+		);
+		if ("error" in pdfResult) {
+			return { success: false, message: `Génération PDF échouée : ${pdfResult.error}` };
+		}
+
+		// (4) Récupérer la taille du PDF stocké + URL pré-signée pour la card UI
+		const blob = await ctx.storage.get(pdfResult.storageId);
+		const sizeBytes = blob ? (blob as Blob).size : 0;
+		const downloadUrl = await ctx.storage.getUrl(pdfResult.storageId);
+
+		// (5) Assurer le dossier système « iAsted Documents »
+		const folderId = await ctx.runMutation(
+			internal.functions.documentFolders.ensureIAstedDocumentsFolder,
+			{ orgId: context.orgId as any, userId: me._id },
+		);
+
+		// (6) Persister le document dans iDocument (folder iAsted)
+		const typeLabel = CORRESPONDANCE_TYPE_LABELS[args.type];
+		const safeSubject = args.subject.replace(/[^a-zA-Z0-9-]+/g, "_").slice(0, 40);
+		const filename = `${args.type}-${safeSubject}.pdf`;
+		const docId = await ctx.runMutation(internal.functions.documents.createFromIAsted, {
+			orgId: context.orgId as any,
+			userId: me._id,
+			folderId,
+			storageId: pdfResult.storageId,
+			filename,
+			mimeType: "application/pdf",
+			sizeBytes,
+			label: `${typeLabel} — ${args.subject}`,
+			originType: "iasted-correspondance" as const,
+			correspondanceType: args.type,
+			subject: args.subject,
+			recipientName: args.recipient,
+			linkedCorrespondanceItemId: itemId,
+		});
+
+		return {
+			success: true,
+			message: `${typeLabel} pour ${args.recipient} générée. Disponible dans iDocument › « iAsted Documents » et prête à expédier via iCorrespondance.`,
+			uiAction: {
+				type: "iasted_document_created",
+				payload: {
+					documentId: docId,
+					correspondanceItemId: itemId,
+					filename,
+					label: `${typeLabel} — ${args.subject}`,
+					correspondanceType: args.type,
+					downloadUrl,
+				},
 			},
-		},
-	};
+		};
+	} catch (e: any) {
+		console.error("[realtimeToolExecutor] draft_correspondence failed:", e?.message);
+		return { success: false, message: `Rédaction échouée : ${e?.message ?? "erreur"}` };
+	}
 }
 
 async function generateDocument(
-	_ctx: any,
+	ctx: any,
 	args: { templateCode: string; recipientName: string; format?: string },
-	_context: { orgId?: string },
+	context: { orgId?: string },
 ): Promise<RealtimeToolResult> {
-	const format = args.format ?? "pdf";
-	return {
-		success: true,
-		message: `Génération demandée : ${args.templateCode} pour ${args.recipientName} (format ${format}). Le document apparaîtra dans iDocument une fois prêt.`,
-		uiAction: {
-			type: "generate_document_intent",
-			payload: { templateCode: args.templateCode, recipientName: args.recipientName, format },
-		},
-	};
+	if (!context.orgId) {
+		return { success: false, message: "Organisation active manquante." };
+	}
+	if (!TEMPLATE_LABELS[args.templateCode]) {
+		return {
+			success: false,
+			message: `Template inconnu : ${args.templateCode}. Templates disponibles : ${Object.keys(TEMPLATE_LABELS).join(", ")}.`,
+		};
+	}
+
+	try {
+		const me = await ctx.runQuery(api.functions.users.getMe);
+		if (!me) return { success: false, message: "Utilisateur introuvable." };
+
+		// (1) Récupérer le nom de l'org (pour l'en-tête PDF)
+		const org = await ctx.runQuery(api.functions.orgs.getById, {
+			orgId: context.orgId as any,
+		}).catch(() => null);
+
+		// (2) Générer le PDF standalone
+		const pdfResult = await ctx.runAction(
+			api.functions.iastedDocumentGeneration.generateIAstedStandalonePdf,
+			{
+				templateCode: args.templateCode,
+				recipientName: args.recipientName,
+				orgName: (org as any)?.name,
+			},
+		);
+		if ("error" in pdfResult) {
+			return { success: false, message: pdfResult.error };
+		}
+
+		// (3) Folder + insert document
+		const folderId = await ctx.runMutation(
+			internal.functions.documentFolders.ensureIAstedDocumentsFolder,
+			{ orgId: context.orgId as any, userId: me._id },
+		);
+
+		const templateLabel = TEMPLATE_LABELS[args.templateCode];
+		const docId = await ctx.runMutation(internal.functions.documents.createFromIAsted, {
+			orgId: context.orgId as any,
+			userId: me._id,
+			folderId,
+			storageId: pdfResult.storageId,
+			filename: pdfResult.filename,
+			mimeType: pdfResult.mimeType,
+			sizeBytes: pdfResult.sizeBytes,
+			label: `${templateLabel} — ${args.recipientName}`,
+			originType: "iasted-document" as const,
+			templateCode: args.templateCode,
+			recipientName: args.recipientName,
+		});
+
+		const downloadUrl = await ctx.storage.getUrl(pdfResult.storageId);
+
+		return {
+			success: true,
+			message: `${templateLabel} pour ${args.recipientName} générée. Disponible dans iDocument › « iAsted Documents ».`,
+			uiAction: {
+				type: "iasted_document_created",
+				payload: {
+					documentId: docId,
+					filename: pdfResult.filename,
+					label: `${templateLabel} — ${args.recipientName}`,
+					templateCode: args.templateCode,
+					downloadUrl,
+				},
+			},
+		};
+	} catch (e: any) {
+		console.error("[realtimeToolExecutor] generate_document failed:", e?.message);
+		return { success: false, message: `Génération échouée : ${e?.message ?? "erreur"}` };
+	}
 }
 
 async function queryDiplomaticKB(

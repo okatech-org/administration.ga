@@ -65,7 +65,7 @@ export function buildCircleMenuItems(
 		onClick: () => openWithTab("icontact"),
 	};
 	const iVoice: CircleMenuItemConfig = {
-		label: t("iasted.circle.ivoice", "Assistant Vocal"),
+		label: t("iasted.circle.ivoice", "iVocal"),
 		icon: <Mic {...iconProps} />,
 		className: "bg-violet-600 hover:bg-violet-500",
 		onClick: () => openWithTab("ivoice"),

@@ -215,6 +215,15 @@ describe("types de correspondance diplomatique", () => {
     "en_attente",
     "approuve",
     "repondu",
+    "transmis",
+    "retourne",
+  ];
+
+  const VALID_RETURNED_CATEGORIES = [
+    "incomplete",
+    "rejected",
+    "wrong_recipient",
+    "other",
   ];
 
   it("6 types diplomatiques définis", () => {
@@ -229,14 +238,57 @@ describe("types de correspondance diplomatique", () => {
     expect(VALID_STATUSES).toHaveLength(7);
   });
 
-  it("5 statuts de suivi destinataire", () => {
-    expect(VALID_RECIPIENT_STATUSES).toHaveLength(5);
+  it("7 statuts de suivi destinataire (incluant transmis et retourne)", () => {
+    expect(VALID_RECIPIENT_STATUSES).toHaveLength(7);
   });
 
-  it("le flux destinataire suit l'ordre logique", () => {
+  it("le flux destinataire de base suit l'ordre logique", () => {
     // en_transit → recu → en_attente → approuve → repondu
-    const expectedOrder = ["en_transit", "recu", "en_attente", "approuve", "repondu"];
-    expect(VALID_RECIPIENT_STATUSES).toEqual(expectedOrder);
+    const baseOrder = ["en_transit", "recu", "en_attente", "approuve", "repondu"];
+    expect(VALID_RECIPIENT_STATUSES.slice(0, 5)).toEqual(baseOrder);
+  });
+
+  it("transmis et retourne sont des statuts terminaux de circulation", () => {
+    expect(VALID_RECIPIENT_STATUSES).toContain("transmis");
+    expect(VALID_RECIPIENT_STATUSES).toContain("retourne");
+  });
+
+  it("4 catégories de motif de renvoi", () => {
+    expect(VALID_RETURNED_CATEGORIES).toHaveLength(4);
+    expect(VALID_RETURNED_CATEGORIES).toContain("incomplete");
+    expect(VALID_RETURNED_CATEGORIES).toContain("rejected");
+    expect(VALID_RETURNED_CATEGORIES).toContain("wrong_recipient");
+    expect(VALID_RETURNED_CATEGORIES).toContain("other");
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SEARCH TEXT — Couverture des nouveaux tags de circulation
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe("buildCorrespondanceSearchText — circulation des dossiers", () => {
+  it("inclut les tags de transmission (transmis, from:REF) pour search full-text", () => {
+    const result = buildCorrespondanceSearchText({
+      title: "Note transmise",
+      reference: "DIPL/2026/NV/00100",
+      tags: ["transmis", "from:DIPL/2026/NV/00042"],
+      comment: "Transmis par Ambassade Madrid. Origine : MAE Paris (DIPL/2026/NV/00042).",
+    });
+    expect(result).toContain("transmis");
+    expect(result).toContain("from:DIPL/2026/NV/00042");
+    expect(result).toContain("Ambassade Madrid");
+  });
+
+  it("inclut les tags de renvoi (renvoi, catégorie) pour search full-text", () => {
+    const result = buildCorrespondanceSearchText({
+      title: "[Renvoi] Note Verbale",
+      reference: "DIPL/2026/NV/00200",
+      tags: ["renvoi", "incomplete"],
+      comment: "RENVOI [incomplete] — Pièce justificative manquante (origine : DIPL/2026/NV/00042)",
+    });
+    expect(result).toContain("renvoi");
+    expect(result).toContain("incomplete");
+    expect(result).toContain("Pièce justificative manquante");
   });
 });
 

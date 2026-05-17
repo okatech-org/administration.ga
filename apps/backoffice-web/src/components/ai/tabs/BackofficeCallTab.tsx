@@ -15,17 +15,21 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ActiveCallDialog } from "@/components/meetings/active-call-dialog";
-import { useContactSearch } from "@/hooks/useContactSearch";
+import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { useCallStore } from "@/stores/call-store";
 import { cn } from "@/lib/utils";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "@workspace/agent-features/hooks";
 import { BO_SEGMENTS } from "./segments";
 
 type SubTab = "audio" | "video";
@@ -40,7 +44,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	const [pendingCallUserId, setPendingCallUserId] = useState<string | null>(null);
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
 
-	const { groups, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
+	const { groups, total, isPending: contactsLoading, filters, setSearch, setSource } = useContactSearch(orgId);
 	const { mutateAsync: callUser } = useConvexMutationQuery(api.functions.meetings.callUser);
 	const { mutateAsync: setCallRinging } = useConvexMutationQuery(api.functions.meetings.setCallRinging);
 
@@ -52,7 +56,7 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 	const meetingsArray = Array.isArray(rawMeetings) ? (rawMeetings as any)?.meetings ?? rawMeetings : [];
 	const callHistory = useMemo(() => (meetingsArray as any[]).filter((m: any) => m.type === "call").slice(0, 15), [meetingsArray]);
 
-	const handleCall = async (targetUserId: string, mediaType: SubTab) => {
+	const handleCall = useCallback(async (targetUserId: string, mediaType: SubTab) => {
 		if (!orgId || globalActiveMeetingId) {
 			toast.error("Un appel est déjà en cours");
 			return;
@@ -79,7 +83,108 @@ export function BackofficeCallTab({ orgId }: BackofficeCallTabProps) {
 		} finally {
 			setPendingCallUserId(null);
 		}
-	};
+	}, [orgId, globalActiveMeetingId, callUser, setCallRinging, setGlobalMeetingId]);
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const segmentLabel = useMemo(
+		() => BO_SEGMENTS.find((s) => s.id === filters.source)?.label ?? "Tous",
+		[filters.source],
+	);
+	const panelEntities = useMemo(
+		() =>
+			groups
+				.flatMap((g: any) =>
+					(g.contacts as any[]).slice(0, 8).map((c: any) => ({
+						id: c.userId as string,
+						type: "contact",
+						label: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || (c.name as string) || c.userId,
+						data: {
+							org: g.org.name as string,
+							position: (c.position as string) ?? "",
+							source: c.source as string,
+						},
+					})),
+				)
+				.slice(0, 40),
+		[groups],
+	);
+	usePanelContext({
+		panelId: "iasted.icall.backoffice",
+		tabId: "icall",
+		surface: "backoffice",
+		title: "iAppel — Téléphonie BO",
+		summary: `Segment « ${segmentLabel} », recherche « ${filters.searchTerm || "(vide)"} », ${total} contact(s) dans ${groups.length} organisation(s).`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "iappel.set_segment",
+				label: "Filtrer par segment",
+				description:
+					"Bascule sur l'un des segments : 'all' (Tous), 'team' (Back-Office), 'network' (Corps Diplomatique), 'citizens' (Ressortissants), 'foreigners' (Étrangers).",
+				params: { segment: { type: "string" } },
+			},
+			{
+				id: "iappel.search",
+				label: "Rechercher",
+				description: "Filtre la liste par nom, poste ou organisation.",
+				params: { query: { type: "string" } },
+			},
+			{
+				id: "iappel.clear_search",
+				label: "Effacer la recherche",
+				description: "Vide le champ de recherche.",
+			},
+			{
+				id: "iappel.call_contact",
+				label: "Appeler un contact",
+				description:
+					"Lance un appel audio ou vidéo vers un contact visible (utiliser l'id exact d'une entité visible). mediaType: 'audio' ou 'video' (défaut 'audio').",
+				params: {
+					contactId: { type: "string" },
+					mediaType: { type: "string" },
+				},
+			},
+		],
+	});
+
+	useRegisterPageAction("iappel.set_segment", async (params) => {
+		const raw = String(params?.segment ?? "");
+		const allowed: Array<ContactSource | "all"> = [
+			"all",
+			"team",
+			"network",
+			"citizens",
+			"foreigners",
+			"administration",
+		];
+		const next = (allowed as string[]).includes(raw)
+			? (raw as ContactSource | "all")
+			: "all";
+		setSource(next);
+		return { success: true, message: `Segment basculé sur « ${next} ».` };
+	});
+	useRegisterPageAction("iappel.search", async (params) => {
+		const q = String(params?.query ?? "").trim();
+		setSearch(q);
+		return { success: true, message: `Recherche : « ${q || "(vide)"} ».` };
+	});
+	useRegisterPageAction("iappel.clear_search", async () => {
+		setSearch("");
+		return { success: true, message: "Recherche effacée." };
+	});
+	useRegisterPageAction("iappel.call_contact", async (params) => {
+		const contactId = String(params?.contactId ?? "");
+		const mediaTypeRaw = String(params?.mediaType ?? "audio");
+		const mediaType: SubTab = mediaTypeRaw === "video" ? "video" : "audio";
+		if (!contactId) {
+			return { success: false, message: "contactId manquant." };
+		}
+		await handleCall(contactId, mediaType);
+		return {
+			success: true,
+			message: `Appel ${mediaType === "video" ? "vidéo" : "audio"} lancé.`,
+		};
+	});
 
 	const handleDialogClose = () => {
 		setActiveMeetingId(null);

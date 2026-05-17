@@ -410,3 +410,89 @@ export function assertValidTransition(from: string, to: string): void {
     );
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HÉRITAGE DE CONFIGURATION RÉSEAU → ORG
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Récupère la configuration réseau singleton (peut retourner null si la
+ * migration d'init n'a pas tourné). Helper interne, ne fait pas de check
+ * d'autorisation : à appeler uniquement depuis du code déjà authentifié.
+ */
+export async function getNetworkConfigOrNull(ctx: AuthContext) {
+  return await ctx.db
+    .query("correspondanceNetworkConfig")
+    .withIndex("by_singleton", (q) => q.eq("isSingleton", true))
+    .first();
+}
+
+/**
+ * Renvoie la valeur de l'org si définie, sinon la valeur réseau.
+ * Évite d'écraser un override "vide volontaire" en confondant avec absence.
+ */
+export function mergeNetworkAndOrgScalar<T>(
+  orgValue: T | undefined,
+  networkValue: T | undefined,
+): T | undefined {
+  return orgValue !== undefined ? orgValue : networkValue;
+}
+
+export interface EffectiveCorrespondanceConfig {
+  referencePattern?: string;
+  autoRouteByHierarchy?: boolean;
+  chiefApprovalRequired?: boolean;
+  signatureDefaults?: {
+    defaultLevel: number;
+    defaultSealStorageId?: Id<"_storage">;
+  };
+  watermarkDefaults?: {
+    enabled: boolean;
+    text?: string;
+    opacity?: number;
+  };
+}
+
+/**
+ * Configuration effective d'une org pour iCorrespondance après application
+ * de l'héritage réseau → org sur les champs scalaires/objets simples
+ * (référence, signatures, filigrane). Les typeConfigs ont leur propre table
+ * et leur propre logique d'héritage gérée dans `correspondanceConfig.ts`.
+ */
+export async function getEffectiveCorrespondanceConfig(
+  ctx: AuthContext,
+  orgId: Id<"orgs">,
+): Promise<EffectiveCorrespondanceConfig> {
+  const [org, network] = await Promise.all([
+    ctx.db.get(orgId),
+    getNetworkConfigOrNull(ctx),
+  ]);
+  const orgConfig = (
+    (org as Doc<"orgs"> | null)?.settings as
+      | { correspondanceConfig?: Partial<EffectiveCorrespondanceConfig> }
+      | undefined
+  )?.correspondanceConfig;
+
+  return {
+    referencePattern: mergeNetworkAndOrgScalar(
+      orgConfig?.referencePattern,
+      network?.referencePattern,
+    ),
+    autoRouteByHierarchy: mergeNetworkAndOrgScalar(
+      orgConfig?.autoRouteByHierarchy,
+      network?.autoRouteByHierarchy,
+    ),
+    chiefApprovalRequired: mergeNetworkAndOrgScalar(
+      orgConfig?.chiefApprovalRequired,
+      network?.chiefApprovalRequired,
+    ),
+    signatureDefaults: mergeNetworkAndOrgScalar(
+      orgConfig?.signatureDefaults,
+      network?.signatureDefaults,
+    ),
+    watermarkDefaults: mergeNetworkAndOrgScalar(
+      orgConfig?.watermarkDefaults,
+      network?.watermarkDefaults,
+    ),
+  };
+}

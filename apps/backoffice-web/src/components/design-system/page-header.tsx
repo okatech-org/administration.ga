@@ -1,10 +1,23 @@
 "use client"
 
-import type { ReactNode } from "react"
+import {
+  createElement,
+  isValidElement,
+  type ComponentType,
+  type ReactNode,
+} from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+
+// Accepte soit un élément JSX déjà construit (`<Mail />`), soit le composant
+// brut (`Mail` de lucide-react, qui est un `forwardRef`). Les pages historiques
+// passent typiquement le composant — on doit donc l'instancier nous-mêmes,
+// sinon React lève « Objects are not valid as a React child ».
+type PageHeaderIcon =
+  | ReactNode
+  | ComponentType<{ className?: string }>
 
 interface PageHeaderProps {
   /** Page title */
@@ -12,7 +25,7 @@ interface PageHeaderProps {
   /** Optional subtitle displayed below the title */
   subtitle?: ReactNode
   /** Optional icon displayed before the title — wrapped in a colored box automatically */
-  icon?: ReactNode
+  icon?: PageHeaderIcon
   /** Background class for the icon box (legacy ; ignoré par le V2 qui utilise un cadre neutre). */
   iconBgClass?: string
   /** Actions to display on the right side */
@@ -21,6 +34,22 @@ interface PageHeaderProps {
   showBackButton?: boolean
   /** Custom back button handler (defaults to router.history.back()) */
   onBack?: () => void
+}
+
+function renderIcon(icon: PageHeaderIcon): ReactNode {
+  if (icon == null || icon === false) return null
+  if (isValidElement(icon)) return icon
+  // Composant React (function ou forwardRef de lucide-react). On l'instancie
+  // avec la taille standard utilisée dans le cadre 44×44 du header.
+  if (
+    typeof icon === "function" ||
+    (typeof icon === "object" && icon !== null && "$$typeof" in (icon as object))
+  ) {
+    return createElement(icon as ComponentType<{ className?: string }>, {
+      className: "h-5 w-5",
+    })
+  }
+  return icon as ReactNode
 }
 
 /**
@@ -79,7 +108,7 @@ export function PageHeader({
               color: "var(--text)",
             }}
           >
-            {icon}
+            {renderIcon(icon)}
           </div>
         )}
         <div>

@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
       "convex/server": "./node_modules/convex/server",
       "convex/values": "./node_modules/convex/values",
       "convex/browser": "./node_modules/convex/browser",
+      // pdfjs-dist tente d'importer le polyfill `canvas` (Node only) ;
+      // on l'alias vers un module vide pour le bundle navigateur.
+      canvas: "./empty-module.js",
     },
   },
   webpack: (config) => {
@@ -43,6 +46,8 @@ const nextConfig: NextConfig = {
       ),
       i18next: path.resolve(__dirname, "node_modules/i18next"),
       convex: path.resolve(__dirname, "node_modules/convex"),
+      // pdfjs-dist tente d'importer le polyfill `canvas` (Node only).
+      canvas: false,
     }
     return config
   },

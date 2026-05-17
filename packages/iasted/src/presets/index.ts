@@ -62,7 +62,7 @@ export const TAB_DEFINITIONS: Record<string, IAstedTabDefinition> = {
 	ivoice: {
 		id: "ivoice",
 		labelKey: "iasted.tabs.ivoice",
-		fallbackLabel: "Assistant Vocal",
+		fallbackLabel: "iVocal",
 		iconName: "Mic",
 	},
 };
@@ -109,7 +109,7 @@ export const citizenPreset: IAstedPreset = {
 		{
 			id: "ivoice",
 			labelKey: "iasted.circle.ivoice",
-			fallbackLabel: "Assistant Vocal",
+			fallbackLabel: "iVocal",
 			iconName: "Mic",
 			className: "bg-violet-600 text-white",
 			opensTab: "ivoice",

@@ -7,7 +7,11 @@
 
 import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
-import { requireCorrespondanceAccess } from "../lib/correspondanceHelpers";
+import {
+  requireCorrespondanceAccess,
+  getEffectiveCorrespondanceConfig,
+  getNetworkConfigOrNull,
+} from "../lib/correspondanceHelpers";
 import { error, ErrorCode } from "../lib/errors";
 
 // ─── Standard type definitions ──────────────────────────────────────────────
@@ -101,6 +105,81 @@ export const listTypeConfigs = authQuery({
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
       .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
+  },
+});
+
+/**
+ * Renvoie la liste des types réseau (catalogue par défaut hérité) annotés
+ * d'un flag `inherited` quand l'org n'a pas encore d'override en base.
+ * Permet à la UI Réglages de distinguer "hérité du réseau" vs "personnalisé".
+ */
+export const listTypesWithInheritance = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    const [orgConfigs, network] = await Promise.all([
+      ctx.db
+        .query("correspondanceTypeConfigs")
+        .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .collect(),
+      getNetworkConfigOrNull(ctx),
+    ]);
+
+    const orgByCode = new Map(orgConfigs.map((c) => [c.typeCode, c]));
+    const networkTypes = network?.standardTypes ?? [];
+
+    // Types réseau (hérités si pas d'override en org)
+    const fromNetwork = networkTypes.map((nt) => {
+      const override = orgByCode.get(nt.typeCode);
+      return {
+        typeCode: nt.typeCode,
+        label: override?.label ?? nt.label,
+        description: override?.description ?? nt.description,
+        isActive: override?.isActive ?? nt.enabledByDefault,
+        workflowConfig: override?.workflowConfig ?? nt.workflowConfig,
+        prioriteParDefaut:
+          override?.prioriteParDefaut ?? nt.prioriteParDefaut,
+        confidentialiteParDefaut:
+          override?.confidentialiteParDefaut ?? nt.confidentialiteParDefaut,
+        inherited: !override,
+        isCustom: override?.isCustom ?? false,
+        orgConfigId: override?._id,
+      };
+    });
+
+    // Types custom org qui n'ont pas d'équivalent réseau
+    const networkCodes = new Set(networkTypes.map((t) => t.typeCode));
+    const customOnly = orgConfigs
+      .filter((c) => !networkCodes.has(c.typeCode))
+      .map((c) => ({
+        typeCode: c.typeCode,
+        label: c.label,
+        description: c.description,
+        isActive: c.isActive,
+        workflowConfig: c.workflowConfig,
+        prioriteParDefaut: c.prioriteParDefaut,
+        confidentialiteParDefaut: c.confidentialiteParDefaut,
+        inherited: false,
+        isCustom: true,
+        orgConfigId: c._id,
+      }));
+
+    return [...fromNetwork, ...customOnly];
+  },
+});
+
+/**
+ * Renvoie la configuration effective d'iCorrespondance pour une org
+ * (référence, signature, filigrane, auto-routage) après application de
+ * l'héritage réseau → org. À utiliser côté frontend Réglages pour montrer
+ * les valeurs réellement appliquées.
+ */
+export const getEffectiveConfig = authQuery({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, args) => {
+    await requireCorrespondanceAccess(ctx, ctx.user, args.orgId, "view");
+    return await getEffectiveCorrespondanceConfig(ctx, args.orgId);
   },
 });
 

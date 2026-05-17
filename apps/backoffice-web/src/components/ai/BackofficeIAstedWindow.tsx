@@ -37,8 +37,10 @@ import {
 	type IAstedTabId,
 } from "@workspace/iasted";
 import {
+	pageContextStore,
 	useFieldDescriptorsSnapshot,
 	usePageContextSnapshot,
+	usePanelContextSnapshot,
 	useShellContextSnapshot,
 } from "@workspace/agent-features/stores";
 import { useOrgSelector } from "@/hooks/use-org-selector";
@@ -76,7 +78,7 @@ function tabSubtitleForBackoffice(tab: IAstedTabId): string {
 		case "imeeting":
 			return "iRéunion — Visioconférence";
 		case "ivoice":
-			return "Assistant Vocal";
+			return "iVocal — Conversation vocale";
 		case "isettings":
 			return "Réglages";
 		default:
@@ -89,6 +91,9 @@ export function BackofficeIAstedWindow() {
 	const pathname = usePathname();
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<IAstedTabId>("ichat");
+	// Buffer du meetingId fourni par un `iasted:open` (ex. depuis le tool
+	// `create_instant_meeting`). Consommé par `BackofficeMeetingTab` au mount.
+	const [pendingMeetingId, setPendingMeetingId] = useState<string | null>(null);
 
 	// Org selector (remplace OrgProvider côté backoffice). On garde `activeOrgId`
 	// pour les actions qui doivent cibler une org source (ex. `callUser`), mais
@@ -126,11 +131,23 @@ export function BackofficeIAstedWindow() {
 		setOpen(true);
 	}, []);
 
-	// Event bus iasted:open (pattern partagé avec agent/citizen)
+	// Ref stable pour le callback de consommation — évite que `BackofficeMeetingTab`
+	// ne re-fire son useEffect d'auto-join à cause d'une arrow function inline.
+	const handleAutoJoinConsumed = useCallback(() => {
+		setPendingMeetingId(null);
+	}, []);
+
+	// Event bus iasted:open (pattern partagé avec agent/citizen).
+	// Le detail peut transporter un `meetingId` quand l'event vient de iAsted
+	// (cf. `case "open_meeting_prejoin"` dans use-iasted-host) — on le buffère
+	// pour que `BackofficeMeetingTab` l'auto-join à son mount.
 	useEffect(() => {
 		const handler = (e: Event) => {
-			const detail = (e as CustomEvent<{ tab?: IAstedTabId }>).detail;
+			const detail = (e as CustomEvent<{ tab?: IAstedTabId; meetingId?: string }>).detail;
 			openWithTab(detail?.tab ?? "ichat");
+			if (detail?.meetingId) {
+				setPendingMeetingId(detail.meetingId);
+			}
 		};
 		window.addEventListener("iasted:open", handler);
 		return () => window.removeEventListener("iasted:open", handler);
@@ -142,6 +159,7 @@ export function BackofficeIAstedWindow() {
 	// vocale est active. Debounce 150ms pour absorber les transitions.
 	const pageSnapshot = usePageContextSnapshot();
 	const shellSnapshot = useShellContextSnapshot();
+	const panelSnapshot = usePanelContextSnapshot();
 	const fieldsSnapshot = useFieldDescriptorsSnapshot();
 	useEffect(() => {
 		if (!voiceController.isConnected) return;
@@ -153,6 +171,7 @@ export function BackofficeIAstedWindow() {
 				formatPageContextForVoice({
 					page: pageSnapshot,
 					shell: shellSnapshot,
+					panel: panelSnapshot,
 					fields: fieldsSnapshot,
 				}),
 			);
@@ -161,11 +180,23 @@ export function BackofficeIAstedWindow() {
 	}, [
 		pageSnapshot,
 		shellSnapshot,
+		panelSnapshot,
 		fieldsSnapshot,
 		voiceController.isConnected,
 		voiceController.capabilities.pageContextUpdate,
 		voiceController.updatePageContext,
 	]);
+
+	// Nettoyage du snapshot panel à la fermeture de la fenêtre — évite
+	// qu'un panel reste « ouvert » côté contexte iAsted alors que l'UI est
+	// fermée. Les onglets internes s'enregistrent au mount via
+	// `usePanelContext` et se cleanup au unmount ; cette garde couvre le cas
+	// où l'utilisateur ferme la fenêtre sans changer d'onglet.
+	useEffect(() => {
+		if (!open) {
+			pageContextStore.setPanelSnapshot(null);
+		}
+	}, [open]);
 
 	// Items de l'éventail iAsted — 6 fonctions séparées qui rayonnent
 	// autour du bouton central. Chaque item correspond à un onglet de
@@ -198,7 +229,7 @@ export function BackofficeIAstedWindow() {
 			},
 			{
 				id: "ivoice",
-				label: "Vocal",
+				label: "iVocal",
 				icon: <Mic className="h-4 w-4" />,
 				className: "bg-violet-600",
 			},
@@ -282,7 +313,13 @@ export function BackofficeIAstedWindow() {
 					ichat: <BackofficeChatTab orgId={activeOrgId} chat={chat} />,
 					icontact: <BackofficeContactTab orgId={activeOrgId} />,
 					icall: <BackofficeCallTab orgId={activeOrgId} />,
-					imeeting: <BackofficeMeetingTab orgId={activeOrgId} />,
+					imeeting: (
+						<BackofficeMeetingTab
+							orgId={activeOrgId}
+							autoJoinMeetingId={pendingMeetingId}
+							onAutoJoinConsumed={handleAutoJoinConsumed}
+						/>
+					),
 					ivoice: <VoiceTab />,
 					isettings: <BackofficeSettingsTab />,
 				}}

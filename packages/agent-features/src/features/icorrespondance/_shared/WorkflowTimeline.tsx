@@ -25,6 +25,8 @@ const ACTION_CONFIG: Record<string, { label: string; color: string }> = {
   rejeter: { label: "Rejeté", color: "bg-red-500" },
   TRANSMITTED: { label: "Transmis", color: "bg-primary" },
   transmettre: { label: "Transmis", color: "bg-primary" },
+  RETURNED_TO_SENDER: { label: "Renvoyé à l'expéditeur", color: "bg-orange-500" },
+  RETURNED_TO_AGENT: { label: "Renvoyé à l'agent", color: "bg-orange-400" },
   SENT_EMAIL: { label: "Envoyé par email", color: "bg-sky-500" },
   ARCHIVED: { label: "Archivé", color: "bg-amber-500" },
   archiver: { label: "Archivé", color: "bg-amber-500" },
