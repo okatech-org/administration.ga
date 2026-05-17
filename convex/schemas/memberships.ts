@@ -2,6 +2,7 @@ import { defineTable } from "convex/server";
 import { v } from "convex/values";
 import { taskCodeValidator } from "../lib/taskCodes";
 import { permissionEffectValidator } from "../lib/validators";
+import { moduleCodeValidator, accessLevelValidator } from "../lib/moduleCodes";
 
 /**
  * Memberships table - User ↔ Org relationship
@@ -22,6 +23,15 @@ export const membershipsTable = defineTable({
   specialPermissions: v.optional(v.array(v.object({
     taskCode: taskCodeValidator,
     effect: permissionEffectValidator, // "grant" | "deny"
+  }))),
+
+  // Override per-membership des modules. Si renseigné, prend le pas sur
+  // position.moduleAccess (cf. getTasksForMembership). Absent = hérite de la
+  // position. Permet aux admins d'attribuer un jeu de modules + niveaux
+  // (reader/editor/admin) directement à un user dans une représentation.
+  moduleAccess: v.optional(v.array(v.object({
+    moduleCode: moduleCodeValidator,
+    accessLevel: accessLevelValidator,
   }))),
 
   // Per-membership agent preferences (different per org)

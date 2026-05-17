@@ -6,6 +6,7 @@ import {
 	type PageAction,
 	type PageContextSnapshot,
 	type PageEntity,
+	type PanelContextSnapshot,
 	type ShellContextSnapshot,
 } from "../stores/page-context-store";
 
@@ -162,6 +163,83 @@ export type UseShellContextInput = {
 	summary?: string;
 	availableActions: PageAction[];
 };
+
+/**
+ * Déclare le contexte « panel iAsted » — décrit l'onglet de la fenêtre
+ * flottante iAsted ouvert par l'utilisateur (iAppel, iContact, iChat,
+ * iRéunion, Réglages).
+ *
+ * À appeler dans chaque composant onglet (`BackofficeCallTab`,
+ * `IAstedContactTab`, `CitizenChatTab`…). Le snapshot est publié au
+ * montage et effacé au démontage. Re-publié si l'input change.
+ *
+ * Coexiste avec le snapshot page : la page derrière (ex. `/requests`)
+ * reste visible et continue d'exposer ses propres `availableActions`.
+ *
+ * **Règle d'or sur les `actionId`** : préfixer obligatoirement avec le
+ * namespace du tab (`iappel.*`, `icontact.*`, `ichat.*`, `imeeting.*`,
+ * `isettings.*`). Les handlers vivent dans la même map que les actions
+ * page — sans préfixe, une collision avec une action de la page derrière
+ * volerait le handler.
+ *
+ * Les handlers s'enregistrent via `useRegisterPageAction(id, fn)` comme
+ * pour les actions page et shell.
+ */
+export function usePanelContext(
+	input: Omit<PanelContextSnapshot, "updatedAt">,
+): void {
+	const stableKey = useMemo(
+		() =>
+			JSON.stringify({
+				panelId: input.panelId,
+				tabId: input.tabId,
+				surface: input.surface,
+				title: input.title,
+				summary: input.summary,
+				// Ne sérialise que les ids+labels des entités pour éviter
+				// les boucles React quand `data` change (objet imbriqué).
+				visibleEntities: input.visibleEntities.map((e) => ({
+					id: e.id,
+					type: e.type,
+					label: e.label,
+				})),
+				availableActions: input.availableActions,
+			}),
+		[
+			input.panelId,
+			input.tabId,
+			input.surface,
+			input.title,
+			input.summary,
+			input.visibleEntities,
+			input.availableActions,
+		],
+	);
+
+	useEffect(() => {
+		const snapshot: PanelContextSnapshot = {
+			panelId: input.panelId,
+			tabId: input.tabId,
+			surface: input.surface,
+			title: input.title,
+			summary: input.summary,
+			visibleEntities: input.visibleEntities,
+			availableActions: input.availableActions,
+			updatedAt: Date.now(),
+		};
+		pageContextStore.setPanelSnapshot(snapshot);
+
+		return () => {
+			// Ne nettoie que si le snapshot publié est encore le nôtre
+			// (évite la course quand un autre onglet se monte avant qu'on démonte).
+			const current = pageContextStore.getPanelSnapshot();
+			if (current?.panelId === input.panelId && current.tabId === input.tabId) {
+				pageContextStore.setPanelSnapshot(null);
+			}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [stableKey]);
+}
 
 /**
  * Déclare le contexte « shell » — actions globales disponibles peu importe

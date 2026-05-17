@@ -37,6 +37,10 @@ import {
 } from "@workspace/chat/use-chat-attachments";
 import { useIdempotencyKey } from "@workspace/chat/use-idempotency-key";
 import { toast } from "sonner";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "@workspace/agent-features/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -425,6 +429,83 @@ export function CitizenChatTab() {
 
 	// Compteur non-lus Mr Ray
 	const mrRayUnread = mrRayThread?.unreadCount ?? 0;
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const panelEntities = useMemo(() => {
+		const out: Array<{
+			id: string;
+			type: string;
+			label: string;
+			data?: Record<string, unknown>;
+		}> = [
+			{
+				id: MR_RAY_CONTACT.id,
+				type: "ai_thread",
+				label: MR_RAY_CONTACT.name,
+				data: { subtitle: MR_RAY_CONTACT.subtitle },
+			},
+		];
+		for (const t of p2pThreads.slice(0, 39)) {
+			out.push({
+				id: (t as any)._id as string,
+				type: "p2p_thread",
+				label: (t as any).title ?? (t as any).otherParticipantName ?? "Conversation",
+				data: { unread: (t as any).unreadCount ?? 0 },
+			});
+		}
+		return out;
+	}, [p2pThreads]);
+	const conversationLabel = selectedThread
+		? selectedThread.isStandard
+			? "conversation Mr Ray (Standard IA) ouverte"
+			: `conversation avec ${selectedThread.title ?? "agent"} ouverte`
+		: "liste de conversations";
+	usePanelContext({
+		panelId: "iasted.ichat.citizen",
+		tabId: "ichat",
+		surface: "citizen",
+		title: "iChat — Messagerie",
+		summary: `${conversationLabel}. ${p2pThreads.length} thread(s) agent · ${mrRayUnread} non-lu(s) Mr Ray.`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "ichat.select_thread",
+				label: "Ouvrir une conversation",
+				description: "Ouvre un thread visible (id exact). Utiliser '__mr_ray__' pour parler à Mr Ray.",
+				params: { threadId: { type: "string" } },
+			},
+			{
+				id: "ichat.open_mr_ray",
+				label: "Ouvrir Mr Ray (Standard)",
+				description: "Ouvre directement la conversation avec Mr Ray (assistance consulaire).",
+			},
+			{
+				id: "ichat.back_to_list",
+				label: "Retour à la liste",
+				description: "Ferme la conversation courante et revient à la liste des threads.",
+			},
+		],
+	});
+	useRegisterPageAction("ichat.select_thread", async (params) => {
+		const id = String(params?.threadId ?? "");
+		if (!id) return { success: false, message: "threadId manquant." };
+		if (id === MR_RAY_CONTACT.id) {
+			setSelectedThread(MR_RAY_CONTACT);
+			return { success: true, message: "Conversation Mr Ray ouverte." };
+		}
+		const thread = p2pThreads.find((t: any) => t._id === id);
+		if (!thread) return { success: false, message: `Thread ${id} introuvable.` };
+		setSelectedThread(thread);
+		return { success: true, message: "Conversation ouverte." };
+	});
+	useRegisterPageAction("ichat.open_mr_ray", async () => {
+		setSelectedThread(MR_RAY_CONTACT);
+		return { success: true, message: "Conversation Mr Ray ouverte." };
+	});
+	useRegisterPageAction("ichat.back_to_list", async () => {
+		setSelectedThread(null);
+		return { success: true, message: "Retour à la liste." };
+	});
 
 	// ════════════════════════════════════════════════════════
 	// VUE CONVERSATION

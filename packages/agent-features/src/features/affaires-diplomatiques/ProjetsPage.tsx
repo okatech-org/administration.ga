@@ -22,6 +22,7 @@ import {
 	Calendar,
 	TrendingUp,
 	FileText,
+	BookOpen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAction, useMutation } from "convex/react";
@@ -36,6 +37,7 @@ import type {
 	PageEntity,
 } from "../../stores/page-context-store";
 import { AIActionPanel, AIActionButton } from "./_shared/AIActionPanel";
+import { ProjectFrameworkDialog } from "./_shared/ProjectFrameworkDialog";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { FlatCard } from "../../components/my-space/flat-card";
@@ -101,7 +103,7 @@ const STATUS_CONFIG: Record<
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ProjectCard({ project }: { project: any }) {
+function ProjectCard({ project, orgId }: { project: any; orgId: Id<"orgs"> | null }) {
 	const config = STATUS_CONFIG[project.status] ?? STATUS_CONFIG.draft;
 	const StatusIcon = config.icon;
 	const requestDocx = useMutation(
@@ -110,8 +112,13 @@ function ProjectCard({ project }: { project: any }) {
 	const requestPdf = useMutation(
 		api.functions.diplomaticAffairs.requestProjectPdfGeneration,
 	);
+	const enrichFramework = useAction(
+		api.ai.diplomaticAI.enrichProjectFramework,
+	);
 	const [generatingDocx, setGeneratingDocx] = useState(false);
 	const [generatingPdf, setGeneratingPdf] = useState(false);
+	const [enrichingFramework, setEnrichingFramework] = useState(false);
+	const [showFrameworkDialog, setShowFrameworkDialog] = useState(false);
 
 	const handleGenerateDocx = async () => {
 		setGeneratingDocx(true);
@@ -140,6 +147,26 @@ function ProjectCard({ project }: { project: any }) {
 			console.error(error);
 		} finally {
 			setGeneratingPdf(false);
+		}
+	};
+
+	const handleEnrichFramework = async () => {
+		if (!orgId) {
+			toast.error("Organisation introuvable");
+			return;
+		}
+		setEnrichingFramework(true);
+		try {
+			await enrichFramework({ orgId, projectId: project._id });
+			toast.success(
+				"Cadre logique enrichi par l'IA — Le PDF est régénéré automatiquement.",
+			);
+			setShowFrameworkDialog(true);
+		} catch (error) {
+			toast.error("Erreur lors de l'enrichissement du cadre logique");
+			console.error(error);
+		} finally {
+			setEnrichingFramework(false);
 		}
 	};
 
@@ -266,8 +293,48 @@ function ProjectCard({ project }: { project: any }) {
 					</div>
 				)}
 
+				{/* Cadre logique enrichi */}
+				{project.projectFramework && (
+					<div className="flex items-center justify-between gap-2 rounded-lg bg-primary/5 px-3 py-2">
+						<div className="flex items-center gap-1.5 text-xs">
+							<BookOpen className="h-3.5 w-3.5 text-primary" />
+							<span className="font-medium">Cadre logique enrichi</span>
+							<Badge variant="secondary" className="text-[8px]">
+								Bailleurs
+							</Badge>
+						</div>
+						<Button
+							size="sm"
+							variant="ghost"
+							className="text-xs gap-1.5"
+							onClick={() => setShowFrameworkDialog(true)}
+						>
+							Voir
+						</Button>
+					</div>
+				)}
+
 				{/* Boutons de génération */}
-				<div className="flex items-center gap-2 pt-2 border-t border-border/50">
+				<div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+					{!project.projectFramework ? (
+						<Button
+							size="sm"
+							variant="outline"
+							className="text-xs gap-1.5"
+							onClick={handleEnrichFramework}
+							disabled={enrichingFramework || !orgId}
+							title="Génère le cadre logique complet (7 sections) avec l'IA"
+						>
+							{enrichingFramework ? (
+								<Loader2 className="h-3 w-3 animate-spin" />
+							) : (
+								<Sparkles className="h-3 w-3" />
+							)}
+							{enrichingFramework
+								? "Enrichissement IA..."
+								: "Enrichir avec cadre logique IA"}
+						</Button>
+					) : null}
 					<Button
 						size="sm"
 						variant="outline"
@@ -297,6 +364,12 @@ function ProjectCard({ project }: { project: any }) {
 					</Button>
 				</div>
 			</div>
+			<ProjectFrameworkDialog
+				open={showFrameworkDialog}
+				onOpenChange={setShowFrameworkDialog}
+				framework={project.projectFramework}
+				projectTitle={project.title}
+			/>
 		</FlatCard>
 	);
 }
@@ -558,7 +631,11 @@ export default function ProjetsPhase() {
 			) : (
 				<div className="grid grid-cols-1 gap-3">
 					{projects.map((project) => (
-						<ProjectCard key={project._id} project={project} />
+						<ProjectCard
+							key={project._id}
+							project={project}
+							orgId={activeOrgId}
+						/>
 					))}
 				</div>
 			)}

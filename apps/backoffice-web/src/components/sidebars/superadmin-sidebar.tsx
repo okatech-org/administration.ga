@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Activity,
+  Archive,
   BookOpen,
   Building2,
   Calendar,
@@ -128,6 +129,12 @@ export function SuperadminSidebar() {
           title: "iDocument",
           url: "/idocument",
           icon: FileText,
+          moduleCode: "documents",
+        },
+        {
+          title: "iArchive",
+          url: "/iarchive",
+          icon: Archive,
           moduleCode: "documents",
         },
         {

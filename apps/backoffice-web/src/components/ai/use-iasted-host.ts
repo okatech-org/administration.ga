@@ -103,9 +103,16 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 					break;
 				}
 				case "open_meeting_prejoin": {
-					// Bascule sur l'onglet iRéunion pour la salle d'attente / prejoin.
+					// Bascule sur l'onglet iRéunion ET transporte le meetingId pour
+					// que BackofficeMeetingTab puisse auto-join (in-call direct).
+					// Le payload voyage dans le detail de l'event `iasted:open` pour
+					// éviter une race entre l'ouverture du tab et la lecture du meetingId
+					// (le tab n'est monté qu'à l'activation — un event séparé serait perdu).
+					const meetingId = uiAction.payload?.meetingId as string | undefined;
 					window.dispatchEvent(
-						new CustomEvent("iasted:open", { detail: { tab: "imeeting" } }),
+						new CustomEvent("iasted:open", {
+							detail: { tab: "imeeting", meetingId },
+						}),
 					);
 					break;
 				}
@@ -128,6 +135,16 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 					// Ouvre l'éventail CircleMenu (consommé par CircleMenu via useEffect listener).
 					window.dispatchEvent(
 						new CustomEvent("iasted:fan-toggle", { detail: { open: true } }),
+					);
+					break;
+				}
+				case "iasted_document_created": {
+					// iAsted vient de générer un document (PDF officiel) et l'a archivé
+					// dans iDocument › « iAsted Documents ». La fenêtre vocale écoute
+					// cet event pour afficher une carte avec actions (Télécharger,
+					// Ouvrir dans iDocument, Envoyer via iCorrespondance).
+					window.dispatchEvent(
+						new CustomEvent("iasted:document-created", { detail: uiAction.payload }),
 					);
 					break;
 				}

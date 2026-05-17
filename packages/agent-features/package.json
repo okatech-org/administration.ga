@@ -33,7 +33,8 @@
     "@workspace/livekit": "workspace:*",
     "@workspace/routing": "workspace:*",
     "@workspace/shared": "workspace:*",
-    "@workspace/ui": "workspace:*"
+    "@workspace/ui": "workspace:*",
+    "react-pdf": "^10.4.1"
   },
   "peerDependencies": {
     "@livekit/components-react": "^2.9.0",

@@ -13,21 +13,27 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import Link from "next/link";
 import { SuperAdminCallTrigger } from "./super-admin-call-trigger";
+import { BulkMemberModulesDialog } from "./bulk-member-modules-dialog";
 import {
 	Award,
 	Briefcase,
 	Building2,
+	CheckSquare,
 	ExternalLink,
 	Globe,
 	Languages,
+	Layers,
 	Loader2,
 	MapPin,
 	Search,
 	Shield,
+	X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -72,6 +78,10 @@ export function DiplomaticProfilesView() {
 	const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
 	const [gradeFilter, setGradeFilter] = useState<string | null>(null);
 	const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+	// Sélection multiple pour l'action bulk "Modules"
+	const [selected, setSelected] = useState<Set<Id<"memberships">>>(new Set());
+	const [showBulkDialog, setShowBulkDialog] = useState(false);
 
 	const { data: members = [], isPending } = useAuthenticatedConvexQuery(
 		api.functions.admin.listDiplomaticMembers,
@@ -194,6 +204,39 @@ export function DiplomaticProfilesView() {
 		setStatusFilter(null);
 		setSearch("");
 	}, []);
+
+	const toggleSelect = useCallback((membershipId: Id<"memberships">) => {
+		setSelected((prev) => {
+			const next = new Set(prev);
+			if (next.has(membershipId)) next.delete(membershipId);
+			else next.add(membershipId);
+			return next;
+		});
+	}, []);
+
+	const filteredIds = useMemo(
+		() => filtered.map((m: any) => m.membershipId as Id<"memberships">),
+		[filtered],
+	);
+
+	const allFilteredSelected =
+		filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+
+	const toggleSelectAll = useCallback(() => {
+		setSelected((prev) => {
+			if (filteredIds.length === 0) return prev;
+			if (filteredIds.every((id) => prev.has(id))) {
+				const next = new Set(prev);
+				for (const id of filteredIds) next.delete(id);
+				return next;
+			}
+			const next = new Set(prev);
+			for (const id of filteredIds) next.add(id);
+			return next;
+		});
+	}, [filteredIds]);
+
+	const clearSelection = useCallback(() => setSelected(new Set()), []);
 
 	if (isPending) {
 		return (
@@ -339,14 +382,28 @@ export function DiplomaticProfilesView() {
 			)}
 
 			{/* ── Résultats ── */}
-			<div className="flex items-center justify-between">
-				<span className="text-xs text-muted-foreground">
-					{filtered.length} membre{filtered.length !== 1 ? "s" : ""}
+			<div className="flex items-center justify-between gap-3 flex-wrap">
+				<span className="text-xs text-muted-foreground flex items-center gap-2">
+					{filtered.length > 0 && (
+						<label className="inline-flex items-center gap-1.5 text-foreground hover:text-primary cursor-pointer select-none">
+							<Checkbox
+								checked={allFilteredSelected}
+								onCheckedChange={toggleSelectAll}
+								aria-label="Tout sélectionner"
+							/>
+							<span>
+								{allFilteredSelected ? "Tout désélectionner" : "Tout sélectionner"}
+							</span>
+						</label>
+					)}
+					<span>
+						{filtered.length} membre{filtered.length !== 1 ? "s" : ""}
+					</span>
 					{hasActiveFilters && (
 						<button
 							type="button"
 							onClick={resetFilters}
-							className="ml-2 text-primary hover:underline"
+							className="text-primary hover:underline"
 						>
 							Réinitialiser les filtres
 						</button>
@@ -357,7 +414,12 @@ export function DiplomaticProfilesView() {
 			{/* ── Liste des cartes (scroll naturel de la page) ── */}
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 				{filtered.map((member: any) => (
-					<DiplomaticMemberCard key={member.membershipId} member={member} />
+					<DiplomaticMemberCard
+						key={member.membershipId}
+						member={member}
+						isSelected={selected.has(member.membershipId as Id<"memberships">)}
+						onToggleSelect={() => toggleSelect(member.membershipId as Id<"memberships">)}
+					/>
 				))}
 				{filtered.length === 0 && (
 					<div className="col-span-full text-center py-12 text-muted-foreground text-sm">
@@ -365,12 +427,59 @@ export function DiplomaticProfilesView() {
 					</div>
 				)}
 			</div>
+
+			{/* ── Toolbar bulk sticky (visible si sélection) ── */}
+			{selected.size > 0 && (
+				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2.5 rounded-full border bg-card shadow-lg">
+					<CheckSquare className="h-4 w-4 text-primary" />
+					<span className="text-sm font-medium">
+						{selected.size} membre{selected.size > 1 ? "s" : ""} sélectionné
+						{selected.size > 1 ? "s" : ""}
+					</span>
+					<div className="w-px h-5 bg-border mx-1" />
+					<Button
+						size="sm"
+						onClick={() => setShowBulkDialog(true)}
+						className="h-8"
+					>
+						<Layers className="h-3.5 w-3.5 mr-1.5" />
+						Modifier les modules
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={clearSelection}
+						className="h-8"
+					>
+						<X className="h-3.5 w-3.5" />
+					</Button>
+				</div>
+			)}
+
+			{showBulkDialog && (
+				<BulkMemberModulesDialog
+					open={showBulkDialog}
+					onOpenChange={setShowBulkDialog}
+					membershipIds={Array.from(selected)}
+					onApplied={() => {
+						setSelected(new Set());
+					}}
+				/>
+			)}
 		</div>
 	);
 }
 
 // ─── Carte diplomatique ───────────────────────────────────
-function DiplomaticMemberCard({ member }: { member: any }) {
+function DiplomaticMemberCard({
+	member,
+	isSelected,
+	onToggleSelect,
+}: {
+	member: any;
+	isSelected: boolean;
+	onToggleSelect: () => void;
+}) {
 	const { user, position, org, diplomaticProfile } = member;
 	const status = diplomaticProfile?.status ?? "en_poste";
 	const statusInfo = STATUS_CONFIG[status] ?? STATUS_CONFIG.en_poste;
@@ -383,9 +492,27 @@ function DiplomaticMemberCard({ member }: { member: any }) {
 			href={`/users/${user?._id}`}
 			className="block"
 		>
-		<FlatCard className="hover:ring-1 hover:ring-primary/20 transition-colors cursor-pointer group">
+		<FlatCard className={cn(
+			"hover:ring-1 hover:ring-primary/20 transition-colors cursor-pointer group",
+			isSelected && "ring-2 ring-primary",
+		)}>
 			<div className="p-3 lg:p-4">
 				<div className="flex items-start gap-3">
+					<div
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							onToggleSelect();
+						}}
+						className="shrink-0 mt-1"
+					>
+						<Checkbox
+							checked={isSelected}
+							onCheckedChange={onToggleSelect}
+							aria-label="Sélectionner ce membre"
+							onClick={(e) => e.stopPropagation()}
+						/>
+					</div>
 					<Avatar className="h-12 w-12 rounded-xl shrink-0">
 						<AvatarImage src={user?.avatarUrl} />
 						<AvatarFallback className="rounded-xl bg-primary/10 text-primary text-sm">

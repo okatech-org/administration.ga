@@ -1840,10 +1840,10 @@ export default function SuperadminDashboard() {
 															)}
 														</span>
 														<span className="text-xs text-muted">
-															{t("superadmin.dashboard.posts", {
+															{t("superadmin.dashboard.sections.repsCount", {
 																count: r.count,
-																defaultValue: "{{count}} poste",
-																defaultValue_other: "{{count}} postes",
+																defaultValue: "{{count}} représentation",
+																defaultValue_other: "{{count}} représentations",
 															})}
 														</span>
 													</div>

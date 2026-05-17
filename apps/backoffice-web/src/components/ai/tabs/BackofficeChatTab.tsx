@@ -49,7 +49,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { useContactSearch } from "@/hooks/useContactSearch";
+import { useContactSearch, type ContactSource } from "@/hooks/useContactSearch";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "@workspace/agent-features/hooks";
 import type { useBackofficeAIChat } from "@/hooks/useBackofficeAIChat";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@/integrations/convex/hooks";
 import { cn } from "@/lib/utils";
@@ -277,6 +281,130 @@ export function BackofficeChatTab({ orgId, chat }: BackofficeChatTabProps) {
 			else if (selectedContact) handleSendHuman(messageInput);
 		}
 	};
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const segmentLabel = useMemo(
+		() => BO_SEGMENTS.find((s) => s.id === filters.source)?.label ?? "Tous",
+		[filters.source],
+	);
+	const panelEntities = useMemo(() => {
+		const out: Array<{
+			id: string;
+			type: string;
+			label: string;
+			data?: Record<string, unknown>;
+		}> = [
+			{
+				id: IASTED_CONTACT.id,
+				type: "ai",
+				label: IASTED_CONTACT.name,
+				data: { subtitle: IASTED_CONTACT.subtitle },
+			},
+		];
+		for (const g of groups) {
+			for (const c of (g.contacts as any[]).slice(0, 8)) {
+				out.push({
+					id: c.userId as string,
+					type: "contact",
+					label: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || (c.name as string) || c.userId,
+					data: { org: g.org.name as string, position: (c.position as string) ?? "" },
+				});
+				if (out.length >= 40) break;
+			}
+			if (out.length >= 40) break;
+		}
+		return out;
+	}, [groups]);
+	const conversationLabel = selectedContact
+		? selectedContact.isAI
+			? "conversation iAsted ouverte"
+			: `conversation avec ${selectedContact.name ?? selectedContact.firstName ?? "contact"} ouverte`
+		: "liste de contacts";
+	usePanelContext({
+		panelId: "iasted.ichat.backoffice",
+		tabId: "ichat",
+		surface: "backoffice",
+		title: "iChat — Messagerie BO",
+		summary: `${conversationLabel}. Segment « ${segmentLabel} », recherche « ${filters.searchTerm || "(vide)"} », ${total} contact(s).`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "ichat.set_segment",
+				label: "Filtrer par segment",
+				description: "Bascule sur 'all', 'team', 'network', 'citizens' ou 'foreigners'.",
+				params: { segment: { type: "string" } },
+			},
+			{
+				id: "ichat.search",
+				label: "Rechercher",
+				description: "Filtre la liste de contacts.",
+				params: { query: { type: "string" } },
+			},
+			{
+				id: "ichat.clear_search",
+				label: "Effacer la recherche",
+				description: "Vide le champ de recherche.",
+			},
+			{
+				id: "ichat.select_contact",
+				label: "Ouvrir une conversation",
+				description: "Ouvre la conversation avec un contact (id exact d'une entité). Utiliser '__iasted__' pour parler à iAsted.",
+				params: { contactId: { type: "string" } },
+			},
+			{
+				id: "ichat.back_to_list",
+				label: "Retour à la liste",
+				description: "Ferme la conversation courante et revient à la liste.",
+			},
+		],
+	});
+
+	useRegisterPageAction("ichat.set_segment", async (params) => {
+		const raw = String(params?.segment ?? "");
+		const allowed: Array<ContactSource | "all"> = [
+			"all",
+			"team",
+			"network",
+			"citizens",
+			"foreigners",
+			"administration",
+		];
+		const next = (allowed as string[]).includes(raw)
+			? (raw as ContactSource | "all")
+			: "all";
+		setSource(next);
+		return { success: true, message: `Segment basculé sur « ${next} ».` };
+	});
+	useRegisterPageAction("ichat.search", async (params) => {
+		const q = String(params?.query ?? "").trim();
+		setSearch(q);
+		return { success: true, message: `Recherche : « ${q || "(vide)"} ».` };
+	});
+	useRegisterPageAction("ichat.clear_search", async () => {
+		setSearch("");
+		return { success: true, message: "Recherche effacée." };
+	});
+	useRegisterPageAction("ichat.select_contact", async (params) => {
+		const contactId = String(params?.contactId ?? "");
+		if (!contactId) return { success: false, message: "contactId manquant." };
+		if (contactId === IASTED_CONTACT.id) {
+			setSelectedContact(IASTED_CONTACT);
+			return { success: true, message: "Conversation iAsted ouverte." };
+		}
+		const contact = allContacts.find((c: any) => c.userId === contactId);
+		if (!contact) {
+			return { success: false, message: `Contact ${contactId} introuvable dans la liste visible.` };
+		}
+		setSelectedContact({ ...contact, isAI: false });
+		return {
+			success: true,
+			message: `Conversation ouverte avec ${(contact as any).name ?? contactId}.`,
+		};
+	});
+	useRegisterPageAction("ichat.back_to_list", async () => {
+		setSelectedContact(null);
+		return { success: true, message: "Retour à la liste des contacts." };
+	});
 
 	// ── Conversation view ──
 	if (selectedContact) {

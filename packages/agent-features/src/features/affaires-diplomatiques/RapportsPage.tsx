@@ -22,7 +22,7 @@ import {
 	Briefcase,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useOrg } from "../../shell/org-provider";
@@ -144,6 +144,9 @@ export default function RapportsPhase() {
 	const compileReportAction = useAction(api.ai.diplomaticAI.compileReport);
 	const extractAction = useAction(
 		api.ai.diplomaticAI.extractPrioritiesFromDocument,
+	);
+	const requestReportPdf = useMutation(
+		api.functions.diplomaticAffairs.requestReportPdfGeneration,
 	);
 
 	// ─── iAsted page context ──────────────────────────────
@@ -458,9 +461,32 @@ export default function RapportsPhase() {
 												variant="ghost"
 												size="sm"
 												className="gap-1 text-xs"
-												onClick={() =>
-													toast.info("Export PDF bientot disponible")
+												disabled={
+													!report.targetIds ||
+													report.targetIds.length === 0
 												}
+												title={
+													!report.targetIds ||
+													report.targetIds.length === 0
+														? "Le rapport doit référencer au moins une cible"
+														: "Générer le PDF dans le dossier de la cible"
+												}
+												onClick={async () => {
+													try {
+														await requestReportPdf({
+															reportId: report._id,
+														});
+														toast.success(
+															"PDF en cours de génération — il apparaîtra dans le dossier cible",
+														);
+													} catch (err) {
+														toast.error(
+															err instanceof Error
+																? err.message
+																: "Erreur lors de la génération PDF",
+														);
+													}
+												}}
 											>
 												<FileDown className="h-3.5 w-3.5" />
 												PDF

@@ -32,6 +32,8 @@ export const documentOriginValidator = v.object({
     v.literal("upload"),
     v.literal("inbound-email"),
     v.literal("scan"),
+    v.literal("iasted-correspondance"),
+    v.literal("iasted-document"),
   ),
   correspondanceReference: v.optional(v.string()),
   correspondanceArrivalRef: v.optional(v.string()),
@@ -40,6 +42,13 @@ export const documentOriginValidator = v.object({
   sourceDate: v.optional(v.number()),
   classedAt: v.optional(v.number()),
   classedByUserId: v.optional(v.id("users")),
+  // ── Champs spécifiques aux documents générés par iAsted ──
+  /** Type de correspondance (note_verbale | lettre_officielle | telegramme | …) si origine iasted-correspondance. */
+  correspondanceType: v.optional(v.string()),
+  /** Code du template utilisé (attestation_residence, laissez_passer_consulaire, etc.) si origine iasted-document. */
+  templateCode: v.optional(v.string()),
+  /** Sujet libre saisi par l'utilisateur lors de la commande vocale. */
+  subject: v.optional(v.string()),
 });
 
 /**

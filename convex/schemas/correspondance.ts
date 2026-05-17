@@ -89,6 +89,15 @@ export const recipientStatusValidator = v.union(
   v.literal("en_attente"),
   v.literal("approuve"),
   v.literal("repondu"),
+  v.literal("transmis"),
+  v.literal("retourne"),
+);
+
+export const returnedCategoryValidator = v.union(
+  v.literal("incomplete"),
+  v.literal("rejected"),
+  v.literal("wrong_recipient"),
+  v.literal("other"),
 );
 
 export const correspondanceWorkflowStepTypeValidator = v.union(
@@ -106,6 +115,8 @@ export const correspondanceWorkflowStepTypeValidator = v.union(
   v.literal("DOCUMENT_ADDED"),
   v.literal("DOCUMENT_REMOVED"),
   v.literal("REGISTERED"),
+  // Renvoi à l'expéditeur d'origine (distinct de RETURNED_TO_AGENT qui sert au workflow d'approbation)
+  v.literal("RETURNED_TO_SENDER"),
 );
 
 const correspondanceAttachmentValidator = v.object({
@@ -255,6 +266,16 @@ export const correspondanceItemsTable = defineTable({
   arrivalReference: v.optional(v.string()),
   arrivalDate: v.optional(v.number()),
   assignedToId: v.optional(v.id("users")),
+
+  // Bordereau de transmission généré automatiquement lors d'un forward
+  // (transmission vers une autre organisation). Stocké uniquement sur la copie
+  // forwarder pour que l'agent puisse télécharger le justificatif de transmission.
+  transmissionBordereauStorageId: v.optional(v.id("_storage")),
+
+  // Renvoi à l'expéditeur — motif + catégorie quand un dossier est retourné
+  // (status passe à "archived" et recipientStatus à "retourne").
+  returnedReason: v.optional(v.string()),
+  returnedCategory: v.optional(returnedCategoryValidator),
 
   // Timestamps
   createdAt: v.number(),

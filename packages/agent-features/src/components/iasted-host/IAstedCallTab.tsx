@@ -24,8 +24,12 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -99,18 +103,100 @@ export function IAstedCallTab({
 	ringtoneMuted,
 	VoicemailsList,
 }: IAstedCallTabProps = {}) {
-	if (CALL_CENTER_ENABLED) {
-		return (
-			<CallCenterShell
-				selectedLineId={selectedLineId}
-				onSelectLineId={onSelectLineId}
-				ringtoneMuted={ringtoneMuted}
-				compact={compact}
-				VoicemailsList={VoicemailsList}
-			/>
-		);
-	}
-	return <LegacyCallTab />;
+	return (
+		<>
+			<IAstedCallTabPanelContext />
+			{CALL_CENTER_ENABLED ? (
+				<CallCenterShell
+					selectedLineId={selectedLineId}
+					onSelectLineId={onSelectLineId}
+					ringtoneMuted={ringtoneMuted}
+					compact={compact}
+					VoicemailsList={VoicemailsList}
+				/>
+			) : (
+				<LegacyCallTab />
+			)}
+		</>
+	);
+}
+
+/**
+ * Sous-composant invisible : publie le contexte panel iAsted pour l'onglet
+ * iAppel agent (snapshot + actions search/segment basiques). Les commandes
+ * vocales métier (find_contact_by_name → launch_call_with_contact) restent
+ * le canal principal pour démarrer un appel côté agent. Ce panel context
+ * permet à iAsted de "voir" qu'iAppel est ouvert et de piloter le filtre.
+ */
+function IAstedCallTabPanelContext() {
+	const { activeOrgId } = useOrg();
+	const { groups, total, filters, setSearch, setSource } = useContactSearch();
+	const segmentLabel = useMemo(() => {
+		const found = CALL_SOURCE_SEGMENTS.find((s) => s.id === filters.source);
+		return found?.label ?? "Tous";
+	}, [filters.source]);
+	const panelEntities = useMemo(
+		() =>
+			groups
+				.flatMap((g: any) =>
+					(g.contacts as any[]).slice(0, 6).map((c: any) => ({
+						id: c.userId as string,
+						type: "contact",
+						label: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || (c.name as string) || c.userId,
+						data: {
+							org: g.org.name as string,
+							position: (c.position as string) ?? "",
+						},
+					})),
+				)
+				.slice(0, 40),
+		[groups],
+	);
+	usePanelContext({
+		panelId: "iasted.icall.agent",
+		tabId: "icall",
+		surface: "agent",
+		title: "iAppel — Téléphonie",
+		summary: `Segment « ${segmentLabel} », recherche « ${filters.searchTerm || "(vide)"} », ${total} contact(s) dans ${groups.length} organisation(s).`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "iappel.set_segment",
+				label: "Filtrer par segment",
+				description: "Bascule sur 'all', 'team' (Équipe), 'network' (Réseau).",
+				params: { segment: { type: "string" } },
+			},
+			{
+				id: "iappel.search",
+				label: "Rechercher",
+				description: "Filtre la liste par nom, poste ou organisation.",
+				params: { query: { type: "string" } },
+			},
+			{
+				id: "iappel.clear_search",
+				label: "Effacer la recherche",
+				description: "Vide le champ de recherche.",
+			},
+		],
+	});
+	useRegisterPageAction("iappel.set_segment", async (params) => {
+		const raw = String(params?.segment ?? "");
+		const next: ContactSource | "all" =
+			raw === "team" || raw === "network" || raw === "all" ? (raw as any) : "all";
+		setSource(next);
+		return { success: true, message: `Segment basculé sur « ${next} ».` };
+	});
+	useRegisterPageAction("iappel.search", async (params) => {
+		const q = String(params?.query ?? "").trim();
+		setSearch(q);
+		return { success: true, message: `Recherche : « ${q || "(vide)"} ».` };
+	});
+	useRegisterPageAction("iappel.clear_search", async () => {
+		setSearch("");
+		return { success: true, message: "Recherche effacée." };
+	});
+	void activeOrgId;
+	return null;
 }
 
 /**

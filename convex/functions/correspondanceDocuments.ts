@@ -285,6 +285,78 @@ export const classerCorrespondanceDansIDocument = authMutation({
 });
 
 /**
+ * Rollback symétrique de `classerCorrespondanceDansIDocument`.
+ *
+ * Restaure le `correspondanceItem` (annule le soft-delete) et marque les
+ * documents iDocument issus du classement (linkedCorrespondanceItemId ==
+ * itemId) comme supprimés. Le storage binaire reste intact (les docs
+ * conservent les `storageId` originaux dans l'item correspondance).
+ *
+ * Cas d'usage : un utilisateur a classé par erreur, ou souhaite reprendre
+ * un dossier archivé pour réponse.
+ */
+export const unclasserCorrespondance = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw error(ErrorCode.NOT_FOUND, "Dossier introuvable");
+    if (!item.deletedAt) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Le dossier n'a pas été classé (pas dans la corbeille).",
+      );
+    }
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
+
+    // Soft-delete les documents iDocument issus du classement
+    const linkedDocs = await ctx.db
+      .query("documents")
+      .withIndex("by_correspondance_item", (q) =>
+        q.eq("linkedCorrespondanceItemId", args.itemId),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+
+    let removedCount = 0;
+    for (const doc of linkedDocs) {
+      // Seulement les docs ayant origin.type === "correspondance" (créés par
+      // le classement). Ignorer d'autres docs qui pourraient pointer le même
+      // item via une autre origine.
+      if (doc.origin?.type === "correspondance") {
+        await ctx.db.patch(doc._id, {
+          deletedAt: now,
+          deletedBy: ctx.user._id,
+        });
+        removedCount++;
+      }
+    }
+
+    // Restaurer le correspondanceItem
+    await ctx.db.patch(args.itemId, {
+      deletedAt: undefined,
+      updatedAt: now,
+    });
+
+    // Log workflow
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "VIEWED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: `Dossier déclassé d'iDocument (${removedCount} documents archivés en corbeille iDocument)`,
+      isRead: true,
+      createdAt: now,
+    });
+
+    return { removedDocCount: removedCount };
+  },
+});
+
+/**
  * Importer un document depuis iDocument vers un dossier de correspondance.
  */
 export const importDocumentFromIDocument = authMutation({

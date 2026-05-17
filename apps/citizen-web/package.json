@@ -25,6 +25,7 @@
     "@tiptap/extension-link": "^3.22.3",
     "@tiptap/react": "^3.22.3",
     "@tiptap/starter-kit": "^3.22.3",
+    "@workspace/agent-features": "workspace:*",
     "@workspace/api": "workspace:*",
     "@workspace/chat": "workspace:*",
     "@workspace/i18n": "workspace:*",

@@ -23,6 +23,7 @@ import {
   correspondanceStatusValidator,
   recipientStatusValidator,
   correspondanceDocumentValidator,
+  returnedCategoryValidator,
 } from "../schemas/correspondance";
 import {
   MailFolder,
@@ -915,42 +916,6 @@ export const registerIncoming = authMutation({
 /**
  * Assigner une correspondance reçue à un agent pour traitement.
  */
-export const assignCorrespondance = authMutation({
-  args: {
-    itemId: v.id("correspondanceItems"),
-    agentId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    const item = await ctx.db.get(args.itemId);
-    if (!item) throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
-    const orgId = item.copyOwnerOrgId ?? item.orgId;
-    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "transmit");
-
-    const agent = await ctx.db.get(args.agentId) as any;
-
-    await ctx.db.patch(args.itemId, {
-      assignedToId: args.agentId,
-      updatedAt: now,
-    });
-
-    // Synchroniser le recipientStatus → "en_attente"
-    await _syncRecipientStatus(ctx, args.itemId, "en_attente", now);
-
-    await ctx.db.insert("correspondanceWorkflowSteps", {
-      itemId: args.itemId,
-      stepType: "TRANSMITTED",
-      actorId: ctx.user._id,
-      actorName: ctx.user.name ?? ctx.user.email,
-      targetId: args.agentId,
-      targetName: agent?.name ?? agent?.email,
-      comment: `Assigné à ${agent?.name ?? "agent"} pour traitement`,
-      isRead: false,
-      createdAt: now,
-    });
-  },
-});
-
 /**
  * Répondre à une correspondance reçue.
  * Crée une nouvelle correspondance en brouillon liée (parentItemId),
@@ -1021,6 +986,720 @@ export const respondToCorrespondance = authMutation({
     await _syncRecipientStatus(ctx, args.itemId, "repondu", now);
 
     return { responseId };
+  },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TRANSMETTRE — Forward du dossier vers un agent ou une autre organisation
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Transmettre une correspondance reçue vers un autre destinataire.
+ *
+ * Deux modes selon que la cible est dans la même org que le détenteur courant :
+ *   - **Assignation intra-org** : target.kind === "agent" ET agent du même org →
+ *     patch `assignedToId` de la source, `recipientStatus → en_attente`.
+ *     Pas de bordereau (transmission interne).
+ *   - **Forward cross-org** : sinon → crée un NEW original chez le receveur
+ *     (`isCopy=false`, `status=received`, `senderName` = nom org forwarder) +
+ *     une COPY chez le forwarder (`isCopy=true`, `status=sent`). La source
+ *     existe toujours et son `recipientStatus` passe à `transmis`. Bordereau
+ *     PDF planifié de manière asynchrone si `includeBordereau !== false`.
+ *
+ * Habilitations confidentielles :
+ *   - Si confidentialite ∈ {confidentiel, secret} ET cible = autre org →
+ *     `confirmConfidential === true` est requis (défense en profondeur côté
+ *     backend, le warning UI étant côté front).
+ */
+export const transmitCorrespondance = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    target: v.union(
+      v.object({
+        kind: v.literal("agent"),
+        agentId: v.id("users"),
+        agentOrgId: v.id("orgs"),
+      }),
+      v.object({
+        kind: v.literal("org"),
+        orgId: v.id("orgs"),
+        userId: v.optional(v.id("users")),
+      }),
+    ),
+    comment: v.optional(v.string()),
+    documentIndices: v.optional(v.array(v.number())),
+    priority: v.optional(correspondancePriorityValidator),
+    includeBordereau: v.optional(v.boolean()),
+    confirmConfidential: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<
+    | { mode: "assigned"; assignedToId: Id<"users"> }
+    | {
+        mode: "forwarded";
+        forwardedOriginalId: Id<"correspondanceItems">;
+        forwardCopyId: Id<"correspondanceItems">;
+        newReference: string;
+        departureRef: string;
+      }
+  > => {
+    const now = Date.now();
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) {
+      throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    }
+    if (item.isCopy === true) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Impossible de transmettre une copie. Seul l'original peut être transmis.",
+      );
+    }
+    if (item.status !== "received") {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Seule une correspondance reçue peut être transmise.",
+      );
+    }
+
+    const sourceOrgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, sourceOrgId, "transmit");
+    await assertConfidentialityClearance(ctx, ctx.user, item);
+
+    // Résolution de l'org cible
+    const targetOrgId: Id<"orgs"> =
+      args.target.kind === "agent" ? args.target.agentOrgId : args.target.orgId;
+
+    // ─── MODE 1 : Assignation intra-org (même org, cible agent) ───
+    if (args.target.kind === "agent" && targetOrgId === sourceOrgId) {
+      const agent = await ctx.db.get(args.target.agentId);
+      if (!agent) {
+        throw error(ErrorCode.NOT_FOUND, "Agent introuvable");
+      }
+      await ctx.db.patch(args.itemId, {
+        assignedToId: args.target.agentId,
+        updatedAt: now,
+      });
+      await _syncRecipientStatus(ctx, args.itemId, "en_attente", now);
+      await ctx.db.insert("correspondanceWorkflowSteps", {
+        itemId: args.itemId,
+        stepType: "TRANSMITTED",
+        actorId: ctx.user._id,
+        actorName: ctx.user.name ?? ctx.user.email,
+        targetId: args.target.agentId,
+        targetName: agent.name ?? agent.email,
+        comment:
+          args.comment?.trim()
+            ? `Assigné à ${agent.name ?? "agent"} — ${args.comment.trim()}`
+            : `Assigné à ${agent.name ?? "agent"} pour traitement`,
+        isRead: false,
+        createdAt: now,
+      });
+      return { mode: "assigned", assignedToId: args.target.agentId };
+    }
+
+    // ─── MODE 2 : Forward cross-org ───
+    // Garde de confidentialité (défense en profondeur côté backend)
+    const level = item.confidentialite ?? "standard";
+    if ((level === "confidentiel" || level === "secret") && args.confirmConfidential !== true) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "La transmission d'une correspondance confidentielle nécessite une confirmation explicite.",
+      );
+    }
+
+    // Sélection des documents à transmettre
+    const allDocs = item.documents ?? [];
+    const indices = args.documentIndices ?? allDocs.map((_, i) => i);
+    const selectedDocs = indices
+      .filter((i) => i >= 0 && i < allDocs.length)
+      .map((i) => allDocs[i])
+      .filter((d): d is NonNullable<typeof d> => d !== undefined);
+    if (selectedDocs.length === 0) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Au moins un document doit être transmis.",
+      );
+    }
+
+    const targetOrg = await ctx.db.get(targetOrgId);
+    if (!targetOrg) {
+      throw error(ErrorCode.NOT_FOUND, "Organisation destinataire introuvable");
+    }
+
+    const forwardingOrg = await ctx.db.get(sourceOrgId);
+    const forwardingOrgName = forwardingOrg?.name ?? "—";
+
+    // Destinataire utilisateur cible (optionnel)
+    const targetUserId: Id<"users"> | undefined =
+      args.target.kind === "agent" ? args.target.agentId : args.target.userId;
+    const targetUser = targetUserId ? await ctx.db.get(targetUserId) : null;
+
+    // Références
+    const newReference = await generateSequentialReference(
+      ctx,
+      item.type,
+      sourceOrgId,
+    );
+    const departureRef = await generateDepartureReference(ctx, sourceOrgId);
+
+    const priority = args.priority ?? item.priority;
+    const baseComment = `Transmis par ${forwardingOrgName}. Origine : ${item.senderName} (${item.reference}).`;
+    const fullComment = args.comment?.trim()
+      ? `${baseComment} ${args.comment.trim()}`
+      : baseComment;
+    const tags = Array.from(
+      new Set([...(item.tags ?? []), "transmis", `from:${item.reference}`]),
+    );
+
+    // ── Création de l'ORIGINAL côté receveur ──
+    const forwardedOriginalId = await ctx.db.insert("correspondanceItems", {
+      orgId: targetOrgId,
+      copyOwnerOrgId: targetOrgId,
+      isCopy: false,
+      createdBy: ctx.user._id,
+      reference: newReference,
+      title: item.title,
+      type: item.type,
+      priority,
+      status: "received",
+      direction: "incoming",
+      // Sender = nous (l'org qui transmet). Provenance d'origine dans le commentaire/tags.
+      senderName: forwardingOrgName,
+      senderOrg: forwardingOrgName,
+      senderEmail: ctx.user.email,
+      senderUserId: ctx.user._id,
+      recipientName: targetUser?.name ?? targetOrg.name ?? "—",
+      recipientOrg: targetOrg.name,
+      recipientEmail: targetUser?.email,
+      primaryRecipientId: targetUserId,
+      primaryRecipientOrgId: targetOrgId,
+      comment: fullComment,
+      tags,
+      requiresApproval: false,
+      documents: selectedDocs.map((d) => ({ ...d, copyWatermark: false })),
+      confidentialite: item.confidentialite ?? "standard",
+      parentItemId: args.itemId,
+      readByIds: [],
+      searchText: buildCorrespondanceSearchText({
+        title: item.title,
+        reference: newReference,
+        senderName: forwardingOrgName,
+        senderOrg: forwardingOrgName,
+        recipientName: targetUser?.name ?? targetOrg.name,
+        recipientOrg: targetOrg.name,
+        comment: fullComment,
+        tags,
+      }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // ── Création de la COPIE côté forwarder ──
+    const forwardCopyId = await ctx.db.insert("correspondanceItems", {
+      orgId: sourceOrgId,
+      copyOwnerOrgId: sourceOrgId,
+      isCopy: true,
+      originalItemId: forwardedOriginalId,
+      createdBy: ctx.user._id,
+      reference: newReference,
+      title: item.title,
+      type: item.type,
+      priority,
+      status: "sent",
+      direction: "outgoing",
+      senderName: forwardingOrgName,
+      senderOrg: forwardingOrgName,
+      senderEmail: ctx.user.email,
+      senderUserId: ctx.user._id,
+      recipientName: targetUser?.name ?? targetOrg.name ?? "—",
+      recipientOrg: targetOrg.name,
+      recipientEmail: targetUser?.email,
+      primaryRecipientId: targetUserId,
+      primaryRecipientOrgId: targetOrgId,
+      comment: fullComment,
+      tags,
+      requiresApproval: false,
+      documents: selectedDocs.map((d) => ({ ...d, copyWatermark: true })),
+      confidentialite: item.confidentialite ?? "standard",
+      parentItemId: args.itemId,
+      readByIds: [ctx.user._id as string],
+      recipientStatus: "en_transit",
+      recipientStatusUpdatedAt: now,
+      sentAt: now,
+      searchText: buildCorrespondanceSearchText({
+        title: item.title,
+        reference: newReference,
+        senderName: forwardingOrgName,
+        senderOrg: forwardingOrgName,
+        recipientName: targetUser?.name ?? targetOrg.name,
+        recipientOrg: targetOrg.name,
+        comment: fullComment,
+        tags,
+      }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // ── Patch de la source : recipientStatus → "transmis" (sur la copie sender d'origine) ──
+    await _syncRecipientStatus(ctx, args.itemId, "transmis", now);
+
+    // ── Recipients table (juste le primaire ici, pas de CC sur les forward) ──
+    if (targetUserId) {
+      await ctx.db.insert("correspondanceRecipients", {
+        itemId: forwardedOriginalId,
+        userId: targetUserId,
+        orgId: targetOrgId,
+        role: "primary",
+        name: targetUser?.name ?? targetOrg.name ?? "—",
+        email: targetUser?.email,
+        orgName: targetOrg.name ?? "—",
+        createdAt: now,
+      });
+    }
+
+    // ── Workflow steps : source + nouvelle copie + nouvel original ──
+    const transmitComment =
+      level === "confidentiel" || level === "secret"
+        ? `Transmis à ${targetOrg.name ?? "—"} (Réf. départ : ${departureRef}, nouvelle réf. : ${newReference}) — confidentielle, confirmation utilisateur`
+        : `Transmis à ${targetOrg.name ?? "—"} (Réf. départ : ${departureRef}, nouvelle réf. : ${newReference})`;
+
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "TRANSMITTED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      targetId: targetUserId,
+      targetName: targetUser?.name ?? targetOrg.name,
+      comment: transmitComment,
+      isRead: false,
+      createdAt: now,
+    });
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: forwardCopyId,
+      stepType: "TRANSMITTED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      targetId: targetUserId,
+      targetName: targetUser?.name ?? targetOrg.name,
+      comment: transmitComment,
+      isRead: true,
+      createdAt: now,
+    });
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: forwardedOriginalId,
+      stepType: "CREATED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: `Reçu par transmission de ${forwardingOrgName} — origine ${item.reference}`,
+      isRead: false,
+      createdAt: now,
+    });
+
+    // ── iBoîte : badge unread chez le receveur ──
+    const previewText = fullComment.slice(0, 200);
+    await ctx.db.insert("digitalMail", {
+      userId: ctx.user._id,
+      ownerId: targetOrgId,
+      ownerType: MailOwnerType.Organization,
+      type: MailType.Letter,
+      folder: MailFolder.Inbox,
+      sender: {
+        name: forwardingOrgName,
+        type: MailSenderType.Organization,
+        entityId: sourceOrgId,
+        entityType: MailOwnerType.Organization,
+      },
+      subject: `[Correspondance transmise] ${item.title}`,
+      preview: previewText,
+      content: fullComment,
+      isRead: false,
+      isStarred: false,
+      threadId: forwardedOriginalId,
+      linkedCorrespondanceItemId: forwardedOriginalId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // ── Bordereau PDF asynchrone (défaut ON, sauf désactivation explicite) ──
+    if (args.includeBordereau !== false) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.functions.correspondanceTransmissionBordereau
+          .generateTransmissionBordereau,
+        { forwardCopyId },
+      );
+    }
+
+    return {
+      mode: "forwarded",
+      forwardedOriginalId,
+      forwardCopyId,
+      newReference,
+      departureRef,
+    };
+  },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// RENVOYER À L'EXPÉDITEUR — Retour avec motif (refus, demande de complément)
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Renvoyer une correspondance reçue à son expéditeur d'origine avec un motif.
+ *
+ * Crée une nouvelle correspondance chez l'expéditeur d'origine (qui apparaît
+ * dans ses « Reçus »), avec tag `["renvoi", category]` et commentaire formaté.
+ * La source est marquée comme `archived` et `recipientStatus → retourne` sur
+ * la copie sender pour signaler le retour.
+ */
+export const returnToSender = authMutation({
+  args: {
+    itemId: v.id("correspondanceItems"),
+    reason: v.string(),
+    category: returnedCategoryValidator,
+  },
+  handler: async (ctx, args): Promise<{
+    returnedOriginalId: Id<"correspondanceItems">;
+    returnCopyId: Id<"correspondanceItems">;
+  }> => {
+    const now = Date.now();
+    const reason = args.reason.trim();
+    if (reason.length < 10) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Le motif du renvoi doit faire au moins 10 caractères.",
+      );
+    }
+
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) {
+      throw error(ErrorCode.NOT_FOUND, "Correspondance introuvable");
+    }
+    if (item.isCopy === true) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Impossible de renvoyer une copie. Seul l'original peut être retourné.",
+      );
+    }
+    if (item.status !== "received") {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Seule une correspondance reçue peut être renvoyée.",
+      );
+    }
+
+    const sourceOrgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, sourceOrgId, "transmit");
+    await assertConfidentialityClearance(ctx, ctx.user, item);
+
+    // Résolution de l'expéditeur d'origine
+    const senderOrgId = item.orgId; // l'org qui a créé le dossier à l'origine
+    const senderOrg = await ctx.db.get(senderOrgId);
+    const forwardingOrg = await ctx.db.get(sourceOrgId);
+    const forwardingOrgName = forwardingOrg?.name ?? "—";
+
+    if (!item.senderUserId && !item.senderEmail) {
+      throw error(
+        ErrorCode.VALIDATION_ERROR,
+        "Impossible de renvoyer : aucun expéditeur identifié sur cette correspondance.",
+      );
+    }
+
+    const newReference = await generateSequentialReference(
+      ctx,
+      item.type,
+      sourceOrgId,
+    );
+
+    const baseComment = `RENVOI [${args.category}] — ${reason} (origine : ${item.reference})`;
+    const tags = Array.from(
+      new Set([...(item.tags ?? []), "renvoi", args.category]),
+    );
+
+    // ── Création de l'ORIGINAL côté expéditeur d'origine (retour) ──
+    const returnedOriginalId = await ctx.db.insert("correspondanceItems", {
+      orgId: senderOrgId,
+      copyOwnerOrgId: senderOrgId,
+      isCopy: false,
+      createdBy: ctx.user._id,
+      reference: newReference,
+      title: `[Renvoi] ${item.title}`,
+      type: item.type,
+      priority: item.priority,
+      status: "received",
+      direction: "incoming",
+      senderName: forwardingOrgName,
+      senderOrg: forwardingOrgName,
+      senderEmail: ctx.user.email,
+      senderUserId: ctx.user._id,
+      recipientName: item.senderName,
+      recipientOrg: item.senderOrg,
+      recipientEmail: item.senderEmail,
+      primaryRecipientId: item.senderUserId,
+      primaryRecipientOrgId: senderOrgId,
+      comment: baseComment,
+      tags,
+      requiresApproval: false,
+      documents: (item.documents ?? []).map((d) => ({
+        ...d,
+        copyWatermark: false,
+      })),
+      confidentialite: item.confidentialite ?? "standard",
+      parentItemId: args.itemId,
+      readByIds: [],
+      returnedReason: reason,
+      returnedCategory: args.category,
+      searchText: buildCorrespondanceSearchText({
+        title: `[Renvoi] ${item.title}`,
+        reference: newReference,
+        senderName: forwardingOrgName,
+        senderOrg: forwardingOrgName,
+        recipientName: item.senderName,
+        recipientOrg: item.senderOrg,
+        comment: baseComment,
+        tags,
+      }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // ── Création de la COPIE côté forwarder (notre trace du renvoi) ──
+    const returnCopyId = await ctx.db.insert("correspondanceItems", {
+      orgId: sourceOrgId,
+      copyOwnerOrgId: sourceOrgId,
+      isCopy: true,
+      originalItemId: returnedOriginalId,
+      createdBy: ctx.user._id,
+      reference: newReference,
+      title: `[Renvoi] ${item.title}`,
+      type: item.type,
+      priority: item.priority,
+      status: "sent",
+      direction: "outgoing",
+      senderName: forwardingOrgName,
+      senderOrg: forwardingOrgName,
+      senderEmail: ctx.user.email,
+      senderUserId: ctx.user._id,
+      recipientName: item.senderName,
+      recipientOrg: item.senderOrg,
+      recipientEmail: item.senderEmail,
+      primaryRecipientId: item.senderUserId,
+      primaryRecipientOrgId: senderOrgId,
+      comment: baseComment,
+      tags,
+      requiresApproval: false,
+      documents: (item.documents ?? []).map((d) => ({
+        ...d,
+        copyWatermark: true,
+      })),
+      confidentialite: item.confidentialite ?? "standard",
+      parentItemId: args.itemId,
+      readByIds: [ctx.user._id as string],
+      recipientStatus: "en_transit",
+      recipientStatusUpdatedAt: now,
+      sentAt: now,
+      returnedReason: reason,
+      returnedCategory: args.category,
+      searchText: buildCorrespondanceSearchText({
+        title: `[Renvoi] ${item.title}`,
+        reference: newReference,
+        senderName: forwardingOrgName,
+        senderOrg: forwardingOrgName,
+        recipientName: item.senderName,
+        recipientOrg: item.senderOrg,
+        comment: baseComment,
+        tags,
+      }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // ── Patch source : archivée + recipientStatus → retourne ──
+    await ctx.db.patch(args.itemId, {
+      status: "archived",
+      returnedReason: reason,
+      returnedCategory: args.category,
+      updatedAt: now,
+    });
+    await _syncRecipientStatus(ctx, args.itemId, "retourne", now);
+
+    // ── Workflow steps : source + nouveau original + nouvelle copie ──
+    const targetSenderName = item.senderName;
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: args.itemId,
+      stepType: "RETURNED_TO_SENDER",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      targetId: item.senderUserId,
+      targetName: targetSenderName,
+      comment: `Renvoyé à ${targetSenderName} (${args.category}) — ${reason}`,
+      isRead: false,
+      createdAt: now,
+    });
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: returnCopyId,
+      stepType: "RETURNED_TO_SENDER",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      targetId: item.senderUserId,
+      targetName: targetSenderName,
+      comment: `Renvoyé à ${targetSenderName} (${args.category}) — ${reason}`,
+      isRead: true,
+      createdAt: now,
+    });
+    await ctx.db.insert("correspondanceWorkflowSteps", {
+      itemId: returnedOriginalId,
+      stepType: "CREATED",
+      actorId: ctx.user._id,
+      actorName: ctx.user.name ?? ctx.user.email,
+      comment: `Renvoi reçu de ${forwardingOrgName} — origine ${item.reference} (${args.category})`,
+      isRead: false,
+      createdAt: now,
+    });
+
+    // ── iBoîte : badge unread chez l'expéditeur d'origine ──
+    if (senderOrgId && senderOrg) {
+      await ctx.db.insert("digitalMail", {
+        userId: ctx.user._id,
+        ownerId: senderOrgId,
+        ownerType: MailOwnerType.Organization,
+        type: MailType.Letter,
+        folder: MailFolder.Inbox,
+        sender: {
+          name: forwardingOrgName,
+          type: MailSenderType.Organization,
+          entityId: sourceOrgId,
+          entityType: MailOwnerType.Organization,
+        },
+        subject: `[Renvoi] ${item.title}`,
+        preview: baseComment.slice(0, 200),
+        content: baseComment,
+        isRead: false,
+        isStarred: false,
+        threadId: returnedOriginalId,
+        linkedCorrespondanceItemId: returnedOriginalId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return { returnedOriginalId, returnCopyId };
+  },
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// BORDEREAU DE TRANSMISSION PAR DOSSIER — Helpers internes
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Lecture interne des données nécessaires à la génération du bordereau PDF
+ * par dossier. Appelée depuis l'action `generateTransmissionBordereau`.
+ *
+ * `forwardCopyId` est l'identifiant de la copie côté forwarder (créée par
+ * `transmitCorrespondance` en mode forward). C'est sur cette copie que le
+ * `transmissionBordereauStorageId` sera apposé.
+ */
+export const _collectTransmissionBordereauData = internalQuery({
+  args: { forwardCopyId: v.id("correspondanceItems") },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    | { error: string }
+    | {
+        forwardingOrgName: string;
+        forwardingActorName: string;
+        recipientName: string;
+        recipientOrgName: string;
+        recipientEmail?: string;
+        newReference: string;
+        originalReference: string;
+        originalSenderName: string;
+        transmissionComment: string;
+        confidentialite: string;
+        documents: Array<{
+          ordre: number;
+          label?: string;
+          filename: string;
+          mimeType: string;
+          sizeBytes: number;
+          isMainDocument: boolean;
+        }>;
+        transmittedAt: number;
+      }
+  > => {
+    const copy = await ctx.db.get(args.forwardCopyId);
+    if (!copy) return { error: "Copie forwarder introuvable" };
+    if (copy.isCopy !== true) {
+      return { error: "L'item fourni n'est pas une copie forwarder" };
+    }
+
+    const sourceId = copy.parentItemId;
+    const source = sourceId ? await ctx.db.get(sourceId) : null;
+
+    const forwardingOrg = await ctx.db.get(copy.copyOwnerOrgId ?? copy.orgId);
+    const actor = await ctx.db.get(copy.createdBy);
+
+    const documents = (copy.documents ?? [])
+      .map((d, i) => ({
+        ordre: d.ordre ?? i + 1,
+        label: d.label,
+        filename: d.filename,
+        mimeType: d.mimeType,
+        sizeBytes: d.sizeBytes,
+        isMainDocument: !!d.isMainDocument,
+      }))
+      .sort((a, b) => a.ordre - b.ordre);
+
+    return {
+      forwardingOrgName: forwardingOrg?.name ?? "—",
+      forwardingActorName: actor?.name ?? actor?.email ?? "—",
+      recipientName: copy.recipientName,
+      recipientOrgName: copy.recipientOrg ?? "—",
+      recipientEmail: copy.recipientEmail,
+      newReference: copy.reference,
+      originalReference: source?.reference ?? "—",
+      originalSenderName: source?.senderName ?? "—",
+      transmissionComment: copy.comment ?? "",
+      confidentialite: copy.confidentialite ?? "standard",
+      documents,
+      transmittedAt: copy.sentAt ?? copy.createdAt,
+    };
+  },
+});
+
+/**
+ * Patch interne du `transmissionBordereauStorageId` après génération du PDF.
+ */
+export const _setBordereauStorageId = internalMutation({
+  args: {
+    forwardCopyId: v.id("correspondanceItems"),
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.forwardCopyId, {
+      transmissionBordereauStorageId: args.storageId,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * URL signée du bordereau de transmission pour téléchargement.
+ * Renvoie `null` si le bordereau n'a pas encore été généré ou si l'item
+ * n'en a pas (cas d'une assignation intra-org).
+ */
+export const getTransmissionBordereauUrl = authQuery({
+  args: { itemId: v.id("correspondanceItems") },
+  handler: async (ctx, args): Promise<string | null> => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.deletedAt) return null;
+
+    const orgId = item.copyOwnerOrgId ?? item.orgId;
+    await requireCorrespondanceAccess(ctx, ctx.user, orgId, "view");
+    await assertConfidentialityClearance(ctx, ctx.user, item);
+
+    if (!item.transmissionBordereauStorageId) return null;
+    return await ctx.storage.getUrl(item.transmissionBordereauStorageId);
   },
 });
 

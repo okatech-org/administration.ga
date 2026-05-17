@@ -50,6 +50,7 @@ export function isSuperAdmin(user: Doc<"users">): boolean {
 
 /**
  * Resolve all task codes for a membership via:
+ *   0. Si membership.moduleAccess existe → override total (per-user dans cette org)
  *   1. Si position.moduleAccess existe → dérive les tasks via MODULE_ACCESS_TASKS
  *   2. Sinon → fallback sur position.tasks[] (backward compat)
  *
@@ -60,6 +61,15 @@ export async function getTasksForMembership(
   ctx: AuthContext,
   membership: Doc<"memberships">,
 ): Promise<Set<string>> {
+  // Priorité 0 : override per-membership (modules attribués directement au
+  // user dans cette représentation — total override, la position est ignorée).
+  const membershipModuleAccess = (membership as any).moduleAccess as
+    Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }> | undefined;
+
+  if (membershipModuleAccess && membershipModuleAccess.length > 0) {
+    return resolveTaskCodesFromModuleAccess(membershipModuleAccess);
+  }
+
   if (!membership.positionId) return new Set();
 
   const position = await ctx.db.get(membership.positionId);
@@ -67,7 +77,7 @@ export async function getTasksForMembership(
     return new Set();
   }
 
-  // Priorité 1 : moduleAccess (nouveau système structuré)
+  // Priorité 1 : position.moduleAccess (système structuré au niveau du poste)
   const moduleAccess = (position as any).moduleAccess as
     Array<{ moduleCode: string; accessLevel: ModuleAccessLevel }> | undefined;
 

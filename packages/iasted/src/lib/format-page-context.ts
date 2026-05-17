@@ -44,6 +44,16 @@ export interface ShellContextLike {
 	availableActions: PageActionLike[];
 }
 
+export interface PanelContextLike {
+	panelId: string;
+	tabId: string;
+	surface: "backoffice" | "agent" | "citizen";
+	title: string;
+	summary: string;
+	visibleEntities: PageEntityLike[];
+	availableActions: PageActionLike[];
+}
+
 /**
  * Description sérialisable d'un champ de formulaire pilotable par la voix.
  * Mirror du résultat de `pageContextStore.getFieldDescriptors()`.
@@ -79,10 +89,11 @@ export function formatPageContextForVoice(
 		| {
 				page?: PageContextLike | null;
 				shell?: ShellContextLike | null;
+				panel?: PanelContextLike | null;
 				fields?: FormFieldLike[] | null;
 		  },
 ): string {
-	const { page, shell, fields } = normalizeInput(input);
+	const { page, shell, panel, fields } = normalizeInput(input);
 
 	const lines: string[] = [];
 
@@ -103,6 +114,53 @@ export function formatPageContextForVoice(
 			if (action.params && Object.keys(action.params).length > 0) {
 				lines.push(`  paramètres : ${formatParamsSummary(action.params)}`);
 			}
+		}
+		lines.push("");
+	}
+
+	// ── Bloc panel iAsted (overlay sur la page) ──
+	// Priorité haute : c'est ce que l'utilisateur regarde en focus immédiat
+	// (fenêtre flottante iAsted). Ses actionId sont préfixés par tab
+	// (iappel.*, icontact.*, ichat.*, imeeting.*, isettings.*).
+	if (panel) {
+		lines.push(`## PANNEAU iASTED OUVERT (overlay sur la page)`);
+		lines.push(`Onglet : ${panel.title} (tab=${panel.tabId}, surface=${panel.surface})`);
+		if (panel.summary) {
+			lines.push(`État : ${panel.summary}`);
+		}
+		if (panel.visibleEntities.length > 0) {
+			lines.push("");
+			lines.push(
+				`Entités visibles dans le panneau (${panel.visibleEntities.length}) — utilisables comme paramètres :`,
+			);
+			for (const entity of panel.visibleEntities) {
+				const dataHint = formatEntityData(entity.data);
+				lines.push(
+					`- [${entity.type}] ${entity.label} (id: ${entity.id})${dataHint}`,
+				);
+			}
+		}
+		if (panel.availableActions.length > 0) {
+			lines.push("");
+			lines.push(
+				"Actions disponibles sur ce panneau (déclencher via `execute_page_action` avec l'`actionId` EXACT préfixé par le tab) :",
+			);
+			for (const action of panel.availableActions) {
+				const confirm = action.requiresConfirmation
+					? " — CONFIRMATION REQUISE"
+					: "";
+				lines.push(`- ${action.id} : ${action.description}${confirm}`);
+				if (action.params && Object.keys(action.params).length > 0) {
+					lines.push(`  paramètres : ${formatParamsSummary(action.params)}`);
+				}
+			}
+			lines.push("");
+			lines.push(
+				"Règle : les commandes vocales métier (« filtre Back-Office », « cherche X », " +
+					"« appelle-la », « efface la recherche ») ciblent CE panneau, pas la page derrière. " +
+					"Les `actionId` du panel sont toujours préfixés (`iappel.*`, `icontact.*`, etc.). " +
+					"Quand le panneau est fermé, ce bloc disparaît : les commandes retombent alors sur la page.",
+			);
 		}
 		lines.push("");
 	}
@@ -217,27 +275,36 @@ function normalizeInput(
 		| {
 				page?: PageContextLike | null;
 				shell?: ShellContextLike | null;
+				panel?: PanelContextLike | null;
 				fields?: FormFieldLike[] | null;
 		  },
 ): {
 	page: PageContextLike | null;
 	shell: ShellContextLike | null;
+	panel: PanelContextLike | null;
 	fields: FormFieldLike[] | null;
 } {
-	if (!input) return { page: null, shell: null, fields: null };
-	// Discrimine la forme { page, shell, fields } de la forme PageContextLike directe :
+	if (!input) return { page: null, shell: null, panel: null, fields: null };
+	// Discrimine la forme { page, shell, panel, fields } de la forme PageContextLike directe :
 	// PageContextLike a forcément un `module` (string), { page, ... } non.
 	if (typeof (input as PageContextLike).module === "string") {
-		return { page: input as PageContextLike, shell: null, fields: null };
+		return {
+			page: input as PageContextLike,
+			shell: null,
+			panel: null,
+			fields: null,
+		};
 	}
 	const obj = input as {
 		page?: PageContextLike | null;
 		shell?: ShellContextLike | null;
+		panel?: PanelContextLike | null;
 		fields?: FormFieldLike[] | null;
 	};
 	return {
 		page: obj.page ?? null,
 		shell: obj.shell ?? null,
+		panel: obj.panel ?? null,
 		fields: obj.fields ?? null,
 	};
 }

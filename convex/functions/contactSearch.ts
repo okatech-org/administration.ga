@@ -199,7 +199,10 @@ async function loadCitizens(
 		}
 		// Vue globale backoffice (aucune org sélectionnée) : tous les profils
 		// jusqu'au plafond. Moins efficace mais acceptable sur un écran admin.
-		return await ctx.db.query("profiles").take(Math.min(opts.limit * 2, 10000));
+		// Plafond porté à 100 000 pour aligner sur la demande d'exhaustivité
+		// (la recherche vocale iAsted doit pouvoir retrouver n'importe quel
+		// compte utilisateur, y compris dans une vue plateforme à 50k+ profils).
+		return await ctx.db.query("profiles").take(Math.min(opts.limit * 2, 100_000));
 	}
 
 	if (scope === "org") {

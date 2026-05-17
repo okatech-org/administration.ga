@@ -219,6 +219,22 @@ export function IAstedFanMenu({
 		return () => window.removeEventListener("keydown", onKey);
 	}, [isOpen, closeMenu]);
 
+	// Pilotage vocal via iAsted : ouvre/ferme/bascule l'éventail à la demande
+	// du tool `open_app_menu`. L'event est émis par `useIAstedHost.dispatchUiAction`.
+	// Sans ce listener, l'agent confirme l'action mais l'UI ne bouge pas
+	// (seul `CircleMenu` du package écoutait l'event ; `IAstedFanMenu` était
+	// muet — bug visible côté backoffice-web qui utilise ce composant).
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const detail = (e as CustomEvent<{ open?: boolean }>).detail;
+			const shouldOpen = detail?.open ?? !isOpen;
+			if (shouldOpen && !isOpen) setIsOpen(true);
+			else if (!shouldOpen && isOpen) setIsOpen(false);
+		};
+		window.addEventListener("iasted:fan-toggle", handler);
+		return () => window.removeEventListener("iasted:fan-toggle", handler);
+	}, [isOpen]);
+
 	return (
 		<div ref={containerRef}>
 			<GooFilter />

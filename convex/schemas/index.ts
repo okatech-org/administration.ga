@@ -95,6 +95,7 @@ export {
   correspondanceAnnotationsTable,
   correspondanceSignaturesTable,
 } from "./correspondance";
+export { correspondanceNetworkConfigTable } from "./correspondanceNetworkConfig";
 
 export {
   typeDemarchesTable,

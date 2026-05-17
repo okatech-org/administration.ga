@@ -24,6 +24,7 @@ import {
 	useIAstedVoiceController,
 	type IAstedTabId,
 } from "@workspace/iasted";
+import { pageContextStore } from "@workspace/agent-features/stores";
 
 import { CitizenChatTab } from "./CitizenChatTab";
 import { CitizenCallTab } from "./CitizenCallTab";
@@ -66,6 +67,14 @@ export function CitizenIAstedWindow() {
 		window.addEventListener("iasted:open", handler);
 		return () => window.removeEventListener("iasted:open", handler);
 	}, [openWithTab]);
+
+	// Nettoyage du snapshot panel à la fermeture — évite qu'un onglet
+	// reste « ouvert » côté contexte iAsted alors que l'UI est fermée.
+	useEffect(() => {
+		if (!open) {
+			pageContextStore.setPanelSnapshot(null);
+		}
+	}, [open]);
 
 	const handleExpand = useCallback(() => {
 		setOpen(false);

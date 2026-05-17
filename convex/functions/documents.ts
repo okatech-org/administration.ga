@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
+import { query, internalMutation as rawInternalMutation } from "../_generated/server";
 import { authMutation, authQuery, backofficeMutation } from "../lib/customFunctions";
 import { getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
@@ -13,6 +13,7 @@ import { ActivityType as EventType, DocumentStatus, DetailedDocumentType, Docume
 import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 import { formatDocumentFilename } from "../lib/referenceHelpers";
+import { buildDocumentSearchText } from "../lib/documentHelpers";
 
 const MAX_FILES_PER_DOCUMENT = 10;
 
@@ -898,5 +899,126 @@ export const searchByOwner = authQuery({
     return results
       .filter((d) => !d.deletedAt)
       .slice(0, max);
+  },
+});
+
+// ─── Recherche cross-folder ───────────────────────────────────────────────
+
+/**
+ * Recherche full-text dans tous les documents d'une org (cross-folder).
+ * Pendant exact de `correspondance.searchItems` côté iCorrespondance.
+ *
+ * Utilise le searchIndex `search_all` (champ `searchText` reconstruit à
+ * chaque mutation via `buildDocumentSearchText`). Filtre côté serveur par
+ * `ownerId == orgId` et optionnellement par statut.
+ */
+export const searchOrgWide = authQuery({
+  args: {
+    orgId: v.id("orgs"),
+    query: v.string(),
+    status: v.optional(documentStatusValidator),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const trimmed = args.query.trim();
+    if (!trimmed) return [];
+
+    const isSuperadmin =
+      ctx.user.isSuperadmin || ctx.user.role === "super_admin";
+    if (!isSuperadmin) {
+      const membership = await getMembership(ctx, ctx.user._id, args.orgId);
+      if (!membership) {
+        throw error(ErrorCode.FORBIDDEN, "Accès refusé à cette organisation");
+      }
+    }
+
+    const max = Math.min(args.limit ?? 50, 100);
+    const results = await ctx.db
+      .query("documents")
+      .withSearchIndex("search_all", (q) => {
+        let builder = q
+          .search("searchText", trimmed)
+          .eq("ownerId", args.orgId);
+        if (args.status) {
+          builder = builder.eq("status", args.status);
+        }
+        return builder;
+      })
+      .take(max * 2);
+
+    return results.filter((d) => !d.deletedAt).slice(0, max);
+  },
+});
+
+// ─── Helpers iAsted ──────────────────────────────────────────────────────────
+
+/**
+ * Insère un document généré par iAsted dans la table `documents`, posé dans
+ * un dossier virtuel (typiquement « iAsted Documents »).
+ *
+ * Appelé depuis l'action `realtimeToolExecutor.executeRealtimeTool` après
+ * génération du PDF (correspondance officielle ou template standalone).
+ * L'auth a déjà été vérifiée dans l'action parente.
+ */
+export const createFromIAsted = rawInternalMutation({
+  args: {
+    orgId: v.id("orgs"),
+    userId: v.id("users"),
+    folderId: v.id("documentFolders"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    mimeType: v.string(),
+    sizeBytes: v.number(),
+    label: v.string(),
+    originType: v.union(
+      v.literal("iasted-correspondance"),
+      v.literal("iasted-document"),
+    ),
+    correspondanceType: v.optional(v.string()),
+    templateCode: v.optional(v.string()),
+    subject: v.optional(v.string()),
+    recipientName: v.optional(v.string()),
+    linkedCorrespondanceItemId: v.optional(v.id("correspondanceItems")),
+    extraTags: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const files = [
+      {
+        storageId: args.storageId,
+        filename: args.filename,
+        mimeType: args.mimeType,
+        sizeBytes: args.sizeBytes,
+        uploadedAt: now,
+      },
+    ];
+    const origin = {
+      type: args.originType,
+      classedAt: now,
+      classedByUserId: args.userId,
+      correspondanceType: args.correspondanceType,
+      templateCode: args.templateCode,
+      subject: args.subject,
+      recipientName: args.recipientName,
+    };
+    const tags = ["source:iasted", ...(args.extraTags ?? [])];
+
+    return await ctx.db.insert("documents", {
+      ownerId: args.orgId,
+      files,
+      label: args.label,
+      status: DocumentStatus.Pending,
+      folderId: args.folderId,
+      updatedAt: now,
+      linkedCorrespondanceItemId: args.linkedCorrespondanceItemId,
+      origin,
+      tags,
+      searchText: buildDocumentSearchText({
+        label: args.label,
+        files,
+        tags,
+        origin,
+      }),
+    });
   },
 });

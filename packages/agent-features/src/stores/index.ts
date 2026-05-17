@@ -9,6 +9,7 @@ export {
   pageContextStore,
   usePageContextSnapshot,
   useShellContextSnapshot,
+  usePanelContextSnapshot,
   useFieldDescriptorsSnapshot,
   PAGE_CONTEXT_LIMITS,
 } from "./page-context-store"
@@ -24,6 +25,7 @@ export type {
 export type {
   PageContextSnapshot,
   ShellContextSnapshot,
+  PanelContextSnapshot,
   PageEntity,
   PageAction,
   FieldSpec,

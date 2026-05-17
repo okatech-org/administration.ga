@@ -32,7 +32,25 @@ interface OrgContextType {
 
 const OrgContext = createContext<OrgContextType | undefined>(undefined)
 
-export function OrgProvider({ children }: { children: ReactNode }) {
+/**
+ * @param storageKey clé localStorage utilisée pour persister l'org active.
+ *   Default `"consulat-active-org"` (agent-web). Le back-office utilise
+ *   `"backoffice-active-org"` pour éviter la collision quand les deux apps
+ *   tournent sur le même origin.
+ * @param autoBindFirstMembership si `true` (default), sélectionne automatiquement
+ *   la première membership de l'utilisateur. Le back-office passe `false` car
+ *   l'org active est pilotée par `useOrgSelector` (un superadmin n'est pas
+ *   nécessairement membre des orgs qu'il consulte).
+ */
+export function OrgProvider({
+	children,
+	storageKey = "consulat-active-org",
+	autoBindFirstMembership = true,
+}: {
+	children: ReactNode
+	storageKey?: string
+	autoBindFirstMembership?: boolean
+}) {
 	const [activeOrgId, setActiveOrgIdState] = useState<Id<"orgs"> | null>(null)
 	const [isRestoring, setIsRestoring] = useState(true)
 
@@ -44,7 +62,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		const storedOrgId =
 			typeof window !== "undefined"
-				? localStorage.getItem("consulat-active-org")
+				? localStorage.getItem(storageKey)
 				: null
 
 		if (storedOrgId) {
@@ -52,13 +70,14 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 		}
 
 		setIsRestoring(false)
-	}, [])
+	}, [storageKey])
 
 	useEffect(() => {
+		if (!autoBindFirstMembership) return
 		if (!isRestoring && memberships !== undefined) {
 			if (memberships.length === 0) {
 				setActiveOrgIdState(null)
-				localStorage.removeItem("consulat-active-org")
+				localStorage.removeItem(storageKey)
 				return
 			}
 
@@ -68,15 +87,15 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 				const firstOrg = memberships[0]
 				if (firstOrg) {
 					setActiveOrgIdState(firstOrg.orgId)
-					localStorage.setItem("consulat-active-org", firstOrg.orgId)
+					localStorage.setItem(storageKey, firstOrg.orgId)
 				}
 			}
 		}
-	}, [memberships, activeOrgId, isRestoring])
+	}, [memberships, activeOrgId, isRestoring, autoBindFirstMembership, storageKey])
 
 	const setActiveOrgId = (orgId: Id<"orgs">) => {
 		setActiveOrgIdState(orgId)
-		localStorage.setItem("consulat-active-org", orgId)
+		localStorage.setItem(storageKey, orgId)
 	}
 
 	const hasLoadedOnce = useRef(false)

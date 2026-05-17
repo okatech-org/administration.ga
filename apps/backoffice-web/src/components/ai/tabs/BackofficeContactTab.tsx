@@ -14,9 +14,13 @@ import {
 	Users,
 	Video,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CitizenProfileDrawer } from "@workspace/iasted";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "@workspace/agent-features/hooks";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +33,7 @@ import {
 	useContactSearch,
 	type ContactGroup,
 	type ContactResultItem,
+	type ContactSource,
 } from "@/hooks/useContactSearch";
 import { cn } from "@/lib/utils";
 import { BO_SEGMENTS } from "./segments";
@@ -82,7 +87,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 	const { globalActiveMeetingId, setGlobalMeetingId } = useCallStore();
 	const { mutateAsync: callUser } = useConvexMutationQuery(api.functions.meetings.callUser);
 
-	const handleCall = async (targetUserId: string, mediaType: "audio" | "video") => {
+	const handleCall = useCallback(async (targetUserId: string, mediaType: "audio" | "video") => {
 		if (!orgId) {
 			toast.error("Sélectionnez une organisation pour appeler.");
 			return;
@@ -107,7 +112,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 		} finally {
 			setPendingCallUserId(null);
 		}
-	};
+	}, [orgId, globalActiveMeetingId, callUser, setGlobalMeetingId]);
 
 	const handleMessage = (contact: ContactResultItem) => {
 		// Ouvre l'onglet iChat + présélectionne le contact via event bus
@@ -143,6 +148,144 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 	// Chargement exhaustif : plus de pagination — le serveur livre tout le
 	// périmètre d'un coup (plafond de sécurité Convex 10 000).
 	const viewportRef = useRef<HTMLDivElement | null>(null);
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const segmentLabel = useMemo(
+		() => BO_SEGMENTS.find((s) => s.id === filters.source)?.label ?? "Tous",
+		[filters.source],
+	);
+	const panelEntities = useMemo(
+		() =>
+			groups
+				.flatMap((g: ContactGroup) =>
+					g.contacts.slice(0, 8).map((c) => ({
+						id: c.userId as string,
+						type: "contact",
+						label: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || c.name || c.userId,
+						data: {
+							org: g.org.name,
+							position: c.position ?? "",
+							source: c.source,
+						},
+					})),
+				)
+				.slice(0, 40),
+		[groups],
+	);
+	usePanelContext({
+		panelId: "iasted.icontact.backoffice",
+		tabId: "icontact",
+		surface: "backoffice",
+		title: "iContact — Annuaire BO",
+		summary: `Segment « ${segmentLabel} », recherche « ${filters.searchTerm || "(vide)"} », ${total} contact(s) dans ${groups.length} organisation(s).`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "icontact.set_segment",
+				label: "Filtrer par segment",
+				description:
+					"Bascule sur l'un des segments : 'all', 'team' (Back-Office), 'network' (Corps Diplomatique), 'citizens' (Ressortissants), 'foreigners' (Étrangers).",
+				params: { segment: { type: "string" } },
+			},
+			{
+				id: "icontact.search",
+				label: "Rechercher",
+				description: "Filtre par nom, poste ou organisation.",
+				params: { query: { type: "string" } },
+			},
+			{
+				id: "icontact.clear_search",
+				label: "Effacer la recherche",
+				description: "Vide le champ de recherche.",
+			},
+			{
+				id: "icontact.set_country",
+				label: "Filtrer par pays",
+				description: "Filtre par code ISO 2 (ex. 'FR', 'ES'). Chaîne vide pour tout afficher.",
+				params: { country: { type: "string" } },
+			},
+			{
+				id: "icontact.set_org_type",
+				label: "Filtrer par type d'organisation",
+				description: "Type : 'embassy', 'general_consulate', 'permanent_mission', 'high_commission' — vide pour tout afficher.",
+				params: { orgType: { type: "string" } },
+			},
+			{
+				id: "icontact.call_contact",
+				label: "Appeler un contact visible",
+				description:
+					"Lance un appel audio ou vidéo vers un contact visible (id exact d'une entité). mediaType: 'audio' ou 'video'.",
+				params: {
+					contactId: { type: "string" },
+					mediaType: { type: "string" },
+				},
+			},
+			{
+				id: "icontact.open_message",
+				label: "Ouvrir une conversation",
+				description: "Ouvre iChat avec un contact visible présélectionné.",
+				params: { contactId: { type: "string" } },
+			},
+		],
+	});
+
+	useRegisterPageAction("icontact.set_segment", async (params) => {
+		const raw = String(params?.segment ?? "");
+		const allowed: Array<ContactSource | "all"> = [
+			"all",
+			"team",
+			"network",
+			"citizens",
+			"foreigners",
+			"administration",
+		];
+		const next = (allowed as string[]).includes(raw)
+			? (raw as ContactSource | "all")
+			: "all";
+		setSource(next);
+		return { success: true, message: `Segment basculé sur « ${next} ».` };
+	});
+	useRegisterPageAction("icontact.search", async (params) => {
+		const q = String(params?.query ?? "").trim();
+		setSearch(q);
+		return { success: true, message: `Recherche : « ${q || "(vide)"} ».` };
+	});
+	useRegisterPageAction("icontact.clear_search", async () => {
+		setSearch("");
+		return { success: true, message: "Recherche effacée." };
+	});
+	useRegisterPageAction("icontact.set_country", async (params) => {
+		const c = String(params?.country ?? "").trim().toUpperCase();
+		setCountry(c);
+		return { success: true, message: c ? `Pays : ${c}` : "Filtre pays effacé." };
+	});
+	useRegisterPageAction("icontact.set_org_type", async (params) => {
+		const t = String(params?.orgType ?? "").trim();
+		setOrgType(t);
+		return { success: true, message: t ? `Type : ${t}` : "Filtre type effacé." };
+	});
+	useRegisterPageAction("icontact.call_contact", async (params) => {
+		const contactId = String(params?.contactId ?? "");
+		const mediaTypeRaw = String(params?.mediaType ?? "audio");
+		const mediaType: "audio" | "video" = mediaTypeRaw === "video" ? "video" : "audio";
+		if (!contactId) return { success: false, message: "contactId manquant." };
+		await handleCall(contactId, mediaType);
+		return {
+			success: true,
+			message: `Appel ${mediaType === "video" ? "vidéo" : "audio"} lancé.`,
+		};
+	});
+	useRegisterPageAction("icontact.open_message", async (params) => {
+		const contactId = String(params?.contactId ?? "");
+		if (!contactId) return { success: false, message: "contactId manquant." };
+		window.dispatchEvent(
+			new CustomEvent("iasted:select-contact", { detail: { userId: contactId } }),
+		);
+		window.dispatchEvent(
+			new CustomEvent("iasted:open", { detail: { tab: "ichat" } }),
+		);
+		return { success: true, message: "Conversation ouverte dans iChat." };
+	});
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -190,7 +333,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 				</div>
 			</div>
 
-			<ScrollArea viewportRef={viewportRef} className="flex-1 min-h-0">
+			<ScrollArea viewportRef={viewportRef} className="flex-1 min-h-0 [&>div>div]:!block [&>div>div]:!w-full [&>div>div]:!min-w-0">
 				{isPending ? (
 					<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
 				) : groups.length === 0 ? (
@@ -199,10 +342,10 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 						<p className="text-xs text-muted-foreground">{filters.searchTerm ? "Aucun résultat" : "Aucun contact"}</p>
 					</div>
 				) : (
-					<div className="divide-y">
+					<div className="divide-y w-full max-w-full">
 						{groups.map((group: ContactGroup) => (
-							<div key={group.org.id} className="py-2">
-								<div className="flex items-center gap-2 px-3 py-1.5">
+							<div key={group.org.id} className="py-2 w-full max-w-full">
+								<div className="flex items-center gap-2 px-3 py-1.5 w-full">
 									<Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
 									<span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider truncate">{group.org.name}</span>
 									{group.org.country && <span className="text-[9px] text-muted-foreground/60">{group.org.country}</span>}
@@ -223,7 +366,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 													handleContactClick(contact);
 												}
 											}}
-											className="group flex items-center gap-3 px-3 py-2 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.995]"
+											className="group flex items-center gap-2 px-3 py-2 w-full max-w-full hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.995]"
 										>
 											<Avatar className="h-8 w-8 shrink-0">
 												<AvatarImage src={contact.avatar} />
@@ -242,10 +385,10 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 													{contact.name?.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)}
 												</AvatarFallback>
 											</Avatar>
-											<div className="flex-1 min-w-0">
-												<div className="flex items-center gap-1.5">
-													<p className="text-xs font-bold truncate">{contact.lastName}</p>
-													<p className="text-xs text-foreground/80 truncate">{contact.firstName}</p>
+											<div className="flex-1 min-w-0 overflow-hidden">
+												<div className="flex items-center gap-1.5 min-w-0">
+													<p className="text-xs font-bold truncate min-w-0">{contact.lastName}</p>
+													<p className="text-xs text-foreground/80 truncate min-w-0">{contact.firstName}</p>
 													<Badge variant="outline" className={cn(
 														"text-[7px] h-3.5 px-1 shrink-0",
 														contact.source === "team"
@@ -270,18 +413,21 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 													</Badge>
 												</div>
 												{contact.position && <p className="text-[10px] text-muted-foreground truncate">{contact.position}</p>}
-												<div className="flex items-center gap-3 text-[9px] text-muted-foreground/70 mt-0.5">
-													{contact.email && <span className="flex items-center gap-0.5 truncate"><Mail className="h-2.5 w-2.5 shrink-0" />{contact.email}</span>}
-													{contact.phone && <span className="flex items-center gap-0.5"><Phone className="h-2.5 w-2.5 shrink-0" />{contact.phone}</span>}
+												<div className="flex items-center gap-2 text-[9px] text-muted-foreground/70 mt-0.5 min-w-0">
+													{contact.email && <span className="flex items-center gap-0.5 truncate min-w-0"><Mail className="h-2.5 w-2.5 shrink-0" /><span className="truncate">{contact.email}</span></span>}
+													{contact.phone && <span className="flex items-center gap-0.5 shrink-0"><Phone className="h-2.5 w-2.5 shrink-0" />{contact.phone}</span>}
 												</div>
 											</div>
-											{/* Actions rapides — révélées au hover/focus */}
-											<div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+											{/* Actions rapides — toujours visibles (message / appel audio / appel vidéo).
+											    Anciennement opacity-0 group-hover, mais sur la fenêtre flottante
+											    iAsted (420 px desktop, bottom-sheet mobile) le hover est peu
+											    pratique et n'existe pas en tactile. */}
+											<div className="flex items-center gap-0.5 shrink-0">
 												<Button
 													type="button"
 													size="icon"
 													variant="ghost"
-													className="h-7 w-7"
+													className="h-8 w-8"
 													title="Message"
 													disabled={!contact.userId}
 													onClick={(e) => {
@@ -295,7 +441,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 													type="button"
 													size="icon"
 													variant="ghost"
-													className="h-7 w-7 text-emerald-500 hover:bg-emerald-500/10"
+													className="h-8 w-8 text-emerald-500 hover:bg-emerald-500/10"
 													title="Appel audio"
 													disabled={callDisabled || !contact.userId}
 													onClick={(e) => {
@@ -309,7 +455,7 @@ export function BackofficeContactTab({ orgId }: BackofficeContactTabProps) {
 													type="button"
 													size="icon"
 													variant="ghost"
-													className="h-7 w-7 text-blue-500 hover:bg-blue-500/10"
+													className="h-8 w-8 text-blue-500 hover:bg-blue-500/10"
 													title="Appel vidéo"
 													disabled={callDisabled || !contact.userId}
 													onClick={(e) => {

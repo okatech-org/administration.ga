@@ -26,6 +26,21 @@ const ROLE_RANK: Record<string, number> = {
   [UserRole.SuperAdmin]: 4,
 };
 
+// Types d'orgs considérés comme "représentation diplomatique" pour les
+// agrégations du widget "Top représentations" et les compteurs `deployment.*`.
+// Exclut explicitement Ministry (tutelle, ex: MAE Libreville), IntelligenceAgency
+// (cloisonné) et ThirdParty (partenaires externes). Inclut les types legacy
+// tolérés par `orgTypeValidator`.
+const REPRESENTATION_TYPES = new Set<string>([
+  "embassy",
+  "high_representation",
+  "general_consulate",
+  "high_commission",
+  "permanent_mission",
+  "consulate",
+  "honorary_consulate",
+]);
+
 // Helper to enrich user with profile + membership data
 async function enrichUser(ctx: any, user: any) {
   const profile = await ctx.db
@@ -955,7 +970,13 @@ export const getStats = backofficeQuery({
       .query("orgs")
       .take(500);
     const nonDeletedOrgs = allOrgs.filter((o) => !o.deletedAt);
-    const activeOrgs = nonDeletedOrgs.filter((o) => o.isActive);
+    // Sous-ensemble "représentation diplomatique" : tous les compteurs
+    // `deployment.*` exposés au widget "Top représentations" doivent porter sur
+    // ce périmètre (exclut ministères, agences, partenaires tiers).
+    const representationOrgs = nonDeletedOrgs.filter((o) =>
+      REPRESENTATION_TYPES.has(o.type),
+    );
+    const activeRepresentations = representationOrgs.filter((o) => o.isActive);
 
     // Breakdown by type (all non-deleted orgs for visibility)
     const orgsByType: Record<string, number> = {};
@@ -963,9 +984,9 @@ export const getStats = backofficeQuery({
       orgsByType[org.type] = (orgsByType[org.type] ?? 0) + 1;
     }
 
-    // Breakdown by country (all non-deleted orgs)
+    // Breakdown by country — représentations diplomatiques uniquement
     const orgsByCountry: Record<string, { count: number; names: string[] }> = {};
-    for (const org of nonDeletedOrgs) {
+    for (const org of representationOrgs) {
       if (!orgsByCountry[org.country]) {
         orgsByCountry[org.country] = { count: 0, names: [] };
       }
@@ -973,9 +994,9 @@ export const getStats = backofficeQuery({
       orgsByCountry[org.country].names.push(org.name);
     }
 
-    // Countries covered via jurisdiction
+    // Countries covered via jurisdiction (représentations seulement)
     const allJurisdictionCountries = new Set<string>();
-    for (const org of nonDeletedOrgs) {
+    for (const org of representationOrgs) {
       if (org.jurisdictionCountries) {
         for (const c of org.jurisdictionCountries) {
           allJurisdictionCountries.add(c);
@@ -983,11 +1004,11 @@ export const getStats = backofficeQuery({
       }
     }
 
-    // Orgs with head of mission assigned
-    const orgsWithHom = nonDeletedOrgs.filter((o) => o.headOfMission).length;
+    // Orgs with head of mission assigned (représentations seulement)
+    const orgsWithHom = representationOrgs.filter((o) => o.headOfMission).length;
 
-    // Total staff count
-    const totalStaff = nonDeletedOrgs.reduce((sum, o) => sum + (o.staffCount ?? 0), 0);
+    // Total staff count (représentations seulement)
+    const totalStaff = representationOrgs.reduce((sum, o) => sum + (o.staffCount ?? 0), 0);
 
     // ── 2. Performance Metrics ──────────────────────────────────────────
     const completedCount = statusBreakdown["completed"] ?? 0;
@@ -1089,9 +1110,14 @@ export const getStats = backofficeQuery({
       recentRequests,
       // ── Strategic Intelligence ──
       deployment: {
-        activeOrgs: activeOrgs.length,
-        totalOrgs: nonDeletedOrgs.length,
-        activationRate: nonDeletedOrgs.length > 0 ? Math.round((activeOrgs.length / nonDeletedOrgs.length) * 100) : 0,
+        activeOrgs: activeRepresentations.length,
+        totalOrgs: representationOrgs.length,
+        activationRate:
+          representationOrgs.length > 0
+            ? Math.round(
+                (activeRepresentations.length / representationOrgs.length) * 100,
+              )
+            : 0,
         byType: orgsByType,
         byCountry: orgsByCountry,
         countriesCovered: allJurisdictionCountries.size,
@@ -2502,7 +2528,7 @@ export const createExternalUser = superadminMutation({
  *   - AdminSystem → can configure Admin, Corps Admin, Agents (not SuperAdmin or AdminSystem)
  *   - Admin → can configure Corps Admin and Agents only
  */
-import { moduleCodeValidator, CORE_MODULE_CODES, ALL_MODULE_CODES, MODULE_REGISTRY, type ModuleCodeValue } from "../lib/moduleCodes";
+import { moduleCodeValidator, CORE_MODULE_CODES, ALL_MODULE_CODES, MODULE_REGISTRY, accessLevelValidator, type ModuleCodeValue, type ModuleAccessLevel } from "../lib/moduleCodes";
 
 export const updateUserModules = backofficeMutation({
   args: {
@@ -2558,6 +2584,454 @@ export const getUserModules = backofficeQuery({
       allowedModules: (user as any).allowedModules as ModuleCodeValue[] | undefined,
       allModules: ALL_MODULE_CODES,
       coreModules: CORE_MODULE_CODES,
+    };
+  },
+});
+
+// ============================================================================
+// Modules par membership — override per-user dans une représentation
+// ============================================================================
+
+const membershipModuleAccessEntry = v.object({
+  moduleCode: moduleCodeValidator,
+  accessLevel: accessLevelValidator,
+});
+
+/**
+ * Récupère l'override moduleAccess d'un membership + les modules activés sur
+ * son org (pour filtrer la UI). `moduleAccess` peut être `null` (= hérite de
+ * la position).
+ */
+export const getMembershipModuleAccess = backofficeQuery({
+  args: { membershipId: v.id("memberships") },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) return null;
+
+    const org = await ctx.db.get(membership.orgId);
+    const orgModules = (org?.modules as ModuleCodeValue[] | undefined) ?? [];
+
+    return {
+      membershipId: membership._id,
+      orgId: membership.orgId,
+      userId: membership.userId,
+      orgModules,
+      moduleAccess:
+        ((membership as any).moduleAccess as
+          | Array<{ moduleCode: ModuleCodeValue; accessLevel: ModuleAccessLevel }>
+          | undefined) ?? null,
+      hasOverride: !!((membership as any).moduleAccess?.length),
+    };
+  },
+});
+
+/**
+ * Définit (ou retire avec `null`) l'override moduleAccess d'un membership.
+ *
+ * Garde-fous :
+ *   - Membership doit exister.
+ *   - Pas d'édition du membership d'un SuperAdmin.
+ *   - Pas d'auto-édition (cohérent avec updateUserModules).
+ *   - Hiérarchie : caller doit outranker la cible.
+ *   - Modules filtrés : ne garde que ceux activés sur `org.modules`
+ *     (silencieusement ignorés sinon).
+ */
+export const setMembershipModuleAccess = backofficeMutation({
+  args: {
+    membershipId: v.id("memberships"),
+    moduleAccess: v.union(v.null(), v.array(membershipModuleAccessEntry)),
+  },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) {
+      throw error(ErrorCode.NOT_FOUND, "Membership introuvable");
+    }
+
+    if (ctx.user._id === membership.userId) {
+      throw error(ErrorCode.CANNOT_REMOVE_SELF);
+    }
+
+    const targetUser = await ctx.db.get(membership.userId);
+    if (!targetUser) throw error(ErrorCode.USER_NOT_FOUND);
+    if (targetUser.isSuperadmin || targetUser.role === UserRole.SuperAdmin) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+    }
+
+    const callerRank = ROLE_RANK[getEffectiveRole(ctx.user)] ?? 0;
+    const targetRank = ROLE_RANK[getEffectiveRole(targetUser)] ?? 0;
+    if (targetRank >= callerRank) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+    }
+
+    // Retirer l'override → hérite de la position
+    if (args.moduleAccess === null || args.moduleAccess.length === 0) {
+      await ctx.db.patch(args.membershipId, { moduleAccess: undefined });
+      return { membershipId: args.membershipId, applied: 0, skipped: 0 };
+    }
+
+    // Filtrage : ne garde que les modules activés sur l'org
+    const org = await ctx.db.get(membership.orgId);
+    const orgModules = new Set<string>((org?.modules as string[]) ?? []);
+    const useOrgFilter = orgModules.size > 0;
+
+    // Déduplication : une seule entrée par moduleCode (dernier gagne)
+    const dedup = new Map<string, ModuleAccessLevel>();
+    for (const entry of args.moduleAccess) {
+      if (useOrgFilter && !orgModules.has(entry.moduleCode)) continue;
+      dedup.set(entry.moduleCode, entry.accessLevel);
+    }
+
+    const filtered = Array.from(dedup, ([moduleCode, accessLevel]) => ({
+      moduleCode: moduleCode as ModuleCodeValue,
+      accessLevel,
+    }));
+
+    await ctx.db.patch(args.membershipId, { moduleAccess: filtered });
+
+    return {
+      membershipId: args.membershipId,
+      applied: filtered.length,
+      skipped: args.moduleAccess.length - filtered.length,
+    };
+  },
+});
+
+/**
+ * Applique le même `moduleAccess` à un lot de memberships (corps diplomatique
+ * bulk). Délègue à la même logique de garde-fous que
+ * `setMembershipModuleAccess` pour chaque membership et renvoie un récap.
+ */
+export const bulkSetMembershipsModuleAccess = backofficeMutation({
+  args: {
+    membershipIds: v.array(v.id("memberships")),
+    moduleAccess: v.array(membershipModuleAccessEntry),
+  },
+  handler: async (ctx, args) => {
+    const callerRank = ROLE_RANK[getEffectiveRole(ctx.user)] ?? 0;
+    const updated: string[] = [];
+    const skipped: Array<{ membershipId: string; reason: string }> = [];
+
+    for (const membershipId of args.membershipIds) {
+      const membership = await ctx.db.get(membershipId);
+      if (!membership) {
+        skipped.push({ membershipId, reason: "Membership introuvable" });
+        continue;
+      }
+
+      if (ctx.user._id === membership.userId) {
+        skipped.push({ membershipId, reason: "Auto-édition interdite" });
+        continue;
+      }
+
+      const targetUser = await ctx.db.get(membership.userId);
+      if (!targetUser) {
+        skipped.push({ membershipId, reason: "Utilisateur introuvable" });
+        continue;
+      }
+      if (targetUser.isSuperadmin || targetUser.role === UserRole.SuperAdmin) {
+        skipped.push({ membershipId, reason: "SuperAdmin protégé" });
+        continue;
+      }
+
+      const targetRank = ROLE_RANK[getEffectiveRole(targetUser)] ?? 0;
+      if (targetRank >= callerRank) {
+        skipped.push({ membershipId, reason: "Rang insuffisant" });
+        continue;
+      }
+
+      // Filtrage par org.modules pour ce membership
+      const org = await ctx.db.get(membership.orgId);
+      const orgModules = new Set<string>((org?.modules as string[]) ?? []);
+      const useOrgFilter = orgModules.size > 0;
+
+      const dedup = new Map<string, ModuleAccessLevel>();
+      for (const entry of args.moduleAccess) {
+        if (useOrgFilter && !orgModules.has(entry.moduleCode)) continue;
+        dedup.set(entry.moduleCode, entry.accessLevel);
+      }
+
+      if (dedup.size === 0) {
+        skipped.push({
+          membershipId,
+          reason: "Aucun module compatible avec cette représentation",
+        });
+        continue;
+      }
+
+      const filtered = Array.from(dedup, ([moduleCode, accessLevel]) => ({
+        moduleCode: moduleCode as ModuleCodeValue,
+        accessLevel,
+      }));
+
+      await ctx.db.patch(membershipId, { moduleAccess: filtered });
+      updated.push(membershipId);
+    }
+
+    return {
+      updatedCount: updated.length,
+      skippedCount: skipped.length,
+      skipped,
+    };
+  },
+});
+
+// ============================================================================
+// Section métier "Agent" — performance d'un membership (KPIs)
+// ============================================================================
+
+/**
+ * KPIs d'activité pour un membership donné (corps admin).
+ *
+ * Retourne le nombre de requests assignées (en cours / clôturées) sur les 90
+ * derniers jours, et la date de dernière action consignée. Utilisable pour la
+ * carte "Performance" de la page user back-office.
+ */
+export const getMembershipPerformance = backofficeQuery({
+  args: { membershipId: v.id("memberships") },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) return null;
+
+    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+    const since = Date.now() - NINETY_DAYS_MS;
+
+    // Requests assignées à ce membership (scan via index by_assigned)
+    const assigned = await ctx.db
+      .query("requests")
+      .withIndex("by_assigned", (q) => q.eq("assignedTo", args.membershipId))
+      .collect();
+
+    const recentAssigned = assigned.filter((r) => (r._creationTime ?? 0) >= since);
+    const closedStatuses = new Set(["completed", "approved", "rejected", "cancelled"]);
+    const openCount = recentAssigned.filter((r) => !closedStatuses.has(r.status as string)).length;
+    const closedCount = recentAssigned.filter((r) => closedStatuses.has(r.status as string)).length;
+
+    // Dernière activité (last update sur une request assignée)
+    const lastActivity = assigned.reduce((max, r) => {
+      const t = (r as any).updatedAt ?? r._creationTime ?? 0;
+      return t > max ? t : max;
+    }, 0);
+
+    return {
+      assignedTotal: assigned.length,
+      recentOpenCount: openCount,
+      recentClosedCount: closedCount,
+      lastActivityAt: lastActivity > 0 ? lastActivity : null,
+      windowDays: 90,
+    };
+  },
+});
+
+// ============================================================================
+// Sections métier "Ressortissant" — données consulaires d'un user
+// ============================================================================
+
+/**
+ * Récupère l'inscription consulaire active (ou la plus récente) du user,
+ * enrichie de l'organisation de rattachement, pour affichage back-office.
+ */
+export const getCitizenConsularRegistration = backofficeQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+    if (!profile) return null;
+
+    const registrations = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
+      .collect();
+
+    if (registrations.length === 0) return null;
+
+    // On préfère le statut actif > attente > terminé/expiré, à défaut la plus récente
+    const STATUS_ORDER: Record<string, number> = {
+      active: 0,
+      pending: 1,
+      validated: 2,
+      expired: 3,
+      rejected: 4,
+    };
+    const sorted = [...registrations].sort((a, b) => {
+      const rankA = STATUS_ORDER[a.status as string] ?? 99;
+      const rankB = STATUS_ORDER[b.status as string] ?? 99;
+      if (rankA !== rankB) return rankA - rankB;
+      return b._creationTime - a._creationTime;
+    });
+    const reg = sorted[0]!;
+
+    const org = await ctx.db.get(reg.orgId);
+
+    return {
+      _id: reg._id,
+      type: reg.type,
+      status: reg.status,
+      registeredAt: reg.registeredAt,
+      activatedAt: reg.activatedAt,
+      expiresAt: reg.expiresAt,
+      cardNumber: reg.cardNumber,
+      cardIssuedAt: reg.cardIssuedAt,
+      cardExpiresAt: reg.cardExpiresAt,
+      printedAt: reg.printedAt,
+      duration: reg.duration,
+      nip: profile.identity?.nip,
+      org: org
+        ? { _id: org._id, name: org.name, type: org.type, country: org.country, slug: org.slug }
+        : null,
+      totalCount: registrations.length,
+    };
+  },
+});
+
+/**
+ * Liste les demandes consulaires d'un user (toutes statuts), enrichies du
+ * service consulaire et de l'org. Retourne `limit` dernières par défaut.
+ */
+export const listCitizenRequests = backofficeQuery({
+  args: {
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+
+    const requests = await ctx.db
+      .query("requests")
+      .withIndex("by_user_status", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(limit);
+
+    if (requests.length === 0) return [];
+
+    const orgIds = [...new Set(requests.map((r) => r.orgId))];
+    const serviceIds = [...new Set(requests.map((r) => r.orgServiceId))];
+    const [orgs, services] = await Promise.all([
+      Promise.all(orgIds.map((id) => ctx.db.get(id))),
+      Promise.all(serviceIds.map((id) => ctx.db.get(id))),
+    ]);
+    const orgMap = new Map(orgs.filter(Boolean).map((o) => [o!._id, o!]));
+    const serviceMap = new Map(services.filter(Boolean).map((s) => [s!._id, s!]));
+
+    return requests.map((r) => {
+      const org = orgMap.get(r.orgId);
+      const service = serviceMap.get(r.orgServiceId);
+      return {
+        _id: r._id,
+        reference: r.reference,
+        status: r.status,
+        priority: r.priority,
+        submittedAt: r.submittedAt,
+        updatedAt: r.updatedAt ?? r._creationTime,
+        completedAt: r.completedAt,
+        actionsRequiredCount: r.actionsRequired?.filter((a: any) => !a.completedAt).length ?? 0,
+        org: org ? { _id: org._id, name: org.name, slug: org.slug } : null,
+        service: service
+          ? {
+              _id: service._id,
+              code: (service as any).serviceCode ?? (service as any).code,
+              label: (service as any).label ?? null,
+            }
+          : null,
+      };
+    });
+  },
+});
+
+/**
+ * Liste les documents personnels d'un user (vault citoyen) pour affichage
+ * back-office. Filtre uniquement les documents dont `ownerId === userId`.
+ */
+export const listCitizenDocuments = backofficeQuery({
+  args: {
+    userId: v.id("users"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+
+    const documents = await ctx.db
+      .query("documents")
+      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))
+      .order("desc")
+      .take(limit);
+
+    return documents
+      .filter((d) => !d.deletedAt)
+      .map((d) => ({
+        _id: d._id,
+        label: d.label,
+        category: d.category,
+        documentType: d.documentType,
+        status: d.status,
+        validatedAt: d.validatedAt,
+        expiresAt: d.expiresAt,
+        archivedAt: d.archivedAt,
+        archiveCategorySlug: d.archiveCategorySlug,
+        fileCount: d.files?.length ?? 0,
+        updatedAt: d.updatedAt ?? d._creationTime,
+      }));
+  },
+});
+
+/**
+ * Récupère la carte consulaire active d'un user (dérivée de
+ * `consularRegistrations.cardNumber`). Inclut le statut d'impression via la
+ * dernière entrée `printJobs` associée.
+ */
+export const getCitizenConsularCard = backofficeQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+    if (!profile) return null;
+
+    const registrations = await ctx.db
+      .query("consularRegistrations")
+      .withIndex("by_profile", (q) => q.eq("profileId", profile._id))
+      .collect();
+
+    const withCard = registrations.filter((r) => r.cardNumber);
+    if (withCard.length === 0) return null;
+
+    // Préférer celle avec cardExpiresAt le plus grand (= la plus récente valide)
+    const sorted = [...withCard].sort(
+      (a, b) => (b.cardExpiresAt ?? 0) - (a.cardExpiresAt ?? 0),
+    );
+    const reg = sorted[0]!;
+
+    const org = await ctx.db.get(reg.orgId);
+
+    // Dernier print job lié à ce profile (printJobs n'a pas d'index by_profile,
+    // on filtre via le scan complet — acceptable pour un affichage admin ponctuel).
+    const allPrintJobs = await ctx.db
+      .query("printJobs")
+      .filter((q) => q.eq(q.field("profileId"), profile._id))
+      .collect();
+    const lastPrintJob =
+      allPrintJobs.length > 0
+        ? allPrintJobs.sort((a, b) => b._creationTime - a._creationTime)[0]!
+        : null;
+
+    return {
+      registrationId: reg._id,
+      cardNumber: reg.cardNumber,
+      cardIssuedAt: reg.cardIssuedAt,
+      cardExpiresAt: reg.cardExpiresAt,
+      printedAt: reg.printedAt,
+      duration: reg.duration,
+      org: org ? { _id: org._id, name: org.name, slug: org.slug } : null,
+      lastPrintJob: lastPrintJob
+        ? {
+            _id: lastPrintJob._id,
+            status: lastPrintJob.status,
+            queuedAt: lastPrintJob.queuedAt,
+            completedAt: lastPrintJob.completedAt,
+          }
+        : null,
     };
   },
 });

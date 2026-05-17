@@ -1726,7 +1726,9 @@
 				"activityHint": "Flux temps réel des événements du réseau",
 				"noActivity": "Aucune activité récente",
 				"health": "Santé système",
-				"healthHint": "Composants critiques surveillés"
+				"healthHint": "Composants critiques surveillés",
+					"repsCount_one": "{{count}} représentation",
+					"repsCount_other": "{{count}} représentations"
 			},
 			"actions": {
 				"refresh": "Rafraîchir",
@@ -7607,6 +7609,9 @@
 			"edit": "Modifier",
 			"send": "Envoyer",
 			"reply": "Répondre",
+			"transmit": "Transmettre",
+			"return": "Renvoyer à l'expéditeur",
+			"quickActions": "Actions rapides",
 			"assign": "Assigner",
 			"reassign": "Réassigner",
 			"restore": "Restaurer",
@@ -7648,7 +7653,9 @@
 			"recu": "Reçu",
 			"en_attente": "En attente",
 			"approuve": "Approuvé",
-			"repondu": "Répondu"
+			"repondu": "Répondu",
+			"transmis": "Transmis",
+			"retourne": "Retourné"
 		},
 		"types": {
 			"note_verbale": "Note Verbale",
@@ -7722,6 +7729,44 @@
 			"searchPlaceholder": "Rechercher un agent…",
 			"empty": "Aucun agent trouvé",
 			"toastAssigned": "Correspondance assignée"
+		},
+		"transmit": {
+			"title": "Transmettre la correspondance",
+			"hint": "Le dossier est transmis à un agent ou à une autre organisation du système. Un bordereau de transmission PDF est généré automatiquement pour les transmissions inter-organisations.",
+			"tabAgent": "À un agent",
+			"tabOrg": "À une organisation",
+			"orgSearchPlaceholder": "Rechercher une organisation…",
+			"agentSearchPlaceholder": "Rechercher un agent…",
+			"commentLabel": "Note de transmission",
+			"commentPlaceholder": "Ex : pour traitement et retour avant le …",
+			"documentsLabel": "Documents à inclure",
+			"includeBordereau": "Bordereau de transmission (PDF)",
+			"bordereauOn": "Sera généré",
+			"bordereauOff": "Ne sera pas généré",
+			"confidentialWarning": "Cette correspondance est marquée confidentielle ou secrète. Une transmission externe est tracée dans l'audit et requiert votre confirmation explicite.",
+			"confidentialConfirm": "Je confirme la transmission de cette correspondance confidentielle.",
+			"submit": "Transmettre",
+			"toastAssigned": "Correspondance assignée à l'agent",
+			"toastForwarded": "Correspondance transmise — bordereau en cours de génération",
+			"toastError": "Erreur lors de la transmission"
+		},
+		"returnToSender": {
+			"title": "Renvoyer à l'expéditeur",
+			"hint": "Le dossier est retourné à son expéditeur d'origine avec votre motif. Il apparaîtra dans ses « Reçus » et votre dossier sera archivé.",
+			"recipientLabel": "Renvoyer à",
+			"categoryLabel": "Motif",
+			"categoryOptions": {
+				"incomplete": "Dossier incomplet",
+				"rejected": "Refus / rejet",
+				"wrong_recipient": "Mauvais destinataire",
+				"other": "Autre motif"
+			},
+			"reasonLabel": "Détails du motif *",
+			"reasonPlaceholder": "Précisez les pièces manquantes, le motif de refus ou le bon destinataire…",
+			"reasonMinHint": "Minimum 10 caractères",
+			"submit": "Renvoyer",
+			"toastReturned": "Correspondance renvoyée à l'expéditeur",
+			"toastError": "Erreur lors du renvoi"
 		},
 		"import": {
 			"title": "Importer depuis iDocument",

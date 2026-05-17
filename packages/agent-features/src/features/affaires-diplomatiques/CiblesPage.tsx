@@ -76,6 +76,9 @@ export default function CiblesPhase() {
 	const [showStrategyDialog, setShowStrategyDialog] = useState(false);
 	const [strategyTargetId, setStrategyTargetId] = useState<Id<"diplomaticTargets"> | null>(null);
 	const [strategyState, setStrategyState] = useState<"idle" | "loading" | "result" | "error">("idle");
+	const [strategyDepth, setStrategyDepth] = useState<"standard" | "complet">(
+		"complet",
+	);
 	const [strategyResult, setStrategyResult] = useState<{
 		planId: Id<"diplomaticPlans">;
 		title: string;
@@ -158,6 +161,7 @@ export default function CiblesPhase() {
 			const result = await generateStrategyAction({
 				orgId: activeOrgId,
 				targetId: strategyTargetId,
+				depth: strategyDepth,
 			});
 			setStrategyResult(result);
 			setStrategyState("result");
@@ -575,10 +579,54 @@ export default function CiblesPhase() {
 							<p className="text-sm font-medium">{strategyTargetName}</p>
 							<p className="text-[10px] text-muted-foreground leading-relaxed">
 								L'IA va analyser cette cible et générer un plan de partenariat
-								complet incluant : besoins du Gabon, capacités du partenaire,
+								incluant : besoins du Gabon, capacités du partenaire,
 								bénéfices mutuels, points de négociation, agenda de réunion, et
 								analyse des risques.
 							</p>
+						</div>
+
+						{/* Sélecteur de profondeur d'analyse */}
+						<div className="space-y-1.5">
+							<Label className="text-xs">Profondeur d'analyse</Label>
+							<div className="grid grid-cols-2 gap-2">
+								<button
+									type="button"
+									onClick={() => setStrategyDepth("standard")}
+									className={`rounded-lg border p-3 text-left transition-all ${
+										strategyDepth === "standard"
+											? "border-primary bg-primary/5"
+											: "border-border hover:border-primary/30"
+									}`}
+								>
+									<p className="text-xs font-medium">Standard</p>
+									<p className="mt-0.5 text-[10px] text-muted-foreground">
+										Génération rapide (besoins, bénéfices, objectifs).
+									</p>
+								</button>
+								<button
+									type="button"
+									onClick={() => setStrategyDepth("complet")}
+									className={`rounded-lg border p-3 text-left transition-all ${
+										strategyDepth === "complet"
+											? "border-primary bg-primary/5"
+											: "border-border hover:border-primary/30"
+									}`}
+								>
+									<p className="flex items-center gap-1 text-xs font-medium">
+										Complet (R1-R4)
+										<Badge
+											variant="secondary"
+											className="text-[8px]"
+										>
+											Recommandé
+										</Badge>
+									</p>
+									<p className="mt-0.5 text-[10px] text-muted-foreground">
+										Analyse OkaTech : diagnostic sectoriel, points aveugles,
+										profil opérateur, cadre partenariat.
+									</p>
+								</button>
+							</div>
 						</div>
 					</div>
 				}

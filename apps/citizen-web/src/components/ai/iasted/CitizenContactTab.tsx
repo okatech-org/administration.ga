@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "@workspace/agent-features/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -53,6 +57,51 @@ export function CitizenContactTab() {
 				(org.country ?? "").toLowerCase().includes(q),
 		);
 	}, [allOrgs, search]);
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const panelEntities = useMemo(
+		() =>
+			filteredOrgs.slice(0, 40).map((org: any) => ({
+				id: org._id as string,
+				type: "org",
+				label: org.name as string,
+				data: {
+					type: ORG_TYPE_LABELS[org.type] ?? "Représentation",
+					country: org.country ?? "",
+				},
+			})),
+		[filteredOrgs],
+	);
+	usePanelContext({
+		panelId: "iasted.icontact.citizen",
+		tabId: "icontact",
+		surface: "citizen",
+		title: "iContact — Annuaire",
+		summary: `Recherche « ${search || "(vide)"} », ${filteredOrgs.length} représentation(s) affichée(s).`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "icontact.search",
+				label: "Rechercher",
+				description: "Filtre la liste des représentations par nom ou pays.",
+				params: { query: { type: "string" } },
+			},
+			{
+				id: "icontact.clear_search",
+				label: "Effacer la recherche",
+				description: "Vide le champ de recherche.",
+			},
+		],
+	});
+	useRegisterPageAction("icontact.search", async (params) => {
+		const q = String(params?.query ?? "").trim();
+		setSearch(q);
+		return { success: true, message: `Recherche : « ${q || "(vide)"} ».` };
+	});
+	useRegisterPageAction("icontact.clear_search", async () => {
+		setSearch("");
+		return { success: true, message: "Recherche effacée." };
+	});
 
 	return (
 		<div className="flex-1 flex flex-col min-h-0 overflow-hidden">

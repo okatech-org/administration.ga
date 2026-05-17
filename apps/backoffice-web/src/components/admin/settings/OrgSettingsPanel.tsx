@@ -36,8 +36,7 @@ import { CalendarSection } from "./sections/CalendarSection";
 import { CallSettingsSection } from "./sections/CallSettingsSection";
 import { ChatsSection } from "./sections/ChatsSection";
 import { ContactsSection } from "./sections/ContactsSection";
-import { CorrespondanceSection } from "./sections/CorrespondanceSection";
-import { CorrespondanceTypesSection } from "./sections/CorrespondanceTypesSection";
+import { CorrespondanceRedirectSection } from "./sections/CorrespondanceRedirectSection";
 import { IAstedSection } from "./sections/IAstedSection";
 import { IdentitySection } from "./sections/IdentitySection";
 import { JurisdictionSection } from "./sections/JurisdictionSection";
@@ -135,15 +134,7 @@ const GROUPS: SettingsTabGroup[] = [
         key: "correspondance",
         label: "iCorrespondance",
         icon: Mail,
-        component: CorrespondanceSection,
-        completionKey: "correspondance",
-      },
-      {
-        key: "correspondance-types",
-        label: "Types de correspondance",
-        icon: ScrollText,
-        component: CorrespondanceTypesSection,
-        completionKey: "correspondance-types",
+        component: CorrespondanceRedirectSection,
       },
       {
         key: "calls",

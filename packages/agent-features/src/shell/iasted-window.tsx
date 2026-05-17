@@ -21,6 +21,7 @@
 import { useRouter } from "@workspace/routing"
 import { ShieldCheck } from "lucide-react"
 import { type ReactNode, useCallback, useEffect, useState } from "react"
+import { pageContextStore } from "../stores/page-context-store"
 import {
   CircleMenu,
   VoiceFloatingTranscription,
@@ -96,6 +97,17 @@ export function IAstedWindow({
     window.addEventListener("iasted:open", handler)
     return () => window.removeEventListener("iasted:open", handler)
   }, [openWithTab])
+
+  // Nettoyage du snapshot panel à la fermeture de la fenêtre — évite
+  // qu'un onglet reste « ouvert » côté contexte iAsted alors que l'UI
+  // est fermée. Les onglets internes s'enregistrent au mount via
+  // `usePanelContext` et se cleanup au unmount ; cette garde couvre le
+  // cas où l'utilisateur ferme la fenêtre sans changer d'onglet.
+  useEffect(() => {
+    if (!open) {
+      pageContextStore.setPanelSnapshot(null)
+    }
+  }, [open])
 
   const handleExpand = useCallback(() => {
     setOpen(false)

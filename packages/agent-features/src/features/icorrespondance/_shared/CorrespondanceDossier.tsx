@@ -1,7 +1,17 @@
 import { useState } from "react";
-import { Mail, Send } from "lucide-react";
+import { Forward, Mail, MoreVertical, Reply, Send, Undo2 } from "lucide-react";
 import { motion } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
+
+export type CorrespondanceDossierQuickAction = "respond" | "transmit" | "return";
 
 interface CorrespondanceDossierProps {
 	reference: string;
@@ -16,6 +26,14 @@ interface CorrespondanceDossierProps {
 	isCopy?: boolean;
 	recipientStatus?: string;
 	onClick?: () => void;
+	/** Si fourni, affiche un menu d'actions rapides (3-points) sur la vignette. */
+	onQuickAction?: (action: CorrespondanceDossierQuickAction) => void;
+	/** Actions activables. Par défaut, toutes désactivées (le parent doit explicitement opter). */
+	quickActions?: {
+		respond?: boolean;
+		transmit?: boolean;
+		return?: boolean;
+	};
 }
 
 const RECIPIENT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -71,14 +89,63 @@ export function CorrespondanceDossier({
 	isCopy = false,
 	recipientStatus,
 	onClick,
+	onQuickAction,
+	quickActions,
 }: CorrespondanceDossierProps) {
+	const { t } = useTranslation();
 	const [isHovered, setIsHovered] = useState(false);
 	const rsCfg = recipientStatus ? RECIPIENT_STATUS_LABELS[recipientStatus] : null;
     // to silence linter
     void status;
 
+	const hasAnyQuickAction =
+		!!onQuickAction &&
+		(quickActions?.respond || quickActions?.transmit || quickActions?.return);
+
 	return (
 		<div className="group relative flex flex-col items-center justify-start p-2 rounded-2xl w-full h-full">
+			{hasAnyQuickAction ? (
+				<div
+					className="absolute right-1 top-1 z-20 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7"
+								aria-label={t("icorrespondance.actions.quickActions")}
+							>
+								<MoreVertical className="h-3.5 w-3.5" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-44">
+							{quickActions?.respond ? (
+								<DropdownMenuItem onClick={() => onQuickAction?.("respond")}>
+									<Reply className="mr-2 h-3.5 w-3.5" />
+									{t("icorrespondance.actions.reply")}
+								</DropdownMenuItem>
+							) : null}
+							{quickActions?.transmit ? (
+								<DropdownMenuItem onClick={() => onQuickAction?.("transmit")}>
+									<Forward className="mr-2 h-3.5 w-3.5" />
+									{t("icorrespondance.actions.transmit")}
+								</DropdownMenuItem>
+							) : null}
+							{quickActions?.return ? (
+								<DropdownMenuItem
+									onClick={() => onQuickAction?.("return")}
+									className="text-destructive focus:text-destructive"
+								>
+									<Undo2 className="mr-2 h-3.5 w-3.5" />
+									{t("icorrespondance.actions.return")}
+								</DropdownMenuItem>
+							) : null}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
+			) : null}
 			<motion.div
 				role="button"
 				tabIndex={0}

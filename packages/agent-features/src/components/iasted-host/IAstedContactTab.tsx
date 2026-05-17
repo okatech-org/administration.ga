@@ -41,6 +41,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "@workspace/routing";
 import { useAuthenticatedConvexQuery } from "@workspace/api/hooks";
 import { CitizenProfileDrawer } from "@workspace/iasted";
+import {
+	usePanelContext,
+	useRegisterPageAction,
+} from "../../hooks/use-page-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -341,6 +345,106 @@ export function IAstedContactTab() {
 	const countries = (availableCountries ?? []) as Array<{ code: string; count: number }>;
 
 	const viewportRef = useRef<HTMLDivElement | null>(null);
+
+	// ── Conscience iAsted : publier le contexte du panneau + actions vocales ──
+	const totalVisible =
+		mode === "browse"
+			? orgs.length
+			: mode === "team"
+				? teamMembers.length
+				: mode === "search"
+					? searchResults.length
+					: 0;
+	const segmentLabel = useMemo(
+		() => SEGMENTS.find((s) => s.id === state.source)?.label ?? "Tous",
+		[state.source],
+	);
+	const panelEntities = useMemo(() => {
+		const out: Array<{
+			id: string;
+			type: string;
+			label: string;
+			data?: Record<string, unknown>;
+		}> = [];
+		const list: ContactResultItem[] =
+			mode === "search" ? searchResults : mode === "team" ? teamMembers : [];
+		for (const c of list.slice(0, 40)) {
+			out.push({
+				id: c.userId as string,
+				type: "contact",
+				label: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || c.name || c.userId,
+				data: { org: c.orgName, position: c.position ?? "", source: c.source },
+			});
+		}
+		return out;
+	}, [mode, searchResults, teamMembers]);
+	usePanelContext({
+		panelId: "iasted.icontact.agent",
+		tabId: "icontact",
+		surface: "agent",
+		title: "iContact — Annuaire",
+		summary: `Mode « ${mode} », segment « ${segmentLabel} », recherche « ${debouncedSearch || "(vide)"} », ${totalVisible} résultat(s).`,
+		visibleEntities: panelEntities,
+		availableActions: [
+			{
+				id: "icontact.set_segment",
+				label: "Filtrer par segment",
+				description:
+					"Bascule sur 'all' (Tous), 'team' (Mon équipe), 'network' (Corps diplomatique), 'citizens' (Ressortissants).",
+				params: { segment: { type: "string" } },
+			},
+			{
+				id: "icontact.search",
+				label: "Rechercher",
+				description: "Filtre par nom, poste ou organisation.",
+				params: { query: { type: "string" } },
+			},
+			{
+				id: "icontact.clear_search",
+				label: "Effacer la recherche",
+				description: "Vide le champ de recherche.",
+			},
+			{
+				id: "icontact.set_country",
+				label: "Filtrer par pays",
+				description: "Filtre par code ISO 2 (ex. 'FR', 'ES'). Chaîne vide pour tout afficher.",
+				params: { country: { type: "string" } },
+			},
+			{
+				id: "icontact.toggle_sort",
+				label: "Inverser le tri",
+				description: "Bascule entre tri A → Z et Z → A.",
+			},
+		],
+	});
+
+	useRegisterPageAction("icontact.set_segment", async (params) => {
+		const raw = String(params?.segment ?? "");
+		const next: ContactSource | "all" =
+			raw === "team" || raw === "network" || raw === "citizens" || raw === "all"
+				? (raw as any)
+				: "all";
+		setSource(next);
+		return { success: true, message: `Segment basculé sur « ${next} ».` };
+	});
+	useRegisterPageAction("icontact.search", async (params) => {
+		const q = String(params?.query ?? "").trim();
+		setSearch(q);
+		return { success: true, message: `Recherche : « ${q || "(vide)"} ».` };
+	});
+	useRegisterPageAction("icontact.clear_search", async () => {
+		setSearch("");
+		return { success: true, message: "Recherche effacée." };
+	});
+	useRegisterPageAction("icontact.set_country", async (params) => {
+		const c = String(params?.country ?? "").trim().toUpperCase();
+		setCountry(c);
+		return { success: true, message: c ? `Pays : ${c}` : "Filtre pays effacé." };
+	});
+	useRegisterPageAction("icontact.toggle_sort", async () => {
+		toggleSort();
+		return { success: true, message: "Tri inversé." };
+	});
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0">

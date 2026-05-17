@@ -2,9 +2,10 @@
 
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
+import { getDefaultFoldersForOrgType } from "@convex/lib/iDocumentDefaultFolders"
 import { DocumentSheet } from "@workspace/ui/components/document-sheet"
 import { Link, useRouter } from "@workspace/routing"
-import React, { useState, useMemo, useCallback, useEffect } from "react"
+import React, { useState, useMemo, useCallback, useEffect, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "motion/react"
 import { useOrg } from "../../shell/org-provider"
@@ -593,6 +594,63 @@ const fadeUp = {
 const stagger = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.04 } },
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FALLBACK FOLDERS — affichés brièvement quand la table dbFolders
+// est vide et que le seed `ensureSystemFolders` est en cours
+// ═══════════════════════════════════════════════════════════════
+
+function buildFallbackFolders(orgType: string | undefined): FolderItem[] {
+  const systemFolders: FolderItem[] = [
+    {
+      id: "__mes-documents",
+      name: "Mes Documents",
+      parentFolderId: null,
+      tags: [],
+      fileCount: 0,
+      subfolderCount: 0,
+      updatedAt: "",
+      createdBy: "Système",
+      isSystem: true,
+    },
+    {
+      id: "__brouillons",
+      name: "Brouillons",
+      parentFolderId: null,
+      tags: [],
+      fileCount: 0,
+      subfolderCount: 0,
+      updatedAt: "",
+      createdBy: "Système",
+      isSystem: true,
+    },
+    {
+      id: "__poubelle",
+      name: "Poubelle",
+      parentFolderId: null,
+      tags: [],
+      fileCount: 0,
+      subfolderCount: 0,
+      updatedAt: "",
+      createdBy: "Système",
+      isSystem: true,
+    },
+  ]
+  const userFolders: FolderItem[] = getDefaultFoldersForOrgType(orgType).map(
+    (f, i) => ({
+      id: `__fallback-user-${i}`,
+      name: f.name,
+      parentFolderId: null,
+      tags: [...f.tags],
+      fileCount: 0,
+      subfolderCount: 0,
+      updatedAt: "",
+      createdBy: "Système",
+      isSystem: false,
+    }),
+  )
+  return [...systemFolders, ...userFolders]
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1936,7 +1994,42 @@ function InfoDialog({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 
-export default function IDocumentPage() {
+/**
+ * Surface API publique de la feature iDocument, rendue sans dépendance
+ * directe au shell agent-web (`useOrg`) pour pouvoir être consommée aussi
+ * par le back-office où l'org active est pilotée par `useOrgSelector`.
+ */
+export interface IDocumentBaseProps {
+  /** Org cible. Si `null`, affiche un empty state "Sélectionnez une organisation". */
+  orgId: Id<"orgs"> | null
+  /** Type d'org (Embassy, Ministry, …) — détermine le set DEFAULT_FOLDERS de fallback. */
+  orgType?: string
+  /**
+   * - `"membership"` (default) : applique `useCanDoTask` / `useModuleAccess`
+   *   pour l'utilisateur courant relativement à `orgId`. Comportement agent-web.
+   * - `"superadmin"`           : bypass des checks UI (back-office). Le backend
+   *   Convex re-valide à chaque mutation — defense in depth.
+   */
+  permissionMode?: "membership" | "superadmin"
+  /** Slot dans le header. Le back-office y rend généralement `<OrgSelector />`. */
+  headerRightSlot?: ReactNode
+  /** Path absolu pour les liens vers iCorrespondance (default `"/icorrespondance"`). */
+  correspondanceBasePath?: string
+}
+
+export function IDocumentBase(props: IDocumentBaseProps) {
+  const {
+    orgId: activeOrgId,
+    orgType,
+    permissionMode = "membership",
+    headerRightSlot,
+    correspondanceBasePath: _correspondanceBasePath,
+  } = props
+  // Note: `correspondanceBasePath` est prévu pour la phase suivante (réécriture
+  // des liens vers iCorrespondance dans le sous-arbre). Référencé ici pour ne
+  // pas le perdre dans l'API publique.
+  void _correspondanceBasePath
+  void headerRightSlot
   // ─── State ──────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
@@ -1951,15 +2044,26 @@ export default function IDocumentPage() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all")
   const [sortBy, setSortBy] = useState("date")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
-  const { activeOrgId } = useOrg()
+
+  // Reset states quand l'org cible change — évite qu'un currentFolderId d'une
+  // ancienne org pointe vers un dossier inexistant dans la nouvelle.
+  useEffect(() => {
+    setCurrentFolderId(null)
+    setSearch("")
+    setStatusFilter("all")
+    setSourceFilter("all")
+  }, [activeOrgId])
+
   const router = useRouter()
+  const isSuperadminMode = permissionMode === "superadmin"
   const { hasMin: hasDocAccess } = useModuleAccess("documents")
-  const canEditDocs = hasDocAccess("editor")
-  const canAdminDocs = hasDocAccess("admin")
+  const canEditDocs = isSuperadminMode || hasDocAccess("editor")
+  const canAdminDocs = isSuperadminMode || hasDocAccess("admin")
   const { canDo } = useCanDoTask(activeOrgId ?? undefined)
-  const canManageTemplates = canDo("documents.manage_templates")
+  const canManageTemplates =
+    isSuperadminMode || canDo("documents.manage_templates")
   const { hasCapability } = useOrgModules()
-  const showArchive = hasCapability("documents", "archive")
+  const showArchive = isSuperadminMode || hasCapability("documents", "archive")
 
   // Convex queries — données réelles
   const { data: rawDocuments = [] } = useAuthenticatedConvexQuery(
@@ -2148,7 +2252,9 @@ export default function IDocumentPage() {
     }
   }, [activeOrgId, dbFolders, seedDone, ensureSystemFoldersMut])
   const folders = useMemo((): FolderItem[] => {
-    if (!dbFolders || dbFolders.length === 0) return [...DEFAULT_FOLDERS]
+    if (!dbFolders || dbFolders.length === 0) {
+      return buildFallbackFolders(orgType)
+    }
     return dbFolders.map((f) => ({
       id: f._id,
       name: f.name,
@@ -2162,7 +2268,7 @@ export default function IDocumentPage() {
       createdBy: f.isSystem ? "Système" : "Agent",
       isSystem: f.isSystem,
     }))
-  }, [dbFolders])
+  }, [dbFolders, orgType])
 
   // Dialog states
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
@@ -3364,5 +3470,20 @@ export default function IDocumentPage() {
         document={selectedDocViewer}
       />
     </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WRAPPER — agent-web : tire orgId + orgType depuis l'OrgProvider
+// ═══════════════════════════════════════════════════════════════
+
+export default function IDocumentPage() {
+  const { activeOrgId, activeOrg } = useOrg()
+  return (
+    <IDocumentBase
+      orgId={activeOrgId}
+      orgType={(activeOrg as { type?: string } | null)?.type}
+      permissionMode="membership"
+    />
   )
 }

@@ -29,6 +29,10 @@ import type {
 } from "../../stores/page-context-store";
 import { AIActionButton } from "./_shared/AIActionPanel";
 import {
+	StrategicAnalysisSection,
+	type StrategicAnalysis,
+} from "./_shared/StrategicAnalysisSection";
+import {
 	useAuthenticatedConvexQuery,
 	useConvexMutationQuery,
 } from "@workspace/api/hooks";
@@ -224,6 +228,15 @@ export default function PlansPhase() {
 											</div>
 										</div>
 									</div>
+								)}
+
+								{/* Analyse stratégique R1-R4 (mode complet) */}
+								{plan.strategicAnalysis && (
+									<StrategicAnalysisSection
+										analysis={
+											plan.strategicAnalysis as unknown as StrategicAnalysis
+										}
+									/>
 								)}
 
 								{/* Objectifs */}
