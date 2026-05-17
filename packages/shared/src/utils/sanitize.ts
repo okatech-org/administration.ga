@@ -30,7 +30,7 @@ const PURIFY_CONFIG = {
     "data-variant",    // callout variants: info / ok / warn
   ],
   ALLOW_DATA_ATTR: false,
-} as const;
+};
 
 /** Fallback SSR : strip tous les tags HTML pour ne jamais injecter de HTML
  *  brut dans le rendu serveur. La sanitization complète a lieu côté client

@@ -1222,7 +1222,7 @@ export default function SuperadminDashboard() {
 	// internationalisé). Mapping local → status convex pour la pipeline.
 	const statusLabel = (key: string) =>
 		t(`fields.requestStatus.options.${key}`, key);
-	const pipelineBars: BarDatum[] = [
+	const pipelineBars: BarDatum[] = ([
 		{ id: "draft", label: statusLabel("draft"), count: pipelineSrc.draft ?? 0, tone: "muted" },
 		{ id: "submitted", label: statusLabel("submitted"), count: pipelineSrc.submitted ?? 0, tone: "info" },
 		{ id: "pending", label: statusLabel("pending"), count: pipelineSrc.pending ?? 0, tone: "warning" },
@@ -1232,7 +1232,7 @@ export default function SuperadminDashboard() {
 		{ id: "ready", label: statusLabel("ready_for_pickup"), count: pipelineSrc.readyForPickup ?? 0, tone: "teal" },
 		{ id: "completed", label: statusLabel("completed"), count: pipelineSrc.completed ?? 0, tone: "success" },
 		{ id: "rejected", label: statusLabel("rejected"), count: pipelineSrc.rejected ?? 0, tone: "danger" },
-	].filter((b) => b.count > 0);
+	] as BarDatum[]).filter((b) => b.count > 0);
 
 	// ── Donut (statuts) ──────────────────────────────────────────────────
 	const donutData: DonutSegment[] = Object.entries(sb)
@@ -2049,10 +2049,10 @@ export default function SuperadminDashboard() {
 														</span>
 														<span style={{ color: "var(--text-muted)" }}>
 															{" "}—{" "}
-															{t(
+															{String(t(
 																`superadmin.auditLogs.actions.${log.action}`,
 																log.action,
-															)}
+															))}
 														</span>
 													</div>
 													<div
