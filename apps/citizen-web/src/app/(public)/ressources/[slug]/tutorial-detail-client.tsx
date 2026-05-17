@@ -28,6 +28,7 @@ import {
   Users,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useConvexQuery } from "@/integrations/convex/hooks"
@@ -106,6 +107,25 @@ export function TutorialDetailClient() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
   const [openSteps, setOpenSteps] = useState<Set<number>>(new Set())
   const [checkedDocs, setCheckedDocs] = useState<Set<number>>(new Set())
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+
+  const handleDownloadPdf = async () => {
+    if (!tutorial || downloadingPdf) return
+    setDownloadingPdf(true)
+    try {
+      const { downloadTutorialPdf } = await import("@/lib/tutorialPdf")
+      await downloadTutorialPdf(tutorial, lang === "en" ? "en" : "fr")
+    } catch (err) {
+      console.error("[tutorial] PDF download failed", err)
+      toast.error(
+        t("ressources.pdfDownloadError", {
+          defaultValue: "Erreur lors du téléchargement du PDF",
+        }),
+      )
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
 
   // Scroll-progress tutorialProgress sync
   const startedRef = useRef(false)
@@ -276,63 +296,75 @@ export function TutorialDetailClient() {
             </p>
           </div>
 
-          {/* Carte résumé */}
-          {summary && (
-            <aside className="rounded-2xl border bg-[var(--surface)] p-5 shadow-sm self-start lg:sticky lg:top-24">
-              <h3 className="text-sm font-semibold mb-4">
-                Résumé de la démarche
-              </h3>
+          {/* Carte résumé + actions */}
+          <aside className="rounded-2xl border bg-[var(--surface)] p-5 shadow-sm self-start lg:sticky lg:top-24">
+            {summary && (
+              <>
+                <h3 className="text-sm font-semibold mb-4">
+                  Résumé de la démarche
+                </h3>
+                <dl className="space-y-3 text-sm">
+                  {summary.steps && (
+                    <SummaryRow
+                      icon={<FileCheck className="h-3.5 w-3.5" />}
+                      label="Étapes"
+                      value={getLocalizedValue(
+                        summary.stepsI18n ?? summary.steps,
+                        lang,
+                      )}
+                      highlight
+                    />
+                  )}
+                  {summary.delay && (
+                    <SummaryRow
+                      icon={<Clock className="h-3.5 w-3.5" />}
+                      label="Délai"
+                      value={getLocalizedValue(
+                        summary.delayI18n ?? summary.delay,
+                        lang,
+                      )}
+                    />
+                  )}
+                  {summary.fees && (
+                    <SummaryRow
+                      icon={<CreditCard className="h-3.5 w-3.5" />}
+                      label="Frais"
+                      value={getLocalizedValue(
+                        summary.feesI18n ?? summary.fees,
+                        lang,
+                      )}
+                    />
+                  )}
+                  {summary.location && (
+                    <SummaryRow
+                      icon={<MapPin className="h-3.5 w-3.5" />}
+                      label="Lieu"
+                      value={getLocalizedValue(
+                        summary.locationI18n ?? summary.location,
+                        lang,
+                      )}
+                    />
+                  )}
+                  {updatedDate && (
+                    <SummaryRow
+                      icon={<Calendar className="h-3.5 w-3.5" />}
+                      label="Mis à jour"
+                      value={updatedDate}
+                    />
+                  )}
+                </dl>
+              </>
+            )}
+            {!summary && updatedDate && (
               <dl className="space-y-3 text-sm">
-                {summary.steps && (
-                  <SummaryRow
-                    icon={<FileCheck className="h-3.5 w-3.5" />}
-                    label="Étapes"
-                    value={getLocalizedValue(
-                      summary.stepsI18n ?? summary.steps,
-                      lang,
-                    )}
-                    highlight
-                  />
-                )}
-                {summary.delay && (
-                  <SummaryRow
-                    icon={<Clock className="h-3.5 w-3.5" />}
-                    label="Délai"
-                    value={getLocalizedValue(
-                      summary.delayI18n ?? summary.delay,
-                      lang,
-                    )}
-                  />
-                )}
-                {summary.fees && (
-                  <SummaryRow
-                    icon={<CreditCard className="h-3.5 w-3.5" />}
-                    label="Frais"
-                    value={getLocalizedValue(
-                      summary.feesI18n ?? summary.fees,
-                      lang,
-                    )}
-                  />
-                )}
-                {summary.location && (
-                  <SummaryRow
-                    icon={<MapPin className="h-3.5 w-3.5" />}
-                    label="Lieu"
-                    value={getLocalizedValue(
-                      summary.locationI18n ?? summary.location,
-                      lang,
-                    )}
-                  />
-                )}
-                {updatedDate && (
-                  <SummaryRow
-                    icon={<Calendar className="h-3.5 w-3.5" />}
-                    label="Mis à jour"
-                    value={updatedDate}
-                  />
-                )}
+                <SummaryRow
+                  icon={<Calendar className="h-3.5 w-3.5" />}
+                  label="Mis à jour"
+                  value={updatedDate}
+                />
               </dl>
-              <div className="mt-5 space-y-2">
+            )}
+            <div className={cn(summary || updatedDate ? "mt-5" : "", "space-y-2")}>
                 {tutorial.relatedService && (
                   <Button asChild className="w-full">
                     <Link href={ctaHref}>
@@ -341,13 +373,18 @@ export function TutorialDetailClient() {
                     </Link>
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="w-full">
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                  Télécharger en PDF
-                </Button>
-              </div>
-            </aside>
-          )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                {downloadingPdf ? "Génération…" : "Télécharger en PDF"}
+              </Button>
+            </div>
+          </aside>
         </header>
 
         {/* 03 Progress strip */}
