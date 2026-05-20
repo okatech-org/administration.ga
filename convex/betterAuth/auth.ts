@@ -403,6 +403,30 @@ export const getCurrentUser = query({
 });
 
 /**
+ * Purge toutes les JWKS du component betterAuth.
+ *
+ * A utiliser quand BETTER_AUTH_SECRET a change et que les JWKS existantes
+ * ne peuvent plus etre dechiffrees ("BetterAuthError: Failed to decrypt
+ * private key"). Apres la purge, Better Auth regenere automatiquement une
+ * nouvelle JWKS chiffree avec le secret courant a la prochaine requete
+ * sur /api/auth/convex/token.
+ *
+ * Effet de bord : tous les JWT Convex existants sont invalides (Better Auth
+ * les regenerera apres reconnexion). Les cookies de session Better Auth
+ * restent valides.
+ */
+export const purgeJwks = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const result = (await ctx.runMutation(components.betterAuth.adapter.deleteMany, {
+      input: { model: "jwks" as any },
+      paginationOpts: { numItems: 1000, cursor: null },
+    })) as { count: number; isDone: boolean };
+    return result;
+  },
+});
+
+/**
  * Reset BetterAuth credential passwords to null, in batches.
  * Returns { done, reset, skipped, remaining } so the script can loop.
  */

@@ -104,6 +104,17 @@ Editer `convex/ai/iastedRealtimePrompt.ts` dans la section appropriee (`CAPACITE
 - Tout tool destructif doit avoir une **double confirmation orale obligatoire** annoncee dans le prompt.
 - Audit log automatique : `auditLog` + `aiActivityLog` doivent etre alimentes pour toute action mutative.
 
+### Variables d'environnement iAsted Realtime
+
+Configurables via `npx convex env set <KEY> <VALUE>` sur le deployment cible :
+
+- `IASTED_AB_FORCE_MODEL` (`gpt-realtime-mini` | `gpt-realtime`) — force tous les users sur ce modele. Utile pour QA. Vide = comportement A/B normal.
+- `IASTED_AB_PERCENT_FULL` (0-100, default `0`) — % d'users servis avec `gpt-realtime` (le grand modele). Le reste reste sur `mini`. Hash deterministe sur userId : un user donne reste sur le meme modele tant que le % ne change pas. Pour comparer perf/qualite : passer a `50` pendant quelques jours puis examiner les telemetries `realtimeToken.timing.openai_session_ms`.
+- `IASTED_VAD_MODE` (`semantic_vad` | non defini) — quand defini, bascule la detection de fin de tour de `server_vad` (silence de 300 ms) vers `semantic_vad` (eagerness auto). Utile pour les locuteurs avec hesitations diplomatiques marquees ; legere augmentation de latence (~50-100 ms).
+- `OPENAI_API_KEY` — requise pour le mode vocal (sans elle, l'UI affiche "vocal indisponible").
+
+Le cron `iasted-realtime-keep-warm` ping `keepAliveNodeRuntime` toutes les 4 min pour eviter le cold start de l'isolate Node ou vit `realtimeToken.create`.
+
 ### Decisions de non-extraction
 
 Trois items du plan d'audit n'ont PAS ete extraits dans les packages partages. Decisions documentees ici pour eviter qu'un futur contributeur refasse l'analyse :

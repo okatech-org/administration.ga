@@ -24,7 +24,7 @@
 
 "use client"
 
-import { useConvexAuth } from "convex/react"
+import { useStableConvexAuth } from "@workspace/api/hooks"
 import { Loader2 } from "lucide-react"
 import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -45,6 +45,7 @@ import {
 import { AgentMobileNav } from "./agent-mobile-nav"
 import { FloatingMeetingWindow } from "./floating-meeting-window"
 import { GlobalCallAlert } from "./global-call-alert"
+import { GlobalOutgoingCallWindow } from "./global-outgoing-call-window"
 import { GlobalCallPill } from "./global-call-pill"
 import { GlobalCallRoomHost } from "./global-call-room-host"
 import { GlobalQueuePill } from "./global-queue-pill"
@@ -95,25 +96,10 @@ export interface AppShellProps {
 }
 
 export function AppShell(props: AppShellProps) {
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth()
+  const { isAuthenticated, isPending } = useStableConvexAuth()
   const consularThemeValue = useConsularThemeState()
 
-  // `useConvexAuth` peut transiter par (isLoading=false, isAuthenticated=false)
-  // pendant que le JWT Better Auth est fetché et appliqué au WebSocket — sans
-  // sticky state, l'utilisateur voit brièvement `renderSignedOut()` après chaque
-  // reload, puis l'app, ce qui ressemble à une déconnexion/redirection oscillante.
-  // On retient le dernier état authentifié résolu pour rester stable.
-  const [resolvedAuth, setResolvedAuth] = useState<boolean | null>(null)
-  useEffect(() => {
-    if (isAuthLoading) return
-    if (isAuthenticated) {
-      setResolvedAuth(true)
-    } else if (resolvedAuth === null) {
-      setResolvedAuth(false)
-    }
-  }, [isAuthLoading, isAuthenticated, resolvedAuth])
-
-  if (resolvedAuth === null) {
+  if (isPending) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -121,7 +107,7 @@ export function AppShell(props: AppShellProps) {
     )
   }
 
-  if (!resolvedAuth) {
+  if (!isAuthenticated) {
     return <>{props.renderSignedOut()}</>
   }
 
@@ -253,6 +239,9 @@ function DashboardLayout({
         activeParamName="active"
         hostTab={{ key: "tab", value: "imeeting" }}
       />
+      {/* Bug 9 (Ronde 2) : fenêtre d'appel sortant unifiée. Voix et manuel
+          la mountent via `callStore.openOutgoingCall(...)`. */}
+      <GlobalOutgoingCallWindow />
       <GlobalCallPill />
       <GlobalQueuePill />
       {/* Pool LiveKit GLOBAL : maintient la connexion audio à travers les

@@ -29,6 +29,7 @@
 "use client";
 
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import { useRegisterTipTapEditor } from "@workspace/iasted";
 import type { PlaceholderDescriptor, TiptapDocument } from "@workspace/document-rendering/types";
 import { Sparkles } from "lucide-react";
 import { useEffect, type CSSProperties, type ReactElement } from "react";
@@ -260,6 +261,11 @@ export function TemplateEditor({
 		body: bodyEditor,
 		footer: footerEditor,
 	});
+
+	// Sprint 9 wiring (Ronde 3) : bridge iAsted ↔ TipTap. On expose le body
+	// editor (zone principale) à l'agent vocal pour les tools `editor_*`.
+	// Header/footer restent gérables manuellement.
+	useRegisterTipTapEditor(bodyEditor, { enabled: editable });
 
 	useEffect(() => {
 		if (!bodyEditor) return;

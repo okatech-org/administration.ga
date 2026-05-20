@@ -4,6 +4,10 @@ import { BackofficeIAstedWindow } from "@/components/ai/BackofficeIAstedWindow"
 import { SuperadminGuard } from "@/components/guards/SuperadminGuard"
 import { SuperadminSidebarV2 } from "@/components/sidebars/superadmin-sidebar-v2"
 import { GlobalCallAlert } from "@/components/meetings/global-call-alert"
+import {
+  FloatingMeetingWindow,
+  GlobalOutgoingCallWindow,
+} from "@workspace/agent-features/shell"
 import { AutoBreadcrumb } from "@/components/dashboard-v2/auto-breadcrumb"
 
 /**
@@ -27,6 +31,18 @@ export function BackofficeLayout({ children }: { children: React.ReactNode }) {
         </main>
         <BackofficeIAstedWindow />
         <GlobalCallAlert />
+        {/* Bug 9 (Ronde 2) : fenêtre d'appel sortant unifiée voix + manuel. */}
+        <GlobalOutgoingCallWindow />
+        {/* Bug 5 fix UX (Ronde 3) : modal plein écran pour les réunions
+            LiveKit (visioconférence). Backoffice n'a pas de page hôte
+            `/icom` comme agent-web, donc on force le mode plein écran dès
+            qu'une réunion est connectée — même UI que celle d'agent-web
+            (MeetingStageView avec contrôles Micro/Caméra/Partager/etc.). */}
+        <FloatingMeetingWindow
+          hostPathname="/__never_match__"
+          activeParamName="active"
+          alwaysFullscreenWhenConnected
+        />
       </div>
     </SuperadminGuard>
   )

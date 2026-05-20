@@ -393,6 +393,22 @@ function LegacyCallTab() {
 		void handleHangUp();
 	};
 
+	// Bug 7 (Ronde 2) : ferme l'onglet d'appel iAsted quand un raccrochage
+	// vocal est émis (hangup_active_call / decline_incoming_call). Réutilise
+	// la même logique que le bouton « Raccrocher » manuel.
+	useEffect(() => {
+		const onClose = (e: Event) => {
+			const detail = (e as CustomEvent<{ meetingId?: string }>).detail;
+			if (!detail?.meetingId) return;
+			if (activeMeetingId && detail.meetingId === activeMeetingId) {
+				void handleHangUp();
+			}
+		};
+		window.addEventListener("iasted:close-call-window", onClose);
+		return () => window.removeEventListener("iasted:close-call-window", onClose);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [activeMeetingId]);
+
 	// ── Répondre à un appel entrant ──
 	const handleAnswerInbound = async (meetingId: Id<"meetings">) => {
 		if (globalActiveMeetingId) {

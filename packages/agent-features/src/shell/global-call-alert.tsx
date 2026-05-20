@@ -289,6 +289,21 @@ function GlobalCallAlertInner({
 		hasConnectedRef.current = false;
 	}, [activeMeetingId, disconnect, setGlobalMeetingId]);
 
+	// Bug 7 (Ronde 2) : fermeture explicite vocale. Quand iAsted appelle
+	// `hangup_active_call` / `decline_incoming_call`, on déclenche le même
+	// handleHangUp local que si l'utilisateur avait cliqué « Raccrocher ».
+	useEffect(() => {
+		const onClose = (e: Event) => {
+			const detail = (e as CustomEvent<{ meetingId?: string }>).detail;
+			if (!detail?.meetingId) return;
+			if (activeMeetingId && detail.meetingId === activeMeetingId) {
+				void handleHangUp();
+			}
+		};
+		window.addEventListener("iasted:close-call-window", onClose);
+		return () => window.removeEventListener("iasted:close-call-window", onClose);
+	}, [activeMeetingId, handleHangUp]);
+
 	const handleLiveKitDisconnected = useCallback(() => {
 		// Pattern en deux temps :
 		//   1. Disconnect avant tout onConnected → artefact de handshake,

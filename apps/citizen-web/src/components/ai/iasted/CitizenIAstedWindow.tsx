@@ -9,19 +9,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Bot } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Bot, Contact, MessageSquare, Mic, Phone } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-	CircleMenu,
+	IAstedFanMenu,
 	VoiceFloatingTranscription,
 	VoiceTab,
 	WindowShell,
-	buildCircleMenuItems,
 	citizenPreset,
-	defaultTriggerClassName,
-	defaultTriggerIcon,
 	useIAstedVoiceController,
+	type IAstedFanMenuItem,
 	type IAstedTabId,
 } from "@workspace/iasted";
 import { pageContextStore } from "@workspace/agent-features/stores";
@@ -68,6 +66,15 @@ export function CitizenIAstedWindow() {
 		return () => window.removeEventListener("iasted:open", handler);
 	}, [openWithTab]);
 
+	// Pendant de `iasted:open` : permet au tool vocal `close_chat`
+	// de fermer la fenêtre flottante. Sans ce listener, le dispatch
+	// CustomEvent("iasted:close") repartait dans le vide.
+	useEffect(() => {
+		const handler = () => setOpen(false);
+		window.addEventListener("iasted:close", handler);
+		return () => window.removeEventListener("iasted:close", handler);
+	}, []);
+
 	// Nettoyage du snapshot panel à la fermeture — évite qu'un onglet
 	// reste « ouvert » côté contexte iAsted alors que l'UI est fermée.
 	useEffect(() => {
@@ -81,12 +88,39 @@ export function CitizenIAstedWindow() {
 		router.push("/my-space/iasted");
 	}, [router]);
 
-	const menuItems = buildCircleMenuItems({
-		surface: "citizen",
-		openWithTab,
-		expand: handleExpand,
-		resolveLabel: t,
-	});
+	// Items de l'éventail iAsted — 4 fonctions citoyennes qui rayonnent autour
+	// du bouton central : iChat, iContact, iAppel, iVocal. Identique au pattern
+	// backoffice (IAstedFanMenu) mais avec un sous-ensemble adapté au citoyen
+	// (pas de iRéunion ni Réglages — ces tabs n'existent pas dans citizenPreset).
+	const fanMenuItems: IAstedFanMenuItem[] = useMemo(
+		() => [
+			{
+				id: "ichat",
+				label: t("iasted.tabs.ichat", "iChat"),
+				icon: <MessageSquare className="h-4 w-4" />,
+				className: "bg-emerald-600",
+			},
+			{
+				id: "icontact",
+				label: t("iasted.tabs.icontact", "iContact"),
+				icon: <Contact className="h-4 w-4" />,
+				className: "bg-primary",
+			},
+			{
+				id: "icall",
+				label: t("iasted.tabs.icall", "iAppel"),
+				icon: <Phone className="h-4 w-4" />,
+				className: "bg-blue-500",
+			},
+			{
+				id: "ivoice",
+				label: t("iasted.tabs.ivoice", "iVocal"),
+				icon: <Mic className="h-4 w-4" />,
+				className: "bg-violet-600",
+			},
+		],
+		[t],
+	);
 
 	const isVoiceConnected = voiceController?.isConnected === true;
 	// FAB visible quand la fenêtre est fermée OU pendant une session
@@ -95,27 +129,39 @@ export function CitizenIAstedWindow() {
 
 	return (
 		<>
-			{/* CircleMenu FAB — desktop only (mobile uses nav bar) */}
-			{showFab && (
-				<div
-					suppressHydrationWarning
-					className="fixed bottom-[62px] right-[62px] z-40 hidden lg:block pointer-events-none"
-				>
-					<CircleMenu
-						items={menuItems}
-						openIcon={defaultTriggerIcon("citizen")}
-						triggerClassName={defaultTriggerClassName("citizen")}
-						triggerVariant={voiceController ? "3d-organic" : "default"}
-						voiceState={voiceController?.voiceState ?? "idle"}
-						audioLevel={voiceController?.audioLevel ?? 0}
-						voiceDisabled={
-							voiceController ? !voiceController.available : false
+			{/* IAstedFanMenu — sphère 3D draggable (port mairie.ga, identique au backoffice).
+			    Single click → active/raccroche la voix ; double click → déploie l'éventail
+			    des 4 fonctions citoyennes ; drag → repositionne et persiste en localStorage.
+			    Le composant gère lui-même son positionnement (position: fixed via
+			    IAstedButtonFull). */}
+			{showFab && voiceController && (
+				<IAstedFanMenu
+					size="md"
+					layout="corner"
+					positionStorageKey="iasted-button-position-citizen"
+					voiceListening={voiceController.voiceState === "listening"}
+					voiceSpeaking={voiceController.voiceState === "speaking"}
+					voiceProcessing={
+						voiceController.voiceState === "thinking" ||
+						voiceController.voiceState === "processing" ||
+						voiceController.voiceState === "connecting"
+					}
+					audioLevel={voiceController.audioLevel}
+					isVoiceConnected={isVoiceConnected}
+					items={fanMenuItems}
+					onItemSelect={(item) => {
+						openWithTab(item.id as IAstedTabId);
+					}}
+					onSingleClick={() => {
+						// Mode conversationnel direct : active la voix (ou raccroche
+						// si session en cours). Aligné sur la sémantique backoffice.
+						if (voiceController.isConnected) {
+							void voiceController.deactivateVoice();
+						} else if (voiceController.available) {
+							void voiceController.activateVoice();
 						}
-						onLongPress={voiceController?.activateVoice}
-						isVoiceConnected={isVoiceConnected}
-						onVoiceHangUp={voiceController?.deactivateVoice}
-					/>
-				</div>
+					}}
+				/>
 			)}
 
 			{/* Overlay flottant — transcription + raccrocher pendant la

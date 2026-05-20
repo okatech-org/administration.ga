@@ -13,8 +13,50 @@ import {
 	usePaginatedQuery,
 } from "convex/react";
 import type { FunctionReference, FunctionReturnType } from "convex/server";
+import { useEffect, useState } from "react";
 
 export { convexQuery, useConvexMutation };
+
+/**
+ * Version stabilisee de useConvexAuth.
+ *
+ * useConvexAuth peut transiter par (isLoading=false, isAuthenticated=false)
+ * pendant que Better Auth echange le cookie de session contre un JWT Convex
+ * et que ce JWT est applique au WebSocket Convex. Scenario typique : apres un
+ * sign-in via le DevAccountSwitcher, window.location.reload() recharge la page
+ * et les guards qui consomment useConvexAuth directement voient brievement
+ * "non authentifie" et redirigent prematurement vers /sign-in.
+ *
+ * Ce hook attend `gracePeriodMs` (1500 ms par defaut) avant de conclure
+ * "non authentifie", mais conclut "authentifie" immediatement. Une fois
+ * authentifie, l'etat est sticky — un sign-out explicite doit demonter le
+ * composant (window.location.href = "/") pour reinitialiser le state.
+ */
+export function useStableConvexAuth(options?: { gracePeriodMs?: number }) {
+	const gracePeriodMs = options?.gracePeriodMs ?? 1500;
+	const { isAuthenticated, isLoading } = useConvexAuth();
+	const [resolved, setResolved] = useState<
+		"pending" | "authenticated" | "unauthenticated"
+	>("pending");
+
+	useEffect(() => {
+		if (isLoading) return;
+		if (isAuthenticated) {
+			setResolved("authenticated");
+			return;
+		}
+		const timer = setTimeout(() => {
+			setResolved((prev) => (prev === "authenticated" ? prev : "unauthenticated"));
+		}, gracePeriodMs);
+		return () => clearTimeout(timer);
+	}, [isAuthenticated, isLoading, gracePeriodMs]);
+
+	return {
+		isAuthenticated: resolved === "authenticated",
+		isUnauthenticated: resolved === "unauthenticated",
+		isPending: resolved === "pending",
+	};
+}
 
 /**
  * Paginated query for public (non-auth) Convex functions.

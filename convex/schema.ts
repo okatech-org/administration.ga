@@ -128,6 +128,15 @@ import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
 import { iastedMemoriesTable } from "./schemas/iastedMemories";
 // Phase 4 — Préférences voix iAsted per-user (refonte Settings)
 import { userIastedVoicePrefsTable } from "./schemas/userIastedVoicePrefs";
+// Sprint 5.5 (Ronde 3) — Voice biometric soft : empreintes vocales per-user
+import { userVoicePrintsTable } from "./schemas/userVoicePrints";
+// Sprint 7 (Ronde 3) — Persistance vocal ↔ texte : threads unifiés
+import { iastedConversationsTable } from "./schemas/iastedConversations";
+// Sprint 10 (Ronde 3) — Continuité multi-device : presence + handoff
+import { iastedDevicePresenceTable } from "./schemas/iastedDevicePresence";
+// Lexique personnel iAsted — expressions enseignées par l'utilisateur (langues
+// non couvertes par OpenAI : Téké, Fang, Punu, etc.)
+import { iastedUserLexiconTable } from "./schemas/iastedUserLexicon";
 // Sessions vocales iAsted — supervision, audit, coût (P0.4)
 import { aiRealtimeSessionsTable } from "./schemas/aiRealtimeSessions";
 
@@ -269,6 +278,14 @@ export default defineSchema(
   iastedMemories: iastedMemoriesTable,
   // Phase 4 — Préférences voix iAsted per-user
   userIastedVoicePrefs: userIastedVoicePrefsTable,
+  // Sprint 5.5 (Ronde 3) — Voice biometric soft
+  userVoicePrints: userVoicePrintsTable,
+  // Sprint 7 (Ronde 3) — Persistance vocal ↔ texte
+  iastedConversations: iastedConversationsTable,
+  // Sprint 10 (Ronde 3) — Continuité multi-device
+  iastedDevicePresence: iastedDevicePresenceTable,
+  // Lexique personnel iAsted — expressions apprises par l'utilisateur
+  iastedUserLexicon: iastedUserLexiconTable,
   // Sessions vocales iAsted — supervision, audit, coût (P0.4)
   aiRealtimeSessions: aiRealtimeSessionsTable,
   // Super-admin /skills — dénormalisation + stats + historique runs IA

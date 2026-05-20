@@ -26,7 +26,9 @@ import { ConsularNotificationDialog } from "./ConsularNotificationDialog"
 import { ConsularRegistrationDialog } from "./ConsularRegistrationDialog"
 import { MobileNavBar } from "./mobile-nav-bar"
 import { CitizenIAstedWindow } from "@/components/ai/iasted/CitizenIAstedWindow"
+import { CitizenIAstedVoiceProvider } from "@/components/ai/iasted/CitizenIAstedVoiceProvider"
 import { GlobalCallAlert } from "@/components/meetings/global-call-alert"
+import { GlobalOutgoingCallWindow } from "@workspace/agent-features/shell"
 import { MySpaceSidebar } from "./my-space-sidebar"
 
 interface MySpaceWrapperProps {
@@ -39,32 +41,40 @@ export function MySpaceWrapper({ children, className }: MySpaceWrapperProps) {
 
   return (
     <ConsularThemeContext.Provider value={consularThemeValue}>
-      <SidebarProvider
-        className={cn(
-          "citizen-layout relative flex min-h-0",
-          "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
-          consularThemeValue.consularTheme === "homeomorphism" &&
-            "theme-homeomorphism"
-        )}
-      >
-        <div className="hidden md:block p-2 pr-0">
-          <MySpaceSidebar />
-        </div>
-
-        <main
+      {/* CitizenIAstedVoiceProvider publie le voiceController OpenAI Realtime
+          via IAstedVoiceContext, consomme par CitizenIAstedWindow et les tabs
+          enfants (VoiceTab, etc.). Doit englober TOUT le contenu MySpace pour
+          que les pages puissent emettre pageContext via les hooks shared. */}
+      <CitizenIAstedVoiceProvider>
+        <SidebarProvider
           className={cn(
-            "flex-1 overflow-y-auto citizen-scrollbar",
-            "px-3 min-[400px]:px-4 pt-3 pb-[calc(var(--mobile-nav-height)+12px)] md:px-4 md:pt-4 md:pb-4",
-            className
+            "citizen-layout relative flex min-h-0",
+            "h-dvh flex-col overflow-hidden md:flex-row md:h-screen",
+            consularThemeValue.consularTheme === "homeomorphism" &&
+              "theme-homeomorphism"
           )}
         >
-          {children}
-        </main>
+          <div className="hidden md:block p-2 pr-0">
+            <MySpaceSidebar />
+          </div>
 
-        <MobileNavBar />
-        <CitizenIAstedWindow />
-        <GlobalCallAlert />
-      </SidebarProvider>
+          <main
+            className={cn(
+              "flex-1 overflow-y-auto citizen-scrollbar",
+              "px-3 min-[400px]:px-4 pt-3 pb-[calc(var(--mobile-nav-height)+12px)] md:px-4 md:pt-4 md:pb-4",
+              className
+            )}
+          >
+            {children}
+          </main>
+
+          <MobileNavBar />
+          <CitizenIAstedWindow />
+          <GlobalCallAlert />
+          {/* Bug 9 (Ronde 2) : fenêtre d'appel sortant unifiée voix + manuel. */}
+          <GlobalOutgoingCallWindow />
+        </SidebarProvider>
+      </CitizenIAstedVoiceProvider>
     </ConsularThemeContext.Provider>
   )
 }

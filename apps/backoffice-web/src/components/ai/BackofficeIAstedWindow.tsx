@@ -38,6 +38,8 @@ import {
 } from "@workspace/iasted";
 import {
 	pageContextStore,
+	useCallStore,
+	useDocumentTextSnapshot,
 	useFieldDescriptorsSnapshot,
 	usePageContextSnapshot,
 	usePanelContextSnapshot,
@@ -153,6 +155,17 @@ export function BackofficeIAstedWindow() {
 		return () => window.removeEventListener("iasted:open", handler);
 	}, [openWithTab]);
 
+	// Pendant de `iasted:open` : permet au tool vocal `close_chat`
+	// de fermer la fenêtre flottante. Sans ce listener, le dispatch
+	// CustomEvent("iasted:close") émis par `use-iasted-host.ts`
+	// repartait dans le vide et le modèle annonçait « fait » sans
+	// que l'UI bouge.
+	useEffect(() => {
+		const handler = () => setOpen(false);
+		window.addEventListener("iasted:close", handler);
+		return () => window.removeEventListener("iasted:close", handler);
+	}, []);
+
 	// ── Synchronisation contexte page → session vocale (P1.9) ──
 	// Mirror du flux agent-web : à chaque changement de page/fields/shell,
 	// pousse le bloc texte au modèle via `updatePageContext` si la session
@@ -161,6 +174,12 @@ export function BackofficeIAstedWindow() {
 	const shellSnapshot = useShellContextSnapshot();
 	const panelSnapshot = usePanelContextSnapshot();
 	const fieldsSnapshot = useFieldDescriptorsSnapshot();
+	// Sprint 4 — B4 : drapeau « réunion LiveKit active » → injecté en tête
+	// du contexte page (cf. règle « COMPORTEMENT EN PRÉSENCE... » du prompt).
+	const { activeSlotId } = useCallStore();
+	const meetingInProgress = activeSlotId !== null;
+	// Sprint 6.5 — C4 : texte extrait du document ouvert (PDF, image OCR).
+	const documentText = useDocumentTextSnapshot();
 	useEffect(() => {
 		if (!voiceController.isConnected) return;
 		if (!voiceController.capabilities.pageContextUpdate) return;
@@ -173,6 +192,8 @@ export function BackofficeIAstedWindow() {
 					shell: shellSnapshot,
 					panel: panelSnapshot,
 					fields: fieldsSnapshot,
+					meetingInProgress,
+					documentText,
 				}),
 			);
 		}, 150);
@@ -182,6 +203,8 @@ export function BackofficeIAstedWindow() {
 		shellSnapshot,
 		panelSnapshot,
 		fieldsSnapshot,
+		meetingInProgress,
+		documentText,
 		voiceController.isConnected,
 		voiceController.capabilities.pageContextUpdate,
 		voiceController.updatePageContext,

@@ -85,4 +85,18 @@ export interface CircleMenuProps {
 	 *   horizontalement (FAB mobile en éventail).
 	 */
 	layout?: "corner" | "fan";
+	/**
+	 * Optimisation latence (Phase 4 — UX) : déclenché au survol du trigger.
+	 * Doit appeler `voiceController.prewarmSession?.()` pour amorcer le
+	 * `getUserMedia()` et pré-fetcher le token OpenAI avant le clic.
+	 * No-op silencieux si non fourni ou si une session est déjà active.
+	 */
+	onTriggerHoverStart?: () => void;
+	/**
+	 * Optimisation latence (Phase 4 — UX) : déclenché quand le pointeur
+	 * quitte le trigger sans avoir cliqué. Doit appeler
+	 * `voiceController.cancelPrewarm?.()` pour libérer le micro pré-warmé
+	 * et annuler tout pré-fetch en attente.
+	 */
+	onTriggerHoverEnd?: () => void;
 }

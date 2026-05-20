@@ -15,7 +15,8 @@
     "./components/circle-menu": "./src/components/circle-menu/index.tsx",
     "./components/window": "./src/components/window/index.ts",
     "./components/primitives": "./src/components/primitives/index.ts",
-    "./presets": "./src/presets/index.ts"
+    "./presets": "./src/presets/index.ts",
+    "./locales": "./src/locales/supported-locales.ts"
   },
   "scripts": {
     "lint": "eslint",

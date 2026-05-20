@@ -202,6 +202,8 @@ export const CircleMenu = ({
 	isVoiceConnected = false,
 	onVoiceHangUp,
 	layout = "corner",
+	onTriggerHoverStart,
+	onTriggerHoverEnd,
 }: CircleMenuProps) => {
 	// Géométrie d'arc résolue à chaque render — dépend du nombre d'items
 	// (au-delà de 3, on bascule sur les valeurs « wide ») et du mode de
@@ -430,6 +432,14 @@ export const CircleMenu = ({
 							onPointerDown={handlePointerDown}
 							onPointerUp={handlePointerUp}
 							onPointerCancel={handlePointerCancel}
+							onPointerEnter={
+								onTriggerHoverStart && !isVoiceConnected && !voiceDisabled
+									? () => onTriggerHoverStart()
+									: undefined
+							}
+							onPointerLeave={
+								onTriggerHoverEnd ? () => onTriggerHoverEnd() : undefined
+							}
 							ariaLabel={
 								isVoiceConnected
 									? "Raccrocher la conversation vocale"

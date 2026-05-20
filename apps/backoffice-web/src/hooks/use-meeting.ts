@@ -56,7 +56,13 @@ export function useMeeting(meetingId?: Id<"meetings">) {
 	const disconnect = useCallback(
 		async (id: Id<"meetings">) => {
 			try {
-				await leaveMeetingMutation.mutateAsync({ meetingId: id });
+				// `intentional: true` bypass la protection 5s anti-StrictMode
+				// (cf. `meetings.leave`) car c'est un raccrocher utilisateur
+				// explicite — la réunion DOIT passer à `ended` immédiatement.
+				await leaveMeetingMutation.mutateAsync({
+					meetingId: id,
+					intentional: true,
+				});
 				setToken(null);
 				setWsUrl(null);
 				setRoomName(null);

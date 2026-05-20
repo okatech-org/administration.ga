@@ -30,6 +30,29 @@ export interface CallSlot {
   heldSince?: number | null;
 }
 
+/**
+ * Bug 9 (Ronde 2) — slice « fenêtre d'appel sortant global ».
+ *
+ * Quand un appel SORTANT est lancé (manuellement via `call-button.tsx` OU
+ * vocalement via `launch_call_with_contact`), un Dialog doit s'ouvrir chez
+ * l'appelant pour montrer la sonnerie + `DirectCallView` une fois connecté.
+ *
+ * Avant : ce Dialog vivait UNIQUEMENT dans `call-button.tsx` (local). La voix
+ * ne pouvait pas l'ouvrir → divergence UX (appel créé côté serveur mais
+ * aucune fenêtre côté appelant).
+ *
+ * Après : un slice global est posé par les deux chemins (manuel + vocal),
+ * et `<GlobalOutgoingCallWindow>` monté dans l'AppShell rend le Dialog
+ * partagé (`OutgoingCallDialog`). Voix et manuel ouvrent EXACTEMENT le
+ * même composant.
+ */
+export interface OutgoingCallWindowState {
+  meetingId: Id<"meetings">;
+  participantUserId: Id<"users">;
+  mediaType: "audio" | "video";
+  startedAt: number;
+}
+
 interface CallStoreState {
   slots: Map<Id<"meetings">, CallSlot>;
   activeSlotId: Id<"meetings"> | null;
@@ -44,6 +67,11 @@ interface CallStoreState {
    * caméra coupée, l'agent active à la volée s'il veut passer en visio.
    */
   cameraEnabled: boolean;
+  /**
+   * Fenêtre d'appel sortant globalement visible (cf. doc OutgoingCallWindowState).
+   * `null` quand aucun appel sortant n'est en cours d'affichage.
+   */
+  outgoingCallWindow: OutgoingCallWindowState | null;
 }
 
 const state: CallStoreState = {
@@ -51,6 +79,7 @@ const state: CallStoreState = {
   activeSlotId: null,
   micMuted: false,
   cameraEnabled: false,
+  outgoingCallWindow: null,
 };
 
 const listeners = new Set<() => void>();
@@ -62,12 +91,14 @@ let snapshot: {
   activeMeetingId: Id<"meetings"> | null; // alias rétrocompat
   micMuted: boolean;
   cameraEnabled: boolean;
+  outgoingCallWindow: OutgoingCallWindowState | null;
 } = {
   slots: [],
   activeSlotId: null,
   activeMeetingId: null,
   micMuted: false,
   cameraEnabled: false,
+  outgoingCallWindow: null,
 };
 
 function rebuildSnapshot() {
@@ -77,6 +108,7 @@ function rebuildSnapshot() {
     activeMeetingId: state.activeSlotId,
     micMuted: state.micMuted,
     cameraEnabled: state.cameraEnabled,
+    outgoingCallWindow: state.outgoingCallWindow,
   };
 }
 
@@ -222,6 +254,54 @@ export const callStore = {
   getGlobalMeetingId(): Id<"meetings"> | null {
     return state.activeSlotId;
   },
+
+  // ─── Bug 9 (Ronde 2) — Outgoing call window ────────────────
+  /**
+   * Ouvre la fenêtre d'appel sortant globalement. À appeler par :
+   *   - `call-button.tsx` après la mutation `meetings.callUser`,
+   *   - `useIAstedHost` après le tool vocal `launch_call_with_contact`.
+   * Le composant `<GlobalOutgoingCallWindow>` réagit et monte le Dialog.
+   *
+   * Pose aussi le slot actif legacy via `setGlobalMeetingId` pour la
+   * rétrocompatibilité avec les consumers qui lisent `activeSlotId`
+   * (GlobalCallAlert filtre les appels où l'utilisateur est appelant via
+   * cet ID, sinon il sonnerait sur l'appelant lui-même).
+   */
+  openOutgoingCall(window: OutgoingCallWindowState) {
+    state.outgoingCallWindow = window;
+    // Synchronise le slot actif legacy (évite la double sonnerie côté appelant).
+    const existing = state.slots.get(window.meetingId);
+    state.slots.set(window.meetingId, {
+      ...existing,
+      meetingId: window.meetingId,
+      status: existing?.status ?? "connecting",
+    });
+    if (state.activeSlotId !== window.meetingId) {
+      state.micMuted = false;
+      state.cameraEnabled = false;
+    }
+    state.activeSlotId = window.meetingId;
+    emit();
+  },
+
+  /** Ferme la fenêtre d'appel sortant globale (+ nettoie le slot legacy). */
+  closeOutgoingCall() {
+    if (state.outgoingCallWindow === null) return;
+    const meetingId = state.outgoingCallWindow.meetingId;
+    state.outgoingCallWindow = null;
+    if (state.activeSlotId === meetingId) {
+      state.slots.delete(meetingId);
+      state.activeSlotId = null;
+      state.micMuted = false;
+      state.cameraEnabled = false;
+    }
+    emit();
+  },
+
+  /** Accès read-only à la fenêtre courante. */
+  getOutgoingCallWindow(): OutgoingCallWindowState | null {
+    return state.outgoingCallWindow;
+  },
 };
 
 /** Hook principal — expose l'état complet du store et les actions usuelles. */
@@ -234,11 +314,14 @@ export function useCallStore() {
     globalActiveMeetingId: current.activeMeetingId,
     micMuted: current.micMuted,
     cameraEnabled: current.cameraEnabled,
+    outgoingCallWindow: current.outgoingCallWindow,
     setGlobalMeetingId: callStore.setGlobalMeetingId,
     upsertSlot: callStore.upsertSlot,
     removeSlot: callStore.removeSlot,
     setActiveSlot: callStore.setActiveSlot,
     setMicMuted: callStore.setMicMuted,
     setCameraEnabled: callStore.setCameraEnabled,
+    openOutgoingCall: callStore.openOutgoingCall,
+    closeOutgoingCall: callStore.closeOutgoingCall,
   };
 }

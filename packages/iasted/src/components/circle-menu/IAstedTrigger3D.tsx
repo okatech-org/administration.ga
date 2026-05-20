@@ -46,6 +46,16 @@ export interface IAstedTrigger3DProps {
 	onPointerUp?: (event: ReactPointerEvent<HTMLButtonElement>) => void;
 	/** Pointer cancel / leave. */
 	onPointerCancel?: (event: ReactPointerEvent<HTMLButtonElement>) => void;
+	/**
+	 * Pointer enter (Phase 4 — UX latence) : déclenché au survol/focus du
+	 * trigger. Sert à pré-warmer le micro et pré-fetcher le token avant le clic.
+	 */
+	onPointerEnter?: (event: ReactPointerEvent<HTMLButtonElement>) => void;
+	/**
+	 * Pointer leave (Phase 4 — UX latence) : annule un pré-warm en cours
+	 * si l'utilisateur quitte sans cliquer.
+	 */
+	onPointerLeave?: (event: ReactPointerEvent<HTMLButtonElement>) => void;
 	/** Label accessibilité (défaut : "Activer iAsted"). */
 	ariaLabel?: string;
 	/** Indique si le bouton est dans un état "indisponible" (mode vocal off). */
@@ -400,6 +410,8 @@ export function IAstedTrigger3D({
 	onPointerDown,
 	onPointerUp,
 	onPointerCancel,
+	onPointerEnter,
+	onPointerLeave,
 	ariaLabel,
 	disabled = false,
 	className,
@@ -453,7 +465,17 @@ export function IAstedTrigger3D({
 				onPointerDown={disabled ? undefined : onPointerDown}
 				onPointerUp={disabled ? undefined : onPointerUp}
 				onPointerCancel={disabled ? undefined : onPointerCancel}
-				onPointerLeave={disabled ? undefined : onPointerCancel}
+				onPointerEnter={disabled ? undefined : onPointerEnter}
+				onPointerLeave={
+					disabled
+						? undefined
+						: (event) => {
+								// Cumule l'ancien comportement (cancel du long-press) avec
+								// l'annulation du pré-warm Phase 4.
+								onPointerCancel?.(event);
+								onPointerLeave?.(event);
+							}
+				}
 				aria-label={label}
 				aria-pressed={voiceState !== "idle" && voiceState !== "connecting"}
 				disabled={disabled}

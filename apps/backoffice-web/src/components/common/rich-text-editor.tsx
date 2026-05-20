@@ -1,6 +1,7 @@
 "use client"
 
 import { sanitizeHtml } from "@workspace/shared/utils/sanitize"
+import { useRegisterTipTapEditor } from "@workspace/iasted"
 import { useEditor, EditorContent, Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
@@ -355,6 +356,10 @@ export function RichTextEditor({
       editor.commands.setContent(content)
     }
   }, [content, editor])
+
+  // Sprint 9 wiring (Ronde 3) : bridge iAsted ↔ TipTap. L'agent vocal peut
+  // écrire/lire dans cet éditeur via les tools `editor_*` quand il est actif.
+  useRegisterTipTapEditor(editor, { enabled: editable })
 
   return (
     <div

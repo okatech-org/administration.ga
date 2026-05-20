@@ -40,7 +40,9 @@ import {
   filterByConfidentialityClearance,
   buildCorrespondanceSearchText,
 } from "../lib/correspondanceHelpers";
-import { isSuperAdmin } from "../lib/permissions";
+import { canDoTask, isSuperAdmin } from "../lib/permissions";
+import { getMembership } from "../lib/auth";
+import { TaskCode } from "../lib/taskCodes";
 import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1388,7 +1390,35 @@ export const returnToSender = authMutation({
     }
 
     const sourceOrgId = item.copyOwnerOrgId ?? item.orgId;
-    await requireCorrespondanceAccess(ctx, ctx.user, sourceOrgId, "transmit");
+    // Permission : « renvoyer à l'expéditeur » est un acte de REFUS de la
+    // correspondance reçue. Plusieurs profils ont autorité légitime :
+    //   1. Un Validateur (`approve`) refuse ce qu'il allait approuver.
+    //   2. Un Transmetteur (`transmit`) route le dossier en sens inverse.
+    //   3. Un Superviseur (`supervise`) peut refuser sur son périmètre.
+    //   4. Le **destinataire/détenteur** du dossier doit pouvoir le renvoyer
+    //      même sans grade élevé : c'est une affordance basique (« j'ai reçu
+    //      quelque chose qui ne me concerne pas »). Stakeholder = créateur,
+    //      destinataire principal, détenteur courant ou agent assigné.
+    //   5. SuperAdmin : toujours autorisé (court-circuité dans canDoTask).
+    // L'ancienne version exigeait `transmit` seul, ce qui bloquait avec
+    // INSUFFICIENT_PERMISSIONS tout utilisateur n'ayant pas ce rôle —
+    // y compris le destinataire légitime du courrier.
+    const isStakeholder =
+      item.createdBy === ctx.user._id ||
+      item.primaryRecipientId === ctx.user._id ||
+      item.currentHolderId === ctx.user._id ||
+      item.assignedToId === ctx.user._id;
+    if (!isStakeholder && !isSuperAdmin(ctx.user)) {
+      const membership = await getMembership(ctx, ctx.user._id, sourceOrgId);
+      const [canTransmit, canApprove, canSupervise] = await Promise.all([
+        canDoTask(ctx, ctx.user, membership, TaskCode.correspondance.transmit),
+        canDoTask(ctx, ctx.user, membership, TaskCode.correspondance.approve),
+        canDoTask(ctx, ctx.user, membership, TaskCode.correspondance.supervise),
+      ]);
+      if (!canTransmit && !canApprove && !canSupervise) {
+        throw error(ErrorCode.INSUFFICIENT_PERMISSIONS);
+      }
+    }
     await assertConfidentialityClearance(ctx, ctx.user, item);
 
     // Résolution de l'expéditeur d'origine

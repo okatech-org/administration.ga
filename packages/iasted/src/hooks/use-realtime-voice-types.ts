@@ -179,6 +179,22 @@ export interface IAstedVoiceController {
 	updatePageContext?: (text: string) => void;
 
 	/**
+	 * Pré-warm la session vocale (Phase 4 — UX latence). À appeler au survol
+	 * de la sphère iAsted. Implémentation conservatrice :
+	 *   - Pré-warme `getUserMedia()` immédiatement (si permission `granted`),
+	 *   - Optionnellement pré-fetch le token éphémère OpenAI après ~500 ms
+	 *     de hover (intention forte) — réutilisé par `activateVoice()`.
+	 * No-op silencieux si le provider ne le supporte pas (Gemini Live).
+	 */
+	prewarmSession?: () => void;
+	/**
+	 * Annule un pré-warm en cours (Phase 4 — UX latence). À appeler au
+	 * `mouseleave` de la sphère iAsted avant un éventuel clic. Libère le
+	 * stream micro pré-warmé et annule le pré-fetch de token.
+	 */
+	cancelPrewarm?: () => void;
+
+	/**
 	 * Demande de confirmation utilisateur en cours, le cas échéant.
 	 *
 	 * Certains providers (Gemini Live) renvoient les appels d'outils

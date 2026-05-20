@@ -602,7 +602,15 @@ export const join = authMutation({
  * Leave a meeting — marks the user as having left.
  */
 export const leave = authMutation({
-  args: { meetingId: v.id("meetings") },
+  args: {
+    meetingId: v.id("meetings"),
+    // Bug 5 fix v2 (Ronde 3) : flag `intentional` pour distinguer un
+    // raccrochage explicite (bouton "Quitter", tool vocal hangup_active_call)
+    // d'un cleanup React transitoire (StrictMode double-mount, navigation
+    // rapide). Quand `true`, by-pass la protection 5s qui empêche normalement
+    // de mark le meeting `ended` dans la fenêtre fraîche post-création.
+    intentional: v.optional(v.boolean()),
+  },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) throw error(ErrorCode.NOT_FOUND);
@@ -625,8 +633,16 @@ export const leave = authMutation({
     const isCall = meeting.type === "call";
     const isEmpty = stillActive.length === 0;
 
+    // Bug 5 fix (anti-StrictMode + race conditions) : ne PAS mark un
+    // call/meeting comme `ended` dans les 5 premières secondes après sa
+    // création — SAUF si le caller passe `intentional: true` (bouton
+    // "Quitter" explicite OU tool vocal hangup_active_call). Ça by-pass
+    // la protection pour permettre le raccrochage immédiat post-création.
+    const ageMs = Date.now() - meeting._creationTime;
+    const isProtectedFresh = ageMs < 5_000 && args.intentional !== true;
+
     let createMissedAbandoned = false;
-    if ((isEmpty || isCall) && meeting.status === "active") {
+    if ((isEmpty || isCall) && meeting.status === "active" && !isProtectedFresh) {
       patch.status = "ended";
       patch.endedAt = Date.now();
       // Update callStatus for calls

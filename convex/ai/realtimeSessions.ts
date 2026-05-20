@@ -207,6 +207,62 @@ export const listActive = query({
 });
 
 /**
+ * Sprint 5 — G1 : status quota mensuel global toutes orgs confondues.
+ *
+ * Lecture depuis `aiRealtimeSessions.costMicroCents` cumulé sur le mois
+ * courant. Comparé au budget mensuel défini par l'env var
+ * `OPENAI_MONTHLY_BUDGET_USD` (default 100 USD).
+ *
+ * Niveaux :
+ *   - `null` (default)        : conso < 70 % du budget — RAS.
+ *   - `"approaching"`         : conso entre 70 % et 90 % — toast informatif.
+ *   - `"warning"`             : conso entre 90 % et 100 % — toast warning.
+ *   - `"exceeded"`            : conso > 100 % — mode dégradé (le client peut
+ *                                refuser de démarrer une nouvelle session).
+ *
+ * Volontairement non bloquant : on retourne le status, c'est le caller
+ * (`realtimeToken.create` ou un cron d'alerte) qui décide quoi faire.
+ */
+export const getGlobalQuotaStatusInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const monthStart = (() => {
+      const d = new Date();
+      d.setUTCDate(1);
+      d.setUTCHours(0, 0, 0, 0);
+      return d.getTime();
+    })();
+    // Scan global — pas d'index orgs, on collecte par status puis filtre.
+    // Borné par le mois ; le volume reste raisonnable (~quelques milliers/mois).
+    const sessions = await ctx.db
+      .query("aiRealtimeSessions")
+      .withIndex("by_status_started", (q) => q.eq("status", "ended"))
+      .collect();
+    let totalMicroCents = 0;
+    for (const s of sessions) {
+      if (s.startedAt < monthStart) continue;
+      if (s.costMicroCents) totalMicroCents += s.costMicroCents;
+    }
+    const totalUsd = totalMicroCents / 1_000_000;
+    const budgetUsd = Number(
+      process.env.OPENAI_MONTHLY_BUDGET_USD ?? "100",
+    );
+    const ratio = budgetUsd > 0 ? totalUsd / budgetUsd : 0;
+    let level: "approaching" | "warning" | "exceeded" | null = null;
+    if (ratio >= 1) level = "exceeded";
+    else if (ratio >= 0.9) level = "warning";
+    else if (ratio >= 0.7) level = "approaching";
+    return {
+      totalUsd,
+      budgetUsd,
+      ratio,
+      level,
+      monthStart,
+    };
+  },
+});
+
+/**
  * Coût mensuel iAsted pour une org. Pour dashboard / facturation.
  */
 export const getMonthlyCost = query({

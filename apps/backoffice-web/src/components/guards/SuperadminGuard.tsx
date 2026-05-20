@@ -1,12 +1,13 @@
 "use client";
 
-import { useConvexAuth, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ArrowLeft, Loader2, ShieldX } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useStableConvexAuth } from "@workspace/api/hooks";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminData } from "@/hooks/use-superadmin-data";
 
@@ -16,7 +17,7 @@ interface SuperadminGuardProps {
 
 export function SuperadminGuard({ children }: SuperadminGuardProps) {
 	const { t } = useTranslation();
-	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+	const { isAuthenticated, isUnauthenticated } = useStableConvexAuth();
 	const { userData, isBackOffice, isPending } = useSuperAdminData();
 	const ensureUser = useMutation(api.functions.users.ensureUser);
 	const hasEnsuredRef = useRef(false);
@@ -37,29 +38,14 @@ export function SuperadminGuard({ children }: SuperadminGuardProps) {
 		}
 	}, [isAuthenticated, ensureUser]);
 
-	// Sticky auth — `useConvexAuth` peut briefly retourner (loading=false,
-	// isAuthenticated=false) avant que le JWT Convex soit appliqué au WS.
-	// Pattern identique à citizen-web et agent-web : on attend une résolution
-	// stable, et une fois `true` on n'y revient plus.
-	const [resolvedAuth, setResolvedAuth] = useState<boolean | null>(null);
 	useEffect(() => {
-		if (isAuthLoading) return;
-		setResolvedAuth((prev) => {
-			if (prev === true) return prev;
-			if (isAuthenticated) return true;
-			if (prev === null) return false;
-			return prev;
-		});
-	}, [isAuthLoading, isAuthenticated]);
-
-	useEffect(() => {
-		if (resolvedAuth === false) {
+		if (isUnauthenticated) {
 			router.push("/sign-in");
 		}
-	}, [resolvedAuth, router]);
+	}, [isUnauthenticated, router]);
 
 	// Show loading state while checking auth or permissions
-	if (resolvedAuth !== true || isPending) {
+	if (!isAuthenticated || isPending) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
 				<div className="text-center space-y-4">

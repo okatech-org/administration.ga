@@ -330,15 +330,34 @@ const UI_TOOLS: RealtimeVoiceTool[] = [
 // Tools métier (filtrés par permissions)
 // ─────────────────────────────────────────────────────────────
 
+type Surface = "agent" | "backoffice" | "citizen";
+
 interface GatedTool {
 	tool: RealtimeVoiceTool;
 	/** Task code requis. `null` = pas de gating supplémentaire (auth suffisante). */
 	requiredTask: string | null;
-	/** Si défini, le tool n'est exposé QUE sur cette surface. */
+	/** Si défini, le tool n'est exposé QUE sur cette surface (ex. backoffice-only). */
 	surfaceOnly?: "agent" | "backoffice";
+	/** Liste de surfaces où le tool est masqué (typiquement `["citizen"]` pour les tools métier admin). */
+	excludeSurfaces?: Surface[];
 	/** Si true, exige le statut superadmin. */
 	superadminOnly?: boolean;
 }
+
+/**
+ * Tools libre-service citoyen — masques cote agent/backoffice pour eviter
+ * que l'agent vocal admin propose des flux qui n'ont pas de sens pour lui.
+ *
+ * Cote citoyen, la whitelist `CITIZEN_BUSINESS_TOOLS` plus bas (dans le
+ * handler) gere deja le scoping inverse (admin tools masques).
+ */
+const CITIZEN_ONLY_TOOLS: ReadonlySet<string> = new Set([
+	"submit_consular_request_intent",
+	"track_my_request",
+	"book_my_appointment_intent",
+	"read_my_inbox",
+	"call_my_consulate",
+]);
 
 const BUSINESS_TOOLS: GatedTool[] = [
 	// ───────────────────────────────────────────────────────────
@@ -1274,7 +1293,10 @@ const BUSINESS_TOOLS: GatedTool[] = [
 			description:
 				"Modifie le rôle d'un utilisateur (user / sous_admin / admin / admin_system). " +
 				"Le caller doit avoir un rang strictement supérieur au rôle cible. " +
-				"RÈGLE : récapituler oralement (utilisateur cible + ancien rôle + nouveau rôle) et obtenir confirmation 'oui' avant exécution.",
+				"RÈGLE STRICTE (Sprint 5 — G4) : récapituler oralement (cible + ancien rôle + nouveau rôle), " +
+				"dicter la **phrase challenge** « je confirme attribuer le rôle [ROLE] à [NOM_CIBLE] » et " +
+				"exiger que l'utilisateur la **répète mot-à-mot**. Passer la phrase répétée dans `challengeAccepted`. " +
+				"Le backend rejette l'action si la phrase ne contient pas les mots-clés attendus.",
 			parameters: {
 				type: "object",
 				properties: {
@@ -1286,8 +1308,12 @@ const BUSINESS_TOOLS: GatedTool[] = [
 						type: "string",
 						description: "Nouveau rôle : 'user', 'sous_admin', 'admin' ou 'admin_system'.",
 					},
+					challengeAccepted: {
+						type: "string",
+						description: "Phrase exacte répétée par l'utilisateur, ex : « je confirme attribuer le rôle admin à Jean Bongo ». Doit contenir le mot 'confirme' OU 'attribuer' ET le nouveau rôle.",
+					},
 				},
-				required: ["userId", "role"],
+				required: ["userId", "role", "challengeAccepted"],
 			},
 		},
 	},
@@ -1300,7 +1326,10 @@ const BUSINESS_TOOLS: GatedTool[] = [
 			name: "suspend_user",
 			description:
 				"Désactive un utilisateur (compte suspendu, ne peut plus se connecter). " +
-				"RÈGLE STRICTE : double confirmation orale obligatoire — récap initial + récap final.",
+				"RÈGLE STRICTE (Sprint 5 — G4) : récap oral + dicter la **phrase challenge** " +
+				"« je confirme suspendre [NOM_CIBLE], motif : [MOTIF] » et exiger répétition " +
+				"mot-à-mot. Passer la phrase dans `challengeAccepted`. " +
+				"Le backend rejette si la phrase ne contient pas 'suspendre' (ou variante) ET le motif.",
 			parameters: {
 				type: "object",
 				properties: {
@@ -1312,8 +1341,12 @@ const BUSINESS_TOOLS: GatedTool[] = [
 						type: "string",
 						description: "Motif de la suspension (sera enregistré dans l'audit log).",
 					},
+					challengeAccepted: {
+						type: "string",
+						description: "Phrase exacte répétée par l'utilisateur, ex : « je confirme suspendre Jean Bongo, motif comportement inadapté ». Doit contenir 'suspendre' (ou variante) ET un fragment du motif.",
+					},
 				},
-				required: ["userId", "reason"],
+				required: ["userId", "reason", "challengeAccepted"],
 			},
 		},
 	},
@@ -1422,6 +1455,363 @@ const BUSINESS_TOOLS: GatedTool[] = [
 			},
 		},
 	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 6.5 — C3 : Vision multimodale (caméra à la demande)
+	// Réservé à agent + backoffice (pas dans CITIZEN_BUSINESS_TOOLS).
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "analyze_camera",
+			description:
+				"Active la caméra de l'utilisateur, prend une photo et l'envoie à un modèle de vision pour analyse. " +
+				"À INVOQUER quand l'utilisateur dit : « iAsted, regarde ce passeport », « analyse cette photo », " +
+				"« lis ce document que je tiens », « décris ce que je te montre ». " +
+				"Le navigateur demandera la permission caméra (popup natif) — c'est attendu. " +
+				"La caméra arrière est privilégiée (utile pour scanner un document) ; fallback caméra avant. " +
+				"Annoncez « Un instant, j'active la caméra… » avant l'appel (flux ~2-4 s capture+analyse).",
+			parameters: {
+				type: "object",
+				properties: {
+					what_to_focus: {
+						type: "string",
+						description: "Ce sur quoi se concentrer (ex : 'le numéro du passeport', 'la signature', 'le nom du titulaire'). Vide si général.",
+					},
+					detail: {
+						type: "string",
+						description: "Niveau de détail : 'low' (default, économique) ou 'high' (lit le texte fin, ex : passeport, document scanné).",
+					},
+				},
+				required: [],
+			},
+		},
+	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 6 — C1 : Vision multimodale (capture d'écran à la demande)
+	// Pas de `surfaceOnly` ici — la restriction citoyen est appliquée via
+	// la whitelist `CITIZEN_BUSINESS_TOOLS` (ce tool n'y est PAS ajouté).
+	// Résultat : exposé à agent + backoffice, filtré pour citoyen.
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "capture_screen_region",
+			description:
+				"Capture l'écran courant de l'utilisateur et l'envoie à un modèle de vision pour description/analyse. " +
+				"À INVOQUER quand l'utilisateur dit : « regarde ça », « explique-moi cet écran », « qu'est-ce que je vois ici », " +
+				"« analyse ce document à l'écran », « décris-moi ce graphique », « lis-moi ce passeport ». " +
+				"Le navigateur demandera à l'utilisateur de partager l'écran ou la fenêtre (popup natif) — c'est attendu. " +
+				"Une fois la capture analysée, le résultat texte vous est injecté comme un message — réagissez naturellement, " +
+				"comme si l'utilisateur vous avait décrit ce qu'il voit. Annoncez « Un instant, je regarde… » avant l'appel " +
+				"car le flux (capture + analyse) prend 2-4 secondes.",
+			parameters: {
+				type: "object",
+				properties: {
+					what_to_focus: {
+						type: "string",
+						description: "Ce sur quoi l'utilisateur veut que vous vous concentriez (ex : 'le tableau des dossiers en attente', 'la signature en bas du document', 'l'alerte en rouge'). Si l'utilisateur n'a pas précisé, vide ou général.",
+					},
+					detail: {
+						type: "string",
+						description: "Niveau de détail : 'low' (default, économique, suffisant pour décrire une UI ou un tableau) ou 'high' (lit le texte fin, ex : passeport, document scanné — plus cher).",
+					},
+				},
+				required: [],
+			},
+		},
+	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 10 — A4 : Continuité multi-device (handoff vocal)
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "list_my_devices",
+			description:
+				"Liste les devices iAsted actuellement connectés pour l'utilisateur " +
+				"(desktop, mobile, tablet). À INVOQUER quand l'utilisateur dit : « quels devices " +
+				"sont connectés ? », « où suis-je connecté ? », « bascule sur mon téléphone » " +
+				"(invoquer d'abord cette liste pour résoudre le deviceId du téléphone). " +
+				"Le résultat texte vous est injecté — synthétisez (« Vous êtes sur 2 appareils : Chrome MacBook et iPhone Safari »).",
+			parameters: { type: "object", properties: {}, required: [] },
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "handoff_to_device",
+			description:
+				"Transfère la session vocale courante vers un autre device de l'utilisateur. " +
+				"À INVOQUER quand l'utilisateur dit : « bascule sur mon iPhone », « continue sur " +
+				"l'ordinateur du bureau », « passe sur la tablette ». " +
+				"ORDRE CANONIQUE : (1) invoquer `list_my_devices` pour résoudre le targetDeviceId, " +
+				"(2) demander confirmation orale (« Je transfère la conversation vers [LABEL] ? »), " +
+				"(3) invoquer ce tool. Le target device prend le relai automatiquement. " +
+				"Sur le device source, votre session se ferme — annoncez « Je vous retrouve sur [LABEL]. » avant la fermeture.",
+			parameters: {
+				type: "object",
+				properties: {
+					targetDeviceId: {
+						type: "string",
+						description: "deviceId du device cible (obtenu via list_my_devices).",
+					},
+				},
+				required: ["targetDeviceId"],
+			},
+		},
+	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 9 — Co-édition document live (TipTap / éditeur générique)
+	// Réservé aux surfaces agent + backoffice (citoyen n'a pas d'éditeur
+	// de document riche — filtré côté `CITIZEN_BUSINESS_TOOLS`).
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "editor_insert_text",
+			description:
+				"Insère du texte à la position du curseur de l'éditeur de document actif. " +
+				"À INVOQUER quand l'utilisateur dit : « écris 'Bonjour M. l'Ambassadeur' », « ajoute la phrase X », " +
+				"« insère le mot Y ici ». Le texte est ajouté tel quel — préservez la ponctuation, la capitalisation et les retours à la ligne nécessaires. " +
+				"Aucune confirmation orale requise pour une simple insertion — exécutez directement et confirmez en 3-5 mots (« Voilà, c'est fait. »).",
+			parameters: {
+				type: "object",
+				properties: {
+					text: {
+						type: "string",
+						description: "Le texte à insérer (avec ponctuation et capitalisation correctes).",
+					},
+				},
+				required: ["text"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "editor_append_paragraph",
+			description:
+				"Ajoute un nouveau paragraphe à la FIN du document. " +
+				"À INVOQUER quand l'utilisateur dit : « ajoute un paragraphe disant X », « termine par 'Cordialement' », " +
+				"« mets en bas du document : ... ». " +
+				"Confirmez en 3-5 mots après exécution.",
+			parameters: {
+				type: "object",
+				properties: {
+					text: {
+						type: "string",
+						description: "Contenu du nouveau paragraphe (sans balises HTML — texte brut).",
+					},
+				},
+				required: ["text"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "editor_replace_selection",
+			description:
+				"Remplace le texte actuellement sélectionné dans l'éditeur par un nouveau texte. " +
+				"À INVOQUER quand l'utilisateur dit : « remplace ça par X », « corrige ce passage en disant Y », " +
+				"« reformule la sélection ainsi : ... ». " +
+				"Le tool échoue silencieusement si aucune sélection n'est active — invitez alors l'utilisateur à sélectionner d'abord.",
+			parameters: {
+				type: "object",
+				properties: {
+					text: {
+						type: "string",
+						description: "Le nouveau texte qui remplacera la sélection courante.",
+					},
+				},
+				required: ["text"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "editor_read_state",
+			description:
+				"Lit l'état courant de l'éditeur de document actif : titre, texte brut, contenu de la sélection. " +
+				"À INVOQUER quand l'utilisateur dit : « relis-moi le document », « qu'est-ce que j'ai écrit jusqu'ici ? », " +
+				"« lis-moi le paragraphe sélectionné ». " +
+				"Le résultat texte vous est injecté comme un message — paraphrasez et résumez naturellement (pas de récitation mot-à-mot pour un long document).",
+			parameters: { type: "object", properties: {}, required: [] },
+		},
+	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 8 — F3 : Délégation vocale d'un dossier
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "delegate_request",
+			description:
+				"Délègue un dossier (request) à un autre agent de la même organisation. " +
+				"À INVOQUER quand l'utilisateur dit : « fais traiter ce dossier par Mme X », « assigne le dossier à Jean », " +
+				"« délègue cette demande à mon adjoint ». " +
+				"ORDRE CANONIQUE : invoquer d'abord `find_contact_by_name` pour résoudre le targetUserId, " +
+				"PUIS demander confirmation orale (« Je confie le dossier [REF] à [NOM], c'est confirmé ? »), " +
+				"PUIS invoquer ce tool. Une note interne est ajoutée automatiquement (« Délégué par [vous] via iAsted »).",
+			parameters: {
+				type: "object",
+				properties: {
+					requestId: {
+						type: "string",
+						description: "ID Convex du dossier à déléguer (visible dans le contexte page ou récupéré via les tools de lecture).",
+					},
+					targetUserId: {
+						type: "string",
+						description: "ID Convex de l'utilisateur destinataire (obtenu via find_contact_by_name).",
+					},
+					reason: {
+						type: "string",
+						description: "Motif de la délégation (1-2 phrases). Sera consigné dans la note interne du dossier.",
+					},
+				},
+				required: ["requestId", "targetUserId"],
+			},
+		},
+	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 8 — F2 : Auto-summary post-réunion
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "save_meeting_summary",
+			description:
+				"Sauvegarde un résumé de réunion sous forme de correspondance interne (iCorrespondance) " +
+				"avec les points clés et les actions à mener. " +
+				"À INVOQUER après la fin d'une réunion (le drapeau MEETING_IN_PROGRESS a disparu du contexte) " +
+				"SI l'utilisateur accepte votre proposition de résumé. Composer un résumé concis (5-10 phrases) " +
+				"basé sur les éléments mémorisés pendant la session vocale (mémoire conversationnelle).",
+			parameters: {
+				type: "object",
+				properties: {
+					title: {
+						type: "string",
+						description: "Titre court du résumé (ex : 'Réunion CG Paris — 19/05/2026').",
+					},
+					summary: {
+						type: "string",
+						description: "Corps du résumé : 5-10 phrases. Inclure participants, sujets traités, décisions, actions à mener.",
+					},
+					actionItems: {
+						type: "array",
+						description: "Liste des actions concrètes à mener post-réunion. Chaque item = phrase courte avec verbe d'action.",
+					},
+				},
+				required: ["title", "summary"],
+			},
+		},
+	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 3 — A1/A3 : Mémoire personnelle (Hippocampe)
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "remember_this",
+			description:
+				"Enregistre un fait persistant sur l'utilisateur, ses préférences ou ses relations professionnelles. " +
+				"À INVOQUER quand l'utilisateur partage spontanément une information qui sera utile lors de futures sessions, par exemple : " +
+				"« mon adjoint principal est Patrice Mouele », « je préfère traiter les courriers urgents en premier le matin », " +
+				"« je travaille principalement sur les visas court séjour », « note que ma juridiction couvre l'Espagne ». " +
+				"NE PAS invoquer pour des informations éphémères (l'heure d'un rendez-vous, le statut d'un dossier en cours, etc.). " +
+				"Confirmez par « C'est noté. » brief et continue la conversation.",
+			parameters: {
+				type: "object",
+				properties: {
+					category: {
+						type: "string",
+						description: "Type de mémoire : 'context' (fait durable de travail), 'preference' (préférence de l'utilisateur), 'relation' (information sur une autre personne).",
+					},
+					content: {
+						type: "string",
+						description: "Le fait à mémoriser, formulé en une phrase courte et précise (max 400 caractères). Ex : 'Préfère les versions courtes des résumés.'",
+					},
+				},
+				required: ["category", "content"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "set_callback",
+			description:
+				"Programme un rappel pour un moment futur. À INVOQUER quand l'utilisateur dit : " +
+				"« rappelle-moi de relancer M. Mvondo demain à 10h », « pense à me redire dans une heure », " +
+				"« n'oublie pas de me prévenir lundi pour la réunion », etc. " +
+				"Le rappel sera surfacé EN HAUT DE VOTRE PROCHAINE SESSION dès que l'heure est dépassée. " +
+				"Confirmez oralement avec le moment exact : « Bien, je vous rappellerai cela demain à 10h. »",
+			parameters: {
+				type: "object",
+				properties: {
+					remind_at: {
+						type: "string",
+						description: "Date/heure du rappel au format ISO 8601 (ex: '2026-05-20T10:00:00Z'). Convertissez vous-même les expressions naturelles ('demain à 10h', 'dans 2 jours', 'lundi prochain').",
+					},
+					what: {
+						type: "string",
+						description: "Le contenu du rappel, formulé du point de vue de l'utilisateur. Ex: 'Relancer M. Mvondo pour le visa Pellen.'",
+					},
+				},
+				required: ["remind_at", "what"],
+			},
+		},
+	},
+	// ───────────────────────────────────────────────────────────
+	// Sprint 2 — E4 : Personnalisation lexique (apprentissage actif)
+	// ───────────────────────────────────────────────────────────
+	{
+		requiredTask: null,
+		tool: {
+			type: "function",
+			name: "learn_pronunciation",
+			description:
+				"Enregistre la PRONONCIATION CORRECTE d'un nom ou terme spécifique. " +
+				"À INVOQUER quand l'utilisateur corrige la façon dont vous prononcez un mot, " +
+				"par exemple : « ce nom se prononce em-VON-do, pas vondo », « le ressortissant " +
+				"s'appelle Bongo, pas Bongô avec un accent », « écris pas Mbeng, écris Mbing ». " +
+				"Stocké dans le lexique personnel de l'utilisateur et réinjecté dans toutes " +
+				"vos futures sessions. Confirmez par « Bien noté, j'écrirai/dirai désormais X. ». " +
+				"NE PAS utiliser pour des traductions de phrases — pour cela, c'est l'UI Réglages " +
+				"qui gère les ajouts de lexique multilingue.",
+			parameters: {
+				type: "object",
+				properties: {
+					name: {
+						type: "string",
+						description: "Le nom ou terme tel que vous deviez l'écrire/dire (forme canonique).",
+					},
+					pronunciation: {
+						type: "string",
+						description: "Comment le prononcer correctement (syllabes, accent, son), ex : 'em-VON-do', 'M-Vondo avec M silencieux', 'BOM-bo avec B dur'.",
+					},
+					context: {
+						type: "string",
+						description: "Contexte optionnel pour différencier les homonymes, ex : 'consul à Yaoundé', 'ressortissant inscrit à Paris'.",
+					},
+				},
+				required: ["name", "pronunciation"],
+			},
+		},
+	},
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -1456,6 +1846,29 @@ export const getToolsForUser = internalQuery({
 			"read_today_agenda",
 			"read_chat_thread",
 			"cancel_request",
+			// Sprint 2 — E4 : les citoyens peuvent aussi corriger la prononciation
+			// (utile pour les noms gabonais avec particularités).
+			"learn_pronunciation",
+			// Sprint 3 — A1/A3 : les citoyens peuvent aussi avoir des mémoires
+			// et programmer des callbacks (« rappelle-moi de relancer mon dossier
+			// passeport dans 2 semaines »).
+			"remember_this",
+			"set_callback",
+			// Scan de document via la caméra (cas d'usage CANONIQUE pour le
+			// ressortissant : « iAsted, regarde mon passeport » → l'agent lit
+			// numéro, nom, date d'expiration et propose le pré-remplissage du
+			// formulaire consulaire courant). Quota vision déjà rate-limité
+			// (10/jour/user) côté vision.describeImage.
+			"analyze_camera",
+			// Capture d'écran pour assistance contextuelle (« regarde mon
+			// formulaire et dis-moi ce qui manque »). Même rate-limit que
+			// analyze_camera. Coût borné, valeur d'assistance élevée.
+			"capture_screen_region",
+			// Continuité multi-device — le ressortissant peut basculer de
+			// son desktop vers son smartphone pour scanner un document avec
+			// la caméra arrière.
+			"list_my_devices",
+			"handoff_to_device",
 		]);
 		if (surface === "citizen") {
 			const tools: RealtimeVoiceTool[] = [...UI_TOOLS];
@@ -1485,8 +1898,13 @@ export const getToolsForUser = internalQuery({
 		const tools: RealtimeVoiceTool[] = [...UI_TOOLS];
 
 		for (const gated of BUSINESS_TOOLS) {
-			// Filtre surface
+			// Filtre surface (whitelist : surfaceOnly limite à UNE seule surface)
 			if (gated.surfaceOnly && gated.surfaceOnly !== surface) continue;
+			// Filtre surface (blacklist : excludeSurfaces masque sur les surfaces listées)
+			if (gated.excludeSurfaces?.includes(surface as Surface)) continue;
+			// Masque les tools libre-service citoyen côté agent/backoffice (surface
+			// est forcément agent ou backoffice ici, le citoyen ayant early-returned).
+			if (CITIZEN_ONLY_TOOLS.has(gated.tool.name)) continue;
 			// Filtre superadmin
 			if (gated.superadminOnly && !userIsSuperadmin) continue;
 			// Filtre task

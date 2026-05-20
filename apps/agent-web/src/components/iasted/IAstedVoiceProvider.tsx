@@ -20,6 +20,8 @@ import {
 import { useVoiceProvider } from "./use-voice-provider";
 import { RawGeminiVoiceProvider } from "@workspace/agent-features/components/iasted-host";
 import {
+	useCallStore,
+	useDocumentTextSnapshot,
 	useFieldDescriptorsSnapshot,
 	usePageContextSnapshot,
 	usePanelContextSnapshot,
@@ -89,6 +91,13 @@ function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
 	const shellSnapshot = useShellContextSnapshot();
 	const panelSnapshot = usePanelContextSnapshot();
 	const fieldsSnapshot = useFieldDescriptorsSnapshot();
+	// Sprint 4 — B4 : drapeau « réunion LiveKit active » → injecté en tête
+	// du contexte page. Le modèle active alors la règle « voix très brève ».
+	const { activeSlotId } = useCallStore();
+	const meetingInProgress = activeSlotId !== null;
+	// Sprint 6.5 — C4 : texte extrait du document ouvert (PDF, image OCR).
+	// Injecté sous `## DOCUMENT À L'ÉCRAN` dans le pageContext.
+	const documentText = useDocumentTextSnapshot();
 	useEffect(() => {
 		if (!controller.isConnected) return;
 		if (!controller.capabilities.pageContextUpdate) return;
@@ -101,6 +110,8 @@ function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
 					shell: shellSnapshot,
 					panel: panelSnapshot,
 					fields: fieldsSnapshot,
+					meetingInProgress,
+					documentText,
 				}),
 			);
 		}, 150);
@@ -110,6 +121,8 @@ function IAstedVoiceControllerProvider({ children }: { children: ReactNode }) {
 		shellSnapshot,
 		panelSnapshot,
 		fieldsSnapshot,
+		meetingInProgress,
+		documentText,
 		controller.isConnected,
 		controller.capabilities.pageContextUpdate,
 		controller.updatePageContext,

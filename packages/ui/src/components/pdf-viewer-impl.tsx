@@ -90,10 +90,63 @@ export function PdfViewer({
 	// à chaque render. La même URL pour la même string => même objet.
 	const file = useMemo(() => ({ url }), [url]);
 
-	const onLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
-		setNumPages(n);
-		setCurrentPage(1);
-		setError(null);
+	const onLoadSuccess = useCallback(
+		async (pdf: { numPages: number; getPage: (n: number) => Promise<any> }) => {
+			setNumPages(pdf.numPages);
+			setCurrentPage(1);
+			setError(null);
+			// Sprint 6.5 — C4 wiring (Ronde 3) : extraction du texte pour
+			// iAsted (OCR contextuel automatique). Cap dur à 20 pages pour
+			// borner le coût d'extraction sur les gros documents.
+			try {
+				const maxPages = Math.min(pdf.numPages, 20);
+				let combined = "";
+				for (let i = 1; i <= maxPages; i++) {
+					try {
+						const page = await pdf.getPage(i);
+						const content = await page.getTextContent();
+						const pageText = (content.items as Array<{ str?: string }>)
+							.map((it) => it.str ?? "")
+							.join(" ");
+						combined += `\n--- Page ${i} ---\n${pageText}`;
+					} catch {
+						/* page corrompue : ignore */
+					}
+				}
+				if (combined.trim()) {
+					// Dynamic import : packages/ui ne dépend PAS de agent-features
+					// (sens inverse normalement). On laisse l'éventuelle absence
+					// silencieuse pour ne PAS coupler.
+					try {
+						const mod = await import(
+							"@workspace/agent-features/stores" as string
+						);
+						(mod as any).pageContextStore?.setDocumentText?.(combined);
+					} catch {
+						/* agent-features pas dispo dans ce contexte */
+					}
+				}
+			} catch (err) {
+				console.warn("[PdfViewer] OCR extraction failed:", err);
+			}
+		},
+		[],
+	);
+
+	// Sprint 6.5 — C4 : nettoyage du documentText au unmount du viewer.
+	useEffect(() => {
+		return () => {
+			void (async () => {
+				try {
+					const mod = await import(
+						"@workspace/agent-features/stores" as string
+					);
+					(mod as any).pageContextStore?.setDocumentText?.(null);
+				} catch {
+					/* no-op */
+				}
+			})();
+		};
 	}, []);
 
 	const onLoadError = useCallback((err: Error) => {

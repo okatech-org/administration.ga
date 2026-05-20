@@ -137,30 +137,14 @@ export function SuperadminSidebarV2() {
 			label: "iBureau",
 			items: [
 				{
+					// Item simple — les sous-vues (Réseau / Exploitation /
+					// Réglages) sont rendues comme onglets horizontaux DANS
+					// la page via `app/(backoffice)/icorrespondance/layout.tsx`,
+					// pas comme accordéon dans la sidebar.
 					title: "iCorrespondance",
 					url: "/icorrespondance",
 					icon: FolderOpen,
 					moduleCode: "correspondence",
-					children: [
-						{
-							title: "Réseau",
-							url: "/icorrespondance/network",
-							icon: Globe2,
-							moduleCode: "correspondence",
-						},
-						{
-							title: "Exploitation",
-							url: "/icorrespondance/operate",
-							icon: FolderOpen,
-							moduleCode: "correspondence",
-						},
-						{
-							title: "Réglages",
-							url: "/icorrespondance/settings",
-							icon: Settings,
-							moduleCode: "correspondence",
-						},
-					],
 				},
 				{
 					title: "iDocument",

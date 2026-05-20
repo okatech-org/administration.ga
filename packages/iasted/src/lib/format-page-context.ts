@@ -91,11 +91,56 @@ export function formatPageContextForVoice(
 				shell?: ShellContextLike | null;
 				panel?: PanelContextLike | null;
 				fields?: FormFieldLike[] | null;
+				/**
+				 * Sprint 4 — B4 : drapeau d'appel/réunion LiveKit actif. Quand
+				 * `true`, un bloc dédié est injecté en TÊTE du contexte pour
+				 * que le modèle adopte immédiatement la « voix très brève »
+				 * (cf. règle « COMPORTEMENT EN PRÉSENCE D'UN APPEL... » du
+				 * system prompt).
+				 */
+				meetingInProgress?: boolean | null;
+				/**
+				 * Sprint 6 — C4 : texte extrait d'un document ouvert dans la
+				 * page (typiquement un PDF via pdf.js). Quand fourni, un bloc
+				 * `## DOCUMENT À L'ÉCRAN` est injecté pour permettre à l'agent
+				 * de raisonner dessus sans nécessiter une capture vision. Le
+				 * texte est tronqué automatiquement à 8 000 caractères (~ 2K
+				 * tokens) pour borner le coût.
+				 */
+				documentText?: string | null;
 		  },
 ): string {
-	const { page, shell, panel, fields } = normalizeInput(input);
+	const { page, shell, panel, fields, meetingInProgress, documentText } =
+		normalizeInput(input);
 
 	const lines: string[] = [];
+
+	// Sprint 4 — B4 : drapeau réunion en TÊTE pour priorité absolue.
+	if (meetingInProgress === true) {
+		lines.push("## MEETING_IN_PROGRESS");
+		lines.push(
+			"L'utilisateur est actuellement engagé dans un appel ou une réunion LiveKit. Activez la règle « COMPORTEMENT EN PRÉSENCE D'UN APPEL OU RÉUNION LIVEKIT » du préambule : voix très brève (1 phrase, 4-7 mots), aucune initiative, exécution silencieuse des tools de contrôle.",
+		);
+		lines.push("");
+	}
+
+	// Sprint 6 — C4 : texte de document ouvert (OCR contextuel automatique).
+	if (documentText && documentText.trim().length > 0) {
+		const truncated = documentText.trim().slice(0, 8000);
+		const wasTruncated = documentText.trim().length > 8000;
+		lines.push("## DOCUMENT À L'ÉCRAN");
+		lines.push(
+			"L'utilisateur a un document ouvert dans la page courante. Voici son contenu textuel (extrait automatiquement, peut contenir des erreurs OCR). Référez-vous-y pour répondre aux questions sur ce document sans avoir besoin de `capture_screen_region`.",
+		);
+		lines.push("");
+		lines.push("```");
+		lines.push(truncated);
+		if (wasTruncated) {
+			lines.push("...[document tronqué — fin non incluse]");
+		}
+		lines.push("```");
+		lines.push("");
+	}
 
 	// ── Bloc shell (actions globales, toujours présent si déclaré) ──
 	if (shell && shell.availableActions.length > 0) {
@@ -277,14 +322,26 @@ function normalizeInput(
 				shell?: ShellContextLike | null;
 				panel?: PanelContextLike | null;
 				fields?: FormFieldLike[] | null;
+				meetingInProgress?: boolean | null;
+				documentText?: string | null;
 		  },
 ): {
 	page: PageContextLike | null;
 	shell: ShellContextLike | null;
 	panel: PanelContextLike | null;
 	fields: FormFieldLike[] | null;
+	meetingInProgress: boolean;
+	documentText: string | null;
 } {
-	if (!input) return { page: null, shell: null, panel: null, fields: null };
+	if (!input)
+		return {
+			page: null,
+			shell: null,
+			panel: null,
+			fields: null,
+			meetingInProgress: false,
+			documentText: null,
+		};
 	// Discrimine la forme { page, shell, panel, fields } de la forme PageContextLike directe :
 	// PageContextLike a forcément un `module` (string), { page, ... } non.
 	if (typeof (input as PageContextLike).module === "string") {
@@ -293,6 +350,8 @@ function normalizeInput(
 			shell: null,
 			panel: null,
 			fields: null,
+			meetingInProgress: false,
+			documentText: null,
 		};
 	}
 	const obj = input as {
@@ -300,12 +359,16 @@ function normalizeInput(
 		shell?: ShellContextLike | null;
 		panel?: PanelContextLike | null;
 		fields?: FormFieldLike[] | null;
+		meetingInProgress?: boolean | null;
+		documentText?: string | null;
 	};
 	return {
 		page: obj.page ?? null,
 		shell: obj.shell ?? null,
 		panel: obj.panel ?? null,
 		fields: obj.fields ?? null,
+		meetingInProgress: obj.meetingInProgress === true,
+		documentText: obj.documentText ?? null,
 	};
 }
 

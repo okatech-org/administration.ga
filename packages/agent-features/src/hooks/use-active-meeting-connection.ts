@@ -64,7 +64,13 @@ export function useActiveMeetingConnection() {
 		if (!id) return;
 		activeMeetingStore.reset();
 		try {
-			await leaveMeetingMutation.mutateAsync({ meetingId: id });
+			// `intentional: true` bypass la protection 5s anti-StrictMode
+			// (cf. `meetings.leave`). C'est un raccrocher utilisateur explicite,
+			// donc la réunion DOIT passer à `ended` immédiatement.
+			await leaveMeetingMutation.mutateAsync({
+				meetingId: id,
+				intentional: true,
+			});
 		} catch {
 			// best-effort — l'état local est déjà nettoyé
 		}

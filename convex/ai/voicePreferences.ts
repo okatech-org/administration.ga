@@ -11,6 +11,7 @@ import { v } from "convex/values";
 import { internalQuery, mutation, query } from "../_generated/server";
 import { requireAuth } from "../lib/auth";
 import { voicePrefsValidator } from "../schemas/userIastedVoicePrefs";
+import { DEFAULT_IASTED_LOCALE } from "../lib/iastedLocales";
 
 const DEFAULT_PREFS = {
   preferredVoice: "ash",
@@ -19,8 +20,14 @@ const DEFAULT_PREFS = {
   autoGreet: true,
   customPersona: undefined,
   formality: "standard" as const,
-  preferredLocale: "fr-FR",
+  preferredLocale: DEFAULT_IASTED_LOCALE,
   requireConfirmation: true,
+  // Sprint 2 (Ronde 3) — nouveaux defaults.
+  hasOnboardedVoice: false,
+  responseLength: "short" as const,
+  adaptiveSpeechRateEnabled: true,
+  // Sprint 4 (Ronde 3) — proactivité opt-in par défaut.
+  morningBriefingEnabled: true,
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -108,5 +115,43 @@ export const revokeAllMyVoiceSessions = mutation({
       await ctx.db.delete(r._id);
     }
     return rows.length;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 2 — E1 : Onboarding flag
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Marque la 1ʳᵉ session vocale comme terminée. Le prochain démarrage
+ * iAsted n'inclura plus le bloc onboarding dans le prompt. Idempotent.
+ */
+export const markVoiceOnboarded = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireAuth(ctx);
+    const existing = await ctx.db
+      .query("userIastedVoicePrefs")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .unique();
+    const now = Date.now();
+    if (existing) {
+      if (existing.voicePrefs.hasOnboardedVoice === true) return; // idempotent
+      // Merge avec DEFAULT_PREFS AVANT existing : un ancien record écrit
+      // avant l'ajout d'un champ requis du validator (ex. requireConfirmation)
+      // serait rejeté par le patch strict sinon. Les valeurs existantes
+      // prennent toujours le pas, seul le champ manquant est comblé.
+      await ctx.db.patch(existing._id, {
+        voicePrefs: { ...DEFAULT_PREFS, ...existing.voicePrefs, hasOnboardedVoice: true },
+        updatedAt: now,
+      });
+      return;
+    }
+    // Pas encore de row : crée avec les defaults + flag onboardé.
+    await ctx.db.insert("userIastedVoicePrefs", {
+      userId: user._id,
+      voicePrefs: { ...DEFAULT_PREFS, hasOnboardedVoice: true },
+      updatedAt: now,
+    });
   },
 });

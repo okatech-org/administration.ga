@@ -126,24 +126,42 @@ export const executeRealtimeTool = action({
 			return { success: false, message: `Outil inconnu : ${toolName}` };
 		}
 
-		// Charger l'utilisateur pour les checks permissions
-		const user = await ctx.runQuery(api.functions.users.getMe);
-		if (!user) {
-			return { success: false, message: "Utilisateur introuvable" };
-		}
-
-		// Vérifier la surface
+		// Vérifier la surface (statique, pas besoin du user)
 		if (gated.surfaceOnly && gated.surfaceOnly !== surface) {
 			return { success: false, message: "Outil non disponible sur cette surface" };
 		}
 
+		// Optimisation latence (Phase 3) : le `getMe` runQuery (30–80 ms) est
+		// chargé paresseusement, uniquement si un consumer en a besoin :
+		//   1. Vérification superadmin (gated.superadminOnly)
+		//   2. Audit log (`user._id` requis, étape 6)
+		// Pour la surface `citizen` (pas d'orgId, pas d'audit log) sur les tools
+		// non-superadmin, on saute complètement le getMe. L'auth est déjà
+		// validée à l'étape 1 (`getUserIdentity`).
+		let user: any = null;
+		const loadUser = async () => {
+			if (user) return user;
+			user = await ctx.runQuery(api.functions.users.getMe);
+			if (!user) {
+				throw new Error("USER_NOT_FOUND");
+			}
+			return user;
+		};
+
 		// Vérifier superadmin si requis
-		if (gated.superadminOnly && !isSuperAdmin(user)) {
-			return { success: false, message: "Permission super-administrateur requise" };
+		if (gated.superadminOnly) {
+			try {
+				const u = await loadUser();
+				if (!isSuperAdmin(u)) {
+					return { success: false, message: "Permission super-administrateur requise" };
+				}
+			} catch {
+				return { success: false, message: "Utilisateur introuvable" };
+			}
 		}
 
 		// Vérifier la task code si requise (via une internal query qui revérifie)
-		if (gated.requiredTask && !isSuperAdmin(user) && orgId) {
+		if (gated.requiredTask && orgId) {
 			// Note : on ne peut pas appeler `getTasksForMembership` directement depuis
 			// une action — on délègue à une internal query si nécessaire. Pour rester
 			// simple et performant, on fait confiance au filtrage initial du tool
@@ -167,26 +185,55 @@ export const executeRealtimeTool = action({
 		// Skip si pas d'org (citizen surface) — `appendLogInternal` exige orgId.
 		// Pour les citoyens, les actions sont auto-only (track_my_request,
 		// submit_consular_request_intent) — low risk, pas de log à ce stade.
+		const totalMs = Date.now() - startTs;
 		if (orgId) {
+			// Charge `user` paresseusement si l'audit log en a besoin (cas
+			// agent/backoffice où getMe n'a pas encore été appelé via
+			// `superadminOnly`). Bug 4 fix : on utilise `ctx.scheduler.runAfter(0)`
+			// au lieu d'un `void runMutation` non-awaited — Convex action
+			// runtime warn et peut killer la promesse dangling avant exécution.
+			// `scheduler` enqueue la mutation pour exécution post-action,
+			// garantissant qu'elle s'exécute sans bloquer le retour du tool.
 			try {
-				await ctx.runMutation(internal.ai.activityLog.appendLogInternal, {
-					orgId: orgId as any,
-					userId: user._id,
-					capabilityCode: `voice.${toolName}`,
-					action: result.success ? "auto_applied" : "errored",
-					latencyMs: Date.now() - startTs,
-					error: result.success ? undefined : result.message,
-					metadata: {
-						toolArgs,
-						surface,
-						uiActionType: result.uiAction?.type,
+				const u = await loadUser();
+				await ctx.scheduler.runAfter(
+					0,
+					internal.ai.activityLog.appendLogInternal,
+					{
+						orgId: orgId as any,
+						userId: u._id,
+						capabilityCode: `voice.${toolName}`,
+						action: result.success ? "auto_applied" : "errored",
+						latencyMs: totalMs,
+						error: result.success ? undefined : result.message,
+						metadata: {
+							toolArgs,
+							surface,
+							uiActionType: result.uiAction?.type,
+						},
 					},
-				});
+				);
 			} catch (logErr) {
 				// Ne JAMAIS bloquer une action métier sur un échec de logging.
 				console.warn("[realtimeToolExecutor] audit log failed:", logErr);
 			}
 		}
+
+		// ── Télémétrie latence par tool (JSON-line) ──────────────
+		// Permet de comparer p50/p95 par toolName via `convex logs`. Le surcoût
+		// est négligeable et nous donne la vision la plus granulaire possible
+		// (un tool métier comme `launch_call_with_contact` peut être ~5× plus
+		// lent qu'un tool UI comme `open_chat`).
+		console.log(
+			"[realtimeToolExecutor.timing]",
+			JSON.stringify({
+				toolName,
+				surface,
+				success: result.success,
+				total_ms: totalMs,
+				isUITool,
+			}),
+		);
 
 		return result;
 	},
@@ -537,8 +584,475 @@ async function dispatchBusinessTool(
 			return await manageUsers(ctx, args, context);
 		case "system_config":
 			return await systemConfig(ctx, args, context);
+		// Sprint 2 — E4 : apprentissage actif de prononciation
+		case "learn_pronunciation":
+			return await learnPronunciation(ctx, args, context);
+		// Sprint 3 — A1/A3 : mémoire personnelle (Hippocampe)
+		case "remember_this":
+			return await rememberThis(ctx, args, context);
+		case "set_callback":
+			return await setCallback(ctx, args, context);
+		// Sprint 6 — C1 : vision multimodale (capture d'écran)
+		case "capture_screen_region":
+			return captureScreenRegion(args);
+		// Sprint 6.5 — C3 : vision caméra
+		case "analyze_camera":
+			return analyzeCamera(args);
+		// Sprint 8 — F3 : délégation vocale
+		case "delegate_request":
+			return await delegateRequest(ctx, args, context);
+		// Sprint 8 — F2 : auto-summary post-réunion
+		case "save_meeting_summary":
+			return await saveMeetingSummary(ctx, args, context);
+		// Sprint 9 — Co-édition document live
+		case "editor_insert_text":
+			return editorInsertText(args);
+		case "editor_append_paragraph":
+			return editorAppendParagraph(args);
+		case "editor_replace_selection":
+			return editorReplaceSelection(args);
+		case "editor_read_state":
+			return editorReadState();
+		// Sprint 10 — A4 : continuité multi-device
+		case "list_my_devices":
+			return await listMyDevicesTool(ctx);
+		case "handoff_to_device":
+			return await handoffToDeviceTool(ctx, args);
 		default:
 			return { success: false, message: `Tool métier non implémenté : ${toolName}` };
+	}
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 10 — A4 : Continuité multi-device
+// ─────────────────────────────────────────────────────────────
+async function listMyDevicesTool(ctx: any): Promise<RealtimeToolResult> {
+	try {
+		const devices = (await ctx.runQuery(
+			(api as any).ai.iastedDevicePresence.listMyDevices,
+		)) as Array<{
+			deviceId: string;
+			label: string;
+			surface: string;
+			state: string;
+			isStale: boolean;
+		}>;
+		const fresh = devices.filter((d) => !d.isStale);
+		if (fresh.length === 0) {
+			return {
+				success: true,
+				message: "Aucun device iAsted actif détecté en plus du courant.",
+				data: { devices: [] },
+			};
+		}
+		const summary = fresh
+			.map((d) => `- ${d.label} (${d.surface}, état: ${d.state})`)
+			.join("\n");
+		return {
+			success: true,
+			message: `Devices iAsted actifs (${fresh.length}) :\n${summary}`,
+			data: { devices: fresh },
+		};
+	} catch (e: any) {
+		return {
+			success: false,
+			message: `Échec listing devices : ${e?.message ?? "erreur"}`,
+		};
+	}
+}
+
+async function handoffToDeviceTool(
+	ctx: any,
+	args: { targetDeviceId?: string },
+): Promise<RealtimeToolResult> {
+	const targetDeviceId = args.targetDeviceId?.trim();
+	if (!targetDeviceId) {
+		return { success: false, message: "targetDeviceId requis." };
+	}
+	// Le sourceDeviceId est lu côté client (impossible à connaître côté
+	// serveur sans propagation). On renvoie un uiAction qui demande au
+	// client de lancer la `requestHandoff` mutation avec son propre deviceId.
+	return {
+		success: true,
+		message: "Handoff demandé — le device cible va prendre le relai.",
+		uiAction: {
+			type: "request_device_handoff",
+			payload: { targetDeviceId },
+		},
+	};
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 9 — Co-édition document live (UI tools : dispatched côté client)
+// ─────────────────────────────────────────────────────────────
+function editorInsertText(args: { text?: string }): RealtimeToolResult {
+	const text = (args.text ?? "").toString();
+	if (!text) {
+		return { success: false, message: "Aucun texte à insérer." };
+	}
+	return {
+		success: true,
+		message: "Texte inséré.",
+		uiAction: { type: "editor_insert_text", payload: { text } },
+	};
+}
+function editorAppendParagraph(args: { text?: string }): RealtimeToolResult {
+	const text = (args.text ?? "").toString().trim();
+	if (!text) {
+		return { success: false, message: "Aucun paragraphe à ajouter." };
+	}
+	return {
+		success: true,
+		message: "Paragraphe ajouté.",
+		uiAction: { type: "editor_append_paragraph", payload: { text } },
+	};
+}
+function editorReplaceSelection(args: { text?: string }): RealtimeToolResult {
+	const text = (args.text ?? "").toString();
+	if (!text) {
+		return { success: false, message: "Aucun texte de remplacement fourni." };
+	}
+	return {
+		success: true,
+		message: "Sélection remplacée.",
+		uiAction: { type: "editor_replace_selection", payload: { text } },
+	};
+}
+function editorReadState(): RealtimeToolResult {
+	return {
+		success: true,
+		message: "Lecture de l'état du document demandée.",
+		uiAction: { type: "editor_read_state" },
+	};
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 8 — F3 : Délégation d'un dossier à un autre agent
+// ─────────────────────────────────────────────────────────────
+async function delegateRequest(
+	ctx: any,
+	args: { requestId?: string; targetUserId?: string; reason?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const requestId = args.requestId?.trim();
+	const targetUserId = args.targetUserId?.trim();
+	if (!requestId || !targetUserId) {
+		return {
+			success: false,
+			message: "requestId et targetUserId requis (utiliser find_contact_by_name pour résoudre targetUserId).",
+		};
+	}
+	try {
+		// Récupère le request pour obtenir son orgId, puis le membership du
+		// targetUser dans cette même org (requests.assign attend un membershipId).
+		const request = (await ctx.runQuery(
+			(internal as any).functions.requests.getRequestInternal,
+			{ requestId: requestId as any },
+		).catch(() => null)) as { _id: any; orgId: any } | null;
+		// Fallback : si pas de internal helper, on tente la mutation directement
+		// (elle re-vérifie tout). Sinon on doit créer un internal getRequest.
+		if (!request) {
+			// Approche alternative : appeler directement assign avec un lookup
+			// du membership. Ce dispatcher reste fonctionnel via la mutation
+			// `requests.assign` qui exige un memberId — on délègue au moteur
+			// existant. Pour MVP, on indique simplement que la résolution
+			// passe par find_contact_by_name qui retourne déjà le membershipId
+			// quand disponible.
+		}
+		// MVP : la mutation `requests.assign` attend un memberId du target.
+		// On utilise la convention : si targetUserId ressemble à un memberId
+		// (préfixé 'm:' typique de Convex), on l'utilise tel quel ; sinon
+		// on cherche le membership de targetUserId dans l'org de la request.
+		const memberId = (await ctx.runMutation(
+			(internal as any).ai.iastedDelegationHelpers.resolveMembershipInternal,
+			{
+				userId: targetUserId as any,
+				requestId: requestId as any,
+			},
+		).catch(() => null)) as any | null;
+		if (!memberId) {
+			return {
+				success: false,
+				message:
+					"Impossible de déléguer : la personne ciblée n'a pas de membership actif dans l'organisation propriétaire du dossier.",
+			};
+		}
+		await ctx.runMutation(api.functions.requests.assign, {
+			requestId: requestId as any,
+			agentId: memberId,
+		});
+		// Note interne contextualisant la délégation vocale.
+		const noteContent = args.reason?.trim()
+			? `Délégué via iAsted (vocal). Motif : ${args.reason.trim()}`
+			: "Délégué via iAsted (vocal).";
+		try {
+			await ctx.runMutation(api.functions.requests.addNote, {
+				requestId: requestId as any,
+				content: noteContent,
+				isInternal: true,
+			});
+		} catch (noteErr) {
+			console.warn("[delegateRequest] addNote failed:", noteErr);
+		}
+		return {
+			success: true,
+			message: "Délégation effectuée.",
+			data: { requestId, targetUserId },
+		};
+	} catch (e: any) {
+		const msg = e?.message ?? "Erreur";
+		if (msg.includes("INSUFFICIENT_PERMISSIONS")) {
+			return {
+				success: false,
+				message: "Permission insuffisante pour déléguer ce dossier.",
+			};
+		}
+		if (msg.includes("REQUEST_NOT_FOUND")) {
+			return { success: false, message: "Dossier introuvable." };
+		}
+		return { success: false, message: `Échec délégation : ${msg}` };
+	}
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 8 — F2 : Save meeting summary (correspondance interne)
+// ─────────────────────────────────────────────────────────────
+async function saveMeetingSummary(
+	ctx: any,
+	args: { title?: string; summary?: string; actionItems?: string[] },
+	context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const title = args.title?.trim();
+	const summary = args.summary?.trim();
+	if (!title || !summary) {
+		return { success: false, message: "title et summary requis." };
+	}
+	if (!context.orgId) {
+		return {
+			success: false,
+			message: "Pas d'organisation active — le résumé ne peut être sauvegardé.",
+		};
+	}
+	// Compose un corps formaté simple. Format complet (in/out PDF, etc.) à
+	// faire dans une Sprint dédiée — ici on garde un texte lisible.
+	const actions =
+		Array.isArray(args.actionItems) && args.actionItems.length > 0
+			? "\n\nActions à mener :\n" +
+				args.actionItems.map((a) => `- ${String(a).trim()}`).join("\n")
+			: "";
+	const body = `RÉSUMÉ DE RÉUNION (iAsted)\n\n${summary}${actions}`;
+	try {
+		// Récupère l'utilisateur courant (la mémoire est attachée à un user).
+		const user = (await ctx.runQuery(api.functions.users.getMe)) as
+			| { _id: any }
+			| null;
+		if (!user) {
+			return { success: false, message: "Utilisateur introuvable." };
+		}
+		const result = (await ctx.runMutation(
+			(internal as any).ai.iastedMeetingSummariesHelpers.persistInternal,
+			{
+				orgId: context.orgId as any,
+				userId: user._id,
+				title,
+				body,
+			},
+		).catch((err: any) => ({ ok: false, error: err?.message }))) as
+			| { ok: true; itemId: any }
+			| { ok: false; error?: string };
+		if ("ok" in result && result.ok === true) {
+			return {
+				success: true,
+				message: `Résumé enregistré dans votre mémoire iAsted sous le titre « ${title} ».`,
+				data: { itemId: (result as any).itemId },
+			};
+		}
+		return {
+			success: false,
+			message: `Échec sauvegarde : ${("error" in result ? result.error : "raison inconnue") ?? "raison inconnue"}`,
+		};
+	} catch (e: any) {
+		return {
+			success: false,
+			message: `Échec sauvegarde : ${e?.message ?? "erreur"}`,
+		};
+	}
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 6 — C1 : Vision multimodale (déclenchement client-side)
+// ─────────────────────────────────────────────────────────────
+function captureScreenRegion(args: {
+	what_to_focus?: string;
+	detail?: string;
+}): RealtimeToolResult {
+	const focus = (args.what_to_focus ?? "").trim();
+	const detail = args.detail === "high" ? "high" : "low";
+	return {
+		success: true,
+		message: "Capture demandée. L'utilisateur va partager son écran.",
+		uiAction: {
+			type: "request_screen_capture",
+			payload: { focusHint: focus, detail },
+		},
+	};
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 6.5 — C3 : Vision caméra (déclenchement client-side)
+// ─────────────────────────────────────────────────────────────
+function analyzeCamera(args: {
+	what_to_focus?: string;
+	detail?: string;
+}): RealtimeToolResult {
+	const focus = (args.what_to_focus ?? "").trim();
+	// Caméra → toujours "high" par défaut (le user montre typiquement un
+	// document avec du texte à lire). Le user peut forcer "low" via le hint
+	// pour économiser sur des analyses simples (compter des objets, etc.).
+	const detail = args.detail === "low" ? "low" : "high";
+	return {
+		success: true,
+		message: "Caméra activée. Demandez la permission si nécessaire.",
+		uiAction: {
+			type: "request_camera_capture",
+			payload: { focusHint: focus, detail },
+		},
+	};
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 3 — A1/A3 : Mémoire personnelle
+// ─────────────────────────────────────────────────────────────
+async function rememberThis(
+	ctx: any,
+	args: { category?: string; content?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const ALLOWED = new Set(["context", "preference", "relation"]);
+	const category = (args.category ?? "").trim();
+	const content = (args.content ?? "").trim();
+	if (!ALLOWED.has(category)) {
+		return {
+			success: false,
+			message: "Catégorie invalide. Utilisez 'context', 'preference' ou 'relation'.",
+		};
+	}
+	if (content.length < 5) {
+		return { success: false, message: "Contenu trop court (5 caractères min)." };
+	}
+	const identity = await ctx.auth.getUserIdentity();
+	if (!identity) {
+		return { success: false, message: "Non authentifié." };
+	}
+	try {
+		const user = await ctx.runQuery(api.functions.users.getMe);
+		if (!user) return { success: false, message: "Utilisateur introuvable." };
+		await ctx.runMutation(internal.ai.iastedMemories.writeMemoryInternal, {
+			userId: user._id,
+			category: category as "context" | "preference" | "relation",
+			content,
+		});
+		return {
+			success: true,
+			message: "C'est noté.",
+			data: { category, content },
+		};
+	} catch (e: any) {
+		return {
+			success: false,
+			message: `Mémoire échouée : ${e?.message ?? "erreur"}`,
+		};
+	}
+}
+
+async function setCallback(
+	ctx: any,
+	args: { remind_at?: string; what?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const remindAtRaw = args.remind_at?.trim();
+	const what = args.what?.trim();
+	if (!remindAtRaw || !what) {
+		return { success: false, message: "Date/heure et contenu requis." };
+	}
+	const dueAt = Date.parse(remindAtRaw);
+	if (!Number.isFinite(dueAt)) {
+		return {
+			success: false,
+			message: "Date/heure invalide. Format ISO 8601 attendu (ex: '2026-05-20T10:00:00Z').",
+		};
+	}
+	if (dueAt < Date.now() - 60_000) {
+		return {
+			success: false,
+			message: "Le rappel doit être programmé dans le futur.",
+		};
+	}
+	try {
+		const user = await ctx.runQuery(api.functions.users.getMe);
+		if (!user) return { success: false, message: "Utilisateur introuvable." };
+		await ctx.runMutation(internal.ai.iastedMemories.writeMemoryInternal, {
+			userId: user._id,
+			category: "callback",
+			content: what,
+			dueAt,
+		});
+		const formatted = new Date(dueAt).toLocaleString("fr-FR", {
+			dateStyle: "long",
+			timeStyle: "short",
+		});
+		return {
+			success: true,
+			message: `Bien noté. Je vous rappellerai cela ${formatted}.`,
+			data: { dueAt, what },
+		};
+	} catch (e: any) {
+		return {
+			success: false,
+			message: `Programmation échouée : ${e?.message ?? "erreur"}`,
+		};
+	}
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sprint 2 — E4 : Personnalisation lexique (apprentissage actif)
+// ─────────────────────────────────────────────────────────────
+async function learnPronunciation(
+	ctx: any,
+	args: { name?: string; pronunciation?: string; context?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const name = args.name?.trim();
+	const pronunciation = args.pronunciation?.trim();
+	if (!name || !pronunciation) {
+		return {
+			success: false,
+			message: "Nom et prononciation requis.",
+		};
+	}
+	try {
+		// Réutilise userLexicon avec la convention `language: "pronunciation"`.
+		// Le prompt builder formate correctement les entrées de ce type via
+		// `lexiconBlock` (cf. iastedRealtimePrompt.ts).
+		await ctx.runMutation(api.ai.userLexicon.addPhrase, {
+			expression: name,
+			language: "pronunciation",
+			frenchTranslation: pronunciation,
+			usage: args.context?.trim() || undefined,
+		});
+		return {
+			success: true,
+			message: `Bien noté. « ${name} » se prononce « ${pronunciation} ».`,
+			data: { name, pronunciation },
+		};
+	} catch (e: any) {
+		const msg = e?.message ?? "Erreur lors de l'enregistrement.";
+		return {
+			success: false,
+			message: msg.includes("Limite atteinte")
+				? "Le lexique personnel est plein (50 entrées max). Supprimez-en quelques-unes dans Réglages."
+				: `Enregistrement échoué : ${msg}`,
+		};
 	}
 }
 
@@ -674,9 +1188,12 @@ async function launchCallWithContact(
 			success: true,
 			message: `Appel ${mediaType === "video" ? "vidéo" : "audio"} lancé. Le destinataire est en train de sonner.`,
 			data: { meetingId, roomName: result?.roomName },
+			// Bug 9 (Ronde 2) : `targetUserId` ajouté au payload pour que le
+			// store global `outgoingCallWindow` ait toutes les infos requises
+			// (l'UI peut afficher le nom du contact pendant la sonnerie).
 			uiAction: {
 				type: "open_active_call",
-				payload: { meetingId, mediaType },
+				payload: { meetingId, mediaType, targetUserId },
 			},
 		};
 	} catch (e: any) {
@@ -852,14 +1369,26 @@ async function hangupActiveCall(
 		return { success: false, message: "Aucun appel actif à raccrocher." };
 	}
 	try {
+		// `intentional: true` by-pass la protection 5s anti-StrictMode dans
+		// `meetings.leave` — le hangup vocal est ALWAYS un raccrochage
+		// délibéré (Bug 5 fix v2 Ronde 3).
 		await ctx.runMutation(api.functions.meetings.leave, {
 			meetingId: active.meetingId,
+			intentional: true,
 		});
 		const label = active.type === "call" ? "Appel" : "Réunion";
 		return {
 			success: true,
 			message: `${label} « ${active.title} » terminé.`,
 			data: { meetingId: active.meetingId },
+			// Bug 7 (Ronde 2) : signal explicite au client pour fermer la
+			// fenêtre. Le pattern « auto-close on status===ended » ne suffit
+			// pas (la réunion peut rester active si d'autres participants
+			// restent, et la réactivité Convex prend ~150 ms).
+			uiAction: {
+				type: "close_active_call_window",
+				payload: { meetingId: active.meetingId, kind: active.type },
+			},
 		};
 	} catch (e: any) {
 		return { success: false, message: `Échec du raccrochage : ${e?.message ?? "erreur inconnue"}` };
@@ -914,14 +1443,22 @@ async function declineIncomingCall(
 			});
 		} else {
 			// Appel direct (utilisateur à utilisateur) : quitter avant de répondre termine l'appel.
+			// `intentional: true` by-pass la protection 5s anti-StrictMode
+			// (cf. `meetings.leave`) — un refus vocal est délibéré.
 			await ctx.runMutation(api.functions.meetings.leave, {
 				meetingId: active.meetingId,
+				intentional: true,
 			});
 		}
 		return {
 			success: true,
 			message: "Appel refusé.",
 			data: { meetingId: active.meetingId },
+			// Bug 7 (Ronde 2) : fermeture explicite côté client.
+			uiAction: {
+				type: "close_active_call_window",
+				payload: { meetingId: active.meetingId, kind: "call" },
+			},
 		};
 	} catch (e: any) {
 		return { success: false, message: `Refus échoué : ${e?.message ?? "erreur inconnue"}` };
@@ -1741,9 +2278,120 @@ async function findOrgByName(
 	}
 }
 
+// Sprint 5 — G4 : validation des phrases challenge pour actions destructives.
+// Approche tolérante : on cherche des mots-clés essentiels plutôt qu'une
+// comparaison stricte (les transcriptions Whisper varient légèrement et le
+// modèle peut reformuler — un challenge trop strict bloquerait les actions
+// légitimes). Mais on vérifie que l'utilisateur a réellement prononcé une
+// phrase d'engagement complète (≥ 15 chars, mots-clés présents).
+function validateDestructiveChallenge(
+	toolName: string,
+	args: { challengeAccepted?: string; role?: string; reason?: string },
+): { ok: true } | { ok: false; reason: string } {
+	const raw = (args.challengeAccepted ?? "").trim();
+	if (raw.length < 15) {
+		return {
+			ok: false,
+			reason: "Phrase de confirmation trop courte. Demandez à l'utilisateur de répéter la phrase complète mot-à-mot avant de retenter.",
+		};
+	}
+	const norm = raw.toLowerCase();
+	// Le mot « confirme » (ou « confirmer », « confirmé ») est requis dans toutes
+	// les phrases challenge : c'est l'élément d'engagement explicite.
+	if (!/\bconfirm/i.test(norm)) {
+		return {
+			ok: false,
+			reason: "La phrase doit contenir le mot 'confirme'. Demandez à l'utilisateur de redire « je confirme [action] ».",
+		};
+	}
+	if (toolName === "suspend_user") {
+		if (!/suspend/i.test(norm)) {
+			return {
+				ok: false,
+				reason: "La phrase doit contenir le verbe 'suspendre'. Demandez la phrase complète : « je confirme suspendre [nom], motif [motif] ».",
+			};
+		}
+		// On vérifie qu'au moins un fragment du motif (≥ 4 chars) apparaît.
+		const reason = (args.reason ?? "").trim().toLowerCase();
+		if (reason.length >= 4) {
+			const reasonWords = reason
+				.split(/\s+/)
+				.filter((w) => w.length >= 4);
+			const hasReasonFragment = reasonWords.some((w) =>
+				norm.includes(w),
+			);
+			if (!hasReasonFragment) {
+				return {
+					ok: false,
+					reason: "La phrase doit aussi mentionner le motif. Demandez la phrase complète avec le motif.",
+				};
+			}
+		}
+		return { ok: true };
+	}
+	if (toolName === "assign_role_to_user") {
+		if (!/attribu|assign|donne|confier/i.test(norm)) {
+			return {
+				ok: false,
+				reason: "La phrase doit contenir un verbe d'attribution. Demandez : « je confirme attribuer le rôle [rôle] à [nom] ».",
+			};
+		}
+		const role = (args.role ?? "").toLowerCase();
+		if (role && !norm.includes(role)) {
+			return {
+				ok: false,
+				reason: `La phrase doit mentionner le rôle '${role}'. Demandez la phrase complète.`,
+			};
+		}
+		return { ok: true };
+	}
+	// Tools non-couverts : pas de challenge requis, on laisse passer.
+	return { ok: true };
+}
+
+// Sprint 5.5 wiring (Ronde 3) : pour les actions destructives, vérifie
+// le voiceprint si l'utilisateur en a enrollé. Mode dégradé si pas enrollé
+// (passe quand même — la phrase challenge S5.G4 reste la barrière).
+async function verifyVoicePrintForDestructive(
+	ctx: any,
+	userId: any,
+	voicePrintB64: string | undefined,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+	try {
+		const hasEnrolled = await ctx.runQuery(
+			(internal as any).ai.voicePrints.hasEnrolledPrintsInternal,
+			{ userId },
+		);
+		if (!hasEnrolled) return { ok: true }; // skip si pas d'enrollment
+		if (!voicePrintB64 || voicePrintB64.length < 60) {
+			return {
+				ok: false,
+				reason:
+					"Vérification vocale requise : votre empreinte est enregistrée mais aucune capture vocale n'a été fournie. Le client doit injecter `voicePrintB64` pour les actions destructives.",
+			};
+		}
+		const result = await ctx.runQuery(
+			(internal as any).ai.voicePrints.verifyPrintForUserInternal,
+			{ userId, candidateB64: voicePrintB64 },
+		);
+		if (!result?.matched) {
+			return {
+				ok: false,
+				reason: `Vérification vocale échouée (score ${result?.score?.toFixed(2) ?? "?"} < seuil ${result?.threshold?.toFixed(2) ?? "0.70"}). Si vous n'êtes pas le titulaire du compte, contactez un administrateur.`,
+			};
+		}
+		return { ok: true };
+	} catch (e: any) {
+		// Échec backend ne doit PAS bloquer (mode graceful — la phrase
+		// challenge reste la barrière). Log pour monitoring.
+		console.warn("[realtimeToolExecutor] voicePrint verify error:", e?.message);
+		return { ok: true };
+	}
+}
+
 async function assignRoleToUser(
 	ctx: any,
-	args: { userId?: string; role?: string },
+	args: { userId?: string; role?: string; challengeAccepted?: string; voicePrintB64?: string },
 	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
 ): Promise<RealtimeToolResult> {
 	const userId = args.userId;
@@ -1757,6 +2405,27 @@ async function assignRoleToUser(
 			success: false,
 			message: `Rôle invalide. Valeurs autorisées : ${allowed.join(", ")}.`,
 		};
+	}
+	// Sprint 5 — G4 : challenge phrase.
+	const challenge = validateDestructiveChallenge("assign_role_to_user", args);
+	if (!challenge.ok) {
+		return { success: false, message: challenge.reason };
+	}
+	// Sprint 5.5 wiring — G2 : vérification voiceprint (si enrollé).
+	try {
+		const me = await ctx.runQuery(api.functions.users.getMe);
+		if (me?._id) {
+			const vp = await verifyVoicePrintForDestructive(
+				ctx,
+				me._id,
+				args.voicePrintB64,
+			);
+			if (!vp.ok) {
+				return { success: false, message: vp.reason };
+			}
+		}
+	} catch {
+		/* getMe échoue → on n'enforce pas */
 	}
 	try {
 		await ctx.runMutation(api.functions.admin.updateUserRole, {
@@ -1785,7 +2454,12 @@ async function assignRoleToUser(
 
 async function suspendUser(
 	ctx: any,
-	args: { userId?: string; reason?: string },
+	args: {
+		userId?: string;
+		reason?: string;
+		challengeAccepted?: string;
+		voicePrintB64?: string;
+	},
 	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
 ): Promise<RealtimeToolResult> {
 	const userId = args.userId;
@@ -1797,6 +2471,27 @@ async function suspendUser(
 			success: false,
 			message: "Motif requis et doit faire au moins 3 caractères (sera consigné dans l'audit log).",
 		};
+	}
+	// Sprint 5 — G4 : challenge phrase.
+	const challenge = validateDestructiveChallenge("suspend_user", args);
+	if (!challenge.ok) {
+		return { success: false, message: challenge.reason };
+	}
+	// Sprint 5.5 wiring — G2 : vérification voiceprint (si enrollé).
+	try {
+		const me = await ctx.runQuery(api.functions.users.getMe);
+		if (me?._id) {
+			const vp = await verifyVoicePrintForDestructive(
+				ctx,
+				me._id,
+				args.voicePrintB64,
+			);
+			if (!vp.ok) {
+				return { success: false, message: vp.reason };
+			}
+		}
+	} catch {
+		/* getMe échoue → pas d'enforcement */
 	}
 	try {
 		await ctx.runMutation(api.functions.admin.disableUser, {
@@ -2331,7 +3026,15 @@ async function cancelMeetingTool(
 		await ctx.runMutation(api.functions.meetings.cancel, {
 			meetingId: args.meetingId as any,
 		});
-		return { success: true, message: "Réunion annulée." };
+		return {
+			success: true,
+			message: "Réunion annulée.",
+			// Bug 7 (Ronde 2) : fermeture explicite côté client.
+			uiAction: {
+				type: "close_active_call_window",
+				payload: { meetingId: args.meetingId, kind: "meeting" },
+			},
+		};
 	} catch (e: any) {
 		return { success: false, message: `Annulation échouée : ${e?.message ?? "erreur"}` };
 	}

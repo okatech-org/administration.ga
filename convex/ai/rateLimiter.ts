@@ -78,6 +78,18 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     capacity: 30,
   },
 
+  // Sprint 6 — vision API. Capture d'écran + analyse GPT-4o Vision.
+  // Coût ~$0.01 par capture (gpt-4o-mini en mode "low" detail). Budget
+  // strict pour borner la dépense — 10/jour soft (capacité rafale 3) et
+  // ~300/jour hard via le budget mensuel global G1. Réservé aux surfaces
+  // agent + backoffice (citoyen exclu côté `realtimeTools.getToolsForUser`).
+  aiRealtimeVision: {
+    kind: "token bucket",
+    rate: 10,
+    period: 24 * HOUR,
+    capacity: 3,
+  },
+
   // ── Auth — brute-force protection ───────────────────────────
   // Login: 5 attempts per 15 min per email/IP
   "auth:login": {

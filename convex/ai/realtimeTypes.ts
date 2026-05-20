@@ -41,6 +41,24 @@ export interface RealtimeSessionResponse {
 	tools?: RealtimeVoiceTool[];
 	voice?: RealtimeVoice;
 	expiresAt?: string;
+	/**
+	 * Locale BCP-47 effectivement appliquée (peut différer de l'arg envoyé
+	 * si le code reçu n'était pas supporté → fallback fr-FR côté serveur).
+	 * Permet au client d'afficher la langue effective et de la persister.
+	 */
+	locale?: string;
+	/**
+	 * Sprint 5 — G1 : status du quota OpenAI mensuel global.
+	 * Permet au client d'afficher un toast informatif ou un mode dégradé.
+	 *   - `null` : conso < 70 % du budget — RAS.
+	 *   - `"approaching"` : 70–90 % — toast info bénin.
+	 *   - `"warning"` : 90–100 % — toast warning + suggestion de modération.
+	 *   - `"exceeded"` : > 100 % — toast d'alerte critique (mais session
+	 *     toujours autorisée — décision admin de bloquer ou pas).
+	 */
+	quotaLevel?: "approaching" | "warning" | "exceeded" | null;
+	/** Ratio conso/budget pour debug (0..N). Sprint 5 — G1. */
+	quotaRatio?: number;
 }
 
 export interface RealtimeToolResult {

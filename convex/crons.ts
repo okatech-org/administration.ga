@@ -253,4 +253,46 @@ crons.daily(
   (internal as any).ai.rag.indexer.refreshAll,
 );
 
+// --- Sprint 3 — A3 : surface des callbacks dus toutes les 5 min ---
+// Marque les callbacks dont dueAt est passé avec `metadata.surfaced=true`
+// pour qu'ils apparaissent en priorité dans le bloc mémoire du prompt à
+// la prochaine session vocale de l'utilisateur. Pas de push notif ici —
+// approche pull (l'utilisateur voit le rappel quand il rouvre iAsted).
+crons.interval(
+  "iasted-sweep-due-callbacks",
+  { minutes: 5 },
+  internal.ai.iastedMemories.sweepDueCallbacksInternal,
+);
+
+// --- Sprint 6.5 — B3 : pattern mining des tool calls vocaux ---
+// Quotidien à 3h15 UTC (juste après le RAG refresh à 3h00). Scan les 30
+// derniers jours d'aiActivityLog, détecte les patterns d'usage récurrent
+// (≥ 5 calls sur la même capability) et crée une `iastedMemories.preference`
+// avec `metadata.suggestion=true`. Le prompt builder peut surfacer ces
+// suggestions en début de session pour proposer des raccourcis.
+crons.daily(
+  "iasted-pattern-mining",
+  { hourUTC: 3, minuteUTC: 15 },
+  internal.ai.iastedPatternMining.minePatternsInternal,
+);
+
+// --- Sprint 10 — A4 : cleanup des devices iAsted zombies ---
+// Toutes les 5 min, supprime les entrées iastedDevicePresence sans
+// heartbeat depuis > 90 s. Évite l'accumulation après crashes/disconnects.
+crons.interval(
+  "iasted-sweep-stale-devices",
+  { minutes: 5 },
+  internal.ai.iastedDevicePresence.sweepStaleDevicesInternal,
+);
+
+// --- Sprint 11 — Latence : keep-alive de l'isolate Node realtimeToken ---
+// Sans ce ping, l'isolate Node Convex s'endort apres ~15 min et le premier
+// appel `realtimeToken.create` paie 1-3 s de cold start (V8 init + deps).
+// 4 min de cadence est sous le seuil de sommeil avec une bonne marge.
+crons.interval(
+  "iasted-realtime-keep-warm",
+  { minutes: 4 },
+  internal.ai.realtimeToken.keepAliveNodeRuntime,
+);
+
 export default crons;

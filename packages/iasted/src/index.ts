@@ -123,6 +123,20 @@ export type {
 	ShellContextLike,
 	PanelContextLike,
 } from "./lib/format-page-context";
+// Sprint 6 — C1 : capture d'écran native pour le tool vocal `capture_screen_region`.
+export { captureScreenAsBase64 } from "./lib/capture-screen";
+// Sprint 6.5 — C3 : capture caméra pour le tool vocal `analyze_camera`.
+export { captureCameraAsBase64 } from "./lib/capture-camera";
+// Sprint 5.5 — voice biometric soft (extraction MFCC simplifié côté browser).
+export { extractVoicePrint } from "./lib/voice-print";
+// Sprint 10 — A4 : presence multi-device (deviceId stable + label humain).
+export { getOrCreateDeviceId, getDeviceLabel } from "./lib/device-presence";
+// Sprint 9 wiring — TipTap bridge vers pageContextStore.documentEditor.
+export { useRegisterTipTapEditor } from "./hooks/use-register-tiptap-editor";
+// Sprint 10 wiring — détection handoff reçu (UI multi-device).
+export { useDeviceHandoffListener } from "./hooks/use-device-handoff-listener";
+// Sprint 8 wiring — F4 : mode shadow (observer de patterns d'interaction).
+export { useShadowObserver } from "./hooks/use-shadow-observer";
 
 // Components — Primitives
 export {
@@ -245,6 +259,19 @@ export type {
 	PulseIntensity,
 	IAstedCursorProps,
 } from "./consciousness";
+
+// Locales — Langues supportées par iAsted (consommé par backend + UI)
+export {
+	IASTED_SUPPORTED_LOCALES,
+	DEFAULT_IASTED_LOCALE,
+	isIastedLocaleSupported,
+	getIastedLocale,
+} from "./locales/supported-locales";
+export type {
+	IastedLocale,
+	LocaleTier,
+	LocaleCategory,
+} from "./locales/supported-locales";
 
 // Presets
 export {

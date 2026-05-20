@@ -141,10 +141,51 @@ export type FieldSpec = {
 	required?: boolean;
 };
 
+/**
+ * Sprint 9 — Co-édition document live : handle injecté par un éditeur
+ * TipTap (ou équivalent) actuellement actif. iAsted peut alors insérer,
+ * remplacer ou lire du texte directement via les tools `editor_*`.
+ *
+ * L'éditeur déclare ces 5 méthodes ; le store n'a aucune connaissance
+ * de TipTap. Une page qui n'utilise PAS TipTap (PdfViewer, CKEditor)
+ * peut implémenter ce handle aussi longtemps qu'elle respecte le contrat.
+ */
+export interface DocumentEditorHandle {
+	/** Insère du texte à la position du curseur (sans remplacer la sélection). */
+	insertText: (text: string) => void;
+	/** Ajoute un nouveau paragraphe à la fin du document. */
+	appendParagraph: (text: string) => void;
+	/** Remplace la sélection courante. No-op si pas de sélection. */
+	replaceSelection: (text: string) => void;
+	/**
+	 * Lit l'état courant du document : texte brut, optionnellement HTML,
+	 * et le contenu de la sélection courante (si présente).
+	 */
+	getState: () => {
+		plainText: string;
+		html?: string;
+		selectionText?: string;
+		title?: string;
+	};
+}
+
 interface PageContextState {
 	snapshot: PageContextSnapshot | null;
 	shellSnapshot: ShellContextSnapshot | null;
 	panelSnapshot: PanelContextSnapshot | null;
+	/**
+	 * Sprint 6.5 — C4 : texte extrait d'un document ouvert dans la page
+	 * (PDF, document scanné OCR-isé, etc.). Injecté dans le pageContext
+	 * vocal via `formatPageContextForVoice({ documentText })`. Tronqué à
+	 * 8 000 chars dans le formateur. Reset à `null` quand le viewer ferme.
+	 */
+	documentText: string | null;
+	/**
+	 * Sprint 9 — Co-édition document live : handle de l'éditeur actif (TipTap
+	 * ou équivalent). Quand non-null, l'agent vocal peut insérer/remplacer
+	 * du texte via les tools `editor_insert_text`, etc.
+	 */
+	documentEditor: DocumentEditorHandle | null;
 	actionHandlers: Map<string, PageActionHandler>;
 	fields: Map<string, FieldSpec>;
 }
@@ -153,6 +194,8 @@ const state: PageContextState = {
 	snapshot: null,
 	shellSnapshot: null,
 	panelSnapshot: null,
+	documentText: null,
+	documentEditor: null,
 	actionHandlers: new Map(),
 	fields: new Map(),
 };
@@ -162,11 +205,15 @@ const listeners = new Set<() => void>();
 let snapshotRef: PageContextSnapshot | null = null;
 let shellSnapshotRef: ShellContextSnapshot | null = null;
 let panelSnapshotRef: PanelContextSnapshot | null = null;
+let documentTextRef: string | null = null;
+let documentEditorRef: DocumentEditorHandle | null = null;
 
 function rebuild() {
 	snapshotRef = state.snapshot;
 	shellSnapshotRef = state.shellSnapshot;
 	panelSnapshotRef = state.panelSnapshot;
+	documentTextRef = state.documentText;
+	documentEditorRef = state.documentEditor;
 }
 
 function emit() {
@@ -191,6 +238,14 @@ function getShellSnapshot() {
 
 function getPanelSnapshot() {
 	return panelSnapshotRef;
+}
+
+function getDocumentText() {
+	return documentTextRef;
+}
+
+function getDocumentEditor() {
+	return documentEditorRef;
 }
 
 function clamp<T>(arr: T[], max: number): T[] {
@@ -287,6 +342,52 @@ export const pageContextStore = {
 
 	getPanelSnapshot(): PanelContextSnapshot | null {
 		return state.panelSnapshot;
+	},
+
+	// Sprint 6.5 — C4 : texte de document ouvert (OCR contextuel).
+	/**
+	 * Publie le texte d'un document ouvert (PDF, image OCR-isée, etc.) dans
+	 * le contexte page. Un PDF viewer typique appelle ceci au mount avec le
+	 * texte extrait via pdf.js et `setDocumentText(null)` au unmount.
+	 * Cap dur à 32 000 chars dans le store ; le formateur tronque à 8 000.
+	 */
+	setDocumentText(text: string | null): void {
+		if (text === null) {
+			if (state.documentText === null) return;
+			state.documentText = null;
+			emit();
+			return;
+		}
+		const clamped = text.length > 32_000 ? text.slice(0, 32_000) : text;
+		if (state.documentText === clamped) return;
+		state.documentText = clamped;
+		emit();
+	},
+
+	getDocumentText(): string | null {
+		return state.documentText;
+	},
+
+	// Sprint 9 — Co-édition document live : enregistrement de l'éditeur actif.
+	/**
+	 * Publie un handle d'éditeur de document (TipTap ou équivalent). Appelé
+	 * par les pages d'édition au mount et reset au unmount. Une seule
+	 * éditeur peut être actif à la fois — si un nouvel éditeur s'enregistre,
+	 * il remplace le précédent (avertissement console).
+	 */
+	registerDocumentEditor(handle: DocumentEditorHandle | null): void {
+		if (state.documentEditor === handle) return;
+		if (state.documentEditor !== null && handle !== null) {
+			console.warn(
+				"[pageContextStore] registerDocumentEditor : un éditeur était déjà actif, remplacement.",
+			);
+		}
+		state.documentEditor = handle;
+		emit();
+	},
+
+	getDocumentEditor(): DocumentEditorHandle | null {
+		return state.documentEditor;
 	},
 
 	/**
@@ -543,6 +644,49 @@ export function useShellContextSnapshot(): ShellContextSnapshot | null {
 /** Hook React — read-only sur le snapshot panel iAsted (onglet actif). */
 export function usePanelContextSnapshot(): PanelContextSnapshot | null {
 	return useSyncExternalStore(subscribe, getPanelSnapshot, getPanelSnapshot);
+}
+
+/**
+ * Sprint 6.5 — C4 : hook React pour le texte du document ouvert (PDF OCR).
+ * Les hosts iAsted (agent + backoffice) le passent à `formatPageContextForVoice`
+ * pour que l'agent vocal puisse répondre à des questions sur le document.
+ */
+export function useDocumentTextSnapshot(): string | null {
+	return useSyncExternalStore(subscribe, getDocumentText, getDocumentText);
+}
+
+/**
+ * Sprint 9 — Co-édition document live : hook React pour le handle de
+ * l'éditeur courant. Le bridge écoute les events vocaux `iasted:editor-action`
+ * et appelle les méthodes du handle si présent.
+ */
+export function useDocumentEditorSnapshot(): DocumentEditorHandle | null {
+	return useSyncExternalStore(
+		subscribe,
+		getDocumentEditor,
+		getDocumentEditor,
+	);
+}
+
+/**
+ * Sprint 9 — helper hook qui register/unregister un éditeur au mount/unmount.
+ * Usage typique dans un composant qui héberge un TipTap :
+ *
+ *   useRegisterDocumentEditor({
+ *     insertText: (t) => editor?.commands.insertContent(t),
+ *     appendParagraph: (t) => editor?.commands.insertContentAt(end, `<p>${t}</p>`),
+ *     replaceSelection: (t) => editor?.commands.insertContent(t),
+ *     getState: () => ({ plainText: editor?.getText() ?? "" }),
+ *   });
+ */
+export function useRegisterDocumentEditor(
+	handle: DocumentEditorHandle | null,
+): void {
+	if (typeof window === "undefined") return;
+	// Note : on ne peut pas utiliser useEffect ici (le store est plain JS) —
+	// l'appelant doit gérer le cycle de vie via useEffect côté composant.
+	// Cette fonction est juste un sucre syntaxique sur le store.
+	pageContextStore.registerDocumentEditor(handle);
 }
 
 /**

@@ -44,6 +44,14 @@ interface FloatingMeetingWindowProps {
 	hostTab?: { key: string; value: string };
 	/** Titre par défaut si la meeting n'a pas encore été chargée. */
 	defaultTitle?: string;
+	/**
+	 * Si true, force le mode plein écran dès qu'une réunion est connectée,
+	 * sans dépendre du `pathname`. Utilisé par les apps qui n'ont PAS de
+	 * page hôte dédiée (backoffice-web) — la réunion s'affiche en modal
+	 * plein écran par-dessus le contenu courant. Default false (comportement
+	 * historique agent/citizen-web basé sur la route).
+	 */
+	alwaysFullscreenWhenConnected?: boolean;
 }
 
 export function FloatingMeetingWindow({
@@ -51,6 +59,7 @@ export function FloatingMeetingWindow({
 	activeParamName,
 	hostTab,
 	defaultTitle = "Réunion",
+	alwaysFullscreenWhenConnected = false,
 }: FloatingMeetingWindowProps) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -83,11 +92,15 @@ export function FloatingMeetingWindow({
 	}, [urlMeetingId, state.meetingId, state.status, joinMeeting]);
 
 	// Bascule plein écran ↔ PiP selon la route courante.
+	// `alwaysFullscreenWhenConnected` (backoffice) by-pass cette logique :
+	// dès qu'une réunion est connectée, on affiche en plein écran modal.
 	const isHostPage = pathname === hostPathname;
 	const tabMatches = hostTab
 		? searchParams?.get(hostTab.key) === hostTab.value
 		: true;
-	const isFullscreen = isHostPage && tabMatches;
+	const isFullscreen = alwaysFullscreenWhenConnected
+		? !!state.meetingId
+		: isHostPage && tabMatches;
 
 	// Meeting doc — pour titre + détection du host (createdBy === me).
 	const { data: meetingDoc } = useAuthenticatedConvexQuery(
@@ -130,6 +143,42 @@ export function FloatingMeetingWindow({
 		clearActiveFromUrl();
 		void leaveMeeting();
 	}, [clearActiveFromUrl, leaveMeeting, markUserHangUp]);
+
+	// Bug 7 (Ronde 2) : ferme la fenêtre flottante quand iAsted signale un
+	// hangup/cancel vocal. La logique manuelle (useActiveMeetingConnection +
+	// status === "ended") finirait par déclencher la fermeture, mais avec un
+	// délai perceptible (~150 ms Convex + délai LiveKit). Le signal explicite
+	// élimine ce flash de fenêtre morte.
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const detail = (e as CustomEvent<{ meetingId?: string }>).detail;
+			if (!detail?.meetingId) return;
+			if (state.meetingId && detail.meetingId === state.meetingId) {
+				intentionalLeaveRef.current = true;
+				markUserHangUp();
+				clearActiveFromUrl();
+				void leaveMeeting();
+			}
+		};
+		window.addEventListener("iasted:close-call-window", handler);
+		return () => window.removeEventListener("iasted:close-call-window", handler);
+	}, [state.meetingId, markUserHangUp, clearActiveFromUrl, leaveMeeting]);
+
+	// Bug 5 wiring (Ronde 3) : déclenche un joinMeeting depuis n'importe où
+	// via un event window. Utilisé par les hosts iAsted qui n'ont pas de page
+	// `/icom` (backoffice) — au lieu de `router.push(...)` qui n'aurait
+	// aucun effet, on dispatch cet event qui appelle directement `joinMeeting`.
+	useEffect(() => {
+		const handler = (e: Event) => {
+			const detail = (e as CustomEvent<{ meetingId?: string }>).detail;
+			if (!detail?.meetingId) return;
+			if (state.meetingId === detail.meetingId) return; // déjà connecté
+			intentionalLeaveRef.current = false;
+			void joinMeeting(detail.meetingId as never);
+		};
+		window.addEventListener("iasted:join-meeting", handler);
+		return () => window.removeEventListener("iasted:join-meeting", handler);
+	}, [state.meetingId, joinMeeting]);
 
 	const handleEndForAll = useCallback(() => {
 		intentionalLeaveRef.current = true;

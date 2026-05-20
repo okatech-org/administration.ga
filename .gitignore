@@ -7,6 +7,9 @@ node_modules
 .env
 .env.*
 
+# Convex data dumps (donnees prod sensibles — RGPD)
+tmp/
+
 # Testing
 coverage
 

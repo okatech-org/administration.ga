@@ -3,10 +3,10 @@
 import { api } from "@convex/_generated/api"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useConvexAuth } from "convex/react"
 import { AlertTriangle, Loader2, UserPlus } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
+import { useStableConvexAuth } from "@workspace/api/hooks"
 import { MySpaceWrapper } from "@/components/my-space/my-space-wrapper"
 import { MySpaceContentSkeleton } from "@/components/skeletons"
 import { Button } from "@/components/ui/button"
@@ -25,30 +25,16 @@ export default function MySpaceLayout({
 }
 
 function MySpaceAuthGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth()
+  const { isAuthenticated, isUnauthenticated } = useStableConvexAuth()
   const router = useRouter()
 
-  // Sticky auth state — `useConvexAuth` peut briefly retourner
-  // (isLoading=false, isAuthenticated=false) avant que Better Auth ait
-  // récupéré le JWT Convex, ce qui déclencherait un redirect prématuré
-  // vers /sign-in. On attend une résolution stable.
-  const [resolvedAuth, setResolvedAuth] = useState<boolean | null>(null)
   useEffect(() => {
-    if (isAuthLoading) return
-    if (isAuthenticated) {
-      setResolvedAuth(true)
-    } else if (resolvedAuth === null) {
-      setResolvedAuth(false)
-    }
-  }, [isAuthLoading, isAuthenticated, resolvedAuth])
-
-  useEffect(() => {
-    if (resolvedAuth === false) {
+    if (isUnauthenticated) {
       router.push("/sign-in")
     }
-  }, [resolvedAuth, router])
+  }, [isUnauthenticated, router])
 
-  if (resolvedAuth !== true) {
+  if (!isAuthenticated) {
     return <MySpaceContentSkeleton />
   }
 
