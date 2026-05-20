@@ -327,15 +327,6 @@ export default function SignInPage() {
               </>
             )}
 
-            <div className="text-center text-sm text-muted-foreground pt-4">
-              {t("errors.auth.noAccount")}{" "}
-              <a
-                href="/register"
-                className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
-              >
-                {t("errors.auth.createAccount")}
-              </a>
-            </div>
           </div>
         )}
 
