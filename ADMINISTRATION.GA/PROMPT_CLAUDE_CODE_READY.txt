@@ -1,0 +1,152 @@
+Tu es l'architecte senior chargé d'implémenter le projet ADMINISTRATION.GA en partant du monorepo gabon-diplomatie. Tu travailles dans le projet OkaTech, tu respectes les conventions définies dans /Users/okatech/okatech-projects/SKILLS/CLAUDE.md et /Users/okatech/okatech-projects/Diplomatie Gabon/gabon-diplomatie/CLAUDE.md.
+
+# CONTEXTE
+
+ADMINISTRATION.GA est le pendant administratif de gabon-diplomatie. Là où gabon-diplomatie gère les représentations diplomatiques (ambassades, consulats) et les démarches consulaires, ADMINISTRATION.GA gère les administrations gabonaises (ministères, directions générales, établissements publics, AAI) et les démarches administratives des citoyens et entreprises sur le territoire national.
+
+Le socle technique est IDENTIQUE — Turborepo + Convex + Next.js 14 + Better Auth + LiveKit + Tiptap. Seuls le domaine métier, le modèle organisationnel et la terminologie changent.
+
+## Mapping des apps et domaines
+
+| gabon-diplomatie               | administration.ga                  | URL prod                    | Port dev |
+|--------------------------------|------------------------------------|-----------------------------|----------|
+| apps/agent-web (diplomate.ga)  | apps/agent-web (administration.ga) | administration.ga           | 3003     |
+| apps/backoffice-web            | apps/backoffice-web                | admin.administration.ga     | 3002     |
+| apps/citizen-web (consulat.ga) | apps/citizen-web (demarche.ga)     | demarche.ga                 | 3000     |
+
+## Mapping métier
+
+| Concept gabon-diplomatie       | Concept administration.ga                                |
+|--------------------------------|----------------------------------------------------------|
+| Représentation diplomatique    | Administration publique                                  |
+| Ambassade                      | Ministère / Institution souveraine                       |
+| Consulat                       | Direction générale / Guichet administratif local         |
+| Section consulaire             | Service / Bureau d'ordre                                 |
+| Ressortissant                  | Citoyen / Usager / Entreprise                            |
+| Démarche consulaire            | Démarche administrative                                  |
+| Juridiction consulaire         | Ressort territorial (province / département / commune)   |
+| Ambassadeur / Chef de mission  | Ministre / Directeur général / Responsable               |
+
+# RÉFÉRENCES À LIRE EN PRÉAMBULE (OBLIGATOIRE)
+
+1. ADMINISTRATION.GA/5e-Republique-Gabon-Institutions.md — référentiel exhaustif des 31 ministères + DG + AAI
+2. ADMINISTRATION.GA/iCorrespondance-Specification-Fonctionnelle.md — spec du module iCorrespondance (universel)
+3. ADMINISTRATION.GA/PROJET_DIGITALISATION_GOUVERNEMENT_GABONAIS.md — vision cible globale
+4. CLAUDE.md (racine gabon-diplomatie) — conventions OkaTech, patterns Convex, iAsted Mode God
+5. DESIGN_CHARTER.md — charte graphique neumorphique Soft UI à conserver
+
+# STRATÉGIE : FORK + MIGRATION EN 9 PHASES
+
+Tu exécutes les phases DANS L'ORDRE. Après chaque phase, tu produis un rapport (fichiers touchés, tests passés, points d'attention) et tu attends ma confirmation.
+
+## PHASE 0 — Fork et bootstrap
+
+- Créer /Users/okatech/okatech-projects/Diplomatie Gabon/administration.ga/
+- Copier tout gabon-diplomatie SAUF node_modules/, .turbo/, .convex/, .next/, .env.local, bun.lock, logs
+- Renommer package.json racine : "gabon-diplomatie" → "administration-ga"
+- git init + premier commit "feat: bootstrap administration.ga from gabon-diplomatie"
+- Créer le CLAUDE.md adapté (mapping domaines, références aux administrations)
+- Critère : bun install + bun run typecheck passent
+
+## PHASE 1 — Modèle organisationnel étendu (Convex)
+
+Étendre convex/lib/validators.ts et convex/schemas/orgs.ts :
+
+orgTypeValidator ajoute : presidency, vice_presidency, government, ministry (existe), delegated_ministry, directorate_general, public_establishment, national_agency, independent_authority, parliament_chamber, supreme_court, consultative_institution, local_authority. CONSERVER embassy/consulate/consulate_general/permanent_mission.
+
+ministrySubTypeValidator étend pour 28 portefeuilles 2026 : economy_finance, foreign_affairs, justice, interior_security, defense, education_national, higher_education, health, agriculture, fisheries_blue_economy, waters_forests_environment, petroleum_gas, mines_geology, transport_marine, public_works_construction, housing_urbanism_cadastre, industry_local_transformation, commerce_pme, digital_economy_innovation, civil_service_capacity, labor_employment_dialogue, social_affairs_childhood_women, youth_sports_culture_arts, sustainable_tourism_crafts, communication_media, planning_prospective, reform_institutions_relations, water_energy_access.
+
+Ajouter tutelleLevel (number) sur orgs : 0=souverain, 1=ministère, 2=DG/établissement, 3=service.
+
+Ajouter modules manquants dans moduleCodes : iAsted, iDocument, iArchive, iCorrespondance, iBoîte, iAgenda, iCom.
+
+Migration Convex idempotente. Critère : tests passent, getOrgsByTutelle(parentOrgId) marche.
+
+## PHASE 2 — Seeds : 5e République complète
+
+Créer convex/seeds/administration_network_dev.ts + 5 fichiers spécialisés (seedMinistries, seedDirectionsGenerales, seedEtablissementsPublics, seedInstitutionsSouveraines, seedAAI).
+
+Source EXCLUSIVE : ADMINISTRATION.GA/5e-Republique-Gabon-Institutions.md.
+
+Pour chaque entité : slug stable, name + nameI18n, type, ministrySubType, parentOrgId pour la tutelle, tutelleLevel, branding.flag="GA", adresses Libreville, modules pré-activés selon type.
+
+Volumétrie cible : ~150-200 orgs (1 Présidence, 1 VP, 29 ministères, 80-100 DG, 40-60 établissements, 2 chambres parlementaires, 4 juridictions suprêmes, 3 institutions consultatives, 8 AAI).
+
+Critère : seeds peuplent la base, getOrgHierarchy("min-eco-finances") retourne le ministère + ses DG + ses établissements.
+
+## PHASE 3 — Renommage et rebranding des apps
+
+apps/agent-web → administration.ga : remplace "diplomate"/"diplomatie" par "administration"/"agent administratif" dans commentaires/titres/meta/UI. Routes /administration/* en plus de l'existant.
+
+apps/backoffice-web → admin.administration.ga : menu "Administrations" (ex-Représentations), "Démarches", "Utilisateurs", "Modules", "Audit".
+
+apps/citizen-web → demarche.ga : "Mes démarches" au lieu de "Mon espace consulaire". Réutiliser AddressWithAutocomplete pour adresses gabonaises (provinces/départements/communes). Routes /demarches/*.
+
+Variables d'env : NEXT_PUBLIC_APP_NAME, NEXT_PUBLIC_DOMAIN_CITIZEN="demarche.ga", NEXT_PUBLIC_DOMAIN_AGENT="administration.ga", NEXT_PUBLIC_DOMAIN_ADMIN="admin.administration.ga".
+
+Critère : les 3 apps démarrent, aucun "consulat"/"diplomatie" hardcodé en UI (sauf interop MAE).
+
+## PHASE 4 — Adapter iCorrespondance au contexte administratif
+
+iCorrespondance est déjà universel (cf. spec). Étendre TypeDemarche avec : ADM-CNI, ADM-PASSPORT, ADM-EXTRAIT-NAISSANCE, ADM-CASIER-JUDICIAIRE, ADM-PERMIS-CONDUIRE, ADM-NATIONALITE, ADM-AUTORISATION-COMMERCE, ADM-AGREMENT-FISCAL.
+
+Schémas de référence : DEM/2026/[CODE-ADM]/[SEQ], ADM/2026/[INST]/[SEQ], INST/2026/[EMET]-[DEST]/[SEQ].
+
+Résolution annuaire : implémenter resolveRecipient(orgSlug, roleSlug) qui interroge l'organigramme pour résoudre "Le Directeur Général de la DGI" vers le titulaire courant.
+
+Conserver moteur workflow, copies lecture seule, audit immuable.
+
+Critère : création d'un dossier ADM-CNI depuis citizen-web transite Citoyen → Mairie → Préfecture → DGDI avec copies "COPIE — Passage le [date]" et audit visible.
+
+## PHASE 5 — Modules iDocument, iArchive, iBoîte, iAgenda, iCom
+
+Auditer l'existant. Pour chaque module manquant/incomplet, créer le MVP selon PROJET_DIGITALISATION_GOUVERNEMENT_GABONAIS.md section 6.
+
+Brancher l'activation par institution (activeModules sur orgs). Ajouter Catalogue National des Modules dans backoffice-web (Admin Système).
+
+## PHASE 6 — iAsted Mode Administration
+
+Adapter convex/ai/iastedRealtimePrompt.ts : nouveau mode "administration" qui connaît les 31 ministères, oriente vers la bonne administration, compose les correspondances administratives, initie les démarches.
+
+Ajouter business tools dans realtimeTools.ts + realtimeToolExecutor.ts : find_administration(query), initiate_demarche(typeCode, citizenId), resolve_official(orgSlug, role), transmit_dossier(dossierId, nextStepId) avec double confirmation orale pour actions destructives.
+
+Respecter IASTED_AB_FORCE_MODEL / IASTED_AB_PERCENT_FULL / IASTED_VAD_MODE.
+
+## PHASE 7 — Interconnexion souveraine
+
+Canaux MVP : Présidence ↔ Vice-Présidence Gouvernement, Présidence ↔ Assemblée, Présidence ↔ Sénat, VP Gouvernement ↔ Ministères, Ministère ↔ Directions générales.
+
+Pour chaque canal : accusé réception auto, horodatage, classification (public/interne/confidentiel/secret), traçabilité complète.
+
+## PHASE 8 — Déploiement et CI/CD
+
+Routes Next.js, packages/routing, .github/workflows/deploy-administration-ga.yml. Secrets : CONVEX_DEPLOY_KEY, BETTER_AUTH_SECRET, RESEND_API_KEY, LIVEKIT_API_KEY, LIVEKIT_API_SECRET, OPENAI_API_KEY. Domaines : administration.ga, admin.administration.ga, demarche.ga + staging.administration.ga.
+
+## PHASE 9 — Documentation
+
+README.md racine, docs/ARCHITECTURE.md, docs/MIGRATION_FROM_DIPLOMATIE.md, docs/REFERENTIEL_INSTITUTIONS.md (importer 5e République), docs/GOUVERNANCE.md (Admin Système vs Admin Institution), CLAUDE.md projet.
+
+# CONVENTIONS NON-NÉGOCIABLES
+
+- Code anglais, commentaires français, UI française (ou i18n sans fallback)
+- TypeScript strict, jamais de any non justifié
+- kebab-case fichiers, PascalCase composants React, named exports
+- Tailwind CSS, jamais de CSS inline si Tailwind suffit
+- Shadcn/UI : JAMAIS modifier components/ui/, créer wrappers dans components/shared/ ou custom/
+- React Hook Form + Zod pour TOUS les formulaires
+- sonner pour toasts, lucide-react pour icônes
+- Convex customFunctions : TOUJOURS depuis lib/customFunctions.ts (authQuery/authMutation/authAction)
+- Design System : palette achromatique 6 gris + 4 accents, couleurs Gabon vert/jaune/bleu pour décoratif uniquement, ombres achromatiques, neumorphisme Soft UI
+
+# PROTOCOLE D'EXÉCUTION
+
+1. LIRE les fichiers concernés AVANT d'écrire
+2. Commits Git ATOMIQUES par phase, format Conventional Commits
+3. NE JAMAIS inventer titulaire/libellé officiel/compétence sans vérifier dans 5e-Republique-Gabon-Institutions.md
+4. Tester (typecheck + lint + tests) après chaque phase
+5. Si arbitrage nécessaire, demander avant d'agir
+6. Ne RIEN effacer dans gabon-diplomatie source (travail sur copie)
+
+# COMMENCE PAR LA PHASE 0
+
+Démarre maintenant : lis les 5 documents de référence puis exécute la PHASE 0 (Fork et bootstrap). Produis un rapport de complétion en fin de phase et attends ma confirmation pour la PHASE 1.
