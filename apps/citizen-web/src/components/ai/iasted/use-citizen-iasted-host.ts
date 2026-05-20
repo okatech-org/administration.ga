@@ -28,7 +28,7 @@
 
 "use client";
 
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -82,6 +82,12 @@ const MODULE_ROUTES: Record<string, string> = {
 
 export function useCitizenIAstedHost(): IAstedVoiceController {
 	const router = useRouter();
+	// Auth gate — le provider est monte dans MySpaceWrapper qui peut etre
+	// rendu pendant un etat transitoire (session refresh, hydration). On
+	// skip toutes les queries/mutations Convex tant que l'utilisateur n'est
+	// pas authentifie, sinon le backend leve NOT_AUTHENTICATED en boucle.
+	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+	const isReady = isAuthenticated && !isAuthLoading;
 	// Cast `api as any` — meme rationale que dans backoffice/agent-web :
 	// le codegen Convex peut ne pas refleter ces actions tant que
 	// `bunx convex dev` n'a pas tourne sur le deployment cible. A runtime,
@@ -119,7 +125,7 @@ export function useCitizenIAstedHost(): IAstedVoiceController {
 	);
 	const myDevices = useQuery(
 		(api as any).ai.iastedDevicePresence.listMyDevices,
-		{},
+		isReady ? {} : "skip",
 	) as
 		| Array<{
 				deviceId: string;
@@ -139,10 +145,10 @@ export function useCitizenIAstedHost(): IAstedVoiceController {
 	>();
 	const hasCheckedRef = useRef(false);
 
-	// Preferences vocales (locale notamment).
+	// Preferences vocales (locale notamment). Skip si pas encore authentifie.
 	const voicePrefs = useQuery(
 		(api as any).ai.voicePreferences.getMyVoicePreferences,
-		{},
+		isReady ? {} : "skip",
 	);
 	const preferredLocale = voicePrefs?.preferredLocale as string | undefined;
 
@@ -547,9 +553,12 @@ export function useCitizenIAstedHost(): IAstedVoiceController {
 
 	// ── Multi-device presence (utile pour le ressortissant qui passe
 	// du desktop au mobile, ex. pour scanner un document). ──
+	// Gate strict sur isReady : sans auth, le mutation backend leve
+	// NOT_AUTHENTICATED et la console est inondee.
 	const deviceIdRef = useRef<string>("");
 	useEffect(() => {
 		if (typeof window === "undefined") return;
+		if (!isReady) return;
 		deviceIdRef.current = getOrCreateDeviceId();
 		const label = getDeviceLabel();
 		void registerDevice({
@@ -557,9 +566,10 @@ export function useCitizenIAstedHost(): IAstedVoiceController {
 			label,
 			surface: "citizen",
 		}).catch(() => undefined);
-	}, [registerDevice]);
+	}, [registerDevice, isReady]);
 
 	useEffect(() => {
+		if (!isReady) return;
 		if (!deviceIdRef.current) return;
 		const targetState = voice.isConnected ? "active" : "idle";
 		const tick = () => {
@@ -571,7 +581,7 @@ export function useCitizenIAstedHost(): IAstedVoiceController {
 		tick();
 		const handle = setInterval(tick, 30_000);
 		return () => clearInterval(handle);
-	}, [voice.isConnected, heartbeatDevice]);
+	}, [voice.isConnected, heartbeatDevice, isReady]);
 
 	// ── Shadow observer (Sprint 8 F4) : aide proactive quand
 	// le ressortissant patine sur un formulaire (ex. champ adresse
@@ -610,9 +620,10 @@ export function useCitizenIAstedHost(): IAstedVoiceController {
 
 	// ── Persistance vocal ↔ texte : upsert chaque nouveau message
 	// dans iastedConversations pour reprise dans iChat + continuite
-	// < 1 h dans la prochaine session vocale. ──
+	// < 1 h dans la prochaine session vocale. Skip si pas authentifie. ──
 	const lastUpsertedCountRef = useRef(0);
 	useEffect(() => {
+		if (!isReady) return;
 		const total = voice.messages.length;
 		if (total < lastUpsertedCountRef.current) {
 			lastUpsertedCountRef.current = total;
@@ -633,7 +644,7 @@ export function useCitizenIAstedHost(): IAstedVoiceController {
 				console.warn("[iAsted] appendConvMessage failed", err);
 			});
 		}
-	}, [voice.messages, appendConvMessage]);
+	}, [voice.messages, appendConvMessage, isReady]);
 
 	// ── Pre-warm session (Phase 4 — UX latence). ──
 	const prefetchedSessionRef = useRef<{
