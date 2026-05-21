@@ -46,7 +46,7 @@ export function Footer() {
 					<div className="flex items-center gap-2">
 						<Shield className="size-4 text-gabon-blue" />
 						<strong className="text-sm font-bold text-foreground">
-							{t("footer.brand.name", "Consulat.ga")}
+							{t("footer.brand.name", "Demarche.ga")}
 						</strong>
 					</div>
 					<p
@@ -55,7 +55,7 @@ export function Footer() {
 					>
 						{t(
 							"footer.brand.description",
-							"Plateforme officielle des services consulaires de la République Gabonaise à travers le monde.",
+							"Plateforme officielle des démarches administratives de la République Gabonaise pour les citoyens et entreprises.",
 						)}
 					</p>
 					<div
@@ -94,7 +94,7 @@ export function Footer() {
 					<p suppressHydrationWarning>
 						{t("footer.copyright", {
 							year: new Date().getFullYear(),
-							defaultValue: `© ${new Date().getFullYear()} Consulat.ga — République Gabonaise. Tous droits réservés.`,
+							defaultValue: `© ${new Date().getFullYear()} Demarche.ga — République Gabonaise. Tous droits réservés.`,
 						})}
 					</p>
 					<ModeToggle />

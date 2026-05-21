@@ -321,7 +321,7 @@ export default function Header() {
 						className="text-center text-xs text-muted-foreground"
 						suppressHydrationWarning
 					>
-						consulat.ga · {t("header.country")}
+						demarche.ga · {t("header.country")}
 					</p>
 				</div>
 			</aside>

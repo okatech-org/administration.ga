@@ -3,9 +3,9 @@ import { Providers } from "@/components/providers"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Admin - Consulat.ga | Back-office d'administration",
+  title: "Admin — ADMINISTRATION.GA | Back-office national",
   description:
-    "Back-office d'administration de la plateforme consulaire de la République Gabonaise.",
+    "Back-office national de la plateforme de digitalisation de l'administration publique gabonaise.",
   icons: {
     apple: "/icons/apple-icon-180x180.png",
     icon: [

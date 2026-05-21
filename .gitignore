@@ -6,6 +6,9 @@ node_modules
 # Local env files
 .env
 .env.*
+# Exception : les .env.example sont commités (documentation des variables requises)
+!.env.example
+!**/.env.example
 
 # Convex data dumps (donnees prod sensibles — RGPD)
 tmp/

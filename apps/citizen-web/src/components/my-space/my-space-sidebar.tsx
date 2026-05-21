@@ -230,7 +230,7 @@ function Header() {
         />
       </div>
       <div className="flex flex-col overflow-hidden whitespace-nowrap">
-        <span className="text-sm font-black tracking-[0.2em]">CONSULAT</span>
+        <span className="text-sm font-black tracking-[0.2em]">DEMARCHE</span>
         <span className="text-[10px] font-medium tracking-[0.12em] text-muted-foreground">
           Espace Numérique
         </span>

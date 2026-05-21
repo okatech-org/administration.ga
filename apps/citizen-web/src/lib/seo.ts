@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://consulat.ga"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://demarche.ga"
 
-export const SITE_NAME = "Consulat.ga"
+export const SITE_NAME = "Demarche.ga"
 
 export const DEFAULT_DESCRIPTION =
-  "Plateforme officielle des services consulaires de la République Gabonaise. Demandes de passeport, visa, état civil, inscription consulaire et légalisation de documents en ligne."
+  "Plateforme officielle des démarches administratives de la République Gabonaise. Demandes en ligne pour les citoyens et entreprises : état civil, identité, fiscalité, urbanisme et services publics."
 
 export const DEFAULT_OG_IMAGE = "/opengraph-image"
 

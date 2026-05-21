@@ -4,9 +4,9 @@ import { E2ESignInBridge } from "@/components/auth/E2ESignInBridge"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Diplomate.ga - Espace Agent | République Gabonaise",
+  title: "ADMINISTRATION.GA — Espace agent | République Gabonaise",
   description:
-    "Plateforme de gestion pour les agents diplomatiques et consulaires de la République Gabonaise.",
+    "Plateforme de gestion pour les agents de l'administration publique gabonaise.",
   icons: {
     apple: "/icons/apple-icon-180x180.png",
     icon: [

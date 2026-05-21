@@ -66,8 +66,8 @@ export default function SettingsPage() {
 	const [resetSuccess, setResetSuccess] = useState(false);
 
 	// ── General tab state ──
-	const [siteName, setSiteName] = useState("Consulat.ga");
-	const [adminEmail, setAdminEmail] = useState("admin@consulat.ga");
+	const [siteName, setSiteName] = useState("ADMINISTRATION.GA");
+	const [adminEmail, setAdminEmail] = useState("admin@administration.ga");
 	const [generalSaving, setGeneralSaving] = useState(false);
 
 	// ── Notification preferences ──

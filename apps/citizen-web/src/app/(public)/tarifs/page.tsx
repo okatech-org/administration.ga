@@ -5,9 +5,9 @@ import { buildMetadata } from "@/lib/seo"
 import TarifsPageClient from "./tarifs-page-client"
 
 export const metadata: Metadata = buildMetadata({
-  title: "Tarifs des services consulaires",
+  title: "Tarifs des démarches administratives",
   description:
-    "Grille tarifaire officielle des services consulaires de la République Gabonaise : passeport, visa, transcription d'actes, légalisation et autres prestations.",
+    "Grille tarifaire officielle des démarches administratives de la République Gabonaise : état civil, identité, fiscalité, urbanisme et autres prestations.",
   path: "/tarifs",
 })
 

@@ -3,9 +3,9 @@ import { buildMetadata } from "@/lib/seo"
 import HomePageClient from "./home-page-client"
 
 export const metadata: Metadata = buildMetadata({
-  title: "Services consulaires en ligne — République Gabonaise",
+  title: "Démarches administratives en ligne — République Gabonaise",
   description:
-    "Plateforme officielle de la République Gabonaise : passeport, visa, état civil, inscription consulaire, légalisation. Effectuez vos démarches consulaires en ligne depuis n'importe où dans le monde.",
+    "Plateforme officielle de la République Gabonaise : état civil, identité, fiscalité, urbanisme, foncier. Effectuez vos démarches administratives en ligne en toute simplicité.",
   path: "/",
 })
 

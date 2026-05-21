@@ -74,7 +74,7 @@ export function SuperadminSidebar() {
           icon: LayoutDashboard,
         },
         {
-          title: t("superadmin.nav.representations", "Représentations"),
+          title: t("superadmin.nav.representations", "Administrations"),
           url: "/reps",
           icon: Building2,
           moduleCode: "team",
@@ -82,7 +82,7 @@ export function SuperadminSidebar() {
         {
           title: t(
             "superadmin.nav.affairesConsulaires",
-            "Affaires Consulaires"
+            "Démarches administratives"
           ),
           url: "/affaires-consulaires",
           icon: Globe,
@@ -91,7 +91,7 @@ export function SuperadminSidebar() {
         {
           title: t(
             "superadmin.nav.affairesDiplomatiques",
-            "Affaires Diplomatiques"
+            "Pilotage stratégique"
           ),
           url: "/affaires-diplomatiques",
           icon: Globe,

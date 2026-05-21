@@ -6,9 +6,9 @@ import { faqItems } from "./faq-items"
 import FAQPageClient from "./faq-page-client"
 
 export const metadata: Metadata = buildMetadata({
-  title: "Foire aux questions consulaires",
+  title: "Foire aux questions — Démarches administratives",
   description:
-    "Réponses aux questions fréquentes sur les services consulaires gabonais : passeport, visa, état civil, légalisation, inscription consulaire et délais de traitement.",
+    "Réponses aux questions fréquentes sur les démarches administratives gabonaises : état civil, identité, fiscalité, urbanisme et délais de traitement.",
   path: "/faq",
 })
 

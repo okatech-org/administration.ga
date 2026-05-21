@@ -630,11 +630,11 @@ export function BackofficeSettingsTab() {
 				<Section icon={<Mic className="h-3.5 w-3.5" />} title="À propos">
 					<div className="rounded-lg border p-3 space-y-1">
 						<p className="text-[11px] text-muted-foreground">
-							iAsted v1.0 — Assistant vocal diplomatique
+							iAsted v1.0 — Assistant vocal administratif
 						</p>
-						<p className="text-[11px] text-muted-foreground">Plateforme Consulat.ga</p>
+						<p className="text-[11px] text-muted-foreground">Plateforme ADMINISTRATION.GA</p>
 						<a
-							href="https://docs.consulat.ga/iasted"
+							href="https://docs.administration.ga/iasted"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"

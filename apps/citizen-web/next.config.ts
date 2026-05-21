@@ -46,10 +46,26 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path*",
-        has: [{ type: "host", value: "www.consulat.ga" }],
-        destination: "https://consulat.ga/:path*",
+        has: [{ type: "host", value: "www.demarche.ga" }],
+        destination: "https://demarche.ga/:path*",
         permanent: true,
       },
+    ]
+  },
+  /**
+   * Réécritures d'URL — ADMINISTRATION.GA.
+   *
+   * `/demarches/*` est l'URL publique canonique pour l'espace utilisateur côté
+   * citoyen/entreprise (terminologie administrative). En interne, les pages
+   * sont rendues sous `/my-space/*` (chemin historique consulat.ga, conservé
+   * pour ne pas casser les liens existants). Le rewrite est transparent pour
+   * l'utilisateur : l'URL reste `/demarches/...` dans la barre d'adresse mais
+   * Next.js sert les composants `/my-space/...`.
+   */
+  async rewrites() {
+    return [
+      { source: "/demarches", destination: "/my-space" },
+      { source: "/demarches/:path*", destination: "/my-space/:path*" },
     ]
   },
 }

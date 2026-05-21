@@ -89,13 +89,16 @@ export function SuperadminSidebarV2() {
 					icon: LayoutDashboard,
 				},
 				{
-					title: t("superadmin.nav.representations", "Représentations"),
+					title: t("superadmin.nav.representations", "Administrations"),
 					url: "/reps",
 					icon: Building2,
 					moduleCode: "team",
 				},
 				{
-					title: t("superadmin.nav.affairesConsulaires", "Affaires Consulaires"),
+					title: t(
+						"superadmin.nav.affairesConsulaires",
+						"Démarches administratives",
+					),
 					url: "/affaires-consulaires",
 					icon: Globe,
 					moduleCode: "consular_affairs",
@@ -103,7 +106,7 @@ export function SuperadminSidebarV2() {
 				{
 					title: t(
 						"superadmin.nav.affairesDiplomatiques",
-						"Affaires Diplomatiques",
+						"Pilotage stratégique",
 					),
 					url: "/affaires-diplomatiques",
 					icon: Globe2,
