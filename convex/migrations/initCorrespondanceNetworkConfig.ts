@@ -135,6 +135,186 @@ const STANDARD_TYPES = [
     prioriteParDefaut: "normal",
     confidentialiteParDefaut: "standard",
   },
+  // ─── Démarches administratives (Phase 4 administration.ga) ───────────────
+  // Catalogue réseau des démarches courantes proposées par les
+  // administrations gabonaises. enabledByDefault: false — chaque
+  // administration active uniquement les démarches qu'elle prend en charge.
+  {
+    typeCode: "adm_cni",
+    label: { fr: "Demande de CNI", en: "ID Card Request" },
+    description: {
+      fr: "Demande de Carte Nationale d'Identité",
+      en: "National Identity Card request",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "standard",
+  },
+  {
+    typeCode: "adm_passport",
+    label: { fr: "Demande de passeport biométrique", en: "Biometric Passport Request" },
+    description: {
+      fr: "Demande de passeport biométrique gabonais",
+      en: "Gabonese biometric passport request",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "standard",
+  },
+  {
+    typeCode: "adm_extrait_naissance",
+    label: { fr: "Extrait d'acte de naissance", en: "Birth Certificate Extract" },
+    description: {
+      fr: "Demande d'extrait d'acte de naissance auprès de l'état civil",
+      en: "Birth certificate extract request from civil registry",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "standard",
+  },
+  {
+    typeCode: "adm_casier_judiciaire",
+    label: { fr: "Demande de casier judiciaire", en: "Criminal Record Request" },
+    description: {
+      fr: "Demande de bulletin de casier judiciaire (B3)",
+      en: "Criminal record bulletin (B3) request",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "confidentiel",
+  },
+  {
+    typeCode: "adm_permis_conduire",
+    label: { fr: "Demande de permis de conduire", en: "Driving Licence Request" },
+    description: {
+      fr: "Demande, renouvellement ou duplicata du permis de conduire",
+      en: "Driving licence issuance, renewal or duplicate request",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "standard",
+  },
+  {
+    typeCode: "adm_nationalite",
+    label: { fr: "Demande de nationalité gabonaise", en: "Gabonese Nationality Request" },
+    description: {
+      fr: "Demande de naturalisation ou de certificat de nationalité gabonaise",
+      en: "Gabonese naturalization or nationality certificate request",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "confidentiel",
+  },
+  {
+    typeCode: "adm_autorisation_commerce",
+    label: { fr: "Autorisation de commerce", en: "Commercial Licence" },
+    description: {
+      fr: "Demande d'autorisation d'exercer une activité commerciale",
+      en: "Authorization to operate a commercial activity",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "standard",
+  },
+  {
+    typeCode: "adm_agrement_fiscal",
+    label: { fr: "Agrément fiscal", en: "Tax Approval" },
+    description: {
+      fr: "Demande d'agrément fiscal (exonération, régime particulier, zone franche)",
+      en: "Tax approval request (exemption, special regime, free zone)",
+    },
+    enabledByDefault: false,
+    workflowConfig: {
+      requiresApproval: true,
+      approvalChain: [
+        {
+          ordre: 1,
+          roleMinimum: "chief",
+          conditionType: "always" as const,
+        },
+      ],
+      autoRouteByHierarchy: true,
+    },
+    prioriteParDefaut: "normal",
+    confidentialiteParDefaut: "standard",
+  },
 ];
 
 export const run = internalMutation({

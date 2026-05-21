@@ -279,8 +279,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     code: "correspondence",
     label: { fr: "iCorrespondance", en: "iCorrespondance" },
     description: {
-      fr: "Procédures administratives et correspondance officielle",
-      en: "Administrative procedures and official correspondence",
+      fr: "Courriers officiels et démarches administratives (CNI, passeport, casier judiciaire, etc.)",
+      en: "Official correspondence and administrative procedures (ID card, passport, criminal record, etc.)",
     },
     icon: "Mail",
     color: "text-cyan-500",
@@ -290,6 +290,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
       { code: "incoming", label: { fr: "Courrier entrant", en: "Incoming" } },
       { code: "outgoing", label: { fr: "Courrier sortant", en: "Outgoing" } },
       { code: "registry", label: { fr: "Registre", en: "Registry" } },
+      { code: "demarches", label: { fr: "Démarches administratives", en: "Administrative procedures" } },
     ],
   },
   documents: {
