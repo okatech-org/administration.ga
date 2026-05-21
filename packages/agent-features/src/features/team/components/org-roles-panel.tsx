@@ -353,6 +353,7 @@ const MODULE_TASKS: Record<string, string[]> = (() => {
 const MODULE_CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }> = {
 	operations: { fr: "Opérations", en: "Operations" },
 	ibureau: { fr: "iBureau", en: "iBureau" },
+	noyau_administratif: { fr: "Noyau administratif", en: "Administrative Core" },
 	gestion: { fr: "Gestion", en: "Management" },
 	administration: { fr: "Administration", en: "Administration" },
 	network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
@@ -361,6 +362,7 @@ const MODULE_CATEGORY_LABELS: Record<ModuleCategory, { fr: string; en: string }>
 const MODULE_CATEGORY_ORDER: ModuleCategory[] = [
 	"operations",
 	"ibureau",
+	"noyau_administratif",
 	"gestion",
 	"administration",
 	"network",

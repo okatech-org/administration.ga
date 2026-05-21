@@ -421,6 +421,101 @@ export const listChildren = query({
 })
 
 /**
+ * getOrgsByTutelle — Phase 1 administration.ga
+ *
+ * Retourne les organismes placés sous la tutelle directe d'un parent
+ * (typiquement un ministère et ses directions générales, ou une DG et
+ * ses services). Sémantiquement équivalent à `listChildren` mais avec
+ * un nommage explicite côté administration nationale.
+ *
+ * Options :
+ *   - `tutelleLevel` (optionnel) : restreint aux enfants de ce niveau
+ *     hiérarchique précis (ex: ne retourner que les niveau 2 sous un
+ *     ministère, en filtrant les services niveau 3 qui auraient été
+ *     placés par erreur sous le ministère directement).
+ *   - `includeInactive` (optionnel, défaut false) : inclut les orgs
+ *     archivées (`isActive=false`) pour les vues d'administration.
+ *   - `includeDeleted` (optionnel, défaut false) : inclut les orgs en
+ *     soft-delete. Réservé aux super-admins (filet côté UI).
+ *
+ * Note : la visibilité des agences de renseignement est respectée
+ * (filtrée pour les utilisateurs qui n'y ont pas accès).
+ */
+export const getOrgsByTutelle = query({
+  args: {
+    parentOrgId: v.id("orgs"),
+    tutelleLevel: v.optional(v.number()),
+    includeInactive: v.optional(v.boolean()),
+    includeDeleted: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const children =
+      typeof args.tutelleLevel === "number"
+        ? await ctx.db
+            .query("orgs")
+            .withIndex("by_parent_level", (q) =>
+              q
+                .eq("parentOrgId", args.parentOrgId)
+                .eq("tutelleLevel", args.tutelleLevel),
+            )
+            .collect()
+        : await ctx.db
+            .query("orgs")
+            .withIndex("by_parent", (q) =>
+              q.eq("parentOrgId", args.parentOrgId),
+            )
+            .collect()
+
+    const user = await getCurrentUser(ctx)
+    const canSee = await canSeeIntelAgencies(ctx, user)
+
+    return children.filter((org) => {
+      if (!args.includeDeleted && org.deletedAt) return false
+      if (!args.includeInactive && !org.isActive) return false
+      if (!canSee && isIntelligenceAgency(org)) return false
+      return true
+    })
+  },
+})
+
+/**
+ * getOrgsByLevel — Phase 1 administration.ga
+ *
+ * Liste tous les organismes d'un niveau hiérarchique donné, indépendamment
+ * de leur parent. Permet par exemple :
+ *   - `getOrgsByLevel(0)` → toutes les institutions souveraines
+ *   - `getOrgsByLevel(1)` → tous les ministères + ministères délégués
+ *   - `getOrgsByLevel(2)` → toutes les DG + établissements + collectivités
+ *
+ * Réservé aux superadmins pour éviter de divulguer l'organigramme complet
+ * aux utilisateurs sans accès panoramique.
+ */
+export const getOrgsByLevel = authQuery({
+  args: {
+    tutelleLevel: v.number(),
+    includeInactive: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    if (!ctx.user.isSuperadmin) {
+      throw error(ErrorCode.INSUFFICIENT_PERMISSIONS)
+    }
+
+    const orgs = await ctx.db
+      .query("orgs")
+      .withIndex("by_tutelle_level", (q) =>
+        q.eq("tutelleLevel", args.tutelleLevel),
+      )
+      .collect()
+
+    return orgs.filter((org) => {
+      if (org.deletedAt) return false
+      if (!args.includeInactive && !org.isActive) return false
+      return true
+    })
+  },
+})
+
+/**
  * Modifie le rattachement parent d'un organisme. Réservé aux super-admin
  * (décision structurelle : qui supervise qui).
  */

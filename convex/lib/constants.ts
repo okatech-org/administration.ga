@@ -148,32 +148,88 @@ export enum PublicUserType {
 }
 
 export enum OrganizationType {
-  // Représentations diplomatiques
+  // ─── Représentations diplomatiques (héritage gabon-diplomatie) ──
   Embassy = "embassy", // Ambassade
   HighRepresentation = "high_representation", // Ambassade Haute Représentation (ex: France, Maroc)
   GeneralConsulate = "general_consulate", // Consulat Général
   HighCommission = "high_commission", // Haut-Commissariat (Commonwealth)
   PermanentMission = "permanent_mission", // Mission Permanente (ONU, etc.)
   ThirdParty = "third_party", // Partenaire tiers
-  // Tutelle / supervision
+  // ─── Tutelle / supervision (héritage) ─────────────────────────
   Ministry = "ministry", // Ministère (chapeaute consulats, ambassades, etc.)
   // Renseignement souverain — totalement cloisonné des autres organismes.
   // Seul type autorisé à activer le module `intelligence`. Invisible des
   // listes, annuaires et recherches inter-organismes (cf. visibility helper).
   IntelligenceAgency = "intelligence_agency",
+
+  // ─── Administration nationale (administration.ga, Phase 1) ────
+  // Ces types modélisent l'architecture de la 5e République gabonaise.
+  // Cf. ADMINISTRATION.GA/5e-Republique-Gabon-Institutions.md
+  Presidency = "presidency", // Présidence de la République
+  VicePresidency = "vice_presidency", // Vice-Présidence de la République / du Gouvernement
+  Government = "government", // Gouvernement (alias logique pour la Vice-Présidence du Gouvernement)
+  DelegatedMinistry = "delegated_ministry", // Ministère délégué (ex: Budget)
+  DirectorateGeneral = "directorate_general", // Direction Générale (DGI, DGDDI, etc.)
+  PublicEstablishment = "public_establishment", // Établissement public / entreprise sous tutelle
+  NationalAgency = "national_agency", // Agence nationale (ANPI, ANINF, etc.)
+  IndependentAuthority = "independent_authority", // Autorité Administrative Indépendante (HAC, ARCEP, etc.)
+  ParliamentChamber = "parliament_chamber", // Assemblée nationale, Sénat
+  SupremeCourt = "supreme_court", // Juridictions suprêmes (Cour constitutionnelle, Cour de cassation…)
+  ConsultativeInstitution = "consultative_institution", // CESEC, Médiateur, CNDH, CNLCEI
+  LocalAuthority = "local_authority", // Province, préfecture, sous-préfecture, conseil municipal
 }
 
 /**
  * Sous-types de ministère — disambiguent l'organigramme et les modules
- * pré-activés à la création. Le premier sous-type livré est `foreign_affairs`
- * (Ministère des Affaires Étrangères). Les autres sont prévus pour évolution.
+ * pré-activés à la création.
+ *
+ * Phase 1 (gabon-diplomatie) : 4 portefeuilles diplomatiques.
+ * Phase 1 (administration.ga) : 28 portefeuilles de la 5e République 2026,
+ * cf. ADMINISTRATION.GA/5e-Republique-Gabon-Institutions.md.
+ *
+ * Les valeurs legacy `finance`, `interior` sont conservées pour la
+ * compatibilité ascendante des données existantes ; les nouveaux writes
+ * doivent préférer `economy_finance` / `interior_security` qui suivent la
+ * nomenclature 2026.
  */
 export enum MinistrySubType {
-  ForeignAffairs = "foreign_affairs", // MAE
-  Justice = "justice",
-  Finance = "finance",
-  Interior = "interior",
+  // ─── Legacy gabon-diplomatie (conservé pour compatibilité) ────
+  ForeignAffairs = "foreign_affairs", // MAE — aligné nomenclature 2026
+  Justice = "justice", // aligné nomenclature 2026
+  Finance = "finance", // legacy → préférer EconomyFinance
+  Interior = "interior", // legacy → préférer InteriorSecurity
   Other = "other",
+
+  // ─── 28 portefeuilles 5e République (Phase 1 administration.ga) ─
+  EconomyFinance = "economy_finance", // Économie, Finances, Dette, Participations
+  InteriorSecurity = "interior_security", // Intérieur, Sécurité, Décentralisation
+  Defense = "defense", // Défense Nationale
+  EducationNational = "education_national", // Éducation Nationale, Instruction Civique
+  HigherEducation = "higher_education", // Enseignement Supérieur, Recherche
+  Health = "health", // Santé
+  Agriculture = "agriculture", // Agriculture, Élevage, Développement Rural
+  FisheriesBlueEconomy = "fisheries_blue_economy", // Pêche, Mer, Économie Bleue
+  WatersForestsEnvironment = "waters_forests_environment", // Eaux et Forêts, Environnement, Climat
+  PetroleumGas = "petroleum_gas", // Pétrole et Gaz
+  MinesGeology = "mines_geology", // Mines, Ressources Géologiques
+  TransportMarine = "transport_marine", // Transports, Marine Marchande, Logistique
+  PublicWorksConstruction = "public_works_construction", // Travaux Publics, Construction
+  HousingUrbanismCadastre = "housing_urbanism_cadastre", // Logement, Habitat, Urbanisme, Cadastre
+  IndustryLocalTransformation = "industry_local_transformation", // Industrie, Transformation Locale
+  CommercePme = "commerce_pme", // Commerce, PME-PMI, Entrepreneuriat Jeunes
+  DigitalEconomyInnovation = "digital_economy_innovation", // Économie Numérique, Digitalisation, Innovation
+  CivilServiceCapacity = "civil_service_capacity", // Fonction Publique, Renforcement Capacités
+  LaborEmploymentDialogue = "labor_employment_dialogue", // Travail, Plein Emploi, Dialogue Social, Formation
+  SocialAffairsChildhoodWomen = "social_affairs_childhood_women", // Affaires Sociales, Enfance, Femme
+  YouthSportsCultureArts = "youth_sports_culture_arts", // Jeunesse, Sports, Culture, Arts
+  SustainableTourismCrafts = "sustainable_tourism_crafts", // Tourisme Durable, Artisanat
+  CommunicationMedia = "communication_media", // Communications et Médias
+  PlanningProspective = "planning_prospective", // Planification, Prospective
+  ReformInstitutionsRelations = "reform_institutions_relations", // Réforme, Relations avec les Institutions
+  WaterEnergyAccess = "water_energy_access", // Accès Universel Eau et Énergie
+  // Ministre Délégué au Budget (rattaché à EconomyFinance via parentOrgId).
+  // Conserve ce subType pour les rapports filtrés sur le portefeuille budgétaire.
+  Budget = "budget",
 }
 
 export enum DocumentStatus {

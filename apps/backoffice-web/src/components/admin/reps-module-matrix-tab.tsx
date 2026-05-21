@@ -56,6 +56,11 @@ const CATEGORY_META: Record<
 		color: "text-rose-700",
 		bgColor: "bg-rose-100 dark:bg-rose-950/40",
 	},
+	noyau_administratif: {
+		label: { fr: "Noyau administratif", en: "Administrative Core" },
+		color: "text-violet-600",
+		bgColor: "bg-violet-50 dark:bg-violet-950/30",
+	},
 };
 
 // ─── Props ─────────────────────────────────────────────────────

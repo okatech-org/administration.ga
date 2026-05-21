@@ -91,8 +91,17 @@ export {
 // ============================================================================
 
 // Org types (all organization types)
+//
+// CONSERVÉ : tous les types diplomatiques historiques (embassy, consulate,
+// high_representation, etc.) restent valides pour les données existantes du
+// monorepo gabon-diplomatie.
+//
+// AJOUTÉ Phase 1 administration.ga : 12 types couvrant l'architecture
+// institutionnelle de la 5e République gabonaise (cf. ADMINISTRATION.GA/
+// 5e-Republique-Gabon-Institutions.md). Tous sont des unions additives — aucun
+// type existant n'est retiré.
 export const orgTypeValidator = v.union(
-  // Active types
+  // ─── Représentations diplomatiques (héritage) ────────────────
   v.literal(OrgType.Embassy),
   v.literal(OrgType.HighRepresentation),
   v.literal(OrgType.GeneralConsulate),
@@ -101,19 +110,63 @@ export const orgTypeValidator = v.union(
   v.literal(OrgType.ThirdParty),
   v.literal(OrgType.Ministry),
   v.literal(OrgType.IntelligenceAgency),
-  // Legacy types (kept for backward compatibility with existing data)
+  // ─── Legacy (compatibilité données existantes) ───────────────
   v.literal("consulate"),
   v.literal("honorary_consulate"),
   v.literal("other"),
+  // ─── Administration nationale (Phase 1) ──────────────────────
+  v.literal(OrgType.Presidency),
+  v.literal(OrgType.VicePresidency),
+  v.literal(OrgType.Government),
+  v.literal(OrgType.DelegatedMinistry),
+  v.literal(OrgType.DirectorateGeneral),
+  v.literal(OrgType.PublicEstablishment),
+  v.literal(OrgType.NationalAgency),
+  v.literal(OrgType.IndependentAuthority),
+  v.literal(OrgType.ParliamentChamber),
+  v.literal(OrgType.SupremeCourt),
+  v.literal(OrgType.ConsultativeInstitution),
+  v.literal(OrgType.LocalAuthority),
 );
 
-// Sous-type d'un ministère (uniquement pertinent quand type === "ministry").
+// Sous-type d'un ministère (uniquement pertinent quand type === "ministry"
+// ou "delegated_ministry"). Inclut les 28 portefeuilles de la 5e République
+// 2026 + les valeurs legacy conservées pour compatibilité.
 export const ministrySubTypeValidator = v.union(
+  // ─── Legacy (conservé) ───────────────────────────────────────
   v.literal(MinistrySubType.ForeignAffairs),
   v.literal(MinistrySubType.Justice),
   v.literal(MinistrySubType.Finance),
   v.literal(MinistrySubType.Interior),
   v.literal(MinistrySubType.Other),
+  // ─── 28 portefeuilles 5e République (Phase 1) ────────────────
+  v.literal(MinistrySubType.EconomyFinance),
+  v.literal(MinistrySubType.InteriorSecurity),
+  v.literal(MinistrySubType.Defense),
+  v.literal(MinistrySubType.EducationNational),
+  v.literal(MinistrySubType.HigherEducation),
+  v.literal(MinistrySubType.Health),
+  v.literal(MinistrySubType.Agriculture),
+  v.literal(MinistrySubType.FisheriesBlueEconomy),
+  v.literal(MinistrySubType.WatersForestsEnvironment),
+  v.literal(MinistrySubType.PetroleumGas),
+  v.literal(MinistrySubType.MinesGeology),
+  v.literal(MinistrySubType.TransportMarine),
+  v.literal(MinistrySubType.PublicWorksConstruction),
+  v.literal(MinistrySubType.HousingUrbanismCadastre),
+  v.literal(MinistrySubType.IndustryLocalTransformation),
+  v.literal(MinistrySubType.CommercePme),
+  v.literal(MinistrySubType.DigitalEconomyInnovation),
+  v.literal(MinistrySubType.CivilServiceCapacity),
+  v.literal(MinistrySubType.LaborEmploymentDialogue),
+  v.literal(MinistrySubType.SocialAffairsChildhoodWomen),
+  v.literal(MinistrySubType.YouthSportsCultureArts),
+  v.literal(MinistrySubType.SustainableTourismCrafts),
+  v.literal(MinistrySubType.CommunicationMedia),
+  v.literal(MinistrySubType.PlanningProspective),
+  v.literal(MinistrySubType.ReformInstitutionsRelations),
+  v.literal(MinistrySubType.WaterEnergyAccess),
+  v.literal(MinistrySubType.Budget),
 );
 
 // Public user types (for citizen profiles)

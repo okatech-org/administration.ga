@@ -43,8 +43,25 @@ export const orgsTable = defineTable({
   ministrySubType: v.optional(ministrySubTypeValidator),
   // Hiérarchie organique : un consulat/ambassade peut être rattaché à un
   // ministère de tutelle. Validé côté mutation : parent doit être de type
-  // "ministry". Aucune contrainte cyclique car arborescence à 2 niveaux max.
+  // "ministry". Aucune contrainte cyclique car arborescence à 2 niveaux max
+  // côté diplomatique ; jusqu'à 4 niveaux côté administration nationale.
   parentOrgId: v.optional(v.id("orgs")),
+
+  // Niveau hiérarchique dans la pyramide institutionnelle (Phase 1
+  // administration.ga). Optionnel pour tolérer les rows existantes
+  // (pattern widen-migrate-narrow) ; la migration
+  // `backfillTutelleLevel` le calcule pour toutes les orgs existantes.
+  //
+  //   0 = souverain (Présidence, Vice-Présidence, Parlement, Cour suprême,
+  //                  AAI, institution consultative — pas de tutelle)
+  //   1 = ministère ou ministère délégué (rattaché à la Présidence)
+  //   2 = direction générale / établissement public / agence nationale /
+  //       collectivité locale (rattaché à un ministère)
+  //   3 = service / sous-direction / bureau d'ordre (rattaché à une DG)
+  //
+  // Les types diplomatiques héritent du même schéma : ambassade/consulat
+  // rattaché au MAE → tutelleLevel = 2.
+  tutelleLevel: v.optional(v.number()),
 
   // Localisation (champs historiques - à migrer vers `addresses` et `jurisdiction`)
   country: countryCodeValidator,
@@ -156,4 +173,11 @@ export const orgsTable = defineTable({
   .index("by_country", ["country"])
   .index("by_parent", ["parentOrgId"])
   .index("by_active_notDeleted", ["isActive", "deletedAt"])
+  // Index Phase 1 administration.ga : filtrage par niveau hiérarchique.
+  // Permet par exemple `getOrgsByLevel(0)` pour lister toutes les institutions
+  // souveraines, ou `getOrgsByLevel(1)` pour tous les ministères.
+  .index("by_tutelle_level", ["tutelleLevel"])
+  // Index composé : enfants d'un parent à un niveau donné. Utile pour
+  // `getOrgsByTutelle(parentOrgId)` quand on veut filtrer sur tutelleLevel.
+  .index("by_parent_level", ["parentOrgId", "tutelleLevel"])
   .searchIndex("search_name", { searchField: "name" });

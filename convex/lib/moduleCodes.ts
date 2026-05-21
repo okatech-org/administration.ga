@@ -48,6 +48,16 @@ export const ModuleCode = {
   network_intelligence: "network_intelligence",
   // Renseignement diplomatique (services). Cloisonné, ministry-only.
   intelligence: "intelligence",
+
+  // ─── Phase 1 administration.ga ────────────────────────────────
+  // Modules du noyau étendu pour l'administration publique gabonaise,
+  // cf. ADMINISTRATION.GA/PROJET_DIGITALISATION_GOUVERNEMENT_GABONAIS.md §6.
+  // iCorrespondance/iDocument/iAgenda/iCom existent déjà sous les codes
+  // canoniques anglophones (correspondence/documents/calendar/messaging).
+  // Trois modules supplémentaires nécessitent un code top-level dédié :
+  iasted: "iasted", // Assistant IA institutionnel (RAG sur docs autorisés)
+  iarchive: "iarchive", // Archive longue durée (rétention, non-altération)
+  iboite: "iboite", // Messagerie institutionnelle informelle (inbox, accusés)
 } as const;
 
 export type ModuleCodeValue = (typeof ModuleCode)[keyof typeof ModuleCode];
@@ -65,7 +75,10 @@ export type ModuleCategory =
   | "gestion"
   | "administration"
   | "network"
-  | "intelligence";
+  | "intelligence"
+  // Phase 1 administration.ga : catégorie "noyau administratif" pour les
+  // modules supplémentaires (iAsted, iArchive, iBoîte) qui complètent iBureau.
+  | "noyau_administratif";
 
 // ═══════════════════════════════════════════════════════════════
 // MODULE ACCESS LEVELS — Granular permission tiers
@@ -144,6 +157,10 @@ export const moduleCodeValidator = v.union(
   v.literal("network_correspondence_oversight"),
   v.literal("network_intelligence"),
   v.literal("intelligence"),
+  // Phase 1 administration.ga — noyau administratif
+  v.literal("iasted"),
+  v.literal("iarchive"),
+  v.literal("iboite"),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -457,6 +474,62 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
       { code: "map", label: { fr: "Cartographie", en: "Map" } },
     ],
   },
+
+  // ─── Noyau administratif (Phase 1 administration.ga) ──────────
+  // Trois modules supplémentaires complétant iBureau pour la spécificité
+  // de l'administration publique gabonaise.
+  iasted: {
+    code: "iasted",
+    label: { fr: "iAsted", en: "iAsted" },
+    description: {
+      fr: "Assistant IA institutionnel — RAG sur les documents autorisés, dans le respect strict des permissions",
+      en: "Institutional AI assistant — RAG on authorized documents, with strict permissions enforcement",
+    },
+    icon: "Sparkles",
+    color: "text-violet-500",
+    category: "noyau_administratif",
+    isCore: false,
+    capabilities: [
+      { code: "rag", label: { fr: "Recherche augmentée", en: "Retrieval augmented" } },
+      { code: "voice", label: { fr: "Mode vocal", en: "Voice mode" } },
+      { code: "compose", label: { fr: "Composition assistée", en: "Assisted composition" } },
+    ],
+  },
+  iarchive: {
+    code: "iarchive",
+    label: { fr: "iArchive", en: "iArchive" },
+    description: {
+      fr: "Archive longue durée — règles de rétention, verrouillage non-altération, audit immuable",
+      en: "Long-term archive — retention policies, immutability locking, immutable audit",
+    },
+    icon: "Archive",
+    color: "text-amber-500",
+    category: "noyau_administratif",
+    isCore: false,
+    capabilities: [
+      { code: "retention", label: { fr: "Politiques de rétention", en: "Retention policies" } },
+      { code: "lock", label: { fr: "Verrouillage", en: "Lock" } },
+      { code: "audit", label: { fr: "Audit immuable", en: "Immutable audit" } },
+      { code: "destruction", label: { fr: "Destruction réglementaire", en: "Regulated destruction" } },
+    ],
+  },
+  iboite: {
+    code: "iboite",
+    label: { fr: "iBoîte", en: "iBoîte" },
+    description: {
+      fr: "Messagerie institutionnelle informelle — inbox, notifications de workflow, accusés de réception",
+      en: "Informal institutional mailbox — inbox, workflow notifications, read receipts",
+    },
+    icon: "Inbox",
+    color: "text-cyan-500",
+    category: "noyau_administratif",
+    isCore: false,
+    capabilities: [
+      { code: "inbox", label: { fr: "Boîte de réception", en: "Inbox" } },
+      { code: "receipts", label: { fr: "Accusés de réception", en: "Read receipts" } },
+      { code: "workflow_notifs", label: { fr: "Notifications workflow", en: "Workflow notifications" } },
+    ],
+  },
 };
 
 /**
@@ -650,6 +723,34 @@ export const MODULE_ACCESS_TASKS: Partial<Record<ModuleCodeValue, Record<ModuleA
     editor: ["network.intelligence.view", "network.intelligence.export"],
     admin: ["network.intelligence.view", "network.intelligence.export", "network.intelligence.configure"],
   },
+  // ─── Phase 1 administration.ga ────────────────────────────────
+  iasted: {
+    reader: ["iasted.view"],
+    editor: ["iasted.view", "iasted.invoke"],
+    admin: ["iasted.view", "iasted.invoke", "iasted.configure"],
+  },
+  iarchive: {
+    reader: ["iarchive.view"],
+    editor: ["iarchive.view", "iarchive.deposit", "iarchive.search"],
+    admin: [
+      "iarchive.view",
+      "iarchive.deposit",
+      "iarchive.search",
+      "iarchive.configure_retention",
+      "iarchive.lock",
+      "iarchive.destruct",
+    ],
+  },
+  iboite: {
+    reader: ["iboite.view"],
+    editor: ["iboite.view", "iboite.send", "iboite.acknowledge"],
+    admin: [
+      "iboite.view",
+      "iboite.send",
+      "iboite.acknowledge",
+      "iboite.configure",
+    ],
+  },
   intelligence: {
     reader: [
       "intelligence.profiles.view",
@@ -736,11 +837,13 @@ export const CATEGORY_LABELS: Record<ModuleCategory, LocalizedString> = {
   administration: { fr: "Administration", en: "Administration" },
   network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
   intelligence: { fr: "Renseignement", en: "Intelligence" },
+  noyau_administratif: { fr: "Noyau administratif", en: "Administrative Core" },
 };
 
 export const CATEGORY_ORDER: ModuleCategory[] = [
   "operations",
   "ibureau",
+  "noyau_administratif",
   "gestion",
   "administration",
   "network",
@@ -783,6 +886,16 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
       "documents",
       "calendar",
       "messaging",
+    ],
+  },
+  {
+    key: "noyau_administratif",
+    label: { fr: "Noyau administratif", en: "Administrative Core" },
+    icon: "Sparkles",
+    modules: [
+      "iasted",
+      "iarchive",
+      "iboite",
     ],
   },
   {

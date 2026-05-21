@@ -37,10 +37,11 @@ const CATEGORY_CONFIG: Record<
 > = {
 	operations: { label: "Opérations", order: 1 },
 	ibureau: { label: "iBureau", order: 2 },
-	gestion: { label: "Gestion", order: 3 },
-	administration: { label: "Administration", order: 4 },
-	network: { label: "Réseau diplomatique", order: 5 },
-	intelligence: { label: "Renseignement", order: 6 },
+	noyau_administratif: { label: "Noyau administratif", order: 3 },
+	gestion: { label: "Gestion", order: 4 },
+	administration: { label: "Administration", order: 5 },
+	network: { label: "Réseau diplomatique", order: 6 },
+	intelligence: { label: "Renseignement", order: 7 },
 };
 
 
