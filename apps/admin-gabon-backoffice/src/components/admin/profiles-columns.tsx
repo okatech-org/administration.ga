@@ -228,7 +228,7 @@ const countryCol: ColumnDef<ProfileRow> = {
 
 const representationCol: ColumnDef<ProfileRow> = {
   id: "representation",
-  header: ({ column }) => <DataTableColumnHeader column={column} title="Représentation" />,
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Administration" />,
   cell: ({ row }) => {
     const org = row.original.managedByOrg || row.original.signaledToOrg
     if (!org) return <span className="text-xs text-muted-foreground">—</span>

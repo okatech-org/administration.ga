@@ -55,7 +55,7 @@ export function AssignMemberToPositionDialog({
   onClose,
 }: AssignMemberToPositionDialogProps) {
   const { i18n } = useTranslation();
-  const lang = i18n.language === "fr" ? "fr" : "en";
+  const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
   const isOpen = membershipId !== null;
   const [selectedPositionId, setSelectedPositionId] = useState<string>("none");

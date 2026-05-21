@@ -194,8 +194,8 @@ export const resetAll = superadminMutation({
 
 const MENU_MODULES = [
   { code: "profile", label: "iProfil", requires: null, section: "Commandes" },
-  { code: "diplomatic_affairs", label: "Aff. Diplomatiques", requires: "intelligence.view", section: "Opérations" },
-  { code: "consular_affairs", label: "Aff. Consulaires", requires: "requests.view", section: "Opérations" },
+  { code: "diplomatic_affairs", label: "Pilotage Stratégique", requires: "intelligence.view", section: "Opérations" },
+  { code: "consular_affairs", label: "Démarches Admin.", requires: "requests.view", section: "Opérations" },
   { code: "news", label: "Actualités", requires: "communication.publish", section: "Opérations" },
   { code: "correspondence", label: "iCorrespondance", requires: "correspondance.view", section: "iBureau" },
   { code: "documents", label: "iDocument", requires: "documents.view", section: "iBureau" },

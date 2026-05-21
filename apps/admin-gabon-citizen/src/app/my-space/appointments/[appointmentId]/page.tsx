@@ -137,7 +137,7 @@ export default function AppointmentDetail() {
 					</h1>
 					<p className="text-muted-foreground">
 						{new Date(appointment.date + "T00:00:00").toLocaleDateString(
-							i18n.language === "fr" ? "fr-FR" : "en-US",
+							i18n.language?.startsWith("fr") ? "fr-FR" : "en-US",
 							{
 								weekday: "long",
 								day: "numeric",
@@ -300,7 +300,7 @@ export default function AppointmentDetail() {
 								</span>
 								<span className="font-medium">
 									{new Date(appointment.date + "T00:00:00").toLocaleDateString(
-										i18n.language === "fr" ? "fr-FR" : "en-US",
+										i18n.language?.startsWith("fr") ? "fr-FR" : "en-US",
 										{ day: "numeric", month: "long", year: "numeric" },
 									)}
 								</span>

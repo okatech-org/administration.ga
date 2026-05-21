@@ -28,7 +28,7 @@ const STATUS_BADGE: Record<string, { fr: string; en: string; tone: string }> = {
  */
 export function WaitlistPanel() {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	const { data: entries, isPending } = useAuthenticatedConvexQuery(
 		api.functions.appointmentWaitlist.listMyWaitlist,

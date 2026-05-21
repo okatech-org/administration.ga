@@ -234,34 +234,36 @@ function PositionBadge({
 			{expanded && moduleAccess.length > 0 && (
 				<div className="px-3 pb-2 pt-0 border-t border-border/30">
 					<div className="flex flex-wrap gap-1 pt-1.5">
-						{moduleAccess.map(
-							(ma: {
-								moduleCode: string;
-								accessLevel: string;
-							}) => {
-								const mod =
-									MODULE_REGISTRY[
-										ma.moduleCode as ModuleCodeValue
-									];
-								const meta =
-									ACCESS_LEVEL_META[
-										ma.accessLevel as ModuleAccessLevel
-									];
-								if (!mod || !meta) return null;
-								return (
-									<span
-										key={ma.moduleCode}
-										className={cn(
-											"inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border",
-											meta.color,
-										)}
-									>
-										{mod.label[lang as "fr" | "en"] ||
-											mod.label.fr}
-									</span>
-								);
-							},
-						)}
+						{Array.from(
+							new Map(
+								(moduleAccess as Array<{
+									moduleCode: string;
+									accessLevel: string;
+								}>).map((ma) => [ma.moduleCode, ma]),
+							).values(),
+						).map((ma) => {
+							const mod =
+								MODULE_REGISTRY[
+									ma.moduleCode as ModuleCodeValue
+								];
+							const meta =
+								ACCESS_LEVEL_META[
+									ma.accessLevel as ModuleAccessLevel
+								];
+							if (!mod || !meta) return null;
+							return (
+								<span
+									key={ma.moduleCode}
+									className={cn(
+										"inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full border",
+										meta.color,
+									)}
+								>
+									{mod.label[lang as "fr" | "en"] ||
+										mod.label.fr}
+								</span>
+							);
+						})}
 					</div>
 				</div>
 			)}
@@ -1507,7 +1509,7 @@ export function RepsTypesTemplatesTab({
 									</span>
 									<span className="flex items-center gap-1">
 										<Layers className="h-3.5 w-3.5" />
-										{tpl.modules.length} modules
+										{new Set(tpl.modules).size} modules
 									</span>
 									{positionsWithMA > 0 && (
 										<span className="flex items-center gap-1 text-emerald-600">
@@ -1545,36 +1547,46 @@ export function RepsTypesTemplatesTab({
 											: "Enabled modules"}
 									</p>
 									<div className="flex flex-wrap gap-1">
-										{tpl.modules
-											.slice(0, 12)
-											.map((mod) => {
-												const def =
-													MODULE_REGISTRY[
-														mod as ModuleCodeValue
-													];
-												if (!def) return null;
-												return (
-													<Badge
-														key={mod}
-														variant="outline"
-														className="text-[9px] px-1.5 py-0 h-4"
-													>
-														{def.label[
-															lang as
-																| "fr"
-																| "en"
-														] || def.label.fr}
-													</Badge>
-												);
-											})}
-										{tpl.modules.length > 12 && (
-											<Badge
-												variant="secondary"
-												className="text-[9px] px-1.5 py-0 h-4"
-											>
-												+{tpl.modules.length - 12}
-											</Badge>
-										)}
+										{(() => {
+											const uniqueModules = Array.from(
+												new Set(tpl.modules),
+											);
+											return (
+												<>
+													{uniqueModules
+														.slice(0, 12)
+														.map((mod) => {
+															const def =
+																MODULE_REGISTRY[
+																	mod as ModuleCodeValue
+																];
+															if (!def) return null;
+															return (
+																<Badge
+																	key={mod}
+																	variant="outline"
+																	className="text-[9px] px-1.5 py-0 h-4"
+																>
+																	{def.label[
+																		lang as
+																			| "fr"
+																			| "en"
+																	] ||
+																		def.label.fr}
+																</Badge>
+															);
+														})}
+													{uniqueModules.length > 12 && (
+														<Badge
+															variant="secondary"
+															className="text-[9px] px-1.5 py-0 h-4"
+														>
+															+{uniqueModules.length - 12}
+														</Badge>
+													)}
+												</>
+											);
+										})()}
 									</div>
 								</div>
 							</div>

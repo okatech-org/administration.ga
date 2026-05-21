@@ -40,7 +40,7 @@ export function HelpTooltip({
   className,
 }: HelpTooltipProps) {
   const { i18n } = useTranslation();
-  const lang = i18n.language === "fr" ? "fr" : "en";
+  const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
   const text = typeof content === "string" ? content : content[lang] ?? content.fr;
 

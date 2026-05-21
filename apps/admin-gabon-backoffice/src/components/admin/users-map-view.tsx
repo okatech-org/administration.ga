@@ -227,7 +227,12 @@ export function UsersMapView() {
 		router.replace(`/users?${params.toString()}`, { scroll: false });
 	};
 
-	// ── Fly-to: continent average → country capital → world ──
+	// ── Fly-to: pays sélectionné → moyenne du continent → Gabon par défaut ──
+	// Le Gabon est centré par défaut (territoire national administré).
+	// Coordonnées : [longitude, latitude] — centre approximatif des 9 provinces.
+	const GABON_CENTER: [number, number] = [11.6, -0.6];
+	const GABON_ZOOM = 5.5;
+
 	const flyTo = useMemo<ClusteredMapFlyTo | null>(() => {
 		if (selectedCountry) {
 			const c = getCapitalCoords(selectedCountry);
@@ -242,7 +247,7 @@ export function UsersMapView() {
 				renderedPoints.length;
 			return { center: [avgLng, avgLat], zoom: 2.5 };
 		}
-		return { center: [20, 20], zoom: 1.6 };
+		return { center: GABON_CENTER, zoom: GABON_ZOOM };
 	}, [selectedCountry, activeContinent, renderedPoints]);
 
 	// ── Popup HTML + click delegation for the audio/video buttons ──

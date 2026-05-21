@@ -77,7 +77,7 @@ const SECTION_STYLE: Record<string, string> = {
 
 export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	// Recupérer l'org pour son type (pour le bouton template reset)
 	const { data: org } = useAuthenticatedConvexQuery(
@@ -514,7 +514,7 @@ function SidebarGroupCard({
 					}
 				/>
 				<div className="grid gap-2">
-					{group.modules.map((moduleCode) => {
+					{Array.from(new Set(group.modules)).map((moduleCode) => {
 						const def = MODULE_REGISTRY[moduleCode as ModuleCodeValue];
 						if (!def) return null;
 						const config = configMap.get(moduleCode);

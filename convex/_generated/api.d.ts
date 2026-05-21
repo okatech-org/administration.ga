@@ -459,6 +459,7 @@ import type * as seeds_seedShowcaseArticle from "../seeds/seedShowcaseArticle.js
 import type * as seeds_seedUsers from "../seeds/seedUsers.js";
 import type * as seeds_serviceFormSchemas from "../seeds/serviceFormSchemas.js";
 import type * as seeds_staffAccounts from "../seeds/staffAccounts.js";
+import type * as seeds_staffAccountsAdmin from "../seeds/staffAccountsAdmin.js";
 import type * as seeds_tutorials from "../seeds/tutorials.js";
 import type * as sensoriel from "../sensoriel.js";
 import type * as testDumpRecords from "../testDumpRecords.js";
@@ -926,6 +927,7 @@ declare const fullApi: ApiFromModules<{
   "seeds/seedUsers": typeof seeds_seedUsers;
   "seeds/serviceFormSchemas": typeof seeds_serviceFormSchemas;
   "seeds/staffAccounts": typeof seeds_staffAccounts;
+  "seeds/staffAccountsAdmin": typeof seeds_staffAccountsAdmin;
   "seeds/tutorials": typeof seeds_tutorials;
   sensoriel: typeof sensoriel;
   testDumpRecords: typeof testDumpRecords;

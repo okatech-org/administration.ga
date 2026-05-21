@@ -28,9 +28,12 @@ const UsersMapView = dynamic(
 import {
   Crown,
   Map as MapIcon,
+  SearchX,
+  UserPlus,
   Users as UsersIcon,
   X,
 } from "lucide-react"
+import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { PaginationState } from "@tanstack/react-table"
 import { cn } from "@/lib/utils"
@@ -95,8 +98,8 @@ const ALL_ROLES = [
 
 const VIEW_MODES: { id: ViewMode; label: string; icon: React.ElementType }[] = [
   { id: "accounts", label: "Comptes", icon: UsersIcon },
-  { id: "profiles", label: "Profils Consulaires", icon: Crown },
-  { id: "map", label: "Carte des utilisateurs", icon: MapIcon },
+  { id: "profiles", label: "Profils Citoyens", icon: Crown },
+  { id: "map", label: "Carte territoriale", icon: MapIcon },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
@@ -343,9 +346,11 @@ export default function UsersPage() {
   const activeColumns = activeTab === "corps" ? corpsAdminColumns : columns
 
   const subtitleByView: Record<ViewMode, string> = {
-    accounts: "Gestion des comptes de la plateforme",
-    profiles: "Profils consulaires des citoyens et ressortissants",
-    map: "Vision géographique : citoyens et agents répartis dans le monde",
+    accounts:
+      "Administrateurs, agents et utilisateurs de la plateforme",
+    profiles:
+      "Citoyens et usagers des services administratifs",
+    map: "Répartition territoriale des citoyens et agents administratifs",
   }
 
   const viewModeTabs = VIEW_MODES.map((mode) => ({
@@ -489,25 +494,120 @@ export default function UsersPage() {
 
           <FlatCard>
             <div className="p-3 lg:p-4">
-              <DataTable
-                columns={activeColumns}
-                data={rows as any[]}
-                searchKeys={["name", "email", "phone", "residenceCountry"]}
-                searchPlaceholder={t(
-                  "superadmin.users.filters.searchPlaceholder"
-                )}
-                searchValue={searchInput}
-                onSearchChange={setSearchInput}
-                isLoading={isInitialLoad}
-                isPageTransitioning={isPageTransitioning}
-                totalRowCount={total}
-                pagination={pagination}
-                onPaginationChange={setPagination}
-              />
+              {!isInitialLoad &&
+              !isPageTransitioning &&
+              total === 0 &&
+              rows.length === 0 ? (
+                <AccountsEmptyState
+                  hasActiveFilter={hasActiveFilter}
+                  facetsTotal={facets?.total ?? 0}
+                  onReset={resetAllFilters}
+                />
+              ) : (
+                <DataTable
+                  columns={activeColumns}
+                  data={rows as any[]}
+                  searchKeys={["name", "email", "phone", "residenceCountry"]}
+                  searchPlaceholder={t(
+                    "superadmin.users.filters.searchPlaceholder"
+                  )}
+                  searchValue={searchInput}
+                  onSearchChange={setSearchInput}
+                  isLoading={isInitialLoad}
+                  isPageTransitioning={isPageTransitioning}
+                  totalRowCount={total}
+                  pagination={pagination}
+                  onPaginationChange={setPagination}
+                />
+              )}
             </div>
           </FlatCard>
         </>
       )}
+    </div>
+  )
+}
+
+function AccountsEmptyState({
+  hasActiveFilter,
+  facetsTotal,
+  onReset,
+}: {
+  hasActiveFilter: boolean
+  facetsTotal: number
+  onReset: () => void
+}) {
+  // Trois scénarios distincts :
+  //  - filtres actifs → "Aucun résultat pour ces filtres"
+  //  - pas de filtre mais facets.total > 0 → contexte de permission (RBAC)
+  //  - aucun compte enregistré → invite à créer
+  const isFiltered = hasActiveFilter
+  const isPermissionScoped = !hasActiveFilter && facetsTotal > 0
+
+  if (isFiltered) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <div className="rounded-full bg-muted/50 p-4">
+          <SearchX className="h-7 w-7 text-muted-foreground" />
+        </div>
+        <div>
+          <h3 className="text-base font-semibold">
+            Aucun compte ne correspond aux filtres
+          </h3>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            Essayez d&apos;élargir la recherche ou réinitialisez les filtres
+            pour afficher l&apos;ensemble des comptes.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onReset}>
+          <X className="mr-1.5 h-3.5 w-3.5" />
+          Réinitialiser les filtres
+        </Button>
+      </div>
+    )
+  }
+
+  if (isPermissionScoped) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <div className="rounded-full bg-amber-500/10 p-4">
+          <UsersIcon className="h-7 w-7 text-amber-600" />
+        </div>
+        <div>
+          <h3 className="text-base font-semibold">
+            Comptes hors de votre périmètre
+          </h3>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            {facetsTotal} compte{facetsTotal > 1 ? "s" : ""} existe
+            {facetsTotal > 1 ? "nt" : ""}{" "}sur la plateforme, mais votre rôle
+            ne vous permet pas de les consulter. Demandez l&apos;élévation à
+            un administrateur système si besoin.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+      <div className="rounded-full bg-primary/10 p-4">
+        <UserPlus className="h-7 w-7 text-primary" />
+      </div>
+      <div>
+        <h3 className="text-base font-semibold">
+          Aucun compte enregistré
+        </h3>
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">
+          La plateforme n&apos;a encore aucun compte de back-office ou
+          d&apos;agent administratif. Rattachez d&apos;abord une administration,
+          puis attribuez-y un poste pour créer le premier compte.
+        </p>
+      </div>
+      <Button asChild variant="outline" size="sm">
+        <Link href="/reps">
+          Aller aux administrations
+        </Link>
+      </Button>
     </div>
   )
 }

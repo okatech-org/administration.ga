@@ -35,7 +35,7 @@ function PlatformIcon({ platform }: { platform: "mac" | "win" | "linux" }) {
  */
 export function DownloadAppPopover({ isDark = true }: { isDark?: boolean }) {
 	const os = useUserAgentOS();
-	const { release, loading, error } = useLatestRelease();
+	const { release, loading, error, noReleaseAvailable } = useLatestRelease();
 	const [open, setOpen] = useState(false);
 
 	const recommended =
@@ -83,6 +83,13 @@ export function DownloadAppPopover({ isDark = true }: { isDark?: boolean }) {
 					{error && (
 						<div className="text-xs text-rose-300">
 							Impossible de contacter le serveur de mise à jour.
+						</div>
+					)}
+
+					{!loading && !error && noReleaseAvailable && (
+						<div className="text-xs text-white/70">
+							Aucune version n'est encore publiée. L'application desktop sera
+							disponible prochainement.
 						</div>
 					)}
 

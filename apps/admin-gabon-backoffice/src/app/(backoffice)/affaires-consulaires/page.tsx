@@ -14,7 +14,7 @@ import { api } from "@convex/_generated/api";
 
 export default function AffairesConsulairesPage() {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 	const [activeTab, setActiveTab] = useState("demandes");
 
 	// Lifted state

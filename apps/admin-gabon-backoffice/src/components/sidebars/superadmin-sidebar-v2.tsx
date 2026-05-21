@@ -125,7 +125,7 @@ export function SuperadminSidebarV2() {
 					moduleCode: "team",
 				},
 				{
-					title: "Corps Diplomatique",
+					title: "Cadres Administratifs",
 					url: "/corps-diplomatique",
 					icon: Shield,
 					moduleCode: "team",
@@ -290,7 +290,7 @@ export function SuperadminSidebarV2() {
 			<Link href="/" className="sa-brand">
 				<div className="logo-mark">G</div>
 				<div style={{ minWidth: 0 }}>
-					<div className="sa-brand-title">CONSULAT.GA</div>
+					<div className="sa-brand-title">ADMINISTRATION.GA</div>
 					<div className="sa-brand-sub">{roleLabel}</div>
 				</div>
 			</Link>

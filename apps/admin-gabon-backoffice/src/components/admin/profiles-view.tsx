@@ -1,5 +1,5 @@
 /**
- * ProfilesView — Profils consulaires de la page /users (vue Profils).
+ * ProfilesView — Profils Citoyens de la page /users (vue Profils).
  *
  * Pagination offset-based côté serveur (api.functions.profiles.listProfilesPage),
  * facets (api.functions.profiles.getProfileFacets), et état complet dans l'URL
@@ -253,7 +253,7 @@ export function ProfilesView() {
 				<div>
 					<h1 className="text-3xl font-bold tracking-tight">Profils Citoyens</h1>
 					<p className="text-muted-foreground">
-						Recherchez et consultez les profils consulaires.
+						Recherchez et consultez les profils des citoyens et usagers.
 					</p>
 				</div>
 

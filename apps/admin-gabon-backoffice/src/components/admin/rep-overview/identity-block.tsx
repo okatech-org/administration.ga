@@ -52,7 +52,7 @@ const CATEGORY_CONFIG: Record<
  */
 export function IdentityBlock({ org, headOfMissionName }: IdentityBlockProps) {
 	const { t, i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	const address = org.addresses?.physical ?? org.address;
 	const jurisdictions = (org.jurisdictionCountries as string[] | undefined) ?? [];

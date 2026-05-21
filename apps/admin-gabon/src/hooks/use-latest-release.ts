@@ -32,6 +32,12 @@ export interface UseLatestReleaseResult {
 	release: LatestRelease | null;
 	loading: boolean;
 	error: Error | null;
+	/**
+	 * `true` quand l'action a répondu avec succès mais qu'aucune release n'a
+	 * encore été publiée (GitHub a renvoyé 404 sur `/releases/latest`).
+	 * Distinct de `error`, qui est réservé aux échecs réseau/upstream.
+	 */
+	noReleaseAvailable: boolean;
 	/** Re-fetch manually (e.g. retry after error). */
 	refetch: () => void;
 }
@@ -43,20 +49,27 @@ export interface UseLatestReleaseResult {
  */
 let cachedRelease: LatestRelease | null = null;
 let cachedAt = 0;
+let cachedNoRelease = false;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function useLatestRelease(): UseLatestReleaseResult {
 	const getLatest = useAction(api.functions.releases.getLatest);
 	const [release, setRelease] = useState<LatestRelease | null>(cachedRelease);
-	const [loading, setLoading] = useState<boolean>(cachedRelease === null);
+	const [loading, setLoading] = useState<boolean>(
+		cachedRelease === null && !cachedNoRelease,
+	);
 	const [error, setError] = useState<Error | null>(null);
+	const [noReleaseAvailable, setNoReleaseAvailable] =
+		useState<boolean>(cachedNoRelease);
 	const [nonce, setNonce] = useState(0);
 
 	useEffect(() => {
 		let cancelled = false;
 		const now = Date.now();
-		if (cachedRelease && now - cachedAt < CACHE_TTL_MS) {
+		const cacheStillValid = now - cachedAt < CACHE_TTL_MS;
+		if (cacheStillValid && (cachedRelease || cachedNoRelease)) {
 			setRelease(cachedRelease);
+			setNoReleaseAvailable(cachedNoRelease);
 			setLoading(false);
 			return;
 		}
@@ -65,9 +78,18 @@ export function useLatestRelease(): UseLatestReleaseResult {
 		getLatest()
 			.then((r) => {
 				if (cancelled) return;
-				cachedRelease = r as LatestRelease;
 				cachedAt = Date.now();
-				setRelease(cachedRelease);
+				if (r === null) {
+					cachedRelease = null;
+					cachedNoRelease = true;
+					setRelease(null);
+					setNoReleaseAvailable(true);
+				} else {
+					cachedRelease = r as LatestRelease;
+					cachedNoRelease = false;
+					setRelease(cachedRelease);
+					setNoReleaseAvailable(false);
+				}
 			})
 			.catch((e: unknown) => {
 				if (cancelled) return;
@@ -85,8 +107,11 @@ export function useLatestRelease(): UseLatestReleaseResult {
 		release,
 		loading,
 		error,
+		noReleaseAvailable,
 		refetch: () => {
 			cachedRelease = null;
+			cachedNoRelease = false;
+			cachedAt = 0;
 			setNonce((n) => n + 1);
 		},
 	};
