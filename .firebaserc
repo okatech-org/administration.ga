@@ -7,13 +7,13 @@
     "admin-gabon": {
       "hosting": {
         "agent": [
-          "admin-gabon"
+          "administration-ga"
         ],
         "citizen": [
-          "admin-gabon-citizen"
+          "demarche-ga"
         ],
         "backoffice": [
-          "admin-gabon-backoffice"
+          "admin-gabon"
         ]
       }
     }
