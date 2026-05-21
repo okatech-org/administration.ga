@@ -80,7 +80,8 @@ function PlatformSection({
 
 export function DownloadsPageClient() {
 	const os = useUserAgentOS();
-	const { release, loading, error, refetch } = useLatestRelease();
+	const { release, loading, error, noReleaseAvailable, refetch } =
+		useLatestRelease();
 
 	const recommended =
 		release && os.platform !== "unknown"
@@ -144,6 +145,18 @@ export function DownloadsPageClient() {
 						<Button variant="outline" size="sm" onClick={refetch}>
 							Réessayer
 						</Button>
+					</div>
+				)}
+
+				{!loading && !error && noReleaseAvailable && (
+					<div className="rounded-2xl border border-border bg-muted/30 p-6 lg:p-8 text-center">
+						<div className="text-lg font-semibold">
+							Aucune version n'est encore disponible
+						</div>
+						<p className="mt-2 text-sm text-muted-foreground">
+							L'application desktop sera publiée prochainement. Revenez bientôt
+							pour télécharger la première version.
+						</p>
 					</div>
 				)}
 

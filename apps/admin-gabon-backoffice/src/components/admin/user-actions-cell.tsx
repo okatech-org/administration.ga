@@ -285,8 +285,8 @@ const DELETION_LABELS: Record<string, string> = {
   tickets: "Tickets support",
   messages: "Messages",
   pushSubscriptions: "Abonnements push",
-  consularRegistrations: "Inscriptions consulaires",
-  consularNotifications: "Signalements consulaires",
+  consularRegistrations: "Inscriptions administratives",
+  consularNotifications: "Signalements administratifs",
   printJobs: "Tâches d'impression",
 }
 

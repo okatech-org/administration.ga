@@ -5,9 +5,9 @@ import { buildMetadata } from "@/lib/seo"
 import FormulairesPageClient from "./formulaires-page-client"
 
 export const metadata: Metadata = buildMetadata({
-  title: "Formulaires consulaires à télécharger",
+  title: "Formulaires administratifs à télécharger",
   description:
-    "Téléchargez gratuitement les formulaires officiels du Consulat gabonais : demande de passeport, visa, transcription d'acte, inscription consulaire et bien d'autres.",
+    "Téléchargez gratuitement les formulaires officiels de l'administration gabonaise : demande de passeport, visa, transcription d'acte, inscription en ligne et bien d'autres.",
   path: "/formulaires",
 })
 

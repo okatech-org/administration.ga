@@ -65,7 +65,7 @@ interface PositionVacant {
 
 export function VacantPositionsView({ orgId }: VacantPositionsViewProps) {
   const { i18n } = useTranslation();
-  const lang = i18n.language === "fr" ? "fr" : "en";
+  const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [positionToAssign, setPositionToAssign] =
@@ -224,7 +224,7 @@ function AssignFromUnassignedDialog({
   onClose: () => void;
 }) {
   const { i18n } = useTranslation();
-  const lang = i18n.language === "fr" ? "fr" : "en";
+  const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
   const isOpen = position !== null;
   const [membershipId, setMembershipId] = useState<string>("");
 

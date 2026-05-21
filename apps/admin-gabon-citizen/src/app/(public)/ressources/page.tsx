@@ -36,7 +36,7 @@ export default async function RessourcesPage() {
         data={collectionPageSchema({
           name: "Ressources et guides pour la diaspora gabonaise",
           description:
-            "Guides, tutoriels et fiches pratiques pour les ressortissants gabonais à l'étranger : démarches consulaires, vie pratique, retour au Gabon, scolarité, entrepreneuriat.",
+            "Guides, tutoriels et fiches pratiques pour les citoyens et entreprises au Gabon : démarches administratives, vie pratique, retour au Gabon, scolarité, entrepreneuriat.",
           path: "/ressources",
           items: collectionItems,
         })}

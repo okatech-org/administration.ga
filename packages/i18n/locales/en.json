@@ -1,14 +1,14 @@
 {
   "heroCore": {
-    "badge": "Official Consular Platform of Gabon",
-    "title": "Your consular services",
+    "badge": "Official Administrative Platform of Gabon",
+    "title": "Your administrative services",
     "titleHighlight": "wherever you are",
-    "description": "Passport, civil status, consular protection... Complete your Gabonese administrative procedures online, 24/7, from any country.",
+    "description": "Passport, civil status, administrative assistance... Complete your Gabonese administrative procedures online, 24/7, from anywhere.",
     "cta": {
-      "register": "Register at the Consulate",
+      "register": "Register at the Administration",
       "access": "Access my space",
       "services": "Discover services",
-      "mySpace": "My consular space"
+      "mySpace": "My personal space"
     },
     "stats": {
       "representations": "representations",
@@ -18,23 +18,23 @@
   },
   "hero": {
     "badge": "Official Platform",
-    "title": "Consular Services of the",
+    "title": "Administrative Services of the",
     "titleHighlight": "Gabonese Republic",
-    "subtitle": "Your consulate, wherever you are in the world",
-    "description": "Access all your consular services online: passport, visa, civil status, consular registration and much more.",
+    "subtitle": "Your administration, wherever you are in the world",
+    "description": "Access all your administrative services online: passport, visa, civil status, online registration and much more.",
     "bookAppointment": "Book Appointment",
     "ourServices": "Our Services",
     "trackApplication": "Track Application",
-    "createSpace": "Create my consular space",
+    "createSpace": "Create my personal space",
     "accessSpace": "Access my space",
-    "emergencyLabel": "24/7 Consular Emergency",
+    "emergencyLabel": "24/7 Administrative Emergency",
     "quickAccess": {
       "news": "News",
       "newsDesc": "Latest updates",
       "services": "Services",
       "servicesDesc": "All our services",
       "directory": "Directory",
-      "directoryDesc": "Our consulates",
+      "directoryDesc": "Our administrations",
       "faq": "FAQ",
       "faqDesc": "Frequently asked questions"
     }
@@ -44,9 +44,9 @@
     "subtitle": "Access a personalized space based on your situation",
     "cta": "Access",
     "resident": {
-      "title": "Resident abroad",
+      "title": "Gabonese citizen",
       "subtitle": "Gabonese living outside the country (+6 months)",
-      "description": "Full consular registration, passport renewal, civil status documents, consular protection."
+      "description": "Full online registration, passport renewal, civil status documents, administrative assistance."
     },
     "passage": {
       "title": "Passing through abroad",
@@ -54,16 +54,16 @@
       "description": "Temporary declaration, emergency assistance, laissez-passer in case of lost documents."
     },
     "visitor": {
-      "title": "Visitor / Foreigner",
+      "title": "Foreign resident",
       "subtitle": "Wishing to travel to Gabon",
       "description": "Visa application, document legalization, information on entry to Gabon."
     }
   },
   "map": {
     "title": "Gabon's Representations Worldwide",
-    "subtitle": "Consulate, corps, our diplomatic network, accompanies you everywhere",
-    "embassy": "Embassy",
-    "consulate": "Consulate",
+    "subtitle": "Find the right administration for your procedures",
+    "ministry": "Ministry",
+    "administration": "Administration",
     "company": "Company",
     "association": "Association",
     "locationFound": "Location found!",
@@ -71,7 +71,7 @@
     "locationUnsupported": "Geolocation not supported.",
     "explore": "Explore the network",
     "stats": {
-      "representations": "Embassies & Consulates",
+      "representations": "Ministries & Administrations",
       "assistance": "Emergency Assistance"
     },
     "directions": "Directions",
@@ -90,7 +90,7 @@
     },
     "accessible": {
       "title": "Accessible",
-      "description": "Available 24/7, from any country"
+      "description": "Available 24/7, from anywhere"
     },
     "modern": {
       "title": "Modern",
@@ -98,16 +98,16 @@
     }
   },
   "cta": {
-    "title": "Join the consular community",
-    "subtitle": "Register for free and access all consular services from your secure personal space.",
-    "button": "Create my consular account"
+    "title": "Join the community of users",
+    "subtitle": "Register for free and access all administrative services from your secure personal space.",
+    "button": "Create my personal account"
   },
   "services": {
     "badge": "Our Services",
     "title": "Most requested services",
-    "pageTitle": "Consular Services",
-    "description": "Quick access to the most common consular procedures",
-    "pageDescription": "Discover all the services offered by the consular representations of the Gabonese Republic abroad.",
+    "pageTitle": "Administrative Services",
+    "description": "Quick access to the most common administrative procedures",
+    "pageDescription": "Discover all the services offered by the public administrations of the Gabonese Republic abroad.",
     "knowMore": "Learn more",
     "free": "Free",
     "filters": "Filters",
@@ -134,7 +134,7 @@
       "passport": "Passport",
       "visa": "Visa",
       "civil_status": "Civil Status",
-      "registration": "Consular Registration",
+      "registration": "Online Registration",
       "legalization": "Legalization",
       "transcript": "Transcript",
       "travel_document": "Travel Document",
@@ -154,7 +154,7 @@
     "availableCount_other": "{{count}} services available",
     "notFound": "Service not found",
     "notFoundDesc": "This service does not exist or is not available.",
-    "notAvailableAtOrg": "This service is not currently available at this consulate. Browse the other available services.",
+    "notAvailableAtOrg": "This service is not currently available at this administration. Browse the other available services.",
     "modal": {
       "eligibleBeneficiaries": "Eligible Beneficiaries",
       "citizens": "Gabonese Citizens",
@@ -165,7 +165,7 @@
       "importantInfo": "Important Information",
       "infoPoints": {
         "docs": "Documents must be originals or certified copies",
-        "delay": "Processing time is indicative and may vary by consulate",
+        "delay": "Processing time is indicative and may vary by administration",
         "identity": "Present yourself with a valid ID"
       },
       "formDownloaded": "Form Downloaded",
@@ -193,8 +193,8 @@
       "description": "Birth, marriage, death certificates. Transcription and legalization of documents."
     },
     "registration": {
-      "title": "Consular Registration",
-      "description": "Register in the registry of Gabonese nationals abroad. Stay informed and protected."
+      "title": "Online Registration",
+      "description": "Register in the registry of Gabonese citizens abroad. Stay informed and protected."
     },
     "legalization": {
       "title": "Legalization",
@@ -202,7 +202,7 @@
     },
     "emergency": {
       "title": "Emergency Assistance",
-      "description": "Consular assistance in emergencies: lost documents, difficulties abroad."
+      "description": "Administrative assistance in emergencies: lost documents, difficulties abroad."
     },
     "empty": "No services available at the moment.",
     "backToServices": "Back to services",
@@ -213,20 +213,20 @@
     "notAvailableOnlineDesc": "This service requires an in-person visit.",
     "notAvailableOnlineTitle": "Not available online"
   },
-  "consulates": {
+  "administrations": {
     "badge": "Our Representations",
-    "title": "Gabonese Consulates Worldwide",
-    "description": "Find the nearest Gabonese consulate to carry out your administrative procedures.",
+    "title": "Gabonese Administrations Worldwide",
+    "description": "Find the nearest Gabonese administration to carry out your administrative procedures.",
     "headquarters": "Headquarters",
     "viewDetails": "View details",
-    "viewAll": "View All Consulates",
-    "embassy": "Embassy",
+    "viewAll": "View All Administrations",
+    "ministry": "Ministry",
     "empty": "No representations available."
   },
   "orgs": {
-    "pageTitle": "World Network",
-    "pageDescription": "Find all the diplomatic and consular representations of the Gabonese Republic around the world.",
-    "searchPlaceholder": "Search for an embassy, a consulate, a city...",
+    "pageTitle": "Administrations directory",
+    "pageDescription": "Find all the administrative and public administrations of the Gabonese Republic around the world.",
+    "searchPlaceholder": "Search for an ministry, a administration, a city...",
     "noResults": "No results found",
     "noResultsDesc": "Try adjusting your search.",
     "viewAll": "View all representations",
@@ -246,7 +246,7 @@
     "closed": "Closed",
     "noContact": "No contact information available.",
     "discoverServices": "Discover our services",
-    "servicesDesc": "See the list of available consular services.",
+    "servicesDesc": "See the list of available administrative services.",
     "viewServices": "View services",
     "continents": {
       "africa": "Africa",
@@ -256,10 +256,10 @@
       "middle_east": "Middle East"
     },
     "type": {
-      "embassy": "Embassy",
-      "generalConsulate": "General Consulate",
-      "consulate": "Consulate",
-      "honoraryConsulate": "Honorary Consulate",
+      "ministry": "Ministry",
+      "generalAdministration": "General Administration",
+      "administration": "Administration",
+      "honoraryAdministration": "Honorary Administration",
       "highCommission": "High Commission",
       "permanentMission": "Permanent Mission",
       "thirdParty": "Third-Party Partner"
@@ -269,7 +269,7 @@
   "citizenCta": {
     "badge": "Citizen Account",
     "title": "Create Your Gabonese Citizen Account",
-    "description": "A single account to access all online consular services. Simplify your administrative procedures wherever you are in the world.",
+    "description": "A single account to access all online administrative services. Simplify your administrative procedures wherever you are in the world.",
     "createAccount": "Create my account",
     "existingAccount": "I already have an account",
     "benefits": {
@@ -288,7 +288,7 @@
     },
     "stats": {
       "citizens": "Registered citizens",
-      "consulates": "Connected consulates",
+      "administrations": "Connected administrations",
       "satisfaction": "Satisfaction",
       "availability": "Availability"
     },
@@ -298,17 +298,17 @@
   "footer": {
     "brand": {
       "name": "Consulat.ga",
-      "description": "Official platform for consular services of the Gabonese Republic worldwide."
+      "description": "Official platform for administrative services of the Gabonese Republic worldwide."
     },
     "officialLinks": {
       "title": "Platform",
-      "ministry": "Consular services",
-      "embassy": "World network",
-      "consular": "News"
+      "ministry": "Administrative services",
+      "ministry": "World network",
+      "administrative": "News"
     },
     "contact": {
       "title": "Contact",
-      "email": "Email: contact@consulat.ga",
+      "email": "Email: contact@administration.ga",
       "phone": "",
       "license": ""
     },
@@ -326,7 +326,7 @@
     "nav": {
       "home": "Home",
       "news": "News",
-      "consulates": "Consulates",
+      "administrations": "Administrations",
       "faq": "FAQ",
       "contact": "Contact",
       "services": "Services",
@@ -366,18 +366,18 @@
     "switchToCitizen": "Citizen Space"
   },
   "mySpace": {
-    "title": "My Consular Space",
+    "title": "My Personal Space",
     "syncing": "Syncing your account...",
     "noProfile": {
       "title": "Profile not found",
-      "message": "You don't have a profile yet. We're redirecting you to the consular registration area to complete your profile and register.",
+      "message": "You don't have a profile yet. We're redirecting you to the online registration area to complete your profile and register.",
       "countdown": "Redirecting in {{seconds}}s...",
       "createProfile": "Create my citizen profile"
     },
     "screens": {
       "services": {
         "heading": "Services & Procedures",
-        "subtitle": "Discover and initiate your consular procedures",
+        "subtitle": "Discover and initiate your administrative procedures",
         "searchPlaceholder": "Search for a service, document or procedure...",
         "trackRequests": "Track my requests",
         "noResults": "No service found",
@@ -388,13 +388,13 @@
       },
       "iboite": {
         "heading": "iBox",
-        "subtitle": "Your secure consular mailbox",
+        "subtitle": "Your secure administrative mailbox",
         "comingSoon": "Feature coming soon",
-        "description": "iBox will allow you to communicate securely with your consulate, receive important notifications, and manage your official correspondence."
+        "description": "iBox will allow you to communicate securely with your administration, receive important notifications, and manage your official correspondence."
       },
       "appointments": {
         "heading": "My Appointments",
-        "subtitle": "Manage your consular appointments"
+        "subtitle": "Manage your administrative appointments"
       },
       "notifications": {
         "heading": "Notifications",
@@ -434,26 +434,26 @@
       "sectionTutor": "Tutor"
     },
     "registration": {
-      "cta": "Complete my consular registration",
+      "cta": "Complete my online registration",
       "dialog": {
-        "title": "Consular registration",
-        "checking": "Looking for your assigned consular office...",
-        "orgFound": "Consular office found",
-        "readyDescription": "A consular office has been found for your country of residence.",
-        "confirmQuestion": "Would you like to send your consular registration request to this office?",
+        "title": "Administrative registration",
+        "checking": "Looking for your assigned administrative office...",
+        "orgFound": "Administrative office found",
+        "readyDescription": "A administrative office has been found for your country of residence.",
+        "confirmQuestion": "Would you like to send your online registration request to this office?",
         "send": "Send my request",
         "submitting": "Sending your request...",
         "success": "Request sent!",
         "foundDescription": "Your request has been sent to {{orgName}}",
         "reference": "Reference",
         "confirm": "Close",
-        "notFound": "No consular office available",
-        "notFoundDescription": "No consular office currently offers this service online for your country of residence. Please try again later.",
+        "notFound": "No administrative office available",
+        "notFoundDescription": "No administrative office currently offers this service online for your country of residence. Please try again later.",
         "retry": "Try again later",
         "retryNow": "Retry",
         "alreadyInProgress": {
           "title": "You already have a request in progress",
-          "description": "A consular registration request is currently being processed by {{orgName}}.",
+          "description": "A online registration request is currently being processed by {{orgName}}.",
           "viewRequest": "View my request"
         }
       }
@@ -461,20 +461,20 @@
     "notification": {
       "cta": "Report my presence",
       "dialog": {
-        "title": "Consular Notification",
-        "description": "Report your temporary travel to the appropriate consulate.",
+        "title": "Administrative Notification",
+        "description": "Report your temporary travel to the appropriate administration.",
         "selectCountry": "Which country are you traveling to?",
         "countryPlaceholder": "Select destination country",
-        "searching": "Searching for the appropriate consulate...",
-        "orgFound": "Appropriate consulate found",
-        "confirmMessage": "Do you confirm you want to report your presence to this consulate?",
+        "searching": "Searching for the appropriate administration...",
+        "orgFound": "Appropriate administration found",
+        "confirmMessage": "Do you confirm you want to report your presence to this administration?",
         "confirm": "Confirm notification",
         "submitting": "Sending your notification...",
         "success": "Notification sent successfully!",
-        "successOrg": "Consulate: {{orgName}}",
+        "successOrg": "Administration: {{orgName}}",
         "reference": "Reference",
         "notApplicable": "Notification is not available for your profile.",
-        "notFound": "No consulate found for this destination country.",
+        "notFound": "No administration found for this destination country.",
         "unknownError": "An unknown error occurred.",
         "submissionFailed": "Submission failed.",
         "unexpectedError": "Unexpected error.",
@@ -486,8 +486,8 @@
         }
       }
     },
-    "consularCard": {
-      "title": "Consular Card",
+    "administrativeCard": {
+      "title": "Administrative Card",
       "active": "Active",
       "validUntil": "Valid until",
       "viewCard": "View card",
@@ -500,10 +500,10 @@
       "pending": "Pending",
       "notIssued": "Not issued",
       "request": "Request",
-      "expiredDesc": "Your consular card has expired",
-      "notEligible": "Reserved for Gabonese nationals",
+      "expiredDesc": "Your administrative card has expired",
+      "notEligible": "Reserved for Gabonese citizens",
       "pendingDesc": "Request being processed",
-      "noCardYet": "You don't have a consular card yet"
+      "noCardYet": "You don't have a administrative card yet"
     },
     "header": {
       "managedBy": "Managed by"
@@ -542,9 +542,9 @@
       "noAuthentication": "Authentication required",
       "pleaseSignIn": "Please sign in to access your space.",
       "welcomeBack": "Welcome back",
-      "accessAccount": "Access your consular services account",
+      "accessAccount": "Access your administrative services account",
       "createAccount": "Create an account",
-      "joinPlatform": "Join the consular services platform",
+      "joinPlatform": "Join the administrative services platform",
       "signInFailed": "Sign in failed. Please check your credentials.",
       "signUpFailed": "Sign up failed. Please try again.",
       "noAccount": "Don't have an account yet?",
@@ -897,13 +897,13 @@
         "users": "Users",
         "totalUsers": "Total registered users",
         "organizations": "Organizations",
-        "consulatesEmbassies": "Consulates and embassies",
+        "administrationsMinistries": "Administrations and ministries",
         "services": "Services",
         "availableServices": "Available services",
         "requests": "Requests",
         "pendingRequests": "Total requests",
         "registrations": "Registrations",
-        "totalRegistrations": "Consular registrations"
+        "totalRegistrations": "Administrative registrations"
       },
       "recentActivity": "Recent Activity",
       "recentActivityDesc": "Latest actions on the platform",
@@ -918,13 +918,13 @@
       "addOrg": "Add Organization",
       "addService": "Add Service",
       "viewLogs": "View Logs",
-      "kpiSection": "Diplomatic network key indicators",
+      "kpiSection": "Administrative network key indicators",
       "kpi": {
         "userHint": "active accounts",
-        "orgHint": "embassies & consulates",
+        "orgHint": "ministries & administrations",
         "orgRate": "{{rate}}% activated",
         "requestsHint": "{{count}} pending",
-        "registrationsHint": "consular registry",
+        "registrationsHint": "administrative registry",
         "associations": "Associations",
         "associationsHint": "diaspora & companies",
         "companiesFallback": "{{count}} companies",
@@ -932,13 +932,13 @@
       },
       "sections": {
         "pipeline": "Processing pipeline",
-        "pipelineHint": "Requests distribution by consular workflow stage",
+        "pipelineHint": "Requests distribution by administrative workflow stage",
         "performance": "Overall performance",
         "performanceHint": "Request resolution rate",
         "resolution": "Resolution rate",
         "resolutionSub": "{{done}} completed out of {{total}}",
         "requestsByStatusHint": "Donut breakdown of {{count}} cases",
-        "registrations": "Consular registrations",
+        "registrations": "Administrative registrations",
         "registrationsHint": "Registry status · {{count}} cases",
         "alerts": "Alerts & events",
         "alertsHint_one": "{{count}} notification to review",
@@ -1036,7 +1036,7 @@
       "dashboard": "Dashboard",
       "organizations": "Representations",
       "users": "Users",
-      "services": "Consular services",
+      "services": "Administrative services",
       "requests": "All requests",
       "roles": "Roles & permissions",
       "auditLogs": "Audit logs",
@@ -1275,8 +1275,8 @@
       }
     },
     "organizations": {
-      "title": "Diplomatic Representations",
-      "description": "Manage consulates, embassies, and diplomatic representations",
+      "title": "Administrative Representations",
+      "description": "Manage administrations, ministries, and administrative representations",
       "columns": {
         "logo": "Logo",
         "name": "Name",
@@ -1290,8 +1290,8 @@
         "actions": "Actions"
       },
       "types": {
-        "consulate": "Consulate",
-        "embassy": "Embassy",
+        "administration": "Administration",
+        "ministry": "Ministry",
         "ministry": "Ministry",
         "other": "Other"
       },
@@ -1312,7 +1312,7 @@
         "create": "New Representation",
         "edit": "Edit Representation",
         "name": "Name",
-        "namePlaceholder": "e.g. Consulate of Gabon in Paris",
+        "namePlaceholder": "e.g. Administration of Gabon in Paris",
         "slug": "Slug",
         "slugPlaceholder": "e.g. gabon-paris",
         "slugHelp": "URL-friendly identifier (auto-generated from name)",
@@ -1561,9 +1561,9 @@
       }
     },
     "types": {
-      "consulate": "Consulate",
-      "general_consulate": "General Consulate",
-      "embassy": "Embassy",
+      "administration": "Administration",
+      "general_administration": "General Administration",
+      "ministry": "Ministry",
       "ministry": "Ministry",
       "other": "Other"
     },
@@ -1891,7 +1891,7 @@
       "removeError": "Removal error",
       "roles": {
         "admin": "Administrator",
-        "agent": "Consular Agent",
+        "agent": "Administrative Agent",
         "viewer": "Viewer"
       },
       "addDialog": {
@@ -2239,7 +2239,7 @@
         "roleLabel": "Role in organization",
         "roles": {
           "admin": "Administrator",
-          "agent": "Consular Agent",
+          "agent": "Administrative Agent",
           "viewer": "Viewer"
         },
         "cancel": "Cancel",
@@ -2258,9 +2258,9 @@
         "error": "Error"
       }
     },
-    "consularRegistry": {
-      "title": "Consular Records",
-      "description": "Management of consular registrations and cards",
+    "administrativeRegistry": {
+      "title": "Administrative Records",
+      "description": "Management of online registrations and cards",
       "printQueue": "Print Queue",
       "tabs": {
         "all": "All",
@@ -2269,7 +2269,7 @@
       },
       "notificationsTable": {
         "title": "Notification Record",
-        "description": "Short-stay declarations (signalements) at the consulate",
+        "description": "Short-stay declarations (signalements) at the administration",
         "searchPlaceholder": "Search...",
         "statusPlaceholder": "Status",
         "columns": {
@@ -2294,7 +2294,7 @@
       },
       "table": {
         "title": "Registration Record",
-        "description": "List of citizens registered at the consulate",
+        "description": "List of citizens registered at the administration",
         "searchPlaceholder": "Search...",
         "statusPlaceholder": "Status",
         "columns": {
@@ -2334,11 +2334,11 @@
         "print": "Print"
       },
       "cardDialog": {
-        "title": "Generate Consular Card",
-        "description": "You are about to generate a consular card for <strong>{{name}}</strong>. This action is irreversible.",
+        "title": "Generate Administrative Card",
+        "description": "You are about to generate a administrative card for <strong>{{name}}</strong>. This action is irreversible.",
         "cancel": "Cancel",
         "confirm": "Generate Card",
-        "success": "Consular card generated",
+        "success": "Administrative card generated",
         "successDescription": "Number: {{cardNumber}}",
         "error": "Error",
         "errorGeneric": "Error generating card"
@@ -2382,10 +2382,10 @@
       "updateSuccess": "Settings updated",
       "updateError": "Update error",
       "orgTypes": {
-        "consulate": "Consulate",
-        "consulateGeneral": "Consulate General",
-        "embassy": "Embassy",
-        "honoraryConsulate": "Honorary Consulate",
+        "administration": "Administration",
+        "administrationGeneral": "Administration General",
+        "ministry": "Ministry",
+        "honoraryAdministration": "Honorary Administration",
         "ministry": "Ministry",
         "other": "Other"
       },
@@ -2473,28 +2473,28 @@
   "register": {
     "hero": {
       "title": "The Gabonese State at your fingertips",
-      "subtitle": "An online, digital, and augmented consular service to simplify your administrative procedures."
+      "subtitle": "An online, digital, and augmented administrative service to simplify your administrative procedures."
     },
     "backToProfile": "← Change profile",
     "alreadyRegistered": "You are already registered with this organization",
     "selectProfile": {
-      "title": "Welcome to the Consular Portal",
+      "title": "Welcome to the Administrative Portal",
       "subtitle": "Please select your profile to start registration"
     },
     "profiles": {
       "resident": {
         "title": "Overseas Resident",
         "description": "Gabonese citizen living abroad for over 6 months",
-        "feature1": "Full consular registration",
+        "feature1": "Full online registration",
         "feature2": "Passport renewal",
         "feature3": "Civil status documents",
-        "feature4": "Consular card"
+        "feature4": "Administrative card"
       },
       "passage": {
         "title": "Short-term visitor",
         "description": "Gabonese citizen abroad for less than 6 months",
         "feature1": "Travel declaration",
-        "feature2": "Consular assistance",
+        "feature2": "Administrative assistance",
         "feature3": "Emergency travel document"
       },
       "foreigner": {
@@ -2551,7 +2551,7 @@
     },
     "foreigner": {
       "title": "Foreign User Registration",
-      "subtitle": "Complete your profile to access consular services",
+      "subtitle": "Complete your profile to access administrative services",
       "step0": {
         "title": "Create your account"
       },
@@ -2586,7 +2586,7 @@
       "submit": "Save my profile",
       "purpose": {
         "title": "Purpose of Stay",
-        "description": "Select the reason for your request to the consulate",
+        "description": "Select the reason for your request to the administration",
         "tourism": {
           "title": "Tourism Visa",
           "description": "Short-term tourist stay",
@@ -2639,14 +2639,14 @@
       "title": "Request sent!",
       "reference": "Reference",
       "profileCreated": "Profile created successfully!",
-      "profileCreatedDesc": "Your profile has been saved. You can now access your consular space.",
+      "profileCreatedDesc": "Your profile has been saved. You can now access your personal space.",
       "goToSpace": "Go to My Space",
       "description": "Your request will be processed by {{orgName}}"
     },
     "noOrg": {
       "title": "Profile created",
       "goToSpace": "Go to My Space",
-      "description": "Your profile has been created, but no consular organization is configured for your country of residence ({{country}}). You can submit your registration request later."
+      "description": "Your profile has been created, but no administrative organization is configured for your country of residence ({{country}}). You can submit your registration request later."
     },
     "error": {
       "title": "An error occurred",
@@ -2671,7 +2671,7 @@
       "contact": "Contact details",
       "address": "Residential address",
       "family": "Family situation",
-      "description": "Your application will be sent to the consular service for validation. You will receive a notification as soon as your status changes.",
+      "description": "Your application will be sent to the administrative service for validation. You will receive a notification as soon as your status changes.",
       "emergencyResidence": "Emergency contact (residence)",
       "emergencyHomeland": "Emergency contact (homeland)",
       "profession": "Professional situation"
@@ -2810,8 +2810,8 @@
       "security": "Security"
     },
     "dossier": {
-      "title": "My Consular File",
-      "description": "Manage your personal information and consular documents.",
+      "title": "My Administrative File",
+      "description": "Manage your personal information and administrative documents.",
       "noChanges": "No changes detected.",
       "saveError": "Error saving changes.",
       "familyDesc": "Family status and parentage",
@@ -2885,8 +2885,8 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "consularTheme": {
-      "title": "Consular space theme",
+    "administrativeTheme": {
+      "title": "Administrative space theme",
       "description": "Choose the visual style of your space.",
       "default": "Classic",
       "defaultDesc": "Flat and modern style",
@@ -2948,7 +2948,7 @@
     },
     "groups": {
       "account": "Account",
-      "myDossier": "Consular file",
+      "myDossier": "Administrative file",
       "mySpace": "My space"
     }
   },
@@ -3002,10 +3002,10 @@
         "openingHours": "Opening hours",
         "callOrg": "Call organization",
         "callAction": {
-          "embassy": "Contact the embassy",
-          "general_consulate": "Contact the consulate general",
-          "consulate": "Contact the consulate",
-          "honorary_consulate": "Contact the honorary consulate",
+          "ministry": "Contact the ministry",
+          "general_administration": "Contact the administration general",
+          "administration": "Contact the administration",
+          "honorary_administration": "Contact the honorary administration",
           "high_commission": "Contact the high commission",
           "permanent_mission": "Contact the permanent mission",
           "third_party": "Contact the partner",
@@ -3465,7 +3465,7 @@
     },
     "backToDashboard": "Back to dashboard",
     "labels": {
-      "consulateOrEmbassy": "Consulate / Embassy",
+      "administrationOrMinistry": "Administration / Ministry",
       "selectPlaceholder": "Select..."
     },
     "jurisdiction": {
@@ -3475,11 +3475,11 @@
     "status": {
       "dateRequested": "Request date:",
       "number": "Number:",
-      "fallbackOrg": "Consulate"
+      "fallbackOrg": "Administration"
     },
-    "title": "Consular Registration",
+    "title": "Online Registration",
     "requestTitle": "Registration Request",
-    "desc": "Select the consulate or embassy in your jurisdiction to register.",
+    "desc": "Select the administration or ministry in your jurisdiction to register.",
     "selectOrg": "Choose Organization",
     "submit": "Send Request",
     "success": "Request sent successfully",
@@ -3497,7 +3497,7 @@
   },
   "onboarding": {
     "welcome": {
-      "title": "Welcome to the Consular Portal",
+      "title": "Welcome to the Administrative Portal",
       "subtitle": "Select your profile to start the registration. The process takes about 10 minutes — under 3 minutes with AI pre-fill."
     },
     "profileSelector": {
@@ -3527,13 +3527,13 @@
       },
       "profiles": {
         "long_stay": {
-          "title": "Resident abroad",
+          "title": "Gabonese citizen",
           "subtitle": "Gabonese citizens residing abroad for more than 6 months",
           "benefits": {
-            "0": "Complete consular registration",
+            "0": "Complete online registration",
             "1": "Passport renewal",
             "2": "Civil status documents",
-            "3": "Consular card"
+            "3": "Administrative card"
           }
         },
         "short_stay": {
@@ -3541,7 +3541,7 @@
           "subtitle": "Gabonese citizens abroad for less than 6 months",
           "benefits": {
             "0": "Short-stay declaration",
-            "1": "Consular assistance",
+            "1": "Administrative assistance",
             "2": "Emergency travel document"
           }
         },
@@ -3593,7 +3593,7 @@
         "review": "Review"
       },
       "profileTitles": {
-        "long_stay": "Consular registration — Resident",
+        "long_stay": "Administrative registration — Resident",
         "short_stay": "Declaration — Short stay",
         "visa_tourism": "Visa application — Tourism",
         "visa_business": "Visa application — Business",
@@ -3640,7 +3640,7 @@
       }
     },
     "profileLabels": {
-      "long_stay": "Resident abroad",
+      "long_stay": "Gabonese citizen",
       "short_stay": "Short stay",
       "visa_tourism": "Tourism visa",
       "visa_business": "Business visa",
@@ -3649,7 +3649,7 @@
     },
     "submitted": {
       "title": "File sent",
-      "description": "Your file has been transmitted to the consular service. You will receive an email notification as soon as it is processed.",
+      "description": "Your file has been transmitted to the administrative service. You will receive an email notification as soon as it is processed.",
       "refLabel": "File reference",
       "refHelp": "Keep this reference to track the progress of your application in your personal space.",
       "cta": "Go to my space"
@@ -3740,7 +3740,7 @@
     "identity": {
       "name": {
         "title": "Hello, what is your name?",
-        "subtitle": "This information will appear on your consular file. It must match your passport.",
+        "subtitle": "This information will appear on your administrative file. It must match your passport.",
         "firstName": "First name",
         "firstNamePlaceholder": "Your first name",
         "lastName": "Last name",
@@ -3771,7 +3771,7 @@
       },
       "password": {
         "title": "Create your password",
-        "subtitle": "It will secure access to your consular space. Choose a strong one, you will use it for every login.",
+        "subtitle": "It will secure access to your personal space. Choose a strong one, you will use it for every login.",
         "label": "Password",
         "placeholder": "••••••••••",
         "toggleShow": "Show password",
@@ -3815,7 +3815,7 @@
         "syncingTitle": "Creating your space…",
         "syncingDescription": "We are syncing your account. This will only take a few seconds.",
         "preparingTitle": "Preparing your account…",
-        "preparingDescription": "We're creating your consular account and sending you an email verification code.",
+        "preparingDescription": "We're creating your personal account and sending you an email verification code.",
         "resendIn": "Resend code in",
         "sending": "Sending…",
         "resend": "Resend code",
@@ -3991,7 +3991,7 @@
       "formatLine": "{{formats}} · max {{max}}",
       "formatLineWithHint": "{{formats}} · max {{max}} · {{hint}}",
       "tooLarge": "The file exceeds the maximum size ({{max}}).",
-      "footer": "Your documents are stored encrypted and accessible only by authorised consular agents.",
+      "footer": "Your documents are stored encrypted and accessible only by authorised administrative agents.",
       "errorsSummary": "Please provide all required documents before continuing."
     },
     "review": {
@@ -3999,7 +3999,7 @@
       "subtitle": "Carefully review the information before submitting your file.",
       "banner": {
         "strong": "Ready to submit.",
-        "text": "Your file will be transmitted to the consular service for validation. You will receive a notification as soon as your status changes."
+        "text": "Your file will be transmitted to the administrative service for validation. You will receive a notification as soon as your status changes."
       },
       "editAction": "Edit",
       "sections": {
@@ -4356,15 +4356,15 @@
   "information": {
     "badge": "Information",
     "title": "Information Center",
-    "subtitle": "Find all the essential information for your consular procedures, practical life, and education.",
+    "subtitle": "Find all the essential information for your administrative procedures, practical life, and education.",
     "seeMore": "Learn more",
     "categories": {
       "administrative": {
         "title": "Administrative Services",
-        "description": "Passports, civil status, consular registrations, and official procedures.",
+        "description": "Passports, civil status, online registrations, and official procedures.",
         "items": {
           "1": "Passport application and renewal",
-          "2": "Consular registration",
+          "2": "Administrative registration",
           "3": "Civil status documents and legalizations"
         }
       },
@@ -4390,7 +4390,7 @@
     "quickLinks": {
       "title": "Quick Access",
       "passport": "Passport",
-      "registration": "Consular Registration",
+      "registration": "Online Registration",
       "civil_status": "Civil Status",
       "visa": "Visa"
     }
@@ -4445,7 +4445,7 @@
     },
     "map": {
       "title": "Discover the interactive map",
-      "description": "Find Gabonese diplomatic representations, businesses, and associations around the world.",
+      "description": "Find Gabonese administrative representations, businesses, and associations around the world.",
       "cta": "Open the map"
     }
   },
@@ -4524,14 +4524,14 @@
       "filterOrgs": "Organizations",
       "filterAssocs": "Associations",
       "filterCompanies": "Companies",
-      "filterDiplomatic": "Diplomatic posts",
+      "filterAdministrative": "Administrative posts",
       "noResults": "No results.",
       "message": "Message",
       "badgeStandard": "Standard",
       "badgeDirect": "Direct",
       "suggestedContacts": "Suggested contacts",
       "sectionRepresentations": "Representations",
-      "sectionMembers": "Diplomatic staff",
+      "sectionMembers": "Administrative staff",
       "sectionOther": "Other contacts",
       "attachments": "Attachments",
       "dropFiles": "Drop files or click to browse"
@@ -4991,7 +4991,7 @@
     "nav": {
       "dashboard": "Dashboard",
       "requests": "Requests",
-      "consularRegistry": "Consular Registry",
+      "administrativeRegistry": "Administrative Registry",
       "appointments": "Appointments",
       "statistics": "Statistics",
       "posts": "News",
@@ -5063,9 +5063,9 @@
         "addTitle": "Add position",
         "addDescription": "Create a new position in this organization's hierarchy.",
         "titleLabel": "Position title",
-        "titlePlaceholder": "e.g. Consular Agent",
+        "titlePlaceholder": "e.g. Administrative Agent",
         "codeLabel": "Technical code",
-        "codePlaceholder": "e.g. consular_agent",
+        "codePlaceholder": "e.g. administrative_agent",
         "codeHint": "Unique identifier within the organization",
         "descriptionLabel": "Description",
         "descriptionPlaceholder": "Position description (optional)",
@@ -5082,7 +5082,7 @@
         "addTitle": "Add department",
         "addDescription": "Create a new department or service to organize positions.",
         "name": "Department name",
-        "namePlaceholder": "e.g. Consular Affairs Department",
+        "namePlaceholder": "e.g. Administrative Affairs Department",
         "code": "Code",
         "codePlaceholder": "e.g. cad",
         "icon": "Icon",
@@ -5199,7 +5199,7 @@
     }
   },
   "nearbyOrgs": {
-    "title": "Nearby consulates",
+    "title": "Nearby administrations",
     "viewAll": "View all"
   },
   "templates": {
@@ -5676,7 +5676,7 @@
       "seeAll": "View all resources",
       "title": "Guides tailored to your situation"
     },
-    "diplomaticNetwork": "Diplomatic Network",
+    "administrativeNetwork": "Administrative Network",
     "continents": {
       "all": "All"
     }
@@ -6011,13 +6011,13 @@
     "empty": "No scheduled appointments.",
     "cancel": "Cancel",
     "past": "Past",
-    "consularAppointment": "Consular appointment",
+    "administrativeAppointment": "Administrative appointment",
     "cancelConfirmTitle": "Cancel this appointment?",
     "cancelConfirmDesc": "This action is irreversible. You will need to book a new appointment.",
     "confirmCancel": "Confirm cancellation",
     "new": {
       "title": "New appointment",
-      "subtitle": "Schedule an appointment for your consular procedure",
+      "subtitle": "Schedule an appointment for your administrative procedure",
       "selectRequest": "Select a request",
       "selectRequestDesc": "Choose the request for which you would like to book an appointment.",
       "noEligibleRequests": "No eligible requests for an appointment.",
@@ -6048,7 +6048,7 @@
   },
   "children": {
     "title": "My Children",
-    "subtitle": "Manage your children's consular records",
+    "subtitle": "Manage your children's administrative records",
     "backToList": "My children",
     "switchTo": "View another child",
     "add": {
@@ -6086,7 +6086,7 @@
       "yearsOld": "{{count}} years old",
       "bornIn": "Born in",
       "residesIn": "Lives in",
-      "consularCard": "Consular Card",
+      "administrativeCard": "Administrative Card",
       "expired": "Expired",
       "active": "Active",
       "validUntil": "Valid until",
@@ -6098,8 +6098,8 @@
       "passportExpired": "Expired",
       "passportExpiring": "Expiring soon",
       "noPassport": "No passport information",
-      "consularRegistration": "Consular registration",
-      "notConsularRegistered": "Child not registered in the consular registry",
+      "administrativeRegistration": "Administrative registration",
+      "notAdministrativeRegistered": "Child not registered in the administrative registry",
       "documents": "Documents",
       "missing": "Missing",
       "actions": "Actions",
@@ -6251,7 +6251,7 @@
     },
     "ticketCategory": {
       "technical": "Technical issue",
-      "service": "Consular service",
+      "service": "Administrative service",
       "information": "Information request",
       "feedback": "Feedback / Suggestion",
       "other": "Other"
@@ -6276,7 +6276,7 @@
     },
     "ticketCategory": {
       "technical": "Technical issue",
-      "service": "Consular service",
+      "service": "Administrative service",
       "information": "Information request",
       "feedback": "Feedback / Suggestion",
       "other": "Other"
@@ -6389,13 +6389,13 @@
     "hero": {
       "badge": "Agent Portal — Exclusive",
       "title": "The",
-      "titleGradient": "Diplomatic",
-      "titleSuffix": "& Consular Doctrine.",
-      "description": "Build, represent, and assist. In accordance with the Vienna Conventions, this digital space modernizes the sovereign mission of Gabonese diplomatic and consular personnel worldwide.",
+      "titleGradient": "Administrative",
+      "titleSuffix": "& Administrative Doctrine.",
+      "description": "Build, represent, and assist. In accordance with the Vienna Conventions, this digital space modernizes the sovereign mission of Gabonese administrative and administrative personnel worldwide.",
       "stats": {
         "missions": {
           "value": "40+",
-          "label": "Diplomatic missions"
+          "label": "Administrative missions"
         },
         "agents": {
           "value": "180+",
@@ -6419,28 +6419,28 @@
           "description": "In accordance with the Vienna Convention (1961), the Correspondence module secures your exchanges (verbal notes, memoranda) to the receiving State or Central authority."
         },
         {
-          "title": "Consular Protection",
+          "title": "Administrative Assistance",
           "description": "The management of requests and registrations (Vienna Convention, 1963) ensures rapid protection and assistance to our nationals in distress."
         },
         {
           "title": "Archive Inviolability",
-          "description": "iDocument and iArchive transform the diplomatic pouch into an inviolable digital vault, guaranteeing the secrecy of missions."
+          "description": "iDocument and iArchive transform the administrative pouch into an inviolable digital vault, guaranteeing the secrecy of missions."
         }
       ]
     },
     "values": {
       "feature1": {
         "title": "Administration Modernization",
-        "p1": "The transition to this portal meets the requirement of a modern, agile and responsive administration. Diplomatic personnel are no longer hampered by physical bureaucratic burdens. Each document is digitized, tracked, and approved through a clear hierarchical chain.",
+        "p1": "The transition to this portal meets the requirement of a modern, agile and responsive administration. Administrative personnel are no longer hampered by physical bureaucratic burdens. Each document is digitized, tracked, and approved through a clear hierarchical chain.",
         "p2": "The development of friendly, cultural and economic relations requires responsiveness: this is the fundamental function of the integrated agenda and communication modules."
       },
       "feature2": {
-        "title": "The Consular Division",
-        "description": "Issuance of visas, passport renewal, establishment of civil status documents: consular posts are the primary showcase of the Gabonese State. Digitization enables accelerated delivery.",
+        "title": "The Administrative Division",
+        "description": "Issuance of visas, passport renewal, establishment of civil status documents: administrative posts are the primary showcase of the Gabonese State. Digitization enables accelerated delivery.",
         "points": [
           "Registration of resident citizens",
           "Rapid document legalization",
-          "Organization of diplomatic and courtesy visas"
+          "Organization of administrative and courtesy visas"
         ]
       }
     },
@@ -6453,9 +6453,9 @@
         "atouts": "Platform Strengths"
       },
       "overview": {
-        "description": "Diplomate.ga is the digital extension of obligations arising from the Vienna Conventions. Each module addresses a specific article, ensuring full legal compliance of Gabonese diplomatic and consular operations.",
+        "description": "Diplomate.ga is the digital extension of obligations arising from the Vienna Conventions. Each module addresses a specific article, ensuring full legal compliance of Gabonese administrative and administrative operations.",
         "conventionsTitle": "Vienna Conventions",
-        "conventionsDesc": "Founding texts of international diplomatic and consular law",
+        "conventionsDesc": "Founding texts of international administrative and administrative law",
         "atoutsTitle": "Platform Strengths",
         "atoutsDesc": "How each module implements the requirements of the Conventions",
         "explore": "Explore →",
@@ -6491,8 +6491,8 @@
       },
       "nav": {
         "dashboard": "Dashboard",
-        "diplomaticAffairs": "Diplomatic Affairs",
-        "consularAffairs": "Consular Affairs",
+        "administrativeAffairs": "Administrative Affairs",
+        "administrativeAffairs": "Administrative Affairs",
         "news": "News",
         "iBoite": "iBoîte",
         "iCorrespondance": "iCorrespondance",
@@ -6513,15 +6513,15 @@
         "calls": "Calls",
         "meetings": "Meetings"
       },
-      "brand": "Consular Agent Portal",
+      "brand": "Administrative Agent Portal",
       "logout": "Sign out"
     },
-    "consularAffairs": {
-      "title": "Consular Affairs",
-      "subtitle": "Manage requests, registry, appointments and consular services",
+    "administrativeAffairs": {
+      "title": "Administrative Affairs",
+      "subtitle": "Manage requests, registry, appointments and administrative services",
       "tabs": {
         "requests": "Requests",
-        "registry": "Consular Registry",
+        "registry": "Administrative Registry",
         "appointments": "Appointments",
         "services": "Services"
       },
@@ -6533,7 +6533,7 @@
         "date": "Date",
         "loadMore": "Load more…",
         "empty": "No requests",
-        "emptyDesc": "Consular requests will appear here."
+        "emptyDesc": "Administrative requests will appear here."
       },
       "registry": {
         "name": "Name",
@@ -6541,7 +6541,7 @@
         "status": "Status",
         "date": "Date",
         "empty": "No registrations",
-        "emptyDesc": "Consular registrations will appear here.",
+        "emptyDesc": "Administrative registrations will appear here.",
         "loadMore": "Load more…"
       },
       "appointments": {
@@ -6556,7 +6556,7 @@
         "active": "Active",
         "inactive": "Inactive",
         "empty": "No services",
-        "emptyDesc": "Configured consular services will appear here."
+        "emptyDesc": "Configured administrative services will appear here."
       },
       "statuses": {
         "draft": "Draft",
@@ -6576,9 +6576,9 @@
         "no_show": "No-show"
       }
     },
-    "diplomaticAffairs": {
-      "title": "Diplomatic Affairs",
-      "subtitle": "Diplomatic relations and mission tracking",
+    "administrativeAffairs": {
+      "title": "Administrative Affairs",
+      "subtitle": "Administrative relations and mission tracking",
       "tabs": {
         "targets": "Targets",
         "letters": "Contact Letters",
@@ -6587,7 +6587,7 @@
       },
       "targets": {
         "empty": "No targets identified",
-        "emptyDesc": "Diplomatic targets will appear here.",
+        "emptyDesc": "Administrative targets will appear here.",
         "contact": "Contact"
       },
       "letters": {
@@ -7002,7 +7002,7 @@
   },
   "servicesDemarches": {
     "title": "Services & Requests",
-    "subtitle": "View consular services and track your requests",
+    "subtitle": "View administrative services and track your requests",
     "search": "Search...",
     "noOngoing": "No ongoing requests",
     "noResults": "No requests found",
@@ -7014,7 +7014,7 @@
     "mode": "Voice mode"
   },
   "iasted": {
-    "subtitle": "Consular communication space",
+    "subtitle": "Administrative communication space",
     "reduce": "Minimize",
     "discussions": "Discussions",
     "close": "Close ↑",

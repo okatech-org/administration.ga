@@ -159,10 +159,10 @@ export default function PrintSettingsPage() {
 					<div>
 						<h3 className="text-sm font-semibold flex items-center gap-2">
 							<Building2 className="h-5 w-5" />
-							Représentations diplomatiques
+							Administrations
 						</h3>
 						<p className="text-xs text-muted-foreground mt-1">
-							Activez ou désactivez l'impression des cartes consulaires pour chaque représentation
+							Activez ou désactivez l'impression des cartes pour chaque administration
 						</p>
 					</div>
 					<Table>

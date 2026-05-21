@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 const forms = [
   { title: "Demande de Passeport Biométrique", type: "PDF", size: "1.2 MB" },
   { title: "Formulaire de demande de Visa", type: "PDF", size: "850 KB" },
-  { title: "Inscription au registre consulaire", type: "PDF", size: "500 KB" },
+  { title: "Inscription au registre des administrations", type: "PDF", size: "500 KB" },
   { title: "Demande de transcription d'acte de naissance", type: "PDF", size: "450 KB" },
   { title: "Déclaration de perte de document", type: "PDF", size: "300 KB" },
   { title: "Autorisation parentale de voyage", type: "PDF", size: "250 KB" },

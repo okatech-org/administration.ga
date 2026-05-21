@@ -144,7 +144,7 @@ export default function OrgDetailPage() {
 	const router = useRouter();
 	const { orgId } = useParams<{ orgId: string }>();
 	const searchParams = useSearchParams();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	// Synchronisation onglet actif ↔ query string `?tab=…`. Permet aux
 	// dialogs (AssignTemplatesDialog) de rediriger directement vers

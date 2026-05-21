@@ -25,7 +25,7 @@ export function ServicesHero({
       unit: t("services.hero.statServicesUnit", "services"),
       label: t(
         "services.hero.statServicesLabel",
-        "Démarches officielles disponibles dans le réseau consulaire.",
+        "Démarches officielles disponibles dans le réseau des administrations.",
       ),
     },
     {
@@ -65,14 +65,14 @@ export function ServicesHero({
               {t("services.hero.titlePart1", "Toutes vos démarches")}
               <br />
               <em className="not-italic text-[var(--pub-gabon-blue)]">
-                {t("services.hero.titleEm", "consulaires")}
+                {t("services.hero.titleEm", "administratifs")}
               </em>{" "}
               {t("services.hero.titlePart2", "en un seul endroit.")}
             </h1>
             <p className="mt-6 max-w-[540px] text-[18px] leading-[1.55] text-[var(--pub-text-muted)]">
               {t(
                 "services.hero.lede",
-                "L'ensemble des démarches consulaires proposées par les représentations diplomatiques de la République Gabonaise — disponibles en ligne, sur place, ou en circuit accéléré.",
+                "L'ensemble des démarches administratives proposées par les administrations de la République Gabonaise — disponibles en ligne, sur place, ou en circuit accéléré.",
               )}
             </p>
           </div>

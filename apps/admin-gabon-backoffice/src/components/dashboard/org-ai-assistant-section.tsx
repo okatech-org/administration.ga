@@ -107,7 +107,7 @@ export function OrgAIAssistantSection({ orgId, lang: langProp }: OrgAIAssistantS
 	const { i18n } = useTranslation();
 	const lang = (langProp === "fr" || langProp === "en"
 		? langProp
-		: i18n.language === "fr"
+		: i18n.language?.startsWith("fr")
 			? "fr"
 			: "en") as "fr" | "en";
 

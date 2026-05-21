@@ -314,7 +314,7 @@ function Header({ roleLabel }: { roleLabel: string }) {
         />
       </div>
       <div className="flex flex-col overflow-hidden whitespace-nowrap text-foreground">
-        <span className="text-sm font-bold">CONSULAT.GA</span>
+        <span className="text-sm font-bold">ADMINISTRATION.GA</span>
         <span className="text-xs text-foreground/60">{roleLabel}</span>
       </div>
     </Link>

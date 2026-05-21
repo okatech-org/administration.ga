@@ -188,6 +188,7 @@ export async function resolveAssetForDownload(assetName: string): Promise<{
 	contentType: string;
 } | null> {
 	const release = await fetchLatestRelease();
+	if (!release) return null;
 	const match = release.assets.find((a) => a.name === assetName);
 	if (!match) return null;
 

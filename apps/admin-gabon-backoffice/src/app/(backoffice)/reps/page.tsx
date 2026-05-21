@@ -27,7 +27,7 @@ import { RepsModuleMatrixTab } from "@/components/admin/reps-module-matrix-tab";
 
 export default function RepresentationsPage() {
 	const { t, i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	// ── Shared state across tabs ──
 	const [editingOrgId, setEditingOrgId] = useState<Id<"orgs"> | null>(null);
@@ -68,6 +68,17 @@ export default function RepresentationsPage() {
 			),
 		[],
 	);
+
+	// ── Comptage des orgs par type ──
+	const orgCountByType = useMemo(() => {
+		const counts: Record<string, number> = {};
+		if (!orgs) return counts;
+		for (const org of orgs as any[]) {
+			const t = org.type as string;
+			counts[t] = (counts[t] ?? 0) + 1;
+		}
+		return counts;
+	}, [orgs]);
 
 	// ── Module matrix save handler ──
 	const handleSaveModules = async () => {
@@ -120,21 +131,21 @@ export default function RepresentationsPage() {
 				icon={<Building2 className="h-5 w-5" />}
 				title={
 					lang === "fr"
-						? "Représentations diplomatiques"
-						: "Diplomatic Representations"
+						? "Administrations publiques"
+						: "Public Administrations"
 				}
 				subtitle={
 					lang === "fr"
-						? "Gérer les représentations, types, postes et modules"
-						: "Manage representations, types, positions and modules"
+						? "Gérer les ministères, directions générales, établissements et postes administratifs"
+						: "Manage ministries, directorates general, public establishments and administrative positions"
 				}
 				actions={
 					<Button asChild>
 						<Link href="/reps/new">
 							<Plus className="mr-1.5 h-4 w-4" />
 							{lang === "fr"
-								? "Nouvelle représentation"
-								: "New representation"}
+								? "Nouvelle administration"
+								: "New administration"}
 						</Link>
 					</Button>
 				}
@@ -148,7 +159,7 @@ export default function RepresentationsPage() {
 						className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background"
 					>
 						<Building2 className="h-3.5 w-3.5" />
-						{lang === "fr" ? "Représentations" : "Representations"}
+						{lang === "fr" ? "Administrations" : "Administrations"}
 						{orgs && (
 							<span className="text-[10px] text-muted-foreground ml-0.5">
 								{(orgs as any[]).length}
@@ -229,6 +240,7 @@ export default function RepresentationsPage() {
 						setPendingModuleChanges={setPendingModuleChanges}
 						handleSaveModules={handleSaveModules}
 						isSavingModules={isSavingModules}
+						orgCountByType={orgCountByType}
 					/>
 				</TabsContent>
 

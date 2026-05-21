@@ -297,28 +297,28 @@ export function RepsPageClient({
             <div>
               <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--gabon-blue-tint,_#e7eff9)] text-[var(--gabon-blue-hex)] text-[13px] font-medium">
                 <Globe className="w-3.5 h-3.5" strokeWidth={2} />
-                {t("orgs.kicker", "Nos représentations")}
+                {t("orgs.kicker", "Nos administrations")}
               </span>
               <h1
                 className="mt-5 font-semibold tracking-[-0.025em] leading-[1]"
                 style={{ fontSize: "clamp(44px, 5.6vw, 72px)" }}
               >
-                {t("orgs.heroTitlePart1", "Le Gabon, ")}
+                {t("orgs.heroTitlePart1", "L'administration ")}
                 <span className="text-[var(--gabon-blue-hex)]">
-                  {t("orgs.heroTitleAccent", "partout")}
+                  {t("orgs.heroTitleAccent", "à portée")}
                 </span>
-                {t("orgs.heroTitlePart2", " dans le monde.")}
+                {t("orgs.heroTitlePart2", " de clic.")}
               </h1>
               <p className="mt-6 text-[17px] leading-[1.55] text-[color:var(--muted-foreground)] max-w-[520px]">
                 {totalCount > 0
                   ? t("orgs.heroLede", {
                       defaultValue:
-                        "{{count}} ambassades et consulats au service des Gabonais établis hors du territoire national, et de leurs partenaires internationaux.",
+                        "{{count}} administrations publiques au service des citoyens et entreprises du Gabon.",
                       count: totalCount,
                     })
                   : t(
                       "orgs.heroLedeFallback",
-                      "Ambassades et consulats au service des Gabonais établis hors du territoire national, et de leurs partenaires internationaux.",
+                      "Administrations publiques au service des citoyens et entreprises du Gabon.",
                     )}
               </p>
 
@@ -365,7 +365,7 @@ export function RepsPageClient({
                 {t("orgs.directoryKicker", "Annuaire")}
               </span>
               <h2 className="mt-3.5 text-[clamp(28px,3vw,40px)] font-semibold tracking-[-0.025em] leading-[1.1]">
-                {t("orgs.byRegion", "Représentations par région")}
+                {t("orgs.byRegion", "Administrations par catégorie")}
               </h2>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
@@ -503,7 +503,7 @@ function FiltersPanel({
           </div>
           <div className="text-[12px] text-[color:var(--muted-foreground)] mt-0.5">
             {counts.visible} / {counts.total}{" "}
-            {t("orgs.representations", "représentations")}
+            {t("orgs.representations", "administrations")}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -646,7 +646,7 @@ function RegionBlock({
           {title}
           <span className="font-mono text-[13px] font-normal text-[color:var(--text-faint,_#9a9588)]">
             {count}{" "}
-            {t("orgs.representations", "représentations")}
+            {t("orgs.representations", "administrations")}
           </span>
         </h3>
         <p className="hidden md:block text-[13px] text-[color:var(--muted-foreground)] max-w-[320px] text-right">
@@ -872,7 +872,7 @@ function CtaBlock() {
         <p className="mt-3 text-[16px] leading-[1.55] text-white/80">
           {t(
             "orgs.ctaLede",
-            "Les services consulaires sont également accessibles à distance depuis votre espace personnel. Inscrivez-vous au registre consulaire en moins de 10 minutes.",
+            "Tous nos services sont accessibles à distance depuis votre espace personnel. Créez votre compte en moins de 5 minutes.",
           )}
         </p>
         <div className="mt-6 flex flex-wrap gap-3">

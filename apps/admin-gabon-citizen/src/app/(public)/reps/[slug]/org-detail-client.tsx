@@ -71,7 +71,7 @@ const SERVICE_CATEGORY_LABELS: Record<string, string> = {
   passport: "Passeport",
   visa: "Visa",
   civil_status: "État civil",
-  registration: "Inscription consulaire",
+  registration: "Inscription en ligne",
   certification: "Certification",
   legalization: "Légalisation",
   transcript: "Transcription",
@@ -111,7 +111,7 @@ const CONTACT_LABELS: Record<string, string> = {
   phone_consular: "Téléphone — Consulaire",
   email_main: "Email — accueil",
   email_visas: "Email — visas",
-  email_consular: "Email — consulaire",
+  email_consular: "Email — administratif",
   email_press: "Email — presse",
   fax: "Fax",
   other: "Autre",
@@ -1558,7 +1558,7 @@ function InviteCard() {
         Vous résidez dans cette circonscription ?
       </h3>
       <p className="mt-2 text-[13px] leading-[1.5] text-[color:var(--foreground)]">
-        L'inscription consulaire vous donne accès à l'assistance, au vote et à
+        L'inscription en ligne vous donne accès aux démarches, à l'assistance et à
         la délivrance simplifiée de documents officiels.
       </p>
       <Link

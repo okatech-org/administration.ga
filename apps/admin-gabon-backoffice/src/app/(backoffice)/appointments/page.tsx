@@ -44,7 +44,7 @@ function toCsv(rows: Array<Record<string, unknown>>): string {
 
 export default function BackofficeAppointmentsPage() {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	const [orgFilter, setOrgFilter] = useState<string>("all");
 	const [statusFilter, setStatusFilter] = useState<string>("all");

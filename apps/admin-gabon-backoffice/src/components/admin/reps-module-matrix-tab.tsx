@@ -47,7 +47,7 @@ const CATEGORY_META: Record<
 		bgColor: "bg-red-50 dark:bg-red-950/30",
 	},
 	network: {
-		label: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+		label: { fr: "Supervision Réseau", en: "Network Oversight" },
 		color: "text-rose-600",
 		bgColor: "bg-rose-50 dark:bg-rose-950/30",
 	},
@@ -77,7 +77,53 @@ interface RepsModuleMatrixTabProps {
 	>;
 	handleSaveModules: () => Promise<void>;
 	isSavingModules: boolean;
+	/** Nombre d'organisations par type — pour les badges des chips. */
+	orgCountByType?: Record<string, number>;
 }
+
+// ─── Type ordering & grouping ─────────────────────────────────
+/** Types administration.ga (Gabon métropolitain) — affichés en premier. */
+const ADMIN_GA_TYPES = new Set([
+	"presidency",
+	"vice_presidency",
+	"government",
+	"ministry",
+	"delegated_ministry",
+	"directorate_general",
+	"public_establishment",
+	"national_agency",
+	"independent_authority",
+	"consultative_institution",
+	"parliament_chamber",
+	"supreme_court",
+	"local_authority",
+]);
+
+/** Libellé court par type pour les chips (évite la collision "High/Haut"). */
+const TYPE_SHORT_LABEL: Record<string, { fr: string; en: string }> = {
+	// Admin.ga
+	presidency: { fr: "Présidence", en: "Presidency" },
+	vice_presidency: { fr: "V-Présidence", en: "V-Presidency" },
+	government: { fr: "Gouvernement", en: "Government" },
+	ministry: { fr: "Ministère", en: "Ministry" },
+	delegated_ministry: { fr: "Min. Délégué", en: "Delegated Min." },
+	directorate_general: { fr: "DG", en: "DG" },
+	public_establishment: { fr: "Ét. Public", en: "Public Est." },
+	national_agency: { fr: "Agence Nat.", en: "National Ag." },
+	independent_authority: { fr: "AAI", en: "AAI" },
+	consultative_institution: { fr: "Consultatif", en: "Consultative" },
+	parliament_chamber: { fr: "Parlement", en: "Parliament" },
+	supreme_court: { fr: "Cour Suprême", en: "Supreme Court" },
+	local_authority: { fr: "Coll. Locale", en: "Local Auth." },
+	// Diplomatique
+	embassy: { fr: "Ambassade", en: "Embassy" },
+	high_representation: { fr: "Haute Repr.", en: "High Repr." },
+	general_consulate: { fr: "Consulat", en: "Consulate" },
+	honorary_consulate: { fr: "Consulat Hon.", en: "Honor. Cons." },
+	permanent_mission: { fr: "Mission Perm.", en: "Perm. Mission" },
+	high_commission: { fr: "Haut-Commiss.", en: "High Comm." },
+	intelligence_agency: { fr: "Renseignement", en: "Intelligence" },
+};
 
 export function RepsModuleMatrixTab({
 	lang,
@@ -90,7 +136,58 @@ export function RepsModuleMatrixTab({
 	setPendingModuleChanges,
 	handleSaveModules,
 	isSavingModules,
+	orgCountByType,
 }: RepsModuleMatrixTabProps) {
+	// ── Tri : admin.ga d'abord (par count desc), puis diplomatique ──
+	const sortedTemplates = useMemo(() => {
+		const admin: typeof templates = [];
+		const diplo: typeof templates = [];
+		for (const tpl of templates) {
+			if (ADMIN_GA_TYPES.has(tpl.type as string)) admin.push(tpl);
+			else diplo.push(tpl);
+		}
+		const byCount = (a: typeof templates[0], b: typeof templates[0]) =>
+			(orgCountByType?.[b.type as string] ?? 0) -
+			(orgCountByType?.[a.type as string] ?? 0);
+		admin.sort(byCount);
+		diplo.sort(byCount);
+		return { admin, diplo };
+	}, [templates, orgCountByType]);
+
+	const renderChip = (tpl: typeof templates[0]) => {
+		const typeKey = tpl.type as string;
+		const shortLabel = TYPE_SHORT_LABEL[typeKey];
+		const label = shortLabel
+			? shortLabel[lang as "fr" | "en"]
+			: tpl.label[lang as "fr" | "en"] || tpl.label.fr;
+		const count = orgCountByType?.[typeKey] ?? 0;
+		return (
+			<button
+				key={typeKey}
+				type="button"
+				className={cn(
+					"text-xs rounded-full px-2.5 py-1 border transition-colors flex items-center gap-1",
+					selectedOrgType === typeKey
+						? "bg-primary text-primary-foreground border-primary"
+						: count === 0
+							? "bg-muted/20 text-muted-foreground/50 hover:bg-muted/40 border-transparent"
+							: "bg-muted/50 text-muted-foreground hover:bg-muted border-transparent",
+				)}
+				onClick={() => setSelectedOrgType(typeKey)}
+			>
+				{label}
+				<Badge
+					variant={
+						selectedOrgType === typeKey ? "secondary" : "outline"
+					}
+					className="text-[9px] h-4 px-1"
+				>
+					{count}
+				</Badge>
+			</button>
+		);
+	};
+
 	// ── Modules groupes par categorie ──
 	const modulesByCategory = useMemo(() => {
 		const groups = Object.fromEntries(
@@ -156,7 +253,7 @@ export function RepsModuleMatrixTab({
 						</span>
 					)}
 				</p>
-				{/* Filtre par type */}
+				{/* Filtre par type — admin.ga d'abord, séparateur, puis diplomatique */}
 				<div className="flex flex-wrap items-center gap-1.5 mt-3">
 					<button
 						type="button"
@@ -170,34 +267,21 @@ export function RepsModuleMatrixTab({
 					>
 						{lang === "fr" ? "Tous" : "All"}
 					</button>
-					{templates.map((tpl) => (
-						<button
-							key={tpl.type}
-							type="button"
-							className={cn(
-								"text-xs rounded-full px-2.5 py-1 border transition-colors flex items-center gap-1",
-								selectedOrgType === tpl.type
-									? "bg-primary text-primary-foreground border-primary"
-									: "bg-muted/50 text-muted-foreground hover:bg-muted border-transparent",
-							)}
-							onClick={() => setSelectedOrgType(tpl.type)}
-						>
-							{(
-								tpl.label[lang as "fr" | "en"] ||
-								tpl.label.fr
-							).split(" ")[0]}
-							<Badge
-								variant={
-									selectedOrgType === tpl.type
-										? "secondary"
-										: "outline"
-								}
-								className="text-[9px] h-4 px-1"
-							>
-								{tpl.modules.length}
-							</Badge>
-						</button>
-					))}
+					{/* Admin.ga */}
+					{sortedTemplates.admin.map(renderChip)}
+					{/* Séparateur visuel */}
+					{sortedTemplates.diplo.length > 0 && (
+						<>
+							<span
+								className="mx-1 h-4 w-px bg-border"
+								aria-hidden="true"
+							/>
+							<span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+								{lang === "fr" ? "Diplomatique" : "Diplomatic"}
+							</span>
+						</>
+					)}
+					{sortedTemplates.diplo.map(renderChip)}
 				</div>
 			</div>
 			<div className="p-3 lg:p-4 pt-0">

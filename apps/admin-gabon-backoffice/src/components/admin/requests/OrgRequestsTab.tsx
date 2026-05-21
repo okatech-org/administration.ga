@@ -54,7 +54,7 @@ const STATUS_OPTIONS = [
 export function OrgRequestsTab({ orgId }: OrgRequestsTabProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const lang = i18n.language === "fr" ? "fr" : "en";
+  const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 

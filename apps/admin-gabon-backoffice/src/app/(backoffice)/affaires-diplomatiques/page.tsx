@@ -467,8 +467,8 @@ export default function AffairesDiplomatiquesSettings() {
       {/* En-tête */}
       <PageHeader
         icon={<Globe2 className="h-5 w-5" />}
-        title="Affaires Diplomatiques"
-        subtitle="Configurez les priorités exécutives et les paramètres diplomatiques pour chaque représentation."
+        title="Pilotage Stratégique"
+        subtitle="Configurez les priorités exécutives et les paramètres stratégiques pour chaque administration."
       />
 
       {/* Onglets horizontaux */}

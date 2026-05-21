@@ -10,9 +10,9 @@ import ServicesLoading from "./loading"
 import { ServicesPageClient } from "./services-page-client"
 
 export const metadata: Metadata = buildMetadata({
-  title: "Services consulaires",
+  title: "Services administratifs",
   description:
-    "Découvrez l'ensemble des services consulaires proposés par la République Gabonaise pour ses citoyens à l'étranger : passeport, visa, état civil, légalisation et plus encore.",
+    "Découvrez l'ensemble des services administratifs proposés par la République Gabonaise : CNI, passeport, état civil, fiscalité, urbanisme, foncier et plus encore.",
   path: "/services",
 })
 
@@ -35,9 +35,9 @@ export default async function ServicesPage() {
     <>
       <JsonLd
         data={collectionPageSchema({
-          name: "Services consulaires gabonais",
+          name: "Services administratifs gabonais",
           description:
-            "Catalogue officiel des services consulaires de la République Gabonaise : passeport, visa, état civil, légalisation, inscription consulaire.",
+            "Catalogue officiel des services administratifs de la République Gabonaise : CNI, passeport, état civil, fiscalité, urbanisme, foncier, création d'entreprise.",
           path: "/services",
           items: collectionItems,
         })}

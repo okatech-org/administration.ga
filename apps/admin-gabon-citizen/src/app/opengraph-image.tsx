@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og"
 
-export const alt = "Consulat.ga — Services consulaires de la République Gabonaise"
+export const alt = "Consulat.ga — Services administratifs de la République Gabonaise"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
@@ -51,7 +51,7 @@ export default function OpenGraphImage() {
             maxWidth: "880px",
           }}
         >
-          Services consulaires en ligne
+          Services administratifs en ligne
         </div>
         <div
           style={{
@@ -72,7 +72,7 @@ export default function OpenGraphImage() {
           gap: "12px",
         }}
       >
-        Passeport · Visa · État civil · Légalisation · Inscription consulaire
+        CNI · Passeport · État civil · Fiscalité · Foncier
       </div>
     </div>,
     { ...size },

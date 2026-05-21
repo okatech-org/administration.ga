@@ -228,13 +228,13 @@ export function NewsPageClient({
           >
             {t("news.heroTitlePart1", "Actualités du ")}
             <span className="text-[var(--gabon-blue-hex)]">
-              {t("news.heroTitleAccent", "réseau consulaire.")}
+              {t("news.heroTitleAccent", "réseau des administrations.")}
             </span>
           </h1>
           <p className="mt-5 text-[17px] leading-[1.55] text-[color:var(--muted-foreground)] max-w-[620px]">
             {t(
               "news.heroLede",
-              "Dernières nouvelles, événements à venir et communiqués officiels du Ministère des Affaires étrangères et des représentations diplomatiques de la République Gabonaise.",
+              "Dernières nouvelles, événements à venir et communiqués officiels du Ministère des Affaires étrangères et des administrations de la République Gabonaise.",
             )}
           </p>
 
@@ -766,7 +766,7 @@ function NewsletterCard() {
       <p className="mt-2 text-[13px] leading-[1.55] text-[color:var(--muted-foreground)]">
         {t(
           "news.newsletterDesc",
-          "Recevez chaque vendredi l'essentiel de l'actualité du réseau consulaire — 4 minutes de lecture.",
+          "Recevez chaque vendredi l'essentiel de l'actualité du réseau des administrations — 4 minutes de lecture.",
         )}
       </p>
       {status === "success" || status === "already" ? (

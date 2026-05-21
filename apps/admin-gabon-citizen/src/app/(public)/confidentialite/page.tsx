@@ -16,7 +16,7 @@ export default function PrivacyPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Politique de Confidentialité</h1>
             <p className="text-muted-foreground text-lg">
-              La République Gabonaise s&apos;engage à protéger la vie privée des utilisateurs de ses services consulaires en ligne.
+              La République Gabonaise s&apos;engage à protéger la vie privée des utilisateurs de ses services administratifs en ligne.
             </p>
           </div>
 
@@ -25,14 +25,14 @@ export default function PrivacyPage() {
               <section>
                 <h2 className="text-2xl font-semibold mb-4">Collecte des Données</h2>
                 <p>
-                  Nous collectons uniquement les données nécessaires au traitement de vos démarches administratives (demandes de passeport, visa, inscription consulaire, etc.). Ces données incluent vos informations d&apos;identité, coordonnées et justificatifs.
+                  Nous collectons uniquement les données nécessaires au traitement de vos démarches administratives (demandes de CNI, passeport, état civil, fiscalité, etc.). Ces données incluent vos informations d&apos;identité, coordonnées et justificatifs.
                 </p>
               </section>
 
               <section>
                 <h2 className="text-2xl font-semibold mb-4">Utilisation des Données</h2>
                 <p>
-                  Vos données sont utilisées exclusivement par les services consulaires pour l&apos;instruction de vos dossiers. Elles ne sont jamais commercialisées ni cédées à des tiers non autorisés.
+                  Vos données sont utilisées exclusivement par les administrations compétentes pour l&apos;instruction de vos dossiers. Elles ne sont jamais commercialisées ni cédées à des tiers non autorisés.
                 </p>
               </section>
 

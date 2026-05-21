@@ -73,7 +73,7 @@ function ChartMount({ children }: { children: ReactNode }) {
 
 export default function BackofficeAppointmentsReportsPage() {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	const [orgFilter, setOrgFilter] = useState<string>("all");
 	const [startDate, setStartDate] = useState<string>(isoMinusDays(90));

@@ -122,7 +122,7 @@ export default function VerifyDocumentPage() {
 												{new Date(
 													result.document.generatedAt,
 												).toLocaleDateString(
-													i18n.language === "fr" ? "fr-FR" : "en-US",
+													i18n.language?.startsWith("fr") ? "fr-FR" : "en-US",
 													{
 														year: "numeric",
 														month: "long",
@@ -144,7 +144,7 @@ export default function VerifyDocumentPage() {
 													{new Date(
 														result.document.expiresAt,
 													).toLocaleDateString(
-														i18n.language === "fr" ? "fr-FR" : "en-US",
+														i18n.language?.startsWith("fr") ? "fr-FR" : "en-US",
 														{
 															year: "numeric",
 															month: "long",

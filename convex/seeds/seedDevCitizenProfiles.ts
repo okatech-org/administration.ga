@@ -47,6 +47,110 @@ const yearsAgo = (years: number): number =>
 	new Date(Date.now() - years * 365.25 * 24 * 60 * 60 * 1000).getTime();
 
 const CITIZEN_PROFILES: CitizenSeed[] = [
+	// ─────────────────────────────────────────────────────────────
+	// Citoyens gabonais résidents au Gabon (admin.ga / demarche.ga)
+	// Rattachés à la DGDI pour l'état civil (managedByOrgSlug = "dgdi").
+	// ─────────────────────────────────────────────────────────────
+	{
+		email: "jean.mboumba@admin.ga",
+		userType: PublicUserType.LongStay,
+		identity: {
+			firstName: "Jean",
+			lastName: "MBOUMBA",
+			gender: Gender.Male,
+			nationality: CountryCode.GA,
+			birthDate: yearsAgo(36),
+			birthPlace: "Libreville",
+			birthCountry: CountryCode.GA,
+		},
+		countryOfResidence: CountryCode.GA,
+		managedByOrgSlug: "dgdi",
+		phone: "+241 06 11 22 33",
+		addresses: {
+			residence: {
+				street: "Quartier Glass — Boulevard Triomphal",
+				city: "Libreville",
+				postalCode: "BP 1000",
+				country: CountryCode.GA,
+			},
+		},
+	},
+	{
+		email: "sylvie.akouala@admin.ga",
+		userType: PublicUserType.LongStay,
+		identity: {
+			firstName: "Sylvie",
+			lastName: "AKOUALA",
+			gender: Gender.Female,
+			nationality: CountryCode.GA,
+			birthDate: yearsAgo(42),
+			birthPlace: "Port-Gentil",
+			birthCountry: CountryCode.GA,
+		},
+		countryOfResidence: CountryCode.GA,
+		managedByOrgSlug: "dgdi",
+		phone: "+241 06 44 55 66",
+		addresses: {
+			residence: {
+				street: "Avenue Savorgnan de Brazza",
+				city: "Port-Gentil",
+				postalCode: "BP 200",
+				country: CountryCode.GA,
+			},
+		},
+	},
+	{
+		email: "patrick.obiang@admin.ga",
+		userType: PublicUserType.LongStay,
+		identity: {
+			firstName: "Patrick",
+			lastName: "OBIANG",
+			gender: Gender.Male,
+			nationality: CountryCode.GA,
+			birthDate: yearsAgo(51),
+			birthPlace: "Franceville",
+			birthCountry: CountryCode.GA,
+		},
+		countryOfResidence: CountryCode.GA,
+		managedByOrgSlug: "dgdi",
+		phone: "+241 07 77 88 99",
+		addresses: {
+			residence: {
+				street: "Quartier Potos",
+				city: "Franceville",
+				postalCode: "BP 50",
+				country: CountryCode.GA,
+			},
+		},
+	},
+	{
+		email: "entreprise.demo@admin.ga",
+		userType: PublicUserType.AdminServices,
+		identity: {
+			firstName: "Représentant",
+			lastName: "SARL DEMO",
+			gender: Gender.Male,
+			nationality: CountryCode.GA,
+			birthDate: yearsAgo(45),
+			birthPlace: "Libreville",
+			birthCountry: CountryCode.GA,
+		},
+		countryOfResidence: CountryCode.GA,
+		managedByOrgSlug: "dgi",
+		phone: "+241 06 99 00 11",
+		addresses: {
+			residence: {
+				street: "Zone industrielle d'Owendo",
+				city: "Libreville",
+				postalCode: "BP 5000",
+				country: CountryCode.GA,
+			},
+		},
+	},
+
+	// ─────────────────────────────────────────────────────────────
+	// Héritage gabon-diplomatie (résidents à l'étranger)
+	// ─────────────────────────────────────────────────────────────
 	{
 		email: "iasted@me.com",
 		userType: PublicUserType.LongStay,

@@ -774,10 +774,10 @@ export interface OrganizationTemplate {
 /** All modules — for full diplomatic posts */
 const ALL_MODULES: ModuleCodeValue[] = [...ALL_MODULE_CODES];
 
-/** Core + consular + community + news + messaging + statistics — for consulates */
+/** Core + community + news + messaging + statistics — for consulates.
+ *  consular_affairs est déjà inclus via CORE_MODULE_CODES (isCore: true). */
 const CONSULATE_MODULES: ModuleCodeValue[] = [
   ...CORE_MODULE_CODES,
-  ModuleCode.consular_affairs,
   ModuleCode.community,
   ModuleCode.news,
   ModuleCode.messaging,
@@ -883,7 +883,321 @@ export const INTELLIGENCE_AGENCY_POSITIONS: PositionTemplate[] = [
   { code: "field_officer", title: { fr: "Officier de Terrain", en: "Field Officer" }, description: { fr: "Collecte de renseignement humain et terrain, alimente les notes et watchlists", en: "Human and field intelligence collection, feeds notes and watchlists" }, level: 4, perm: 14, grade: "agent", ministryCode: "presidence", taskPresets: ["intelligence_agency_analyst"], isRequired: false },
 ];
 
+// ═══════════════════════════════════════════════════════════════
+// ADMIN.GA — Position templates for Gabonese administration types
+// (Présidence, Ministères, DG, EP, AAI, Parlement, Juridictions, CT)
+// ═══════════════════════════════════════════════════════════════
+
+// ─── PRESIDENCY positions ───────────────────────────────
+export const PRESIDENCY_POSITIONS: PositionTemplate[] = [
+  { code: "president", title: { fr: "Président de la République", en: "President of the Republic" }, description: { fr: "Chef de l'État — autorité suprême et garant des institutions", en: "Head of State — supreme authority and guarantor of institutions" }, level: 1, perm: 50, grade: "chief", ministryCode: "cabinet", taskPresets: ["direction", "intelligence"], isRequired: true },
+  { code: "secretary_general_presidency", title: { fr: "Secrétaire Général de la Présidence", en: "Presidency Secretary General" }, description: { fr: "Coordination de l'appareil présidentiel et continuité administrative", en: "Coordination of the presidential apparatus and administrative continuity" }, level: 2, perm: 38, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management", "validation", "communication"], isRequired: true },
+  { code: "chief_of_staff", title: { fr: "Directeur de Cabinet", en: "Chief of Staff" }, description: { fr: "Pilotage du cabinet civil", en: "Civil cabinet leadership" }, level: 2, perm: 34, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management", "communication"], isRequired: false },
+  { code: "special_advisor", title: { fr: "Conseiller Spécial", en: "Special Advisor" }, description: { fr: "Conseil thématique au Président", en: "Thematic advisor to the President" }, level: 3, perm: 26, grade: "counselor", ministryCode: "cabinet", taskPresets: ["consultation", "communication"], isRequired: false },
+  { code: "agent", title: { fr: "Agent", en: "Agent" }, description: { fr: "Agent administratif", en: "Administrative agent" }, level: 5, perm: 12, grade: "agent", ministryCode: "cabinet", taskPresets: ["request_processing"], isRequired: false },
+];
+
+// ─── GENERIC MINISTRY positions (for ministries beyond ForeignAffairs) ─
+export const MINISTRY_GENERIC_POSITIONS: PositionTemplate[] = [
+  { code: "minister", title: { fr: "Ministre", en: "Minister" }, description: { fr: "Membre du Gouvernement — direction politique du portefeuille", en: "Government member — political leadership of the portfolio" }, level: 1, perm: 40, grade: "chief", ministryCode: "cabinet", taskPresets: ["direction", "validation"], isRequired: true },
+  { code: "chief_of_staff", title: { fr: "Directeur de Cabinet", en: "Chief of Staff" }, description: { fr: "Coordination du cabinet et arbitrage administratif", en: "Cabinet coordination and administrative arbitration" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management", "communication"], isRequired: true },
+  { code: "technical_advisor", title: { fr: "Conseiller Technique", en: "Technical Advisor" }, description: { fr: "Conseil thématique au Ministre", en: "Thematic advisor to the Minister" }, level: 3, perm: 22, grade: "counselor", ministryCode: "cabinet", taskPresets: ["consultation"], isRequired: false },
+  { code: "secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Coordination administrative et continuité du ministère", en: "Administrative coordination and ministry continuity" }, level: 2, perm: 30, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["management", "validation"], isRequired: true },
+  { code: "inspector_general", title: { fr: "Inspecteur Général", en: "Inspector General" }, description: { fr: "Audit interne et contrôle de conformité", en: "Internal audit and compliance control" }, level: 2, perm: 28, grade: "deputy_chief", ministryCode: "inspection_generale", taskPresets: ["management", "validation"], isRequired: false },
+  { code: "department_director", title: { fr: "Directeur Métier", en: "Department Director" }, description: { fr: "Pilote d'une direction métier (multiple)", en: "Operational department lead (multiple)" }, level: 3, perm: 24, grade: "counselor", ministryCode: "directions", taskPresets: ["management", "request_processing"], isRequired: false },
+  { code: "press_attache", title: { fr: "Attaché de Presse", en: "Press Attaché" }, description: { fr: "Relations presse et communication ministérielle", en: "Press relations and ministerial communication" }, level: 4, perm: 16, grade: "agent", ministryCode: "cabinet", taskPresets: ["communication"], isRequired: false },
+  { code: "agent", title: { fr: "Agent Administratif", en: "Administrative Agent" }, description: { fr: "Agent administratif polyvalent", en: "General administrative agent" }, level: 5, perm: 12, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing", "reception"], isRequired: false },
+];
+
+// ─── DIRECTORATE GENERAL positions ──────────────────────
+export const DIRECTORATE_GENERAL_POSITIONS: PositionTemplate[] = [
+  { code: "director_general", title: { fr: "Directeur Général", en: "Director General" }, description: { fr: "Pilote l'exécution opérationnelle de la direction", en: "Operational execution lead" }, level: 1, perm: 32, grade: "chief", ministryCode: "directions", taskPresets: ["direction", "validation"], isRequired: true },
+  { code: "deputy_director_general", title: { fr: "Directeur Général Adjoint", en: "Deputy Director General" }, description: { fr: "Adjoint au DG — continuité et coordination", en: "Deputy to the DG — continuity and coordination" }, level: 2, perm: 27, grade: "deputy_chief", ministryCode: "directions", taskPresets: ["management", "validation"], isRequired: false },
+  { code: "division_chief", title: { fr: "Chef de Division", en: "Division Chief" }, description: { fr: "Encadrement d'une division thématique", en: "Thematic division supervision" }, level: 3, perm: 22, grade: "counselor", ministryCode: "directions", taskPresets: ["management", "request_processing"], isRequired: false },
+  { code: "service_chief", title: { fr: "Chef de Service", en: "Service Chief" }, description: { fr: "Encadrement opérationnel d'un service", en: "Operational service supervision" }, level: 4, perm: 18, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing", "validation"], isRequired: true },
+  { code: "front_desk_agent", title: { fr: "Agent Guichet", en: "Front Desk Agent" }, description: { fr: "Accueil des usagers et réception des demandes", en: "User reception and request intake" }, level: 5, perm: 14, grade: "agent", ministryCode: "directions", taskPresets: ["reception", "request_processing"], isRequired: true },
+  { code: "processing_agent", title: { fr: "Agent de Traitement", en: "Processing Agent" }, description: { fr: "Instruction back-office des demandes administratives", en: "Back-office processing of administrative requests" }, level: 5, perm: 13, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing"], isRequired: false },
+];
+
+// ─── PUBLIC ESTABLISHMENT positions ─────────────────────
+export const PUBLIC_ESTABLISHMENT_POSITIONS: PositionTemplate[] = [
+  { code: "director_general", title: { fr: "Directeur Général", en: "Director General" }, description: { fr: "Direction exécutive de l'établissement", en: "Executive direction of the establishment" }, level: 1, perm: 32, grade: "chief", ministryCode: "directions", taskPresets: ["direction", "validation"], isRequired: true },
+  { code: "deputy_director_general", title: { fr: "Directeur Général Adjoint", en: "Deputy Director General" }, description: { fr: "Adjoint au DG", en: "Deputy to the DG" }, level: 2, perm: 27, grade: "deputy_chief", ministryCode: "directions", taskPresets: ["management"], isRequired: false },
+  { code: "board_chairman", title: { fr: "Président du Conseil d'Administration", en: "Board Chairman" }, description: { fr: "Préside le CA et arbitre les orientations stratégiques", en: "Chairs the Board and arbitrates strategic orientations" }, level: 1, perm: 30, grade: "chief", ministryCode: "cabinet", taskPresets: ["direction", "validation"], isRequired: false },
+  { code: "secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Coordination administrative", en: "Administrative coordination" }, level: 2, perm: 24, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["management"], isRequired: false },
+  { code: "department_head", title: { fr: "Chef de Département", en: "Department Head" }, description: { fr: "Pilote d'un département métier", en: "Operational department lead" }, level: 3, perm: 20, grade: "counselor", ministryCode: "directions", taskPresets: ["management", "request_processing"], isRequired: false },
+  { code: "agent", title: { fr: "Agent", en: "Agent" }, description: { fr: "Agent opérationnel", en: "Operational agent" }, level: 5, perm: 12, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing"], isRequired: false },
+];
+
+// ─── INDEPENDENT AUTHORITY positions (AAI : HAC, ARCEP, etc.) ─
+export const INDEPENDENT_AUTHORITY_POSITIONS: PositionTemplate[] = [
+  { code: "president", title: { fr: "Président", en: "President" }, description: { fr: "Préside le collège et représente l'autorité", en: "Chairs the college and represents the authority" }, level: 1, perm: 40, grade: "chief", ministryCode: "cabinet", taskPresets: ["direction", "validation"], isRequired: true },
+  { code: "vice_president", title: { fr: "Vice-Président", en: "Vice-President" }, description: { fr: "Suppléant du Président", en: "Deputy to the President" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management", "validation"], isRequired: false },
+  { code: "board_member", title: { fr: "Membre du Collège", en: "Board Member" }, description: { fr: "Membre du collège délibératif", en: "Deliberative college member" }, level: 3, perm: 24, grade: "counselor", ministryCode: "directions", taskPresets: ["consultation", "validation"], isRequired: false },
+  { code: "secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Coordination administrative de l'autorité", en: "Administrative coordination of the authority" }, level: 2, perm: 26, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["management"], isRequired: true },
+  { code: "rapporteur", title: { fr: "Rapporteur", en: "Rapporteur" }, description: { fr: "Instruction des dossiers soumis au collège", en: "Investigation of cases submitted to the college" }, level: 4, perm: 18, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing", "consultation"], isRequired: false },
+  { code: "agent", title: { fr: "Agent", en: "Agent" }, description: { fr: "Agent administratif", en: "Administrative agent" }, level: 5, perm: 12, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing"], isRequired: false },
+];
+
+// ─── PARLIAMENT CHAMBER positions (Assemblée, Sénat) ────
+export const PARLIAMENT_POSITIONS: PositionTemplate[] = [
+  { code: "chamber_president", title: { fr: "Président de Chambre", en: "Chamber President" }, description: { fr: "Préside l'Assemblée / le Sénat — autorité de la chambre", en: "Chairs the Assembly / Senate — chamber authority" }, level: 1, perm: 42, grade: "chief", ministryCode: "cabinet", taskPresets: ["direction"], isRequired: true },
+  { code: "vice_president", title: { fr: "Vice-Président", en: "Vice-President" }, description: { fr: "Suppléance et présidence des séances", en: "Substitution and session chairing" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management"], isRequired: false },
+  { code: "questor", title: { fr: "Questeur", en: "Quaestor" }, description: { fr: "Gestion administrative et financière de la chambre", en: "Administrative and financial management of the chamber" }, level: 3, perm: 24, grade: "counselor", ministryCode: "directions", taskPresets: ["management", "finance"], isRequired: false },
+  { code: "parliament_secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Coordination administrative et services parlementaires", en: "Administrative coordination and parliamentary services" }, level: 2, perm: 30, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["management", "validation"], isRequired: true },
+  { code: "parliamentarian", title: { fr: "Parlementaire", en: "Parliamentarian" }, description: { fr: "Député ou Sénateur — vote des lois et contrôle du Gouvernement", en: "Member of Parliament — votes laws and oversees Government" }, level: 3, perm: 26, grade: "counselor", ministryCode: "directions", taskPresets: ["consultation", "validation"], isRequired: false },
+  { code: "agent", title: { fr: "Agent Parlementaire", en: "Parliamentary Agent" }, description: { fr: "Agent administratif et logistique", en: "Administrative and logistics agent" }, level: 5, perm: 12, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing"], isRequired: false },
+];
+
+// ─── SUPREME COURT positions (Cour Constitutionnelle, Cour de Cassation…) ─
+export const SUPREME_COURT_POSITIONS: PositionTemplate[] = [
+  { code: "court_president", title: { fr: "Président de Cour", en: "Court President" }, description: { fr: "Préside la formation et représente la juridiction", en: "Chairs the formation and represents the jurisdiction" }, level: 1, perm: 42, grade: "chief", ministryCode: "cabinet", taskPresets: ["direction", "validation"], isRequired: true },
+  { code: "vice_president", title: { fr: "Vice-Président", en: "Vice-President" }, description: { fr: "Suppléance du Président", en: "Deputy to the President" }, level: 2, perm: 32, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management", "validation"], isRequired: false },
+  { code: "general_prosecutor", title: { fr: "Procureur Général", en: "General Prosecutor" }, description: { fr: "Chef du ministère public près la juridiction", en: "Head of public prosecution before the jurisdiction" }, level: 2, perm: 30, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management", "validation"], isRequired: false },
+  { code: "judge_counselor", title: { fr: "Conseiller / Juge", en: "Counselor / Judge" }, description: { fr: "Magistrat de la formation", en: "Magistrate of the formation" }, level: 3, perm: 26, grade: "counselor", ministryCode: "directions", taskPresets: ["consultation", "validation"], isRequired: false },
+  { code: "clerk_chief", title: { fr: "Greffier en Chef", en: "Chief Clerk" }, description: { fr: "Chef du greffe — tenue des minutes et notifications", en: "Head clerk — minutes and notifications" }, level: 3, perm: 22, grade: "agent", ministryCode: "secretariat_general", taskPresets: ["management", "request_processing"], isRequired: true },
+  { code: "agent", title: { fr: "Agent", en: "Agent" }, description: { fr: "Agent judiciaire administratif", en: "Administrative judicial agent" }, level: 5, perm: 12, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing"], isRequired: false },
+];
+
+// ─── LOCAL AUTHORITY positions (province, préfecture, mairie) ─
+export const LOCAL_AUTHORITY_POSITIONS: PositionTemplate[] = [
+  { code: "local_executive", title: { fr: "Gouverneur / Préfet / Maire", en: "Governor / Prefect / Mayor" }, description: { fr: "Exécutif de la collectivité (province, département, commune)", en: "Local authority executive (province, department, municipality)" }, level: 1, perm: 36, grade: "chief", ministryCode: "cabinet", taskPresets: ["direction", "validation"], isRequired: true },
+  { code: "deputy", title: { fr: "Adjoint", en: "Deputy" }, description: { fr: "Adjoint à l'exécutif local", en: "Deputy to the local executive" }, level: 2, perm: 28, grade: "deputy_chief", ministryCode: "cabinet", taskPresets: ["management"], isRequired: false },
+  { code: "secretary_general", title: { fr: "Secrétaire Général", en: "Secretary General" }, description: { fr: "Coordination des services administratifs locaux", en: "Coordination of local administrative services" }, level: 2, perm: 26, grade: "deputy_chief", ministryCode: "secretariat_general", taskPresets: ["management", "validation"], isRequired: true },
+  { code: "service_chief", title: { fr: "Chef de Service", en: "Service Chief" }, description: { fr: "Encadre un service municipal/provincial", en: "Supervises a municipal/provincial service" }, level: 4, perm: 18, grade: "agent", ministryCode: "directions", taskPresets: ["request_processing", "management"], isRequired: false },
+  { code: "civil_status_officer", title: { fr: "Officier d'État Civil", en: "Civil Status Officer" }, description: { fr: "Habilité à célébrer mariages, enregistrer naissances et décès", en: "Authorized to perform marriages and register births/deaths" }, level: 4, perm: 17, grade: "agent", ministryCode: "directions", taskPresets: ["civil_status", "request_processing"], isRequired: false },
+  { code: "front_desk_agent", title: { fr: "Agent Guichet", en: "Front Desk Agent" }, description: { fr: "Accueil des administrés et réception des demandes", en: "Citizen reception and request intake" }, level: 5, perm: 14, grade: "agent", ministryCode: "directions", taskPresets: ["reception", "request_processing"], isRequired: true },
+];
+
+// ─── Default module sets for admin.ga types ─────────────
+
+/** Pilotage stratégique + iBureau + Noyau admin — pour la Présidence */
+const PRESIDENCY_MODULES: ModuleCodeValue[] = [
+  ModuleCode.diplomatic_affairs, // pilotage stratégique (rebranded en UI)
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+  ModuleCode.network_correspondence_oversight,
+  ModuleCode.network_diplomatic_oversight,
+];
+
+/** Ministère générique — pilotage + iBureau + noyau + supervision réseau */
+const MINISTRY_GENERIC_MODULES: ModuleCodeValue[] = [
+  ModuleCode.diplomatic_affairs,
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.news,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+  ModuleCode.network_correspondence_oversight,
+];
+
+/** Direction Générale — opérationnel terrain (avec consular_affairs pour démarches) */
+const DIRECTORATE_GENERAL_MODULES: ModuleCodeValue[] = [
+  ModuleCode.consular_affairs, // démarches administratives (rebranded en UI)
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.news,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+  ModuleCode.community,
+];
+
+/** Établissement Public — opérationnel + community */
+const PUBLIC_ESTABLISHMENT_MODULES: ModuleCodeValue[] = [
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.news,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+  ModuleCode.community,
+];
+
+/** Autorité Administrative Indépendante (AAI) — pilotage indépendant */
+const INDEPENDENT_AUTHORITY_MODULES: ModuleCodeValue[] = [
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.news,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+];
+
+/** Parlement — pilotage + iBureau + supervision */
+const PARLIAMENT_MODULES: ModuleCodeValue[] = [
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.news,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+];
+
+/** Juridictions suprêmes — flux documentaire et délibération */
+const SUPREME_COURT_MODULES: ModuleCodeValue[] = [
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.team,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+];
+
+/** Collectivité Locale — opérationnel terrain + état civil */
+const LOCAL_AUTHORITY_MODULES: ModuleCodeValue[] = [
+  ModuleCode.consular_affairs, // démarches locales (rebranded en UI)
+  ModuleCode.correspondence,
+  ModuleCode.documents,
+  ModuleCode.calendar,
+  ModuleCode.messaging,
+  ModuleCode.news,
+  ModuleCode.team,
+  ModuleCode.statistics,
+  ModuleCode.settings,
+  ModuleCode.iasted,
+  ModuleCode.iarchive,
+  ModuleCode.iboite,
+  ModuleCode.community,
+];
+
 export const ORGANIZATION_TEMPLATES: OrganizationTemplate[] = [
+  // ─── Administration nationale (administration.ga) ──────────
+  {
+    type: OrganizationType.Presidency,
+    label: { fr: "Présidence", en: "Presidency" },
+    description: { fr: "Présidence de la République et organes rattachés (Cabinet, Garde, Protocole)", en: "Presidency of the Republic and attached bodies (Cabinet, Guard, Protocol)" },
+    icon: "Crown",
+    positions: PRESIDENCY_POSITIONS,
+    modules: PRESIDENCY_MODULES,
+  },
+  {
+    type: OrganizationType.VicePresidency,
+    label: { fr: "Vice-Présidence", en: "Vice-Presidency" },
+    description: { fr: "Vice-Présidence de la République ou du Gouvernement", en: "Vice-Presidency of the Republic or of the Government" },
+    icon: "Crown",
+    positions: PRESIDENCY_POSITIONS,
+    modules: PRESIDENCY_MODULES,
+  },
+  {
+    type: OrganizationType.Government,
+    label: { fr: "Gouvernement", en: "Government" },
+    description: { fr: "Vice-Présidence du Gouvernement — coordination interministérielle", en: "Vice-Presidency of the Government — interministerial coordination" },
+    icon: "Landmark",
+    positions: PRESIDENCY_POSITIONS,
+    modules: PRESIDENCY_MODULES,
+  },
+  {
+    type: OrganizationType.DelegatedMinistry,
+    label: { fr: "Ministère Délégué", en: "Delegated Ministry" },
+    description: { fr: "Ministère délégué auprès d'un ministère de plein exercice (ex: Budget)", en: "Ministry delegated to a full ministry (e.g. Budget)" },
+    icon: "Landmark",
+    positions: MINISTRY_GENERIC_POSITIONS,
+    modules: MINISTRY_GENERIC_MODULES,
+  },
+  {
+    type: OrganizationType.DirectorateGeneral,
+    label: { fr: "Direction Générale", en: "Directorate General" },
+    description: { fr: "Direction Générale sous tutelle ministérielle (DGDI, DGI, DGDDI, etc.)", en: "Directorate General under ministerial oversight (DGDI, DGI, DGDDI, etc.)" },
+    icon: "Building2",
+    positions: DIRECTORATE_GENERAL_POSITIONS,
+    modules: DIRECTORATE_GENERAL_MODULES,
+  },
+  {
+    type: OrganizationType.PublicEstablishment,
+    label: { fr: "Établissement Public", en: "Public Establishment" },
+    description: { fr: "Établissement public ou entreprise sous tutelle (CHU, CNSS, ANINF, etc.)", en: "Public establishment or state-owned enterprise (CHU, CNSS, ANINF, etc.)" },
+    icon: "Building",
+    positions: PUBLIC_ESTABLISHMENT_POSITIONS,
+    modules: PUBLIC_ESTABLISHMENT_MODULES,
+  },
+  {
+    type: OrganizationType.NationalAgency,
+    label: { fr: "Agence Nationale", en: "National Agency" },
+    description: { fr: "Agence nationale (ANPI, ANINF, ANPN, etc.)", en: "National agency (ANPI, ANINF, ANPN, etc.)" },
+    icon: "Building",
+    positions: PUBLIC_ESTABLISHMENT_POSITIONS,
+    modules: PUBLIC_ESTABLISHMENT_MODULES,
+  },
+  {
+    type: OrganizationType.IndependentAuthority,
+    label: { fr: "Autorité Indépendante", en: "Independent Authority" },
+    description: { fr: "Autorité Administrative Indépendante (HAC, ARCEP, ARSEE, CNPDCP, etc.)", en: "Independent Administrative Authority (HAC, ARCEP, ARSEE, CNPDCP, etc.)" },
+    icon: "ShieldCheck",
+    positions: INDEPENDENT_AUTHORITY_POSITIONS,
+    modules: INDEPENDENT_AUTHORITY_MODULES,
+  },
+  {
+    type: OrganizationType.ParliamentChamber,
+    label: { fr: "Chambre Parlementaire", en: "Parliament Chamber" },
+    description: { fr: "Assemblée nationale ou Sénat", en: "National Assembly or Senate" },
+    icon: "Landmark",
+    positions: PARLIAMENT_POSITIONS,
+    modules: PARLIAMENT_MODULES,
+  },
+  {
+    type: OrganizationType.SupremeCourt,
+    label: { fr: "Juridiction Suprême", en: "Supreme Court" },
+    description: { fr: "Cour constitutionnelle, Cour de cassation, Conseil d'État, Cour des comptes", en: "Constitutional Court, Court of Cassation, Council of State, Court of Audit" },
+    icon: "Gavel",
+    positions: SUPREME_COURT_POSITIONS,
+    modules: SUPREME_COURT_MODULES,
+  },
+  {
+    type: OrganizationType.ConsultativeInstitution,
+    label: { fr: "Institution Consultative", en: "Consultative Institution" },
+    description: { fr: "CESEC, Médiateur, CNDH, CNLCEI", en: "CESEC, Mediator, CNDH, CNLCEI" },
+    icon: "Users",
+    positions: INDEPENDENT_AUTHORITY_POSITIONS,
+    modules: INDEPENDENT_AUTHORITY_MODULES,
+  },
+  {
+    type: OrganizationType.LocalAuthority,
+    label: { fr: "Collectivité Locale", en: "Local Authority" },
+    description: { fr: "Province, département, commune (Gouvernorat, Préfecture, Mairie)", en: "Province, department, municipality (Governorate, Prefecture, City Hall)" },
+    icon: "MapPin",
+    positions: LOCAL_AUTHORITY_POSITIONS,
+    modules: LOCAL_AUTHORITY_MODULES,
+  },
+
+  // ─── Réseau diplomatique (héritage gabon-diplomatie, conservé) ──
   {
     type: OrganizationType.Embassy,
     label: { fr: "Ambassade", en: "Embassy" },
@@ -938,12 +1252,14 @@ export const ORGANIZATION_TEMPLATES: OrganizationTemplate[] = [
   {
     type: OrganizationType.Ministry,
     label: { fr: "Ministère", en: "Ministry" },
-    description: { fr: "Tutelle gouvernementale — chapeaute les organismes rattachés via parentOrgId", en: "Government oversight body — supervises subordinate orgs via parentOrgId" },
+    description: { fr: "Tutelle gouvernementale — chapeaute les directions générales et établissements rattachés via parentOrgId", en: "Government oversight body — supervises directorates general and establishments via parentOrgId" },
     icon: "Landmark",
-    // Le template top-level reste vide ; chaque sous-type fournit ses positions/modules.
-    positions: [],
-    modules: [...CORE_MODULE_CODES],
+    // Le template top-level utilise les positions génériques ; chaque sous-type
+    // peut surcharger positions/modules pour son contexte spécifique.
+    positions: MINISTRY_GENERIC_POSITIONS,
+    modules: MINISTRY_GENERIC_MODULES,
     subTemplates: {
+      // ── Affaires Étrangères (héritage diplomatique) ───────────
       [MinistrySubType.ForeignAffairs]: {
         label: { fr: "Affaires Étrangères", en: "Foreign Affairs" },
         description: { fr: "Ministère des Affaires Étrangères — pilote du réseau diplomatique gabonais", en: "Ministry of Foreign Affairs — Gabonese diplomatic network steward" },
@@ -951,6 +1267,42 @@ export const ORGANIZATION_TEMPLATES: OrganizationTemplate[] = [
         positions: MINISTRY_FOREIGN_AFFAIRS_POSITIONS,
         ministryGroups: MINISTRY_FOREIGN_AFFAIRS_GROUPS,
         modules: MINISTRY_FOREIGN_AFFAIRS_MODULES,
+      },
+      // ── 5 portefeuilles structurants admin.ga ─────────────────
+      [MinistrySubType.Justice]: {
+        label: { fr: "Justice, Garde des Sceaux", en: "Justice, Keeper of Seals" },
+        description: { fr: "Ministère de la Justice — administration pénitentiaire, juridictions, droits humains", en: "Ministry of Justice — penitentiary administration, jurisdictions, human rights" },
+        icon: "Gavel",
+        positions: MINISTRY_GENERIC_POSITIONS,
+        modules: MINISTRY_GENERIC_MODULES,
+      },
+      [MinistrySubType.Health]: {
+        label: { fr: "Santé", en: "Health" },
+        description: { fr: "Ministère de la Santé — politique sanitaire, CHU, pharmacie, prévention", en: "Ministry of Health — health policy, university hospitals, pharmacy, prevention" },
+        icon: "HeartPulse",
+        positions: MINISTRY_GENERIC_POSITIONS,
+        modules: MINISTRY_GENERIC_MODULES,
+      },
+      [MinistrySubType.EconomyFinance]: {
+        label: { fr: "Économie, Finances, Dette", en: "Economy, Finance, Debt" },
+        description: { fr: "Ministère de l'Économie — politique budgétaire, dette, participations, lutte contre la vie chère", en: "Ministry of Economy — budgetary policy, debt, holdings, cost-of-living measures" },
+        icon: "TrendingUp",
+        positions: MINISTRY_GENERIC_POSITIONS,
+        modules: MINISTRY_GENERIC_MODULES,
+      },
+      [MinistrySubType.DigitalEconomyInnovation]: {
+        label: { fr: "Économie Numérique, Digitalisation", en: "Digital Economy, Digitalisation" },
+        description: { fr: "Ministère du Numérique — pilote la digitalisation de l'administration, l'innovation et la cybersécurité", en: "Ministry of Digital — leads administration digitalisation, innovation and cybersecurity" },
+        icon: "Cpu",
+        positions: MINISTRY_GENERIC_POSITIONS,
+        modules: MINISTRY_GENERIC_MODULES,
+      },
+      [MinistrySubType.InteriorSecurity]: {
+        label: { fr: "Intérieur, Sécurité, Décentralisation", en: "Interior, Security, Decentralisation" },
+        description: { fr: "Ministère de l'Intérieur — police, immigration, état civil national, collectivités locales", en: "Ministry of Interior — police, immigration, national civil status, local authorities" },
+        icon: "Shield",
+        positions: MINISTRY_GENERIC_POSITIONS,
+        modules: MINISTRY_GENERIC_MODULES,
       },
     },
   },
@@ -1001,6 +1353,15 @@ populateModuleAccess(PERMANENT_MISSION_POSITIONS);
 populateModuleAccess(HIGH_REPRESENTATION_POSITIONS);
 populateModuleAccess(MINISTRY_FOREIGN_AFFAIRS_POSITIONS);
 populateModuleAccess(INTELLIGENCE_AGENCY_POSITIONS);
+// ─── Admin.ga position templates ─────────────────────────
+populateModuleAccess(PRESIDENCY_POSITIONS);
+populateModuleAccess(MINISTRY_GENERIC_POSITIONS);
+populateModuleAccess(DIRECTORATE_GENERAL_POSITIONS);
+populateModuleAccess(PUBLIC_ESTABLISHMENT_POSITIONS);
+populateModuleAccess(INDEPENDENT_AUTHORITY_POSITIONS);
+populateModuleAccess(PARLIAMENT_POSITIONS);
+populateModuleAccess(SUPREME_COURT_POSITIONS);
+populateModuleAccess(LOCAL_AUTHORITY_POSITIONS);
 
 // ═══════════════════════════════════════════════════════════════
 // TASK CATEGORY METADATA (icons + labels for UI)
@@ -1028,7 +1389,7 @@ export const TASK_CATEGORY_META: Record<TaskCategory, { label: LocalizedString; 
   statistics: { label: { fr: "Statistiques", en: "Statistics" }, icon: "LineChart" },
   intelligence: { label: { fr: "Renseignement", en: "Intelligence" }, icon: "ShieldAlert" },
   // Network supervision (ministry-only)
-  network: { label: { fr: "Réseau diplomatique", en: "Diplomatic Network" }, icon: "Network" },
+  network: { label: { fr: "Supervision Réseau", en: "Network Oversight" }, icon: "Network" },
   // Consular services
   consular_registrations: { label: { fr: "Immatriculations", en: "Consular Registrations" }, icon: "ClipboardList" },
   consular_notifications: { label: { fr: "Signalements", en: "Consular Notifications" }, icon: "Bell" },

@@ -154,7 +154,7 @@ export default function IAgendaPage() {
 				icon={<Calendar className="h-5 w-5" />}
 				iconBgClass="bg-indigo-500/10"
 				title="iAgenda"
-				subtitle="Supervision des agendas diplomatiques"
+				subtitle="Supervision des agendas institutionnels"
 				actions={
 					<div className="flex items-center gap-2">
 						<OrgSelector />

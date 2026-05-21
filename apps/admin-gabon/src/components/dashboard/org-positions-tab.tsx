@@ -931,7 +931,7 @@ function PositionFormSheet({
 
 export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	// Form Sheet State
 	const [sheetOpen, setSheetOpen] = useState(false);

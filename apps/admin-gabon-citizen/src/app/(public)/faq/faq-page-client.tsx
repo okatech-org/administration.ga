@@ -16,7 +16,7 @@ export default function FAQPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Foire Aux Questions</h1>
             <p className="text-muted-foreground text-lg">
-              Retrouvez les réponses aux questions les plus fréquentes concernant vos démarches consulaires.
+              Retrouvez les réponses aux questions les plus fréquentes concernant vos démarches administratives.
             </p>
             <div className="gabon-stripe mt-6 max-w-xs mx-auto" />
           </div>

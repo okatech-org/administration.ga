@@ -21,7 +21,7 @@ interface LocationContextValue {
   country: string | null;
   /** Nom lisible du pays ("France", "Espagne") */
   countryName: string;
-  /** Organisation consulaire competente */
+  /** Administration competente */
   org: { _id: string; name: string; website?: string; type: string } | null;
   /** Lien vers le site dedie de l'org */
   orgWebsite: string | null;

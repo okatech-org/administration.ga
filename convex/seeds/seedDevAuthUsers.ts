@@ -26,12 +26,30 @@ interface DevSeedAccount {
 // ─────────────────────────────────────────────────────────────
 
 const DEV_ACCOUNTS: DevSeedAccount[] = [
-	// ── Superadmin / Admins (backoffice) ──
+	// ── Superadmin / Admins système (backoffice — admin.administration.ga) ──
 	{ email: "iasted@me.com", name: "iAsted SuperAdmin", isSuperadmin: true },
-	{ email: "admin@okafrancois.dev", name: "Assistant Agent" },
-	{ email: "admin+manager@okafrancois.dev", name: "Manager Test" },
+	{ email: "admin@okafrancois.dev", name: "Admin Système" },
+	{ email: "admin+manager@okafrancois.dev", name: "Admin Institution" },
 	{ email: "okatech+jerome@icloud.com", name: "Jerome Agent" },
 
+	// ── Administration nationale — Agents (administration.ga, port 3003) ──
+	{ email: "ministre.justice@admin.ga", name: "Augustin EMANE" },
+	{ email: "ministre.sante@admin.ga", name: "Elsa AYO épouse BIVIGOU" },
+	{ email: "ministre.numerique@admin.ga", name: "Mark-Alexandre DOUMBA" },
+	{ email: "dg.dgdi@admin.ga", name: "Directeur Général DGDI" },
+	{ email: "dg.dgi@admin.ga", name: "Directeur Général DGI" },
+	{ email: "agent.dgdi@admin.ga", name: "Agent guichet DGDI" },
+	{ email: "agent.dgi@admin.ga", name: "Agent traitement DGI" },
+
+	// ── Citoyens gabonais résidents au Gabon (demarche.ga, port 3000) ──
+	{ email: "jean.mboumba@admin.ga", name: "MBOUMBA Jean (Libreville)" },
+	{ email: "sylvie.akouala@admin.ga", name: "AKOUALA Sylvie (Port-Gentil)" },
+	{ email: "patrick.obiang@admin.ga", name: "OBIANG Patrick (Franceville)" },
+	{ email: "entreprise.demo@admin.ga", name: "SARL DEMO — Représentant légal" },
+
+	// ─────────────────────────────────────────────────────────────
+	// ── Comptes héritage gabon-diplomatie (backwards compat) ──
+	// ─────────────────────────────────────────────────────────────
 	// ── Citoyens gabonais résidents à l'étranger (citizen-web) ──
 	{ email: "pellen-lakoumba.gueylord@yopmail.com", name: "PELLEN-LAKOUMBA Gueylord" },
 	{ email: "marie.ntsaga@yopmail.com", name: "NTSAGA Marie" },

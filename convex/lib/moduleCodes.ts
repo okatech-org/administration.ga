@@ -203,10 +203,10 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
   },
   diplomatic_affairs: {
     code: "diplomatic_affairs",
-    label: { fr: "Affaires Diplomatiques", en: "Diplomatic Affairs" },
+    label: { fr: "Pilotage Stratégique", en: "Strategic Piloting" },
     description: {
-      fr: "Pipeline diplomatique, briefings, opérateurs cibles, CV",
-      en: "Diplomatic pipeline, briefings, target operators, CVs",
+      fr: "Pipeline stratégique, briefings, opérateurs cibles, fiches d'action",
+      en: "Strategic pipeline, briefings, target operators, action sheets",
     },
     icon: "ShieldAlert",
     color: "text-red-500",
@@ -216,15 +216,15 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
       { code: "targets", label: { fr: "Opérateurs cibles", en: "Target operators" } },
       { code: "pipeline", label: { fr: "Pipeline", en: "Pipeline" } },
       { code: "briefings", label: { fr: "Briefings", en: "Briefings" } },
-      { code: "cv", label: { fr: "CV diplomatiques", en: "Diplomatic CVs" } },
+      { code: "cv", label: { fr: "Fiches profils", en: "Profile sheets" } },
     ],
   },
   consular_affairs: {
     code: "consular_affairs",
-    label: { fr: "Affaires Consulaires", en: "Consular Affairs" },
+    label: { fr: "Démarches Administratives", en: "Administrative Procedures" },
     description: {
-      fr: "Demandes, profils citoyens, registre, passeports, visas, état civil, cartes consulaires",
-      en: "Requests, citizen profiles, registry, passports, visas, civil status, consular cards",
+      fr: "Demandes, profils des usagers, registres, pièces d'identité, certificats, état civil",
+      en: "Requests, user profiles, registries, identity documents, certificates, civil status",
     },
     icon: "FileEdit",
     color: "text-emerald-500",
@@ -260,8 +260,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     code: "community",
     label: { fr: "Communauté", en: "Community" },
     description: {
-      fr: "Associations, entreprises et événements communautaires de la diaspora",
-      en: "Diaspora associations, companies and community events",
+      fr: "Associations, entreprises et événements communautaires (citoyens et diaspora)",
+      en: "Associations, companies and community events (citizens and diaspora)",
     },
     icon: "Users",
     color: "text-green-500",
@@ -317,8 +317,8 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     code: "calendar",
     label: { fr: "iAgenda", en: "iAgenda" },
     description: {
-      fr: "Planification des rendez-vous et agenda diplomatique",
-      en: "Appointment scheduling and diplomatic agenda",
+      fr: "Planification des rendez-vous et agenda institutionnel",
+      en: "Appointment scheduling and institutional agenda",
     },
     icon: "CalendarDays",
     color: "text-violet-500",
@@ -326,7 +326,7 @@ export const MODULE_REGISTRY: Record<ModuleCodeValue, ModuleDefinition> = {
     isCore: true,
     capabilities: [
       { code: "personal", label: { fr: "Agenda personnel", en: "Personal agenda" } },
-      { code: "diplomatic", label: { fr: "Agenda diplomatique", en: "Diplomatic agenda" } },
+      { code: "diplomatic", label: { fr: "Agenda institutionnel", en: "Institutional agenda" } },
       { code: "scheduling", label: { fr: "RDV consulaires", en: "Consular appointments" } },
     ],
   },
@@ -836,7 +836,7 @@ export const CATEGORY_LABELS: Record<ModuleCategory, LocalizedString> = {
   ibureau: { fr: "iBureau", en: "iBureau" },
   gestion: { fr: "Gestion", en: "Management" },
   administration: { fr: "Administration", en: "Administration" },
-  network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+  network: { fr: "Supervision Réseau", en: "Network Oversight" },
   intelligence: { fr: "Renseignement", en: "Intelligence" },
   noyau_administratif: { fr: "Noyau administratif", en: "Administrative Core" },
 };
@@ -918,7 +918,7 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
   },
   {
     key: "network",
-    label: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+    label: { fr: "Supervision Réseau", en: "Network Oversight" },
     icon: "Network",
     modules: [
       "network_diplomatic_oversight",
@@ -1217,25 +1217,55 @@ const ORG_TYPE_MODULE_MAP: Record<string, ModuleCodeValue[]> = {
 };
 
 const ORG_TYPE_LABELS: Record<string, string> = {
+  // ── Admin.ga (administration.ga) ──
+  presidency: "Présidence",
+  vice_presidency: "Vice-Présidence",
+  government: "Gouvernement",
+  ministry: "Ministère",
+  delegated_ministry: "Ministère Délégué",
+  directorate_general: "Direction Générale",
+  public_establishment: "Établissement Public",
+  national_agency: "Agence Nationale",
+  independent_authority: "Autorité Indépendante",
+  consultative_institution: "Institution Consultative",
+  parliament_chamber: "Chambre Parlementaire",
+  supreme_court: "Juridiction Suprême",
+  local_authority: "Collectivité Locale",
+  // ── Diplomatique (gabon-diplomatie legacy) ──
   embassy: "Ambassade",
   high_representation: "Haute Représentation",
   general_consulate: "Consulat Général",
   permanent_mission: "Mission Permanente",
   high_commission: "Haut-Commissariat",
   honorary_consulate: "Consulat Honoraire",
+  intelligence_agency: "Agence de Renseignement",
   third_party: "Partenaire Tiers",
   custom: "Personnalisé",
-  intelligence_agency: "Agence de Renseignement",
 };
 
 const ORG_TYPE_EMOJIS: Record<string, string> = {
+  // ── Admin.ga ──
+  presidency: "",
+  vice_presidency: "",
+  government: "",
+  ministry: "",
+  delegated_ministry: "",
+  directorate_general: "",
+  public_establishment: "",
+  national_agency: "",
+  independent_authority: "",
+  consultative_institution: "",
+  parliament_chamber: "",
+  supreme_court: "",
+  local_authority: "",
+  // ── Diplomatique legacy ──
   embassy: "",
   high_representation: "",
   general_consulate: "",
   permanent_mission: "",
   high_commission: "",
   honorary_consulate: "",
+  intelligence_agency: "",
   third_party: "",
   custom: "",
-  intelligence_agency: "",
 };

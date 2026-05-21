@@ -49,7 +49,7 @@ const CATEGORY_STYLE: Record<string, string> = {
 
 export function OrgModulesTab({ orgId, currentModules }: OrgModulesTabProps) {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	const [pendingModules, setPendingModules] = useState<Set<string>>(
 		new Set(currentModules),

@@ -41,11 +41,11 @@ const STEPS = [
   },
   {
     name: "Sécurité et urgences",
-    text: "Numéros d'urgence : Police 1730, Gendarmerie 1731, Pompiers 18, SAMU 1300. La criminalité reste modérée ; vigilance dans les zones de marché et de nuit. S'inscrire sur le registre consulaire pour bénéficier des alertes diplomatiques.",
+    text: "Numéros d'urgence : Police 1730, Gendarmerie 1731, Pompiers 18, SAMU 1300. La criminalité reste modérée ; vigilance dans les zones de marché et de nuit. S'inscrire sur le registre des usagers pour bénéficier des alertes administratives.",
   },
   {
     name: "Suivre l'actualité officielle",
-    text: "Consulter consulat.ga (rubrique Actualités) pour les communiqués diplomatiques. Les annonces officielles paraissent au Journal Officiel et sur les sites du gouvernement (gouvernement.ga, diplomatie.gouv.ga).",
+    text: "Consulter administration.ga (rubrique Actualités) pour les communiqués diplomatiques. Les annonces officielles paraissent au Journal Officiel et sur les sites du gouvernement (gouvernement.ga, diplomatie.gouv.ga).",
   },
 ]
 

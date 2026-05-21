@@ -88,7 +88,7 @@ interface MemberRow {
 
 export function TeamListView({ orgId }: TeamListViewProps) {
   const { i18n } = useTranslation();
-  const lang = i18n.language === "fr" ? "fr" : "en";
+  const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [search, setSearch] = useState("");

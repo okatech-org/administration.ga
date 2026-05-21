@@ -265,7 +265,7 @@ const CATEGORY_LABELS: Record<string, { fr: string; en: string }> = {
 	ibureau: { fr: "iBureau", en: "iBureau" },
 	gestion: { fr: "Gestion", en: "Management" },
 	administration: { fr: "Administration", en: "Administration" },
-	network: { fr: "Réseau diplomatique", en: "Diplomatic Network" },
+	network: { fr: "Supervision Réseau", en: "Network Oversight" },
 	intelligence: { fr: "Renseignement", en: "Intelligence" },
 };
 const CATEGORY_ORDER: string[] = [
@@ -1336,7 +1336,11 @@ function PositionFormSheet({
 
 						{permMode === "module" && moduleAccessConfig.length > 0 && (
 							<div className="flex flex-wrap gap-1 pt-1">
-								{moduleAccessConfig.map((e) => {
+								{Array.from(
+									new Map(
+										moduleAccessConfig.map((e) => [e.moduleCode, e]),
+									).values(),
+								).map((e) => {
 									const meta = ACCESS_LEVEL_META[e.accessLevel];
 									const mod = MODULE_REGISTRY[e.moduleCode as ModuleCodeValue];
 									return (
@@ -1361,7 +1365,7 @@ function PositionFormSheet({
 
 export function OrgPositionsTab({ orgId }: OrgPositionsTabProps) {
 	const { i18n } = useTranslation();
-	const lang = i18n.language === "fr" ? "fr" : "en";
+	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	// Form Sheet State
 	const [sheetOpen, setSheetOpen] = useState(false);

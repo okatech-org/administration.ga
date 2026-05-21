@@ -50,7 +50,7 @@ const POPULAR_SEARCHES = [
   "Acte de naissance",
   "Mariage à l'étranger",
   "Bourses scolaires",
-  "Carte consulaire",
+  "Carte d'usager",
 ]
 
 const FEATURED_CATEGORY_TINTS: Record<string, GuideCardIconTint> = {
@@ -202,7 +202,7 @@ export default function RessourcesPageClient() {
         kicker="Ressources & informations"
         title="Guides, démarches et"
         titleAccent="tutoriels."
-        lede="Retrouvez les informations essentielles pour vos démarches consulaires, votre vie pratique à l'étranger, la scolarité de vos enfants — accompagnées de tutoriels vidéo et d'une foire aux questions."
+        lede="Retrouvez les informations essentielles pour vos démarches administratives, vos démarches quotidiennes, la scolarité de vos enfants — accompagnées de tutoriels vidéo et d'une foire aux questions."
       >
         <ResourceSearchBar defaultValue={queryText} />
         <PopularSearchTags items={POPULAR_SEARCHES} />
@@ -217,7 +217,7 @@ export default function RessourcesPageClient() {
         <SectionHeading
           title="Vos guides"
           titleAccent="personnalisés."
-          lede="Sélection de démarches consulaires fréquentes, adaptée à votre situation et à votre représentation de rattachement."
+          lede="Sélection de démarches administratives fréquentes, adaptée à votre situation et à l'administration compétente."
           allHref="/ressources?all=guides"
           allLabel="Tous les guides"
         />

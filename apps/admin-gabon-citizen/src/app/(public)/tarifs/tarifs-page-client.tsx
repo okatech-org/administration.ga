@@ -27,7 +27,7 @@ export default function TarifsPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Tarifs Consulaires</h1>
             <p className="text-muted-foreground text-lg">
-              Tarifs en vigueur applicables pour les services consulaires.
+              Tarifs en vigueur applicables aux services administratifs.
             </p>
           </div>
 
@@ -53,7 +53,7 @@ export default function TarifsPage() {
           </div>
 
           <p className="text-sm text-muted-foreground text-center italic mt-6">
-            Les tarifs sont indicatifs et peuvent être sujets à modification sans préavis. Les paiements se font généralement en espèces ou par carte bancaire au guichet consulaire.
+            Les tarifs sont indicatifs et peuvent être sujets à modification sans préavis. Les paiements se font en espèces, par carte bancaire ou via un opérateur de paiement mobile agréé.
           </p>
         </div>
       </main>
