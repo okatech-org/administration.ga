@@ -31,7 +31,7 @@ interface FeatureGuidesProps {
 export const FeatureGuides = ({
   badge = "Démarches & Informations",
   heading = "Vos Guides Personnalisés",
-  description = "Retrouvez toutes les informations essentielles pour vos démarches consulaires, votre installation, et votre retour au pays.",
+  description = "Retrouvez toutes les informations essentielles pour vos démarches administratives, votre installation et votre quotidien.",
   tabs = [
     {
       value: "arrival",
@@ -40,7 +40,7 @@ export const FeatureGuides = ({
       content: {
         badge: "Nouveaux arrivants",
         title: "Préparez votre voyage et installation.",
-        description: "Visas, inscription consulaire, et premiers pas dans votre nouveau pays de résidence.",
+        description: "Visas, inscription en ligne, et premiers pas dans votre nouveau pays de résidence.",
         buttonText: "Consulter le Guide d'Arrivée",
         buttonHref: "/ressources/guides/arrivee",
         imageSrc: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1200&auto=format&fit=crop",

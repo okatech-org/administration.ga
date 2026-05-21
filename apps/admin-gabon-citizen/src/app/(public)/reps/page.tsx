@@ -9,9 +9,9 @@ import RepsLoading from "./loading"
 import { RepsPageClient } from "./reps-page-client"
 
 export const metadata: Metadata = buildMetadata({
-  title: "Représentations diplomatiques",
+  title: "Annuaire des administrations",
   description:
-    "Annuaire complet des ambassades et consulats de la République Gabonaise à travers le monde : adresses, horaires, coordonnées et services consulaires disponibles.",
+    "Annuaire des administrations publiques gabonaises : ministères, directions générales, établissements publics — adresses, horaires, coordonnées et services disponibles.",
   path: "/reps",
 })
 
@@ -41,9 +41,9 @@ export default async function RepsPage() {
     <>
       <JsonLd
         data={collectionPageSchema({
-          name: "Représentations diplomatiques de la République Gabonaise",
+          name: "Annuaire des administrations de la République Gabonaise",
           description:
-            "Annuaire complet des ambassades et consulats gabonais dans le monde, avec adresses, horaires et services disponibles.",
+            "Annuaire des administrations gabonaises (ministères, DG, EP), avec adresses, horaires et services disponibles.",
           path: "/reps",
           items: collectionItems,
         })}

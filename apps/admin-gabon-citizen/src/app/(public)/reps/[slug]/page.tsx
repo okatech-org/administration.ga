@@ -47,7 +47,7 @@ export async function generateMetadata({
   }
 
   const countryName = countryNames[org.address.country] || org.address.country
-  const description = `${org.name} — ${org.address.city}, ${countryName}. Coordonnées, horaires et services consulaires.`
+  const description = `${org.name} — ${org.address.city}, ${countryName}. Coordonnées, horaires et services disponibles.`
 
   return buildMetadata({
     title: org.name,
@@ -67,7 +67,7 @@ export default async function OrgDetailPage({ params }: PageProps) {
   if (!org) notFound()
 
   const countryName = countryNames[org.address.country] || org.address.country
-  const description = `${org.name} — ${org.address.city}, ${countryName}. Coordonnées, horaires et services consulaires.`
+  const description = `${org.name} — ${org.address.city}, ${countryName}. Coordonnées, horaires et services disponibles.`
 
   return (
     <>

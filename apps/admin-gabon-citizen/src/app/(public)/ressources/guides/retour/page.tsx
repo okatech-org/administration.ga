@@ -6,7 +6,7 @@ import GuideRetourPageClient from "./retour-page-client"
 
 const TITLE = "Guide de retour au Gabon"
 const DESCRIPTION =
-  "Préparer son retour au Gabon : déménagement international, dédouanement, scolarisation, immatriculation véhicule, reprise d'activité et démarches consulaires."
+  "Préparer son retour ou installation au Gabon : dédouanement, scolarisation, immatriculation véhicule, reprise d'activité, démarches administratives."
 
 export const metadata: Metadata = buildMetadata({
   title: TITLE,
@@ -20,8 +20,8 @@ const STEPS = [
     text: "Établir un calendrier de retour, comparer les devis de déménagement international, lister les démarches administratives à clôturer dans le pays de résidence (impôts, sécurité sociale, baux, scolarité).",
   },
   {
-    name: "Mettre à jour son inscription consulaire",
-    text: "Notifier le consulat de son retour via consulat.ga. Demander une attestation de résidence à l'étranger pour bénéficier de l'exonération douanière sur les effets personnels (régime du retour des nationaux).",
+    name: "Mettre à jour son inscription en ligne",
+    text: "Notifier son installation au Gabon via administration.ga. Demander une attestation de résidence à l'étranger pour bénéficier de l'exonération douanière sur les effets personnels (régime du retour des nationaux).",
   },
   {
     name: "Organiser le déménagement et le dédouanement",
@@ -41,7 +41,7 @@ const STEPS = [
   },
   {
     name: "Reprendre ou créer une activité",
-    text: "Salarié : transmettre son CV via consulat.ga (rubrique « Mon CV »). Entrepreneur : créer son entreprise au Centre de Développement des Entreprises (CDE) en 72 h ; capital minimum 100 000 XAF pour une SARL.",
+    text: "Salarié : transmettre son CV via administration.ga (rubrique « Mon CV »). Entrepreneur : créer son entreprise au Centre de Développement des Entreprises (CDE) en 72 h ; capital minimum 100 000 XAF pour une SARL.",
   },
   {
     name: "Souscrire à la CNSS et à une mutuelle santé",

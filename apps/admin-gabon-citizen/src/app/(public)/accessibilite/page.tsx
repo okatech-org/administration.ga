@@ -16,7 +16,7 @@ export default function AccessibilityPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Accessibilité</h1>
             <p className="text-muted-foreground text-lg">
-              Le service consulaire s&apos;engage à rendre ses services numériques accessibles à tous, y compris aux personnes en situation de handicap.
+              L&apos;administration s&apos;engage à rendre ses services numériques accessibles à tous, y compris aux personnes en situation de handicap.
             </p>
           </div>
 
@@ -25,7 +25,7 @@ export default function AccessibilityPage() {
               <section>
                 <h2 className="text-2xl font-semibold mb-4">État de conformité</h2>
                 <p>
-                  Le site consulat.ga est en cours d&apos;audit pour déterminer son niveau de conformité avec les normes internationales d&apos;accessibilité (WCAG 2.1).
+                  Le site administration.ga est en cours d&apos;audit pour déterminer son niveau de conformité avec les normes internationales d&apos;accessibilité (WCAG 2.1).
                 </p>
               </section>
 

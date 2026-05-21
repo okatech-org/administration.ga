@@ -1,40 +1,40 @@
 {
 	"heroCore": {
-		"badge": "Plateforme Consulaire Officielle du Gabon",
-		"title": "Vos services consulaires",
+		"badge": "Plateforme Officielle de l'Administration Gabonaise",
+		"title": "Vos services administratifs",
 		"titleHighlight": "où que vous soyez",
-		"description": "Passeport, état civil, protection consulaire... Effectuez vos démarches administratives gabonaises en ligne, 24h/24, depuis n'importe quel pays.",
+		"description": "Passeport, état civil, assistance administrative... Effectuez vos démarches administratives gabonaises en ligne, 24h/24, depuis n'importe où.",
 		"cta": {
-			"register": "M'inscrire au Consulat",
+			"register": "M'inscrire",
 			"access": "Accéder à mon espace",
 			"services": "Découvrir les services",
-			"mySpace": "Mon espace consulaire"
+			"mySpace": "Mon espace personnel"
 		},
 		"stats": {
-			"representations": "représentations",
+			"representations": "administrations",
 			"services": "services",
 			"users": "usagers"
 		}
 	},
 	"hero": {
 		"badge": "Plateforme Officielle",
-		"title": "Services Consulaires de la",
+		"title": "Plateforme Numérique de l'Administration",
 		"titleHighlight": "République Gabonaise",
-		"subtitle": "Votre consulat, où que vous soyez dans le monde",
-		"description": "Accédez à tous vos services consulaires en ligne : passeport, visa, état civil, inscription consulaire et bien plus encore.",
+		"subtitle": "Votre administration, accessible où que vous soyez",
+		"description": "Accédez à tous vos services administratifs en ligne : CNI, passeport, état civil, fiscalité, foncier, et bien plus.",
 		"bookAppointment": "Prendre Rendez-vous",
 		"ourServices": "Nos Services",
 		"trackApplication": "Suivi de Dossier",
-		"createSpace": "Créer mon espace consulaire",
+		"createSpace": "Créer mon espace personnel",
 		"accessSpace": "Accéder à mon espace",
-		"emergencyLabel": "Urgence Consulaire 24h/24",
+		"emergencyLabel": "Assistance d'urgence 24h/24",
 		"quickAccess": {
 			"news": "Actualités",
 			"newsDesc": "Dernières informations",
 			"services": "Services",
 			"servicesDesc": "Tous nos services",
 			"directory": "Annuaire",
-			"directoryDesc": "Nos consulats",
+			"directoryDesc": "Nos administrations",
 			"faq": "FAQ",
 			"faqDesc": "Questions fréquentes"
 		}
@@ -44,26 +44,26 @@
 		"subtitle": "Accédez à un espace personnalisé selon votre situation",
 		"cta": "Accéder",
 		"resident": {
-			"title": "Résident à l'étranger",
-			"subtitle": "Gabonais installé hors du pays (+6 mois)",
-			"description": "Inscription consulaire complète, renouvellement de passeport, actes d'état civil, protection consulaire."
+			"title": "Citoyen gabonais",
+			"subtitle": "Personne physique résidant au Gabon",
+			"description": "État civil, identité, fiscalité, urbanisme, foncier — toutes vos démarches du quotidien."
 		},
 		"passage": {
-			"title": "De passage à l'étranger",
-			"subtitle": "Gabonais en séjour temporaire (-6 mois)",
-			"description": "Déclaration temporaire, assistance d'urgence, laissez-passer en cas de perte de documents."
+			"title": "Entreprise",
+			"subtitle": "Personne morale (SARL, SA, EI...)",
+			"description": "Création d'entreprise (RCCM, NIF), déclarations fiscales, formalités administratives."
 		},
 		"visitor": {
-			"title": "Visiteur / Étranger",
-			"subtitle": "Souhaitant se rendre au Gabon",
-			"description": "Demande de visa, légalisation de documents, informations sur l'entrée au Gabon."
+			"title": "Étranger résident",
+			"subtitle": "Personne étrangère installée au Gabon",
+			"description": "Titre de séjour, regroupement familial, naturalisation, légalisation."
 		}
 	},
 	"map": {
-		"title": "Les représentations du Gabon dans le monde",
-		"subtitle": "Consulat, corps, notre réseau diplomatique, vous accompagne partout",
-		"embassy": "Ambassade",
-		"consulate": "Consulat",
+		"title": "Les administrations gabonaises",
+		"subtitle": "Trouvez l'administration compétente pour vos démarches",
+		"embassy": "Ministère",
+		"consulate": "Guichet",
 		"company": "Entreprise",
 		"association": "Association",
 		"locationFound": "Position trouvée !",
@@ -71,15 +71,15 @@
 		"locationUnsupported": "Géolocalisation non supportée.",
 		"explore": "Explorer le réseau",
 		"stats": {
-			"representations": "Ambassades & Consulats",
+			"representations": "Ministères & Institutions",
 			"assistance": "Assistance d'Urgence"
 		},
 		"directions": "Y aller",
 		"details": "Détails"
 	},
 	"why": {
-		"title": "Pourquoi Consulat.ga ?",
-		"subtitle": "Une plateforme moderne au service des Gabonais du monde entier",
+		"title": "Pourquoi Administration.ga ?",
+		"subtitle": "Une plateforme moderne au service des citoyens et entreprises du Gabon",
 		"secure": {
 			"title": "Sécurisé",
 			"description": "Vos données sont protégées selon les standards internationaux"
@@ -90,7 +90,7 @@
 		},
 		"accessible": {
 			"title": "Accessible",
-			"description": "Disponible 24h/24, 7j/7, depuis n'importe quel pays"
+			"description": "Disponible 24h/24, 7j/7, depuis n'importe où"
 		},
 		"modern": {
 			"title": "Moderne",
@@ -98,16 +98,16 @@
 		}
 	},
 	"cta": {
-		"title": "Rejoignez la communauté consulaire",
-		"subtitle": "Inscrivez-vous gratuitement et accédez à l'ensemble des services consulaires depuis votre espace personnel sécurisé.",
-		"button": "Créer mon compte consulaire"
+		"title": "Rejoignez la communauté des usagers",
+		"subtitle": "Inscrivez-vous gratuitement et accédez à l'ensemble des services administratifs depuis votre espace personnel sécurisé.",
+		"button": "Créer mon compte personnel"
 	},
 	"services": {
 		"badge": "Nos Services",
 		"title": "Services les plus demandés",
-		"pageTitle": "Services Consulaires",
-		"description": "Accédez rapidement aux démarches consulaires les plus courantes",
-		"pageDescription": "Découvrez l'ensemble des services proposés par les représentations consulaires de la République Gabonaise à l'étranger.",
+		"pageTitle": "Services Administratifs",
+		"description": "Accédez rapidement aux démarches administratives les plus courantes",
+		"pageDescription": "Découvrez l'ensemble des services proposés par les administrations publiques de la République Gabonaise à l'étranger.",
 		"knowMore": "En savoir plus",
 		"free": "Gratuit",
 		"filters": "Filtres",
@@ -134,7 +134,7 @@
 			"passport": "Passeport",
 			"visa": "Visa",
 			"civil_status": "État Civil",
-			"registration": "Inscription Consulaire",
+			"registration": "Inscription en ligne",
 			"legalization": "Légalisation",
 			"transcript": "Transcription",
 			"travel_document": "Titre de Voyage",
@@ -149,7 +149,7 @@
 		"availableOnline": "Disponible en ligne",
 		"onSiteOnly": "Sur place uniquement",
 		"notAvailableOnlineTitle": "Non disponible en ligne",
-		"notAvailableOnlineDesc": "Aucun consulat ou ambassade n'offre ce service en ligne pour votre pays de résidence. Veuillez vous rendre sur place.",
+		"notAvailableOnlineDesc": "Aucune administration n'offre actuellement ce service en ligne. Veuillez vous rendre sur place.",
 		"appointmentRequired": "Rendez-vous requis",
 		"required": "Obligatoire",
 		"detailsTitle": "Informations détaillées",
@@ -169,7 +169,7 @@
 			"importantInfo": "Informations importantes",
 			"infoPoints": {
 				"docs": "Les documents doivent être originaux ou copies certifiées conformes",
-				"delay": "Le délai de traitement est indicatif et peut varier selon le consulat",
+				"delay": "Le délai de traitement est indicatif et peut varier selon l'administration",
 				"identity": "Présentez-vous avec une pièce d'identité valide"
 			},
 			"formDownloaded": "Formulaire téléchargé",
@@ -197,7 +197,7 @@
 			"description": "Actes de naissance, mariage, décès. Transcription et légalisation des documents."
 		},
 		"registration": {
-			"title": "Inscription Consulaire",
+			"title": "Inscription en ligne",
 			"description": "Inscrivez-vous au registre des Gabonais de l'étranger. Restez informé et protégé."
 		},
 		"legalization": {
@@ -206,7 +206,7 @@
 		},
 		"emergency": {
 			"title": "Assistance d'Urgence",
-			"description": "Aide consulaire en cas d'urgence : perte de documents, difficultés à l'étranger."
+			"description": "Aide administratif en cas d'urgence : perte de documents, difficultés à l'étranger."
 		},
 		"empty": "Aucun service disponible pour le moment.",
 		"backToServices": "Retour aux services",
@@ -216,7 +216,7 @@
 	},
 	"news": {
 		"title": "Actualités",
-		"subtitle": "Restez informé des dernières nouvelles, événements et communiqués officiels du Consulat.",
+		"subtitle": "Restez informé des dernières nouvelles, événements et communiqués officiels du Guichet.",
 		"empty": "Aucune actualité pour le moment",
 		"emptyHint": "Revenez bientôt pour découvrir les dernières nouvelles.",
 		"backToNews": "Retour aux actualités",
@@ -248,38 +248,38 @@
 	},
 	"consulates": {
 		"badge": "Nos Représentations",
-		"title": "Consulats du Gabon dans le Monde",
-		"description": "Trouvez le consulat gabonais le plus proche de chez vous pour effectuer vos démarches administratives.",
+		"title": "Administrations du Gabon dans le Monde",
+		"description": "Trouvez le administration.gabonais le plus proche de chez vous pour effectuer vos démarches administratives.",
 		"headquarters": "Siège Principal",
 		"viewDetails": "Voir les détails",
-		"viewAll": "Voir Tous les Consulats",
-		"embassy": "Ambassade",
+		"viewAll": "Voir Tous les Administrations",
+		"embassy": "Ministère",
 		"empty": "Aucune représentation disponible."
 	},
 	"orgs": {
-		"pageTitle": "Réseau Mondial",
-		"pageDescription": "Retrouvez l'ensemble des représentations diplomatiques et consulaires de la République Gabonaise à travers le monde.",
-		"searchPlaceholder": "Rechercher une ambassade, un consulat, une ville...",
+		"pageTitle": "Annuaire des administrations",
+		"pageDescription": "Retrouvez l'ensemble des administrations publiques de la République Gabonaise.",
+		"searchPlaceholder": "Rechercher une administration, un ministère, une ville...",
 		"noResults": "Aucun résultat trouvé",
 		"noResultsDesc": "Essayez de modifier votre recherche.",
-		"viewAll": "Voir toutes les représentations",
+		"viewAll": "Voir toutes les administrations",
 		"mapView": "Carte",
 		"gridView": "Grille",
 		"allContinents": "Tous",
-		"representations": "représentations",
-		"otherRepresentations": "autre(s) représentation(s)",
+		"representations": "administrations",
+		"otherRepresentations": "autre(s) administration(s)",
 		"countries": "pays",
 		"viewDetails": "Voir les détails",
-		"notFound": "Représentation non trouvée",
-		"notFoundDesc": "La représentation demandée n'existe pas ou a été supprimée.",
-		"backToOrgs": "Retour aux représentations",
+		"notFound": "Administration non trouvée",
+		"notFoundDesc": "L'administration demandée n'existe pas ou a été supprimée.",
+		"backToOrgs": "Retour aux administrations",
 		"address": "Adresse",
 		"contact": "Contact",
 		"openingHours": "Horaires d'ouverture",
 		"closed": "Fermé",
 		"noContact": "Aucune information de contact disponible.",
 		"discoverServices": "Découvrez nos services",
-		"servicesDesc": "Consultez la liste des services consulaires disponibles.",
+		"servicesDesc": "Consultez la liste des services administratifs disponibles.",
 		"viewServices": "Voir les services",
 		"continents": {
 			"africa": "Afrique",
@@ -289,10 +289,10 @@
 			"middle_east": "Moyen-Orient"
 		},
 		"type": {
-			"embassy": "Ambassade",
-			"generalConsulate": "Consulat Général",
-			"consulate": "Consulat",
-			"honoraryConsulate": "Consulat Honoraire",
+			"embassy": "Ministère",
+			"generalGuichete": "Guichet Général",
+			"consulate": "Guichet",
+			"honoraryGuichete": "Guichet Honoraire",
 			"highCommission": "Haut-Commissariat",
 			"permanentMission": "Mission Permanente",
 			"thirdParty": "Partenaire tiers"
@@ -302,7 +302,7 @@
 	"citizenCta": {
 		"badge": "Compte Citoyen",
 		"title": "Créez votre Compte Citoyen Gabonais",
-		"description": "Un compte unique pour accéder à tous les services consulaires en ligne. Simplifiez vos démarches administratives où que vous soyez dans le monde.",
+		"description": "Un compte unique pour accéder à tous les services administratifs en ligne. Simplifiez vos démarches où que vous soyez.",
 		"createAccount": "Créer mon compte",
 		"existingAccount": "J'ai déjà un compte",
 		"benefits": {
@@ -321,31 +321,31 @@
 		},
 		"stats": {
 			"citizens": "Citoyens inscrits",
-			"consulates": "Consulats connectés",
+			"consulates": "Administrations connectées",
 			"satisfaction": "Satisfaction",
 			"availability": "Disponibilité"
 		},
-		"testimonial": "Grâce à Consulat.ga, j'ai pu renouveler mon passeport depuis Londres sans avoir à me déplacer. Service rapide et efficace !",
-		"testimonialAuthor": "Marie N., Londres"
+		"testimonial": "Grâce à Administration.ga, j'ai pu obtenir ma CNI sans faire la queue. Service simple et rapide !",
+		"testimonialAuthor": "Marie N., Libreville"
 	},
 	"footer": {
 		"brand": {
-			"name": "Consulat.ga",
-			"description": "Plateforme officielle des services consulaires de la République Gabonaise à travers le monde."
+			"name": "Administration.ga",
+			"description": "Plateforme officielle des services administratifs de la République Gabonaise à travers le monde."
 		},
 		"officialLinks": {
 			"title": "Plateforme",
-			"ministry": "Services consulaires",
+			"ministry": "Services administratifs",
 			"embassy": "Réseau mondial",
 			"consular": "Actualités"
 		},
 		"contact": {
 			"title": "Contact",
-			"email": "Email: contact@consulat.ga",
+			"email": "Email: contact@administration.ga",
 			"phone": "",
 			"license": ""
 		},
-		"copyright": " {{year}} Consulat.ga — République Gabonaise",
+		"copyright": " {{year}} Administration.ga — République Gabonaise",
 		"version": ""
 	},
 	"theme": {
@@ -356,33 +356,33 @@
 	},
 	"register": {
 		"hero": {
-			"title": "Votre consulat à portée de main",
-			"subtitle": "Un service consulaire en ligne, numérique et augmenté pour simplifier vos démarches administratives."
+			"title": "Votre administration à portée de main",
+			"subtitle": "Un service administratif en ligne, numérique et augmenté pour simplifier vos démarches administratives."
 		},
 		"backToProfile": "← Changer de profil",
 		"alreadyRegistered": {
 			"title": "Profil déjà créé",
-			"description": "Vous avez déjà un profil consulaire. Accédez à votre espace pour suivre vos démarches.",
-			"cta": "Accéder à mon espace consulaire"
+			"description": "Vous avez déjà un profil administratif. Accédez à votre espace pour suivre vos démarches.",
+			"cta": "Accéder à mon espace personnel"
 		},
 		"selectProfile": {
-			"title": "Bienvenue sur le Portail Consulaire",
+			"title": "Bienvenue sur le Portail Administratif",
 			"subtitle": "Veuillez sélectionner votre profil pour commencer l'inscription"
 		},
 		"profiles": {
 			"resident": {
-				"title": "Résident à l'étranger",
+				"title": "Citoyen gabonais",
 				"description": "Gabonais résidant à l'étranger depuis plus de 6 mois",
-				"feature1": "Inscription consulaire complète",
+				"feature1": "Inscription administrative complète",
 				"feature2": "Renouvellement de passeport",
 				"feature3": "Actes d'état civil",
-				"feature4": "Carte consulaire"
+				"feature4": "Carte administrative"
 			},
 			"passage": {
 				"title": "De passage",
 				"description": "Gabonais de passage à l'étranger (moins de 6 mois)",
 				"feature1": "Déclaration de passage",
-				"feature2": "Assistance consulaire",
+				"feature2": "Assistance administratif",
 				"feature3": "Laissez-passer d'urgence"
 			},
 			"foreigner": {
@@ -441,7 +441,7 @@
 		},
 		"foreigner": {
 			"title": "Inscription Usager Étranger",
-			"subtitle": "Complétez votre profil pour accéder aux services consulaires",
+			"subtitle": "Complétez votre profil pour accéder aux services administratifs",
 			"steps": {
 				"account": {
 					"title": "Créer votre compte"
@@ -478,7 +478,7 @@
 			"submit": "Enregistrer mon profil",
 			"purpose": {
 				"title": "Motif de séjour",
-				"description": "Sélectionnez le motif de votre sollicitation auprès du consulat",
+				"description": "Sélectionnez le motif de votre sollicitation auprès de l'administration",
 				"tourism": {
 					"title": "Visa Tourisme",
 					"description": "Séjour touristique de courte durée",
@@ -531,14 +531,14 @@
 			"title": "Demande envoyée !",
 			"reference": "Référence",
 			"profileCreated": "Profil créé avec succès !",
-			"profileCreatedDesc": "Votre profil a été enregistré. Vous pouvez maintenant accéder à votre espace consulaire.",
+			"profileCreatedDesc": "Votre profil a été enregistré. Vous pouvez maintenant accéder à votre espace personnel.",
 			"goToSpace": "Accéder à mon Espace",
 			"description": "Votre demande sera traitée par {{orgName}}"
 		},
 		"noOrg": {
 			"title": "Profil créé",
 			"goToSpace": "Accéder à mon Espace",
-			"description": "Votre profil a été créé, mais aucun organisme consulaire n'est configuré pour votre pays de résidence ({{country}}). Vous pourrez soumettre votre demande d'inscription plus tard."
+			"description": "Votre profil a été créé, mais aucun organisme administratif n'est configuré pour votre pays de résidence ({{country}}). Vous pourrez soumettre votre demande d'inscription plus tard."
 		},
 		"error": {
 			"title": "Une erreur est survenue",
@@ -563,7 +563,7 @@
 			"contact": "Coordonnées",
 			"address": "Adresse de résidence",
 			"family": "Situation familiale",
-			"description": "Votre dossier sera transmis au service consulaire pour validation. Vous recevrez une notification dès que votre statut changera.",
+			"description": "Votre dossier sera transmis au service administratif pour validation. Vous recevrez une notification dès que votre statut changera.",
 			"emergencyResidence": "Contact d'urgence (résidence)",
 			"emergencyHomeland": "Contact d'urgence (pays d'origine)",
 			"profession": "Situation professionnelle",
@@ -729,8 +729,8 @@
 			"security": "Sécurité"
 		},
 		"dossier": {
-			"title": "Mon Dossier Consulaire",
-			"description": "Gérez vos informations personnelles et documents consulaires.",
+			"title": "Mon Dossier Administratif",
+			"description": "Gérez vos informations personnelles et documents administratifs.",
 			"noChanges": "Aucune modification détectée.",
 			"saveError": "Erreur lors de l'enregistrement.",
 			"familyDesc": "Situation familiale et filiation",
@@ -805,7 +805,7 @@
 			"dark": "Sombre"
 		},
 		"consularTheme": {
-			"title": "Thème de l'espace consulaire",
+			"title": "Thème de l'espace personnel",
 			"description": "Choisissez le style visuel de votre espace.",
 			"default": "Classique",
 			"defaultDesc": "Style plat et moderne",
@@ -867,7 +867,7 @@
 		},
 		"groups": {
 			"account": "Compte",
-			"myDossier": "Dossier consulaire",
+			"myDossier": "Dossier administratif",
 			"mySpace": "Mon espace"
 		}
 	},
@@ -921,10 +921,10 @@
 				"openingHours": "Horaires d'ouverture",
 				"callOrg": "Appeler l'organisme",
 				"callAction": {
-					"embassy": "Contacter l'ambassade",
-					"general_consulate": "Contacter le consulat général",
-					"consulate": "Contacter le consulat",
-					"honorary_consulate": "Contacter le consulat honoraire",
+					"embassy": "Contacter le ministère",
+					"general_consulate": "Contacter la direction générale",
+					"consulate": "Contacter l'administration",
+					"honorary_consulate": "Contacter le guichet local",
 					"high_commission": "Contacter le haut-commissariat",
 					"permanent_mission": "Contacter la mission",
 					"third_party": "Contacter le partenaire",
@@ -1068,7 +1068,7 @@
 		"nav": {
 			"home": "Accueil",
 			"news": "Actualités",
-			"consulates": "Consulats",
+			"consulates": "Administrations",
 			"faq": "FAQ",
 			"contact": "Contact",
 			"services": "Services",
@@ -1108,11 +1108,11 @@
 		"switchToCitizen": "Espace Citoyen"
 	},
 	"mySpace": {
-		"title": "Mon Espace Consulaire",
+		"title": "Mon Espace Personnel",
 		"syncing": "Synchronisation de votre compte...",
 		"noProfile": {
 			"title": "Profil introuvable",
-			"message": "Vous n'avez pas encore de profil. Nous vous redirigeons vers l'espace d'inscription consulaire pour compléter votre profil et vous inscrire.",
+			"message": "Vous n'avez pas encore de profil. Nous vous redirigeons vers l'espace d'inscription en ligne pour compléter votre profil et vous inscrire.",
 			"countdown": "Redirection dans {{seconds}}s...",
 			"createProfile": "Créer mon profil citoyen"
 		},
@@ -1123,7 +1123,7 @@
 		"screens": {
 			"index": {
 				"heading": "Tableau de bord",
-				"subtitle": "Gérez vos démarches consulaires depuis votre espace personnel."
+				"subtitle": "Gérez vos démarches administratives depuis votre espace personnel."
 			},
 			"profile": {
 				"heading": "Mon profil",
@@ -1131,7 +1131,7 @@
 			},
 			"requests": {
 				"heading": "Mes demandes",
-				"subtitle": "Suivez l'avancement de vos demandes consulaires."
+				"subtitle": "Suivez l'avancement de vos demandes administratifs."
 			},
 			"documents": {
 				"heading": "Mes documents",
@@ -1139,7 +1139,7 @@
 			},
 			"appointments": {
 				"heading": "Mes rendez-vous",
-				"subtitle": "Prenez rendez-vous en ligne pour vos démarches consulaires."
+				"subtitle": "Prenez rendez-vous en ligne pour vos démarches administratives."
 			},
 			"settings": {
 				"heading": "Paramètres",
@@ -1151,7 +1151,7 @@
 			},
 			"services": {
 				"heading": "Services & Démarches",
-				"subtitle": "Découvrez et initiez vos démarches consulaires",
+				"subtitle": "Découvrez et initiez vos démarches administratives",
 				"searchPlaceholder": "Rechercher un service, document ou démarche...",
 				"trackRequests": "Suivre mes demandes",
 				"noResults": "Aucun service trouvé",
@@ -1162,9 +1162,9 @@
 			},
 			"iboite": {
 				"heading": "iBoîte",
-				"subtitle": "Votre messagerie consulaire sécurisée",
+				"subtitle": "Votre messagerie administratif sécurisée",
 				"comingSoon": "Fonctionnalité bientôt disponible",
-				"description": "iBoîte vous permettra de communiquer de manière sécurisée avec votre consulat, recevoir des notifications importantes et gérer votre correspondance officielle."
+				"description": "iBoîte vous permettra de communiquer de manière sécurisée avec votre administration, recevoir des notifications importantes et gérer votre correspondance officielle."
 			}
 		},
 		"nav": {
@@ -1201,13 +1201,13 @@
 			"newRequest": "Nouvelle demande"
 		},
 		"registration": {
-			"cta": "Faire mon inscription consulaire",
+			"cta": "Faire mon inscription en ligne",
 			"dialog": {
-				"title": "Inscription consulaire",
+				"title": "Inscription administrative",
 				"checking": "Recherche d'un organisme de rattachement...",
 				"orgFound": "Organisme de rattachement trouvé",
-				"readyDescription": "Un organisme consulaire a été trouvé pour votre pays de résidence.",
-				"confirmQuestion": "Souhaitez-vous envoyer votre demande d'inscription consulaire à cet organisme ?",
+				"readyDescription": "Un organisme administratif a été trouvé pour votre pays de résidence.",
+				"confirmQuestion": "Souhaitez-vous envoyer votre demande d'inscription en ligne à cet organisme ?",
 				"send": "Envoyer ma demande",
 				"submitting": "Envoi de votre demande...",
 				"success": "Demande envoyée !",
@@ -1215,12 +1215,12 @@
 				"reference": "Référence",
 				"confirm": "Fermer",
 				"notFound": "Aucun organisme disponible",
-				"notFoundDescription": "Aucun organisme consulaire n'offre ce service en ligne pour votre pays de résidence. Veuillez réessayer plus tard.",
+				"notFoundDescription": "Aucun organisme administratif n'offre ce service en ligne pour votre pays de résidence. Veuillez réessayer plus tard.",
 				"retry": "Réessayer plus tard",
 				"retryNow": "Réessayer",
 				"alreadyInProgress": {
 					"title": "Vous avez déjà une demande en cours",
-					"description": "Une demande d'inscription consulaire est en cours de traitement auprès de {{orgName}}.",
+					"description": "Une demande d'inscription en ligne est en cours de traitement auprès de {{orgName}}.",
 					"viewRequest": "Voir ma demande"
 				}
 			}
@@ -1228,20 +1228,20 @@
 		"notification": {
 			"cta": "Signaler ma présence",
 			"dialog": {
-				"title": "Signalement consulaire",
-				"description": "Signalez votre déplacement temporaire auprès du consulat compétent.",
+				"title": "Signalement administratif",
+				"description": "Signalez votre situation auprès de l'administration compétente.",
 				"selectCountry": "Dans quel pays vous rendez-vous ?",
 				"countryPlaceholder": "Sélectionner le pays de destination",
-				"searching": "Recherche du consulat compétent...",
-				"orgFound": "Consulat compétent trouvé",
-				"confirmMessage": "Confirmez-vous vouloir signaler votre présence auprès de ce consulat ?",
+				"searching": "Recherche de l'administration compétente...",
+				"orgFound": "Guichet compétent trouvé",
+				"confirmMessage": "Confirmez-vous vouloir signaler votre situation auprès de cette administration ?",
 				"confirm": "Confirmer le signalement",
 				"submitting": "Envoi de votre signalement...",
 				"success": "Signalement envoyé avec succès !",
-				"successOrg": "Consulat : {{orgName}}",
+				"successOrg": "Guichet : {{orgName}}",
 				"reference": "Référence",
 				"notApplicable": "Le signalement n'est pas disponible pour votre profil.",
-				"notFound": "Aucun consulat compétent trouvé pour ce pays de destination.",
+				"notFound": "Aucune administration compétente trouvée.",
 				"unknownError": "Une erreur inconnue est survenue.",
 				"submissionFailed": "La soumission a échoué.",
 				"unexpectedError": "Erreur inattendue.",
@@ -1254,7 +1254,7 @@
 			}
 		},
 		"consularCard": {
-			"title": "Carte Consulaire",
+			"title": "Carte Administratif",
 			"active": "Active",
 			"validUntil": "Valide jusqu'au",
 			"viewCard": "Voir la carte",
@@ -1267,10 +1267,10 @@
 			"pending": "En cours",
 			"notIssued": "Non émise",
 			"request": "Demander",
-			"expiredDesc": "Votre carte consulaire a expiré",
-			"notEligible": "Réservé aux ressortissants gabonais",
+			"expiredDesc": "Votre carte administratif a expiré",
+			"notEligible": "Réservé aux citoyens gabonais",
 			"pendingDesc": "Démarche en cours de traitement",
-			"noCardYet": "Vous n'avez pas encore de carte consulaire"
+			"noCardYet": "Vous n'avez pas encore de carte administratif"
 		},
 		"currentRequest": {
 			"title": "Demande en cours",
@@ -1308,9 +1308,9 @@
 			"noAuthentication": "Authentification requise",
 			"pleaseSignIn": "Veuillez vous connecter pour accéder à votre espace.",
 			"welcomeBack": "Bon retour",
-			"accessAccount": "Accédez à votre compte services consulaires",
+			"accessAccount": "Accédez à votre compte services administratifs",
 			"createAccount": "Créer un compte",
-			"joinPlatform": "Rejoignez la plateforme des services consulaires",
+			"joinPlatform": "Rejoignez la plateforme des services administratifs",
 			"signInFailed": "Échec de la connexion. Vérifiez vos identifiants.",
 			"signUpFailed": "Échec de l'inscription. Veuillez réessayer.",
 			"noAccount": "Pas encore de compte ?",
@@ -1660,16 +1660,16 @@
 			"title": "Centre de Commandement",
 			"welcome": "Vue stratégique globale",
 			"stats": {
-				"users": "Ressortissants",
+				"users": "Citoyens",
 				"totalUsers": "Comptes actifs",
 				"organizations": "Représentations",
-				"consulatesEmbassies": "Consulats et ambassades",
+				"consulatesEmbassies": "Administrations et ministères",
 				"services": "Services",
 				"availableServices": "Services disponibles",
 				"requests": "Demandes",
 				"pendingRequests": "Total des demandes",
 				"registrations": "Inscriptions",
-				"totalRegistrations": "Inscriptions consulaires"
+				"totalRegistrations": "Inscriptions administratifs"
 			},
 			"recentActivity": "Activité récente",
 			"recentActivityDesc": "Dernières actions effectuées sur la plateforme",
@@ -1690,15 +1690,15 @@
 			},
 			"deployment": {
 				"title": "Déploiement des Représentations",
-				"description": "Couverture géographique et progression du réseau diplomatique"
+				"description": "Couverture géographique et progression du réseau administratif"
 			},
-			"kpiSection": "Indicateurs clés du réseau diplomatique",
+			"kpiSection": "Indicateurs clés du réseau administratif",
 			"kpi": {
 				"userHint": "comptes actifs",
-				"orgHint": "ambassades & consulats",
+				"orgHint": "ministères & administrations",
 				"orgRate": "{{rate}} % activées",
 				"requestsHint": "{{count}} en attente",
-				"registrationsHint": "registre consulaire",
+				"registrationsHint": "registre administratif",
 				"associations": "Associations",
 				"associationsHint": "diaspora & sociétés",
 				"companiesFallback": "{{count}} entreprises",
@@ -1706,13 +1706,13 @@
 			},
 			"sections": {
 				"pipeline": "Pipeline de traitement",
-				"pipelineHint": "Répartition des demandes par étape du workflow consulaire",
+				"pipelineHint": "Répartition des demandes par étape du workflow administratif",
 				"performance": "Performance globale",
 				"performanceHint": "Taux de résolution des demandes",
 				"resolution": "Taux de résolution",
 				"resolutionSub": "{{done}} terminées sur {{total}}",
 				"requestsByStatusHint": "Répartition circulaire des {{count}} dossiers",
-				"registrations": "Inscriptions consulaires",
+				"registrations": "Inscriptions administratifs",
 				"registrationsHint": "État du registre · {{count}} dossiers",
 				"alerts": "Alertes & événements",
 				"alertsHint_one": "{{count}} notification à examiner",
@@ -1756,7 +1756,7 @@
 			"hero": {
 				"greeting": "Bonjour",
 				"subtitle": "vue stratégique du réseau",
-				"summary": "{{reps}} représentations connectées · {{users}} ressortissants actifs",
+				"summary": "{{reps}} représentations connectées · {{users}} citoyens actifs",
 				"urgentSuffix": " · {{urgent}} demandes prioritaires requièrent une attention"
 			},
 			"posts_one": "{{count}} poste",
@@ -1803,7 +1803,7 @@
 				"confidential": "Document confidentiel · usage interne",
 				"downloadPdf": "Télécharger PDF",
 				"generating": "Génération…",
-				"footer": "Généré automatiquement le {{date}} à {{time}} · Document confidentiel — usage interne Consulat.ga"
+				"footer": "Généré automatiquement le {{date}} à {{time}} · Document confidentiel — usage interne Administration.ga"
 			}
 		},
 		"nav": {
@@ -2128,8 +2128,8 @@
 			}
 		},
 		"organizations": {
-			"title": "Représentations diplomatiques",
-			"description": "Gérer les consulats, ambassades et représentations diplomatiques",
+			"title": "Représentations administratifs",
+			"description": "Gérer les administrations, ministères et représentations administratifs",
 			"columns": {
 				"logo": "Logo",
 				"name": "Nom",
@@ -2143,12 +2143,12 @@
 				"actions": "Actions"
 			},
 			"types": {
-				"consulate": "Consulat",
-				"embassy": "Ambassade",
+				"consulate": "Guichet",
+				"embassy": "Ministère",
 				"ministry": "Ministère",
 				"other": "Autre",
-				"general_consulate": "Consulat Général",
-				"honorary_consulate": "Consulat Honoraire",
+				"general_consulate": "Guichet Général",
+				"honorary_consulate": "Guichet Honoraire",
 				"permanent_mission": "Mission Permanente",
 				"high_commission": "Haut-Commissariat",
 				"third_party": "Tiers"
@@ -2170,7 +2170,7 @@
 				"create": "Nouvelle représentation",
 				"edit": "Modifier la représentation",
 				"name": "Nom",
-				"namePlaceholder": "ex. Consulat du Gabon à Paris",
+				"namePlaceholder": "ex. Guichet du Gabon à Paris",
 				"slug": "Slug",
 				"slugPlaceholder": "ex. gabon-paris",
 				"slugHelp": "Identifiant URL (généré automatiquement à partir du nom)",
@@ -2303,7 +2303,7 @@
 				"passport": "Passeport",
 				"visa": "Visa",
 				"civil_status": "État civil",
-				"registration": "Inscription consulaire",
+				"registration": "Inscription administrative",
 				"legalization": "Légalisation",
 				"emergency": "Urgence",
 				"other": "Autre",
@@ -2432,7 +2432,7 @@
 		},
 		"settings": {
 			"title": "Paramètres de la plateforme",
-			"description": "Gérer les paramètres globaux de l'application Consulat.ga",
+			"description": "Gérer les paramètres globaux de l'application Administration.ga",
 			"tabs": {
 				"general": "Général",
 				"notifications": "Notifications",
@@ -2476,9 +2476,9 @@
 			"updatedAt": "Mis à jour le"
 		},
 		"types": {
-			"consulate": "Consulat",
-			"general_consulate": "Consulat Général",
-			"embassy": "Ambassade",
+			"consulate": "Guichet",
+			"general_consulate": "Guichet Général",
+			"embassy": "Ministère",
 			"ministry": "Ministère",
 			"other": "Autre"
 		},
@@ -2883,7 +2883,7 @@
 			"removeError": "Erreur lors de la suppression",
 			"roles": {
 				"admin": "Administrateur",
-				"agent": "Agent Consulaire",
+				"agent": "Agent Administratif",
 				"viewer": "Observateur"
 			},
 			"addDialog": {
@@ -3234,7 +3234,7 @@
 				"roleLabel": "Rôle dans l'organisation",
 				"roles": {
 					"admin": "Administrateur",
-					"agent": "Agent Consulaire",
+					"agent": "Agent Administratif",
 					"viewer": "Observateur"
 				},
 				"cancel": "Annuler",
@@ -3254,8 +3254,8 @@
 			}
 		},
 		"consularRegistry": {
-			"title": "Dossiers Consulaires",
-			"description": "Gestion des inscriptions consulaires et cartes",
+			"title": "Dossiers Administratifs",
+			"description": "Gestion des inscriptions administratifs et cartes",
 			"printQueue": "File d'impression",
 			"tabs": {
 				"all": "Toutes",
@@ -3264,7 +3264,7 @@
 			},
 			"notificationsTable": {
 				"title": "Registre des signalements",
-				"description": "Déclarations de séjour court au consulat",
+				"description": "Déclarations administratives courtes",
 				"searchPlaceholder": "Rechercher...",
 				"statusPlaceholder": "Statut",
 				"columns": {
@@ -3289,7 +3289,7 @@
 			},
 			"table": {
 				"title": "Registre des inscriptions",
-				"description": "Liste des citoyens inscrits au consulat",
+				"description": "Liste des citoyens inscrits",
 				"searchPlaceholder": "Rechercher...",
 				"statusPlaceholder": "Statut",
 				"columns": {
@@ -3329,11 +3329,11 @@
 				"print": "Imprimer"
 			},
 			"cardDialog": {
-				"title": "Générer la carte consulaire",
-				"description": "Vous allez générer une carte consulaire pour <strong>{{name}}</strong>. Cette action est irréversible.",
+				"title": "Générer la carte administratif",
+				"description": "Vous allez générer une carte administratif pour <strong>{{name}}</strong>. Cette action est irréversible.",
 				"cancel": "Annuler",
 				"confirm": "Générer la carte",
-				"success": "Carte consulaire générée",
+				"success": "Carte administrative générée",
 				"successDescription": "Numéro: {{cardNumber}}",
 				"error": "Erreur",
 				"errorGeneric": "Erreur lors de la génération"
@@ -3354,7 +3354,7 @@
 		"settings": {
 			"title": "Paramètres",
 			"description": "Informations de votre organisation",
-			"notFound": "Représentation non trouvée",
+			"notFound": "Administration non trouvée",
 			"edit": "Éditer",
 			"orgProfile": "Profil de l'organisation",
 			"orgProfileDescription": "Informations générales",
@@ -3377,10 +3377,10 @@
 			"updateSuccess": "Paramètres mis à jour",
 			"updateError": "Erreur lors de la mise à jour",
 			"orgTypes": {
-				"consulate": "Consulat",
-				"consulateGeneral": "Consulat Général",
-				"embassy": "Ambassade",
-				"honoraryConsulate": "Consulat Honoraire",
+				"consulate": "Guichet",
+				"consulateGeneral": "Guichet Général",
+				"embassy": "Ministère",
+				"honoraryGuichete": "Guichet Honoraire",
 				"ministry": "Ministère",
 				"other": "Autre"
 			},
@@ -3574,7 +3574,7 @@
 			"email": "Email",
 			"phone": "Téléphone",
 			"countryOfResidence": "Pays de résidence",
-			"countryOfResidenceDesc": "Utilisé pour déterminer les services consulaires disponibles",
+			"countryOfResidenceDesc": "Utilisé pour déterminer les services administratifs disponibles",
 			"relationship": "Lien de parenté",
 			"maritalStatus": "État civil",
 			"nipCode": "NIP",
@@ -3841,7 +3841,7 @@
 		},
 		"backToDashboard": "Retour au tableau de bord",
 		"labels": {
-			"consulateOrEmbassy": "Consulat / Ambassade",
+			"consulateOrEmbassy": "Guichet / Ministère",
 			"selectPlaceholder": "Sélectionner..."
 		},
 		"jurisdiction": {
@@ -3851,7 +3851,7 @@
 		"status": {
 			"dateRequested": "Date de demande:",
 			"number": "Numéro:",
-			"fallbackOrg": "Consulat"
+			"fallbackOrg": "Guichet"
 		},
 		"step": {
 			"profile": "Vérification du profil",
@@ -3862,7 +3862,7 @@
 	},
 	"onboarding": {
 		"welcome": {
-			"title": "Bienvenue sur le Portail Consulaire",
+			"title": "Bienvenue sur le Portail Administratif",
 			"subtitle": "Sélectionnez votre profil pour commencer l'inscription. Le processus prend environ 10 minutes — moins de 3 minutes avec le pré-remplissage par IA."
 		},
 		"profileSelector": {
@@ -3892,13 +3892,13 @@
 			},
 			"profiles": {
 				"long_stay": {
-					"title": "Résident à l'étranger",
+					"title": "Citoyen gabonais",
 					"subtitle": "Gabonais résidant à l'étranger depuis plus de 6 mois",
 					"benefits": {
-						"0": "Inscription consulaire complète",
+						"0": "Inscription administrative complète",
 						"1": "Renouvellement de passeport",
 						"2": "Actes d'état civil",
-						"3": "Carte consulaire"
+						"3": "Carte administrative"
 					}
 				},
 				"short_stay": {
@@ -3906,7 +3906,7 @@
 					"subtitle": "Gabonais de passage à l'étranger (moins de 6 mois)",
 					"benefits": {
 						"0": "Déclaration de passage",
-						"1": "Assistance consulaire",
+						"1": "Assistance administratif",
 						"2": "Laissez-passer d'urgence"
 					}
 				},
@@ -3958,7 +3958,7 @@
 				"review": "Révision"
 			},
 			"profileTitles": {
-				"long_stay": "Inscription consulaire — Résident",
+				"long_stay": "Inscription administrative — Résident",
 				"short_stay": "Déclaration — Court séjour",
 				"visa_tourism": "Demande de visa — Tourisme",
 				"visa_business": "Demande de visa — Affaires",
@@ -4005,7 +4005,7 @@
 			}
 		},
 		"profileLabels": {
-			"long_stay": "Résident à l'étranger",
+			"long_stay": "Citoyen gabonais",
 			"short_stay": "De passage",
 			"visa_tourism": "Visa tourisme",
 			"visa_business": "Visa affaires",
@@ -4014,7 +4014,7 @@
 		},
 		"submitted": {
 			"title": "Dossier envoyé",
-			"description": "Votre dossier a été transmis au service consulaire. Vous recevrez une notification par email dès qu'il sera traité.",
+			"description": "Votre dossier a été transmis au service administratif. Vous recevrez une notification par email dès qu'il sera traité.",
 			"refLabel": "Référence du dossier",
 			"refHelp": "Conservez cette référence pour suivre l'avancement de votre demande dans votre espace personnel.",
 			"cta": "Accéder à mon espace"
@@ -4105,7 +4105,7 @@
 		"identity": {
 			"name": {
 				"title": "Bonjour, comment vous appelez-vous ?",
-				"subtitle": "Ces informations figureront sur votre dossier consulaire. Elles doivent correspondre à votre passeport.",
+				"subtitle": "Ces informations figureront sur votre dossier administratif. Elles doivent correspondre à votre passeport.",
 				"firstName": "Prénom",
 				"firstNamePlaceholder": "Votre prénom",
 				"lastName": "Nom de famille",
@@ -4136,7 +4136,7 @@
 			},
 			"password": {
 				"title": "Créez votre mot de passe",
-				"subtitle": "Il sécurisera l'accès à votre espace consulaire. Choisissez-en un solide, vous l'utiliserez à chaque connexion.",
+				"subtitle": "Il sécurisera l'accès à votre espace personnel. Choisissez-en un solide, vous l'utiliserez à chaque connexion.",
 				"label": "Mot de passe",
 				"placeholder": "••••••••••",
 				"toggleShow": "Afficher le mot de passe",
@@ -4180,7 +4180,7 @@
 				"syncingTitle": "Création de votre espace…",
 				"syncingDescription": "Nous synchronisons votre compte. Cela ne prendra que quelques secondes.",
 				"preparingTitle": "Préparation de votre compte…",
-				"preparingDescription": "Nous créons votre espace consulaire et vous envoyons un code de vérification par email.",
+				"preparingDescription": "Nous créons votre espace personnel et vous envoyons un code de vérification par email.",
 				"resendIn": "Renvoyer le code dans",
 				"sending": "Envoi…",
 				"resend": "Renvoyer le code",
@@ -4356,7 +4356,7 @@
 			"formatLine": "{{formats}} · max {{max}}",
 			"formatLineWithHint": "{{formats}} · max {{max}} · {{hint}}",
 			"tooLarge": "Le fichier dépasse la taille maximale ({{max}}).",
-			"footer": "Vos documents sont stockés de manière chiffrée et accessibles uniquement par les agents consulaires habilités.",
+			"footer": "Vos documents sont stockés de manière chiffrée et accessibles uniquement par les agents administratifs habilités.",
 			"errorsSummary": "Veuillez fournir tous les documents requis avant de continuer."
 		},
 		"review": {
@@ -4364,7 +4364,7 @@
 			"subtitle": "Relisez attentivement les informations avant de soumettre votre dossier.",
 			"banner": {
 				"strong": "Prêt à soumettre.",
-				"text": "Votre dossier sera transmis au service consulaire pour validation. Vous recevrez une notification dès que votre statut changera."
+				"text": "Votre dossier sera transmis au service administratif pour validation. Vous recevrez une notification dès que votre statut changera."
 			},
 			"editAction": "Modifier",
 			"sections": {
@@ -4608,7 +4608,7 @@
 		"passport": "Passeport",
 		"proofOfAddress": "Justificatif de domicile",
 		"proofOfResidency": "Carte de séjour / Visa",
-		"consularCard": "Carte consulaire",
+		"consularCard": "Carte administrative",
 		"preview": {
 			"document": "Document",
 			"open": "Ouvrir",
@@ -4945,21 +4945,21 @@
 	"information": {
 		"badge": "Informations",
 		"title": "Centre d'Information",
-		"subtitle": "Retrouvez toutes les informations essentielles pour vos démarches consulaires, la vie pratique et l'éducation.",
+		"subtitle": "Retrouvez toutes les informations essentielles pour vos démarches administratives, la vie pratique et l'éducation.",
 		"seeMore": "En savoir plus",
 		"categories": {
 			"administrative": {
 				"title": "Services Administratifs",
-				"description": "Passeports, état civil, inscriptions consulaires et démarches officielles.",
+				"description": "Passeports, état civil, inscriptions administratifs et démarches officielles.",
 				"items": {
 					"1": "Demande et renouvellement de passeport",
-					"2": "Inscription au registre consulaire",
+					"2": "Inscription au registre administratif",
 					"3": "Actes d'état civil et légalisations"
 				}
 			},
 			"practical": {
 				"title": "Vie Pratique",
-				"description": "Assistance aux ressortissants, aide sociale et conseils pratiques.",
+				"description": "Assistance aux citoyens, aide sociale et conseils pratiques.",
 				"items": {
 					"1": "Assistance en cas de difficulté",
 					"2": "Rapatriement et aide d'urgence",
@@ -4979,7 +4979,7 @@
 		"quickLinks": {
 			"title": "Accès rapide",
 			"passport": "Passeport",
-			"registration": "Inscription consulaire",
+			"registration": "Inscription administrative",
 			"civil_status": "État civil",
 			"visa": "Visa"
 		}
@@ -5034,7 +5034,7 @@
 		},
 		"map": {
 			"title": "Découvrez la carte interactive",
-			"description": "Trouvez les représentations diplomatiques, entreprises et associations gabonaises dans le monde entier.",
+			"description": "Trouvez les représentations administratifs, entreprises et associations gabonaises dans le monde entier.",
 			"cta": "Ouvrir la carte"
 		}
 	},
@@ -5113,14 +5113,14 @@
 			"filterOrgs": "Représentations",
 			"filterAssocs": "Associations",
 			"filterCompanies": "Entreprises",
-			"filterDiplomatic": "Postes diplomatiques",
+			"filterDiplomatic": "Postes administratifs",
 			"noResults": "Aucun résultat.",
 			"message": "Message",
 			"badgeStandard": "Standard",
 			"badgeDirect": "Direct",
 			"suggestedContacts": "Contacts suggérés",
 			"sectionRepresentations": "Représentations",
-			"sectionMembers": "Personnel diplomatique",
+			"sectionMembers": "Personnel administratif",
 			"sectionOther": "Autres contacts",
 			"attachments": "Pièces jointes",
 			"dropFiles": "Glissez vos fichiers ou cliquez"
@@ -5601,7 +5601,7 @@
 		"nav": {
 			"dashboard": "Tableau de bord",
 			"requests": "Demandes",
-			"consularRegistry": "Registre Consulaire",
+			"consularRegistry": "Registre Administratif",
 			"appointments": "Rendez-vous",
 			"statistics": "Statistiques",
 			"posts": "Actualités",
@@ -5673,9 +5673,9 @@
 				"addTitle": "Ajouter un poste",
 				"addDescription": "Créez un nouveau poste dans la hiérarchie de cet organisme.",
 				"titleLabel": "Titre du poste",
-				"titlePlaceholder": "ex. Agent consulaire",
+				"titlePlaceholder": "ex. Agent administratif",
 				"codeLabel": "Code technique",
-				"codePlaceholder": "ex. agent_consulaire",
+				"codePlaceholder": "ex. agent_administratif",
 				"codeHint": "Identifiant unique au sein de l'organisme",
 				"descriptionLabel": "Description",
 				"descriptionPlaceholder": "Description du poste (optionnel)",
@@ -5692,7 +5692,7 @@
 				"addTitle": "Ajouter une direction",
 				"addDescription": "Créez une nouvelle direction ou service pour organiser les postes.",
 				"name": "Nom de la direction",
-				"namePlaceholder": "ex. Direction des affaires consulaires",
+				"namePlaceholder": "ex. Direction des affaires administratifs",
 				"code": "Code",
 				"codePlaceholder": "ex. dac",
 				"icon": "Icône",
@@ -6264,7 +6264,7 @@
 			"seeAll": "Voir toutes les ressources",
 			"title": "Guides adaptés à votre situation"
 		},
-		"diplomaticNetwork": "Réseau Diplomatique",
+		"diplomaticNetwork": "Réseau Administratif",
 		"continents": {
 			"all": "Tous"
 		}
@@ -6590,13 +6590,13 @@
 		"empty": "Aucun rendez-vous planifié.",
 		"cancel": "Annuler",
 		"past": "Historique",
-		"consularAppointment": "Rendez-vous consulaire",
+		"consularAppointment": "Rendez-vous administratif",
 		"cancelConfirmTitle": "Annuler ce rendez-vous ?",
 		"cancelConfirmDesc": "Cette action est irréversible. Vous devrez reprendre un nouveau rendez-vous.",
 		"confirmCancel": "Confirmer l'annulation",
 		"new": {
 			"title": "Nouveau rendez-vous",
-			"subtitle": "Planifiez un rendez-vous pour votre démarche consulaire",
+			"subtitle": "Planifiez un rendez-vous pour votre démarche administrative",
 			"selectRequest": "Sélectionner une demande",
 			"selectRequestDesc": "Choisissez la demande pour laquelle vous souhaitez prendre rendez-vous.",
 			"noEligibleRequests": "Aucune demande éligible pour un rendez-vous.",
@@ -6665,7 +6665,7 @@
 			"yearsOld": "{{count}} ans",
 			"bornIn": "Né(e) à",
 			"residesIn": "Réside en",
-			"consularCard": "Carte Consulaire",
+			"consularCard": "Carte Administratif",
 			"expired": "Expirée",
 			"active": "Active",
 			"validUntil": "Valide jusqu'au",
@@ -6677,8 +6677,8 @@
 			"passportExpired": "Expiré",
 			"passportExpiring": "Expire bientôt",
 			"noPassport": "Aucune information de passeport",
-			"consularRegistration": "Inscription consulaire",
-			"notConsularRegistered": "Enfant non inscrit au registre consulaire",
+			"consularRegistration": "Inscription administrative",
+			"notConsularRegistered": "Enfant non inscrit au registre administratif",
 			"documents": "Documents",
 			"missing": "Manquant",
 			"actions": "Actions",
@@ -6815,7 +6815,7 @@
 		},
 		"ticketCategory": {
 			"technical": "Problème technique",
-			"service": "Service consulaire",
+			"service": "Service administratif",
 			"information": "Demande d'information",
 			"feedback": "Remarque / Suggestion",
 			"other": "Autre"
@@ -6840,7 +6840,7 @@
 		},
 		"ticketCategory": {
 			"technical": "Problème technique",
-			"service": "Service consulaire",
+			"service": "Service administratif",
 			"information": "Demande d'information",
 			"feedback": "Remarque / Suggestion",
 			"other": "Autre"
@@ -6953,13 +6953,13 @@
 		"hero": {
 			"badge": "Portail Agent — Exclusif",
 			"title": "La Doctrine",
-			"titleGradient": "Diplomatique",
-			"titleSuffix": "& Consulaire.",
-			"description": "Édifier, représenter et assister. Dans le respect des Conventions de Vienne, cet espace numérique modernise la mission souveraine du personnel diplomatique et consulaire gabonais à travers le monde.",
+			"titleGradient": "Administratif",
+			"titleSuffix": "& Administratif.",
+			"description": "Édifier, représenter et assister. Dans le respect des Conventions de Vienne, cet espace numérique modernise la mission souveraine du personnel administratif et administratif gabonais à travers le monde.",
 			"stats": {
 				"missions": {
 					"value": "40+",
-					"label": "Missions diplomatiques"
+					"label": "Missions administratifs"
 				},
 				"agents": {
 					"value": "180+",
@@ -6983,28 +6983,28 @@
 					"description": "Conformément à la Conv. de Vienne (1961), le module de Correspondance sécurise vos échanges (notes verbales, mémorandums) vers l'État accréditaire ou la Centrale."
 				},
 				{
-					"title": "Protection Consulaire",
-					"description": "La gestion des requêtes et immatriculations (Conv. de Vienne, 1963) assure la protection et le secours rapides de nos ressortissants en détresse."
+					"title": "Assistance Administrative",
+					"description": "La gestion des requêtes et immatriculations (Conv. de Vienne, 1963) assure la protection et le secours rapides de nos citoyens en détresse."
 				},
 				{
 					"title": "Inviolabilité Archive",
-					"description": "iDocument et iArchive transforment la valise diplomatique en coffre-fort numérique inviolable, garantissant le secret des missions."
+					"description": "iDocument et iArchive transforment la valise administratif en coffre-fort numérique inviolable, garantissant le secret des missions."
 				}
 			]
 		},
 		"values": {
 			"feature1": {
 				"title": "Modernité de l'Administration",
-				"p1": "La transition vers ce portail répond à l'exigence d'une administration moderne, agile et réactive. Le personnel diplomatique n'est plus entravé par les lourdeurs bureaucratiques physiques. Chaque document est numérisé, tracé, et approuvé par une chaîne hiérarchique claire.",
+				"p1": "La transition vers ce portail répond à l'exigence d'une administration moderne, agile et réactive. Le personnel administratif n'est plus entravé par les lourdeurs bureaucratiques physiques. Chaque document est numérisé, tracé, et approuvé par une chaîne hiérarchique claire.",
 				"p2": "Le développement des relations amicales, culturelles et économiques exige réactivité : c'est la fonction fondamentale des modules d'agenda et de communication intégrés."
 			},
 			"feature2": {
-				"title": "Le Pôle Consulaire",
-				"description": "Délivrance de visas, renouvellement de passeports, établissement d'actes d'état civil : les postes consulaires sont la première vitrine de l'État gabonais. La numérisation permet une délivrance accélérée.",
+				"title": "Le Pôle Administratif",
+				"description": "Délivrance de visas, renouvellement de passeports, établissement d'actes d'état civil : les postes administratifs sont la première vitrine de l'État gabonais. La numérisation permet une délivrance accélérée.",
 				"points": [
 					"Immatriculation des citoyens résidents",
 					"Légalisation rapide des documents",
-					"Organisation des visas diplomatiques et courtoisie"
+					"Organisation des visas administratifs et courtoisie"
 				]
 			}
 		},
@@ -7017,9 +7017,9 @@
 				"atouts": "Atouts de la plateforme"
 			},
 			"overview": {
-				"description": "Diplomate.ga est le prolongement numérique des obligations issues des Conventions de Vienne. Chaque module répond à un article précis, garantissant la conformité juridique totale des opérations diplomatiques et consulaires gabonaises.",
+				"description": "Diplomate.ga est le prolongement numérique des obligations issues des Conventions de Vienne. Chaque module répond à un article précis, garantissant la conformité juridique totale des opérations administratives gabonaises.",
 				"conventionsTitle": "Conventions de Vienne",
-				"conventionsDesc": "Textes fondateurs du droit diplomatique et consulaire international",
+				"conventionsDesc": "Textes fondateurs du droit administratif et administratif international",
 				"atoutsTitle": "Atouts de la plateforme",
 				"atoutsDesc": "Comment chaque module implémente les exigences des Conventions",
 				"explore": "Explorer →",
@@ -7055,8 +7055,8 @@
 			},
 			"nav": {
 				"dashboard": "Tableau de bord",
-				"diplomaticAffairs": "Aff. Diplomatiques",
-				"consularAffairs": "Aff. Consulaires",
+				"diplomaticAffairs": "Aff. Administratifs",
+				"consularAffairs": "Aff. Administratifs",
 				"news": "Actualités",
 				"iBoite": "iBoîte",
 				"iCorrespondance": "iCorrespondance",
@@ -7077,15 +7077,15 @@
 				"calls": "Appels",
 				"meetings": "Réunions"
 			},
-			"brand": "Portail Agent Consulaire",
+			"brand": "Portail Agent Administratif",
 			"logout": "Se déconnecter"
 		},
 		"consularAffairs": {
-			"title": "Affaires Consulaires",
-			"subtitle": "Gestion des demandes, registre, rendez-vous et services consulaires",
+			"title": "Affaires Administratifs",
+			"subtitle": "Gestion des demandes, registre, rendez-vous et services administratifs",
 			"tabs": {
 				"requests": "Demandes",
-				"registry": "Registre Consulaire",
+				"registry": "Registre Administratif",
 				"appointments": "Rendez-vous",
 				"services": "Services"
 			},
@@ -7097,7 +7097,7 @@
 				"date": "Date",
 				"loadMore": "Charger plus…",
 				"empty": "Aucune demande",
-				"emptyDesc": "Les demandes consulaires apparaîtront ici."
+				"emptyDesc": "Les demandes administratifs apparaîtront ici."
 			},
 			"registry": {
 				"name": "Nom",
@@ -7105,7 +7105,7 @@
 				"status": "Statut",
 				"date": "Date",
 				"empty": "Aucun enregistrement",
-				"emptyDesc": "Les enregistrements consulaires apparaîtront ici.",
+				"emptyDesc": "Les enregistrements administratifs apparaîtront ici.",
 				"loadMore": "Charger plus…"
 			},
 			"appointments": {
@@ -7120,7 +7120,7 @@
 				"active": "Actif",
 				"inactive": "Inactif",
 				"empty": "Aucun service",
-				"emptyDesc": "Les services consulaires configurés apparaîtront ici."
+				"emptyDesc": "Les services administratifs configurés apparaîtront ici."
 			},
 			"statuses": {
 				"draft": "Brouillon",
@@ -7141,8 +7141,8 @@
 			}
 		},
 		"diplomaticAffairs": {
-			"title": "Affaires Diplomatiques",
-			"subtitle": "Suivi des relations diplomatiques et des missions",
+			"title": "Affaires Administratifs",
+			"subtitle": "Suivi des relations administratifs et des missions",
 			"tabs": {
 				"targets": "Cibles",
 				"letters": "Lettres de Contact",
@@ -7151,7 +7151,7 @@
 			},
 			"targets": {
 				"empty": "Aucune cible identifiée",
-				"emptyDesc": "Les cibles diplomatiques apparaîtront ici.",
+				"emptyDesc": "Les cibles administratifs apparaîtront ici.",
 				"contact": "Contact"
 			},
 			"letters": {
@@ -7566,7 +7566,7 @@
 	},
 	"servicesDemarches": {
 		"title": "Services & Démarches",
-		"subtitle": "Consultez les services consulaires et suivez vos démarches",
+		"subtitle": "Consultez les services administratifs et suivez vos démarches",
 		"search": "Rechercher...",
 		"noOngoing": "Aucune démarche en cours",
 		"noResults": "Aucune démarche trouvée",
@@ -7578,7 +7578,7 @@
 		"mode": "Mode vocal"
 	},
 	"iasted": {
-		"subtitle": "Espace de communication consulaire",
+		"subtitle": "Espace de communication administratif",
 		"reduce": "Réduire",
 		"discussions": "Discussions",
 		"close": "Fermer ↑",

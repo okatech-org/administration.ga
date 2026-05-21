@@ -809,7 +809,7 @@ function NewsletterCallout() {
     <section className="mt-16 rounded-2xl border bg-[var(--surface-2)] p-8 md:p-10 grid gap-6 md:grid-cols-[1fr_auto] items-center">
       <div>
         <h3 className="text-xl md:text-2xl font-bold mb-2">
-          Recevez chaque vendredi la lettre du réseau consulaire.
+          Recevez chaque vendredi la lettre de demarche.ga.
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
           Actualités diplomatiques, communiqués officiels et événements à venir —

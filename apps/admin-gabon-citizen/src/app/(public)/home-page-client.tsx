@@ -1,7 +1,6 @@
 "use client"
 
-import dynamic from "next/dynamic"
-import { Suspense, useRef } from "react"
+import { useRef } from "react"
 import { Hero } from "@/components/home/Hero"
 import { ProfilesSection } from "@/components/home/ProfilesSection"
 import { ServicesSection } from "@/components/home/ServicesSection"
@@ -9,13 +8,10 @@ import { NewsSection } from "@/components/home/NewsSection"
 import { WhySection } from "@/components/home/WhySection"
 import { CTASection } from "@/components/home/CTASection"
 
-const WorldMapSection = dynamic(
-  () =>
-    import("@/components/home/WorldMapSection").then((m) => ({
-      default: m.WorldMapSection,
-    })),
-  { ssr: false },
-)
+// NOTE: WorldMapSection retirée — affichait la carte mondiale des
+// représentations diplomatiques (héritage gabon-diplomatie). Non pertinent
+// pour administration.ga qui couvre le territoire national. À remplacer
+// ultérieurement par une carte des administrations provinciales si besoin.
 
 export default function HomePage() {
   const servicesRef = useRef<HTMLDivElement>(null)
@@ -28,9 +24,6 @@ export default function HomePage() {
         <ServicesSection />
       </div>
       <NewsSection />
-      <Suspense fallback={<div className="h-[500px]" />}>
-        <WorldMapSection />
-      </Suspense>
       <WhySection />
       <CTASection />
     </div>

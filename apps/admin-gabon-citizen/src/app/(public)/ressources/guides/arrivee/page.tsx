@@ -24,8 +24,8 @@ const STEPS = [
     text: "Présenter passeport, visa, carnet de vaccination international et déclaration douanière. Récupérer le tampon d'entrée et conserver le coupon d'arrivée pour la suite des démarches.",
   },
   {
-    name: "S'inscrire au registre consulaire",
-    text: "Pour les ressortissants étrangers et la diaspora, déclarer sa présence auprès de son ambassade. Pour les Gabonais, mettre à jour son adresse via consulat.ga.",
+    name: "S'inscrire au registre des administrations",
+    text: "Pour les ressortissants étrangers et la diaspora, déclarer sa présence auprès des autorités compétentes. Pour les Gabonais, mettre à jour son adresse via administration.ga.",
   },
   {
     name: "Ouvrir un compte bancaire local",

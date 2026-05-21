@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   ...buildMetadata({
     title: "Page introuvable",
     description:
-      "La page demandée est introuvable. Retrouvez nos services consulaires, actualités, représentations et guides.",
+      "La page demandée est introuvable. Retrouvez nos services administratifs, actualités, représentations et guides.",
     path: "/404",
   }),
   robots: { index: false, follow: true },
@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 
 const QUICK_LINKS = [
   { href: "/", label: "Accueil" },
-  { href: "/services", label: "Services consulaires" },
+  { href: "/services", label: "Services administratifs" },
   { href: "/news", label: "Actualités" },
-  { href: "/reps", label: "Représentations diplomatiques" },
+  { href: "/reps", label: "Annuaire des administrations" },
   { href: "/ressources", label: "Ressources & guides" },
   { href: "/faq", label: "Foire aux questions" },
 ]
@@ -33,7 +33,7 @@ export default function NotFound() {
         </h1>
         <p className="text-lg text-muted-foreground">
           Cette page n&apos;existe pas ou a été déplacée. Vous pouvez rejoindre l&apos;une
-          des sections principales du portail consulaire ci-dessous.
+          des sections principales du portail ci-dessous.
         </p>
         <nav aria-label="Navigation de secours">
           <ul className="flex flex-wrap justify-center gap-3 pt-4">

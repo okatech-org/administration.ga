@@ -25,7 +25,7 @@ export default function LegalPage() {
               <section>
                 <h2 className="text-2xl font-semibold mb-4">Éditeur</h2>
                 <p>
-                  Le site consulat.ga est édité par le Ministère des Affaires Étrangères de la République Gabonaise.
+                  Le site administration.ga est édité par les autorités de la République Gabonaise.
                 </p>
               </section>
 
