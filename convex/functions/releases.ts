@@ -109,7 +109,7 @@ function parseAssetName(name: string): {
 	return { platform, arch, kind: "installer", ext };
 }
 
-async function fetchLatestRelease(): Promise<GitHubRelease> {
+async function fetchLatestRelease(): Promise<GitHubRelease | null> {
 	const headers: Record<string, string> = {
 		Accept: "application/vnd.github+json",
 		"X-GitHub-Api-Version": "2022-11-28",
@@ -122,6 +122,12 @@ async function fetchLatestRelease(): Promise<GitHubRelease> {
 		`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`,
 		{ headers },
 	);
+	// 404 = pas encore de release publiée (cas legitime avant le premier ship).
+	// On retourne null pour que l'UI puisse afficher un état "à venir" plutôt
+	// qu'une erreur rouge.
+	if (res.status === 404) {
+		return null;
+	}
 	if (!res.ok) {
 		throw new Error(
 			`GitHub API returned ${res.status} ${res.statusText} when fetching latest release`,
@@ -137,13 +143,17 @@ async function fetchLatestRelease(): Promise<GitHubRelease> {
  */
 export const getLatest = action({
 	args: {},
-	handler: async (): Promise<LatestRelease> => {
+	handler: async (): Promise<LatestRelease | null> => {
 		const siteUrl = process.env.CONVEX_SITE_URL;
 		if (!siteUrl) {
 			throw new Error("CONVEX_SITE_URL is not set in Convex environment");
 		}
 
 		const release = await fetchLatestRelease();
+		// Aucune release publiée encore — cas legitime avant le premier ship.
+		if (!release) {
+			return null;
+		}
 
 		const assets: ReleaseAsset[] = release.assets.map((asset) => {
 			const { platform, arch, kind, ext } = parseAssetName(asset.name);

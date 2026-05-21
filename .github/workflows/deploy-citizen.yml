@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/citizen-web/**"
+      - "apps/admin-gabon-citizen/**"
       - "packages/**"
       - ".github/workflows/deploy-citizen.yml"
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
 env:
   PROJECT_ID: administration-ga
   REGION: europe-west1
-  SERVICE_NAME: citizen-web
+  SERVICE_NAME: admin-gabon-citizen
   REGISTRY: europe-west1-docker.pkg.dev/administration-ga/docker-registry
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
           docker build \
             --no-cache \
             --platform linux/amd64 \
-            -f apps/citizen-web/Dockerfile \
+            -f apps/admin-gabon-citizen/Dockerfile \
             --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }} \
             --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }} \
             --build-arg NEXT_PUBLIC_SITE_URL=https://demarche.ga \

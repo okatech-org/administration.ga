@@ -40,6 +40,6 @@ Secrets à configurer dans Settings → Secrets and variables → Actions.
 ## Domaines (configurés via Cloud Run Domain Mappings)
 | Service | Domaine prod | Domaine staging |
 |---|---|---|
-| agent-web | administration.ga | staging.administration.ga |
-| backoffice-web | admin.administration.ga | admin.staging.administration.ga |
-| citizen-web | demarche.ga | staging.demarche.ga |
+| admin-gabon | administration.ga | staging.administration.ga |
+| admin-gabon-backoffice | admin.administration.ga | admin.staging.administration.ga |
+| admin-gabon-citizen | demarche.ga | staging.demarche.ga |

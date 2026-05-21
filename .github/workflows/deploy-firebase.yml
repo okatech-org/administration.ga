@@ -1,14 +1,14 @@
 name: Deploy Firebase Hosting
 
 # Déploie les 3 sites Firebase Hosting (CDN + domaines admin-gabon.web.app
-# et al.) qui proxient vers les services Cloud Run agent-web/citizen-web/
-# backoffice-web. Architecture hybride : Firebase = CDN/SSL/domaine,
+# et al.) qui proxient vers les services Cloud Run admin-gabon/admin-gabon-citizen/
+# admin-gabon-backoffice. Architecture hybride : Firebase = CDN/SSL/domaine,
 # Cloud Run = SSR Next.js 14.
 #
 # Trigger : push main (après workflows Cloud Run terminés), ou dispatch.
 #
 # Pré-requis :
-#   1. Services Cloud Run agent-web/citizen-web/backoffice-web déployés
+#   1. Services Cloud Run admin-gabon/admin-gabon-citizen/admin-gabon-backoffice déployés
 #      (cf. deploy-agent.yml, deploy-citizen.yml, deploy-backoffice.yml)
 #   2. Secret FIREBASE_SERVICE_ACCOUNT_ADMIN_GABON configuré (JSON SA key)
 #   3. Service account Firebase a roles/firebasehosting.admin
@@ -56,11 +56,11 @@ jobs:
 
       - name: Setup public folders (rewrites only — Cloud Run sert le SSR)
         run: |
-          mkdir -p apps/agent-web/.firebase-public
-          mkdir -p apps/citizen-web/.firebase-public
-          mkdir -p apps/backoffice-web/.firebase-public
+          mkdir -p apps/admin-gabon/.firebase-public
+          mkdir -p apps/admin-gabon-citizen/.firebase-public
+          mkdir -p apps/admin-gabon-backoffice/.firebase-public
           # Placeholder pour que firebase deploy accepte le dossier vide
-          for d in apps/agent-web apps/citizen-web apps/backoffice-web; do
+          for d in apps/admin-gabon apps/admin-gabon-citizen apps/admin-gabon-backoffice; do
             cat > "$d/.firebase-public/robots.txt" <<'EOF'
           # Géré via Firebase Hosting + Cloud Run rewrites
           User-agent: *
@@ -103,11 +103,11 @@ jobs:
             echo ""
             echo "### URLs déployées"
             echo ""
-            echo "| Site | URL Firebase | Domaine cible |"
-            echo "|---|---|---|"
-            echo "| agent | https://admin-gabon.web.app | administration.ga |"
-            echo "| citizen | https://admin-gabon-citizen.web.app | demarche.ga |"
-            echo "| backoffice | https://admin-gabon-backoffice.web.app | admin.administration.ga |"
+            echo "| Site | Service Cloud Run | URL Firebase | Domaine cible |"
+            echo "|---|---|---|---|"
+            echo "| agent | admin-gabon | https://admin-gabon.web.app | administration.ga |"
+            echo "| citizen | admin-gabon-citizen | https://admin-gabon-citizen.web.app | demarche.ga |"
+            echo "| backoffice | admin-gabon-backoffice | https://admin-gabon-backoffice.web.app | admin.administration.ga |"
             echo ""
             echo "### Architecture"
             echo ""

@@ -29,9 +29,9 @@ Le socle technique est **IDENTIQUE** à `gabon-diplomatie` (Turborepo + Convex +
 
 | Source `gabon-diplomatie` | Cible `administration.ga` | URL prod | Port dev |
 |---|---|---|---|
-| `apps/agent-web` (diplomate.ga) | `apps/agent-web` (administration.ga) | `administration.ga` | 3003 |
-| `apps/backoffice-web` | `apps/backoffice-web` | `admin.administration.ga` | 3002 |
-| `apps/citizen-web` (consulat.ga) | `apps/citizen-web` (demarche.ga) | `demarche.ga` | 3000 |
+| `apps/agent-web` (diplomate.ga) | `apps/admin-gabon` (administration.ga) | `administration.ga` | 3003 |
+| `apps/backoffice-web` | `apps/admin-gabon-backoffice` | `admin.administration.ga` | 3002 |
+| `apps/citizen-web` (consulat.ga) | `apps/admin-gabon-citizen` (demarche.ga) | `demarche.ga` | 3000 |
 | `apps/agent-desktop` | `apps/agent-desktop` | — | — |
 
 ### Variables d'environnement de domaine
@@ -59,8 +59,8 @@ Ce projet conserve la **Charte Graphique Consulat.ga** (palette achromatique 6 g
 
 - **Charte complete :** [`DESIGN_CHARTER.md`](./DESIGN_CHARTER.md) — reference authoritative du design
 - **Tokens CSS :** `packages/ui/src/styles/globals.css` — variables OKLCh, ombres, radius
-- **Utilitaires :** `apps/citizen-web/src/app/globals.css` — classes `.neu-*`, `.gabon-*`, animations
-- **Reference vivante :** Pages `/my-space/*` du citizen-web
+- **Utilitaires :** `apps/admin-gabon-citizen/src/app/globals.css` — classes `.neu-*`, `.gabon-*`, animations
+- **Reference vivante :** Pages `/my-space/*` du citizen-web (`apps/admin-gabon-citizen`)
 - **Skill :** `consulat-design-system` — active automatiquement pour les taches design/UI
 
 ### Regles design critiques
@@ -74,7 +74,7 @@ Ce projet conserve la **Charte Graphique Consulat.ga** (palette achromatique 6 g
 
 ## Utilitaires partages — Modules de communication
 
-Deux packages workspace hebergent les utilitaires communs a iAppel, iReunion et iChat pour eviter la duplication entre `agent-web`, `citizen-web` et `backoffice-web` :
+Deux packages workspace hebergent les utilitaires communs a iAppel, iReunion et iChat pour eviter la duplication entre `admin-gabon`, `admin-gabon-citizen` et `admin-gabon-backoffice` :
 
 ### `@workspace/livekit`
 - `room-options` : `LIVEKIT_CALL_ROOM_OPTIONS` — simulcast VP9 (180p/360p/720p), adaptiveStream, dynacast, audio 48 kHz mono avec echoCancellation/noiseSuppression/autoGainControl, reconnectPolicy exponentielle. A passer en prop `options=` de TOUT `<LiveKitRoom>`.
@@ -166,10 +166,10 @@ Le cron `iasted-realtime-keep-warm` ping `keepAliveNodeRuntime` toutes les 4 min
 
 Trois items du plan d'audit n'ont PAS ete extraits dans les packages partages. Decisions documentees ici pour eviter qu'un futur contributeur refasse l'analyse :
 
-- **`useMeeting` reste per-app** (3 copies identiques dans `agent-web`, `citizen-web`, `backoffice-web`) : le hook importe `@convex/_generated/api` dont le type depend de la configuration Convex de chaque app. L'extraction necessiterait une injection de l'API en parametre (`useMeeting(api, meetingId)`), ce qui casse la lisibilite. La duplication accepte : 3 fichiers a maintenir ensemble.
+- **`useMeeting` reste per-app** (3 copies identiques dans `admin-gabon`, `admin-gabon-citizen`, `admin-gabon-backoffice`) : le hook importe `@convex/_generated/api` dont le type depend de la configuration Convex de chaque app. L'extraction necessiterait une injection de l'API en parametre (`useMeeting(api, meetingId)`), ce qui casse la lisibilite. La duplication accepte : 3 fichiers a maintenir ensemble.
 - **`ChatComposer` reste per-app** : les 3 apps (Citizen, Agent, Backoffice) ont des UX tres differentes (suggestions IA cote citoyen, macros cote agent, contextes org cote backoffice). Le composer est trop couple au shell pour etre factorise sans perte d'expressivite.
 - **tsconfig paths non modifies** : le champ `exports` des `package.json` (ex. `"./room-options": "./src/room-options.ts"`) suffit pour la resolution TypeScript+Next.js. Ajouter manuellement `@workspace/livekit/*` et `@workspace/chat/*` dans chaque `tsconfig.json` est redondant et genere des conflits de resolution.
-- **`AddressWithAutocomplete` (citizen-web) reste per-app**, ne migre PAS vers `@workspace/ui/components/address-input`. Le composant shared est value/onChange-based et pleinement compose (rue + ville + code postal + pays + GPS + score de completion), tandis que le composant citizen-web est `react-hook-form`-bound avec un Select pays restreint a la liste cible. Pour `administration.ga`, le composant citizen-web devra etre adapte aux provinces/departements/communes gabonaises (voir Phase 3 du plan d'implementation).
+- **`AddressWithAutocomplete` (admin-gabon-citizen) reste per-app**, ne migre PAS vers `@workspace/ui/components/address-input`. Le composant shared est value/onChange-based et pleinement compose (rue + ville + code postal + pays + GPS + score de completion), tandis que le composant admin-gabon-citizen est `react-hook-form`-bound avec un Select pays restreint a la liste cible. Pour `administration.ga`, le composant admin-gabon-citizen devra etre adapte aux provinces/departements/communes gabonaises (voir Phase 3 du plan d'implementation).
 
 ## Plan d'implementation en 9 phases — statut
 

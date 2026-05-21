@@ -39,11 +39,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - app: citizen-web
+          - app: admin-gabon-citizen
             site_url: https://staging.demarche.ga
-          - app: agent-web
+          - app: admin-gabon
             site_url: https://staging.administration.ga
-          - app: backoffice-web
+          - app: admin-gabon-backoffice
             site_url: https://admin.staging.administration.ga
 
     steps:

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/backoffice-web/**"
+      - "apps/admin-gabon-backoffice/**"
       - "packages/**"
       - ".github/workflows/deploy-backoffice.yml"
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
 env:
   PROJECT_ID: administration-ga
   REGION: europe-west1
-  SERVICE_NAME: backoffice-web
+  SERVICE_NAME: admin-gabon-backoffice
   REGISTRY: europe-west1-docker.pkg.dev/administration-ga/docker-registry
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
           IMAGE="${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
           docker build \
             --no-cache \
-            -f apps/backoffice-web/Dockerfile \
+            -f apps/admin-gabon-backoffice/Dockerfile \
             --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }} \
             --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }} \
             --build-arg NEXT_PUBLIC_SITE_URL=https://admin.administration.ga \

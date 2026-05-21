@@ -11,9 +11,9 @@
     "typecheck": "turbo typecheck",
     "dev:agent-desktop": "bun run dev --filter=agent-desktop",
     "dev:users-web": "bun run dev --filter=users-web",
-    "dev:citizen-web": "bun run dev --filter=citizen-web",
-    "dev:agent-web": "bun run dev --filter=agent-web",
-    "dev:backoffice-web": "bun run dev --filter=backoffice-web",
+    "dev:admin-gabon-citizen": "bun run dev --filter=admin-gabon-citizen",
+    "dev:admin-gabon": "bun run dev --filter=admin-gabon",
+    "dev:admin-gabon-backoffice": "bun run dev --filter=admin-gabon-backoffice",
     "dev:convex": "bunx convex dev",
     "fix:convex-local": "bash scripts/fix-convex-local-ports.sh"
   },

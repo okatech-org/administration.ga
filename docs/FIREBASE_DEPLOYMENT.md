@@ -22,9 +22,9 @@ Firebase Hosting reçoit les requêtes et les forward via `rewrites: { run: ... 
 
 | Site ID | URL Firebase par défaut | Cible Cloud Run | Domaine prod |
 |---|---|---|---|
-| `admin-gabon` (default) | <https://admin-gabon.web.app> | `agent-web` | `administration.ga` |
-| `admin-gabon-citizen` | <https://admin-gabon-citizen.web.app> | `citizen-web` | `demarche.ga` |
-| `admin-gabon-backoffice` | <https://admin-gabon-backoffice.web.app> | `backoffice-web` | `admin.administration.ga` |
+| `admin-gabon` (default) | <https://admin-gabon.web.app> | `admin-gabon` | `administration.ga` |
+| `admin-gabon-citizen` | <https://admin-gabon-citizen.web.app> | `admin-gabon-citizen` | `demarche.ga` |
+| `admin-gabon-backoffice` | <https://admin-gabon-backoffice.web.app> | `admin-gabon-backoffice` | `admin.administration.ga` |
 
 ## Targets Hosting (`.firebaserc`)
 
@@ -109,12 +109,12 @@ Copier le contenu de `firebase-sa-key.json` dans le secret GitHub :
 
 ### 2. Services Cloud Run
 
-Les 3 services Cloud Run `agent-web`, `citizen-web`, `backoffice-web` doivent être déployés dans le projet GCP **administration-ga** (cf. Phase 8) **dans la région europe-west1**.
+Les 3 services Cloud Run `admin-gabon`, `admin-gabon-citizen`, `admin-gabon-backoffice` doivent être déployés dans le projet GCP **administration-ga** (cf. Phase 8) **dans la région europe-west1**.
 
 ⚠ **Important** : Firebase project ID (`admin-gabon`) et GCP project ID des services Cloud Run (`administration-ga`) sont **différents**. Pour autoriser le cross-project rewrite, le SA Firebase doit avoir `roles/run.invoker` sur les services Cloud Run du projet `administration-ga` :
 
 ```bash
-for service in agent-web citizen-web backoffice-web; do
+for service in admin-gabon admin-gabon-citizen admin-gabon-backoffice; do
   gcloud run services add-iam-policy-binding "$service" \
     --member="serviceAccount:service-$(gcloud projects describe admin-gabon --format='value(projectNumber)')@gcp-sa-firebasehosting.iam.gserviceaccount.com" \
     --role="roles/run.invoker" \
@@ -162,7 +162,8 @@ Utilisateur (https://demarche.ga)
           │  rewrite { source: "**", run: ... }
           ▼
 ┌───────────────────────────┐
-│  Cloud Run citizen-web    │
+│  Cloud Run admin-gabon-   │
+│           citizen          │
 │  Project: administration-ga│
 │  Region: europe-west1     │
 │  - Next.js 14 SSR         │

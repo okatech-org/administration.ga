@@ -29,10 +29,10 @@ Le monorepo expose **3 applications Next.js 14** pointées sur un backend Convex
 ```
 administration.ga/
 ├── apps/
-│   ├── citizen-web      # Portail citoyen / entreprise  → demarche.ga                (port 3000)
-│   ├── agent-web        # Poste de travail agent         → administration.ga          (port 3003)
-│   ├── backoffice-web   # Back-office souverain          → admin.administration.ga    (port 3002)
-│   └── agent-desktop    # App Electron pour les agents (optionnel, en alpha)
+│   ├── admin-gabon-citizen     # Portail citoyen / entreprise  → demarche.ga                (port 3000)
+│   ├── admin-gabon             # Poste de travail agent         → administration.ga          (port 3003)
+│   ├── admin-gabon-backoffice  # Back-office souverain          → admin.administration.ga    (port 3002)
+│   └── agent-desktop           # App Electron pour les agents (optionnel, en alpha)
 ├── packages/
 │   ├── api              # Provider Convex (AppConvexProvider), hooks auth, client Better Auth
 │   ├── ui               # ~45 composants shadcn/ui partagés
@@ -56,9 +56,9 @@ administration.ga/
 
 | Application | URL prod | Port dev | Audience |
 |---|---|---|---|
-| `apps/citizen-web` | `demarche.ga` | 3000 | Citoyens, résidents, entreprises |
-| `apps/agent-web` | `administration.ga` | 3003 | Agents administratifs (ministères, DG, EP) |
-| `apps/backoffice-web` | `admin.administration.ga` | 3002 | Admin Système + Admin Institution |
+| `apps/admin-gabon-citizen` | `demarche.ga` | 3000 | Citoyens, résidents, entreprises |
+| `apps/admin-gabon` | `administration.ga` | 3003 | Agents administratifs (ministères, DG, EP) |
+| `apps/admin-gabon-backoffice` | `admin.administration.ga` | 3002 | Admin Système + Admin Institution |
 
 ---
 
@@ -132,9 +132,9 @@ bun install
 bun run dev:convex          # ou : bunx convex dev
 
 # Démarrer une app (dans un terminal séparé)
-bun run dev:citizen-web     # http://localhost:3000
-bun run dev:agent-web       # http://localhost:3003
-bun run dev:backoffice-web  # http://localhost:3002
+bun run dev:admin-gabon-citizen     # http://localhost:3000
+bun run dev:admin-gabon             # http://localhost:3003
+bun run dev:admin-gabon-backoffice  # http://localhost:3002
 
 # Démarrer toutes les apps en parallèle
 bun run dev

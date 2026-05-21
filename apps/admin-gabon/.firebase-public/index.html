@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADMINISTRATION.GA — Espace agent</title>
+  <meta name="description" content="Plateforme de digitalisation de l'administration publique gabonaise — espace agent." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231a1a1a'/%3E%3Ctext x='50' y='62' font-family='system-ui' font-size='40' font-weight='800' fill='%23ffffff' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: oklch(0.92 0 0);
+      --fg: oklch(0.10 0 0);
+      --muted: oklch(0.40 0 0);
+      --card: oklch(1 0 0);
+      --border: oklch(0.85 0 0);
+      --primary: oklch(0.55 0.22 260);
+      --gabon-green: #009E60;
+      --gabon-yellow: #FCD116;
+      --gabon-blue: #3A75C4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: oklch(0.13 0 0);
+        --fg: oklch(0.98 0 0);
+        --muted: oklch(0.65 0 0);
+        --card: oklch(0.18 0 0);
+        --border: oklch(0.25 0 0);
+      }
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      line-height: 1.6;
+    }
+    .container { max-width: 640px; width: 100%; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 20px 25px -5px oklch(0 0 0 / 0.08), 0 10px 10px -5px oklch(0 0 0 / 0.04);
+    }
+    .stripe {
+      height: 4px;
+      background: linear-gradient(90deg,
+        var(--gabon-green) 33.33%,
+        var(--gabon-yellow) 33.33%,
+        var(--gabon-yellow) 66.66%,
+        var(--gabon-blue) 66.66%);
+      border-radius: 2px;
+      margin-bottom: 2rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: oklch(0.94 0 0);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      .badge { background: oklch(0.22 0 0); }
+    }
+    h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-bottom: 2rem;
+    }
+    .info {
+      background: oklch(0.94 0 0);
+      border-radius: 1rem;
+      padding: 1.25rem 1.5rem;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      .info { background: oklch(0.22 0 0); }
+    }
+    .info strong { color: var(--fg); }
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="stripe"></div>
+      <span class="badge">Espace agent</span>
+      <h1>ADMINISTRATION.GA</h1>
+      <p class="subtitle">Plateforme de digitalisation de l'administration publique gabonaise.</p>
+      <div class="info">
+        <strong>Déploiement en cours.</strong><br />
+        L'application <em>admin-gabon</em> sera disponible une fois le service Cloud Run mis en route. Cette page de transition est servie par Firebase Hosting (<code>admin-gabon.web.app</code>).
+      </div>
+      <div class="footer">
+        <span>République Gabonaise</span>
+        <a href="https://admin-gabon.web.app">Espace admin</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

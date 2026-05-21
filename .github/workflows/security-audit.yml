@@ -91,12 +91,10 @@ jobs:
 
       - name: Check CSP headers exist in all apps
         run: |
-          # Chaque app expose ses headers selon son framework :
-          # - agent-web (Next.js) : headers() async dans next.config.ts
-          # - backoffice-web (Vite + Nitro/h3) : server/middleware/security-headers.ts
+          # Chaque app expose ses headers via Next.js : headers() async dans next.config.ts.
           declare -A APP_FILES=(
-            ["agent-web"]="apps/agent-web/next.config.ts"
-            ["backoffice-web"]="apps/backoffice-web/server/middleware/security-headers.ts"
+            ["admin-gabon"]="apps/admin-gabon/next.config.ts"
+            ["admin-gabon-backoffice"]="apps/admin-gabon-backoffice/next.config.ts"
           )
           for app in "${!APP_FILES[@]}"; do
             FILE="${APP_FILES[$app]}"
