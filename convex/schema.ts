@@ -125,6 +125,9 @@ import {
   // Phase 5 administration.ga — Noyau administratif (MVP)
   iArchiveRecordsTable,
   iBoiteMessagesTable,
+  // Phase 7 administration.ga — Interconnexion souveraine
+  sovereignChannelsTable,
+  sovereignChannelEventsTable,
 } from "./schemas";
 // Phase 3 — RAG iAsted (schema knowledge + mémoires long terme)
 import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
@@ -304,6 +307,11 @@ export default defineSchema(
   // iBoîte : messagerie institutionnelle informelle interne à l'org (inbox,
   // accusés de réception, pièces jointes Storage).
   iBoite_messages: iBoiteMessagesTable,
+  // Phase 7 administration.ga — Interconnexion souveraine
+  // Canaux formels A↔B entre institutions avec classification, signature
+  // optionnelle, horodatage qualifié et journal d'évènements (audit immuable).
+  sovereignChannels: sovereignChannelsTable,
+  sovereignChannelEvents: sovereignChannelEventsTable,
   },
   { schemaValidation: false },
 );

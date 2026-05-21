@@ -171,3 +171,12 @@ export {
 // iAsted réutilise les tables existantes (aiActivityLog, orgIAstedConfig).
 export { iArchiveRecordsTable } from "./iArchive";
 export { iBoiteMessagesTable } from "./iBoite";
+
+// Phase 7 administration.ga — Interconnexion souveraine
+// Canaux de communication formels entre institutions (Présidence,
+// VP-Gouvernement, Ministères, Parlement) avec classification, accusés
+// de réception et traçabilité complète.
+export {
+  sovereignChannelsTable,
+  sovereignChannelEventsTable,
+} from "./sovereignChannels";
