@@ -55,3 +55,6 @@ EasyCard/
 
 # Embedded site projects
 site_web/
+
+# Firebase deployment cache
+.firebase/
