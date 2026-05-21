@@ -1,254 +1,222 @@
-# Gabon Diplomatie — Monorepo
+# ADMINISTRATION.GA
 
-Plateforme de services consulaires de la **République Gabonaise** pour les citoyens, agents consulaires et administrateurs.
+> Plateforme de digitalisation de l'administration publique gabonaise — citoyens, agents, et autorités.
+
+[![Convex](https://img.shields.io/badge/backend-Convex-purple)](https://convex.dev)
+[![Next.js 14](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org)
+[![Turborepo](https://img.shields.io/badge/monorepo-Turborepo-red)](https://turbo.build)
+[![Cloud Run](https://img.shields.io/badge/deploy-GCP_Cloud_Run-4285F4)](https://cloud.google.com/run)
+
+---
+
+## Mission
+
+ADMINISTRATION.GA est la plateforme unifiée de digitalisation de **l'administration publique gabonaise** :
+
+- **Côté usager (citoyens & entreprises)** : un point d'entrée unique aux ~260 institutions publiques (Présidence, ministères, directions générales, établissements publics, AAI, parlement, juridictions, collectivités locales) et à leurs démarches administratives (CNI, passeport, état civil, casier judiciaire, etc.).
+- **Côté agent** : un poste de travail digital pour traiter les correspondances, suivre les dossiers, animer les réunions et collaborer en temps réel.
+- **Côté gouvernance** : un back-office souverain (Admin Système + Admin Institution) pour piloter le registre national, le catalogue de modules et les canaux d'interconnexion inter-institutions.
+
+Ce projet est le **pendant administratif** de [`gabon-diplomatie`](https://github.com/okatech-org/gabon-diplomatie) : là où ce dernier gère les représentations diplomatiques (ambassades, consulats) et les démarches consulaires depuis l'étranger, ADMINISTRATION.GA gère les administrations nationales et les démarches sur le territoire gabonais. Le socle technique est **IDENTIQUE** ; seuls le domaine métier, le modèle organisationnel et la terminologie diffèrent (cf. [`docs/MIGRATION_FROM_DIPLOMATIE.md`](./docs/MIGRATION_FROM_DIPLOMATIE.md)).
+
+---
 
 ## Architecture
 
+Le monorepo expose **3 applications Next.js 14** pointées sur un backend Convex partagé :
+
 ```
-gabon-diplomatie/
+administration.ga/
 ├── apps/
-│   ├── citizen-web      # Portail citoyen         → consulat.ga         (port 3000)
-│   ├── agent-web        # Portail agent/consulat   → diplomate.ga        (port 3003)
-│   └── backoffice-web   # Back-office super admin  → admin.consulat.ga   (port 3002)
+│   ├── citizen-web      # Portail citoyen / entreprise  → demarche.ga                (port 3000)
+│   ├── agent-web        # Poste de travail agent         → administration.ga          (port 3003)
+│   ├── backoffice-web   # Back-office souverain          → admin.administration.ga    (port 3002)
+│   └── agent-desktop    # App Electron pour les agents (optionnel, en alpha)
 ├── packages/
-│   ├── api              # Client Convex partagé (provider, hooks, auth)
-│   ├── ui               # Composants shadcn/ui partagés (~45 composants)
-│   ├── i18n             # Internationalisation FR/EN (i18next)
-│   ├── shared           # Types, constantes et utilitaires partagés
-│   └── tsconfig         # Configurations TypeScript de base
-├── convex/              # Backend Convex (fonctions, schémas, seeds, AI)
-└── .github/workflows/   # CI/CD GitHub Actions (deploy par app)
+│   ├── api              # Provider Convex (AppConvexProvider), hooks auth, client Better Auth
+│   ├── ui               # ~45 composants shadcn/ui partagés
+│   ├── i18n             # Provider i18next, traductions FR/EN
+│   ├── shared           # Types partagés, constantes, utilitaires
+│   ├── livekit          # Hooks LiveKit (room-options, disconnect-guard, ringtone)
+│   ├── chat             # Hooks chat (idempotency-key, attachments, safe-markdown)
+│   ├── iasted           # Sphère 3D + circle menu de l'agent vocal iAsted
+│   ├── document-editor  # Éditeur Tiptap partagé
+│   ├── document-rendering # Génération PDF/DOCX/PPTX
+│   ├── agent-features   # Features cross-apps (iDocument, iProfil, team, etc.)
+│   ├── posthog-shared   # Provider PostHog + helpers events
+│   ├── routing          # Routes typées partagées
+│   ├── settings-form    # Form schemas réutilisables
+│   ├── map              # Wrapper Mapbox / Leaflet
+│   ├── desktop-shared   # Utilitaires Electron
+│   └── tsconfig         # Configs TypeScript de base
+├── convex/              # Backend Convex (functions, schemas, ai, lib, seeds, migrations, crons)
+└── .github/workflows/   # CI/CD GitHub Actions (deploy par app sur Cloud Run)
 ```
+
+| Application | URL prod | Port dev | Audience |
+|---|---|---|---|
+| `apps/citizen-web` | `demarche.ga` | 3000 | Citoyens, résidents, entreprises |
+| `apps/agent-web` | `administration.ga` | 3003 | Agents administratifs (ministères, DG, EP) |
+| `apps/backoffice-web` | `admin.administration.ga` | 3002 | Admin Système + Admin Institution |
+
+---
 
 ## Stack technique
 
 | Couche | Technologie |
-|--------|-------------|
-| Frontend | [TanStack Start](https://tanstack.com/start) (file-based routing, SSR) |
-| UI | [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS v4](https://tailwindcss.com/) |
-| Backend | [Convex](https://convex.dev/) (base de données temps-réel, fonctions serverless) |
-| Auth | [Better Auth](https://better-auth.com/) (OTP email/SMS, OAuth IDN, multi-domaine) |
+|---|---|
 | Monorepo | [Turborepo](https://turbo.build/) + [Bun](https://bun.sh/) 1.2.17 |
+| Frontend | [Next.js 14](https://nextjs.org) (App Router, React 19) |
+| UI | [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com) (neumorphisme Soft UI, cf. `DESIGN_CHARTER.md`) |
+| Backend | [Convex](https://convex.dev) (base temps-réel, fonctions serverless, schémas TypeScript) |
+| Auth | [Better Auth](https://better-auth.com) (OTP email/SMS, OAuth IDN, multi-domaine) + RBAC TaskCode |
+| Temps réel | [LiveKit](https://livekit.io) (appels, réunions, partage d'écran) |
+| Éditeur | [Tiptap](https://tiptap.dev) (correspondance, documents, archive) |
+| IA | [OpenAI Realtime](https://platform.openai.com/docs/guides/realtime) (iAsted Mode God) + Gemini (Mr Ray) + Anthropic (analyse de documents) |
 | i18n | [i18next](https://www.i18next.com/) (FR/EN) |
-| Vidéo | [LiveKit](https://livekit.io/) (appels vidéo citoyen/agent) |
-| Cartes | [Mapbox GL](https://www.mapbox.com/) |
+| Cartes | [Mapbox GL](https://www.mapbox.com/) + Leaflet |
 | Analytics | [PostHog](https://posthog.com/) |
-| Deploy | [GCP Cloud Run](https://cloud.google.com/run) + [Artifact Registry](https://cloud.google.com/artifact-registry) |
+| Génération de documents | [docx](https://github.com/dolanmiu/docx), [pptxgenjs](https://gitbrent.github.io/PptxGenJS/), [pdf-lib](https://pdf-lib.js.org/), [JSZip](https://stuk.github.io/jszip/) |
+| Déploiement | [GCP Cloud Run](https://cloud.google.com/run) + [Artifact Registry](https://cloud.google.com/artifact-registry) |
 
-## Prérequis
+---
+
+## Documents de référence
+
+### Référentiels métier (lecture obligatoire avant tout travail business)
+
+| Document | Description |
+|---|---|
+| [`ADMINISTRATION.GA/5e-Republique-Gabon-Institutions.md`](./ADMINISTRATION.GA/5e-Republique-Gabon-Institutions.md) | Référentiel exhaustif des 28 ministères, ~110 DG, ~80 EP, AAI, parlement, juridictions, collectivités. |
+| [`ADMINISTRATION.GA/iCorrespondance-Specification-Fonctionnelle.md`](./ADMINISTRATION.GA/iCorrespondance-Specification-Fonctionnelle.md) | Spécification fonctionnelle universelle du module iCorrespondance (DEM/ADM/INST, workflow, copies, audit). |
+| [`ADMINISTRATION.GA/PROJET_DIGITALISATION_GOUVERNEMENT_GABONAIS.md`](./ADMINISTRATION.GA/PROJET_DIGITALISATION_GOUVERNEMENT_GABONAIS.md) | Vision cible globale (7 modules du noyau, canaux souverains, gouvernance Admin Système vs Admin Institution). |
+| [`ADMINISTRATION.GA/SYNTHESE_REFERENCES.md`](./ADMINISTRATION.GA/SYNTHESE_REFERENCES.md) | Synthèse opérationnelle (slugs canoniques, ministrySubType, glossaire, arbitrages tranchés). |
+| [`DESIGN_CHARTER.md`](./DESIGN_CHARTER.md) | Charte graphique neumorphique Soft UI (palette achromatique + 4 accents, identité Gabon en décoratif). |
+
+### Documentation projet
+
+| Document | Description |
+|---|---|
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Architecture technique détaillée (modèle organisationnel, modules, iAsted, sovereign channels). |
+| [`docs/MIGRATION_FROM_DIPLOMATIE.md`](./docs/MIGRATION_FROM_DIPLOMATIE.md) | Histoire de la migration depuis `gabon-diplomatie` + dette résiduelle. |
+| [`docs/REFERENTIEL_INSTITUTIONS.md`](./docs/REFERENTIEL_INSTITUTIONS.md) | Index institutionnel + règle de non-invention. |
+| [`docs/GOUVERNANCE.md`](./docs/GOUVERNANCE.md) | Modèle de gouvernance, RBAC, classifications, audit. |
+| [`docs/iasted-posthog-dashboard.md`](./docs/iasted-posthog-dashboard.md) | Dashboard PostHog pour la télémétrie iAsted. |
+
+> Le règlement le plus important : **ne JAMAIS inventer** une donnée métier (titulaire, libellé officiel, organigramme, tutelle). Toute information doit être vérifiée dans `ADMINISTRATION.GA/5e-Republique-Gabon-Institutions.md`. En cas d'ambiguïté, lever une question d'arbitrage AVANT d'écrire — voir [`ADMINISTRATION.GA/SYNTHESE_REFERENCES.md`](./ADMINISTRATION.GA/SYNTHESE_REFERENCES.md) §D pour les points déjà tranchés.
+
+---
+
+## Quickstart
+
+### Prérequis
 
 - **Bun** >= 1.2.17 (`curl -fsSL https://bun.sh/install | bash`)
 - **Node.js** >= 20
-- Accès au projet **Convex** `gabon-diplomatie`
-- Accès au projet **GCP** `gabon-diplomatie` (pour le deploy)
+- Accès au projet **Convex** `administration-ga`
+- Accès au projet **GCP** `administration-ga` (pour le déploiement)
 
-## Installation
+### Installation
 
 ```bash
-git clone https://github.com/okatech-org/gabon-diplomatie.git
-cd gabon-diplomatie
+git clone https://github.com/okatech-org/administration.ga.git
+cd administration.ga
 bun install
 ```
 
-## Configuration
+### Lancement en dev
 
-Chaque app a son propre `.env.local`. Variables requises :
+```bash
+# Démarrer le backend Convex (hot-reload schéma + fonctions)
+bun run dev:convex          # ou : bunx convex dev
+
+# Démarrer une app (dans un terminal séparé)
+bun run dev:citizen-web     # http://localhost:3000
+bun run dev:agent-web       # http://localhost:3003
+bun run dev:backoffice-web  # http://localhost:3002
+
+# Démarrer toutes les apps en parallèle
+bun run dev
+```
 
 ### Variables d'environnement
 
-| Variable | Description | Exemple |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_CONVEX_URL` | URL du déploiement Convex | `https://xxx.eu-west-1.convex.cloud` |
-| `CONVEX_SITE_URL` | URL HTTP du site Convex | `https://xxx.eu-west-1.convex.site` |
-| `NEXT_PUBLIC_SITE_URL` | URL de l'app (pour l'auth) | `http://consulat.local:3000` |
-| `NEXT_PUBLIC_POSTHOG_KEY` | Clé PostHog | |
-| `NEXT_PUBLIC_POSTHOG_HOST` | Host PostHog | |
-| `NEXT_PUBLIC_LIVEKIT_WS_URL` | URL WebSocket LiveKit | |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | Token Mapbox (citizen-web uniquement) | |
-
-### Variables Convex (backend)
-
-Configurées via `bunx convex env set <KEY> <VALUE>` :
+Chaque app a son propre `.env.local`. Variables principales :
 
 | Variable | Description |
-|----------|-------------|
+|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | URL du déploiement Convex |
+| `CONVEX_SITE_URL` | URL HTTP du site Convex |
+| `NEXT_PUBLIC_SITE_URL` | URL de l'app (pour l'auth multi-domaine) |
+| `NEXT_PUBLIC_APP_NAME` | `ADMINISTRATION.GA` |
+| `NEXT_PUBLIC_DOMAIN_CITIZEN` | `demarche.ga` |
+| `NEXT_PUBLIC_DOMAIN_AGENT` | `administration.ga` |
+| `NEXT_PUBLIC_DOMAIN_ADMIN` | `admin.administration.ga` |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | Telemetry PostHog |
+| `NEXT_PUBLIC_LIVEKIT_WS_URL` | URL WebSocket LiveKit |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Token Mapbox (citizen-web uniquement) |
+
+Variables Convex (backend) à configurer via `bunx convex env set <KEY> <VALUE>` :
+
+| Variable | Description |
+|---|---|
 | `TRUSTED_ORIGINS` | Origins autorisés pour Better Auth (séparés par virgule) |
 | `BETTER_AUTH_SECRET` | Secret pour la session Better Auth |
-| `LIVEKIT_API_KEY` | Clé API LiveKit |
-| `LIVEKIT_API_SECRET` | Secret API LiveKit |
+| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Credentials LiveKit |
 | `RESEND_API_KEY` | Clé API Resend (envoi emails) |
-| `BIRD_API_KEY` | Clé API Bird (SMS/WhatsApp) |
+| `BIRD_API_KEY` | Clé API Bird (SMS / WhatsApp) |
+| `OPENAI_API_KEY` | iAsted Mode God (sinon UI affiche "vocal indisponible") |
+| `GOOGLE_GENAI_API_KEY` | Gemini (Mr Ray, analyse de documents) |
+| `ANTHROPIC_API_KEY` | Anthropic (analyse de documents complémentaire) |
 
-## Lancement en dev
-
-```bash
-# Lancer TOUTES les apps en parallèle
-bun run dev
-
-# Lancer UNE seule app
-cd apps/citizen-web && bun run dev     # http://localhost:3000
-cd apps/agent-web && bun run dev       # http://localhost:3003
-cd apps/backoffice-web && bun run dev  # http://localhost:3002
-
-# Lancer le backend Convex (dans un terminal séparé)
-bunx convex dev
-```
-
-### Ports locaux
-
-| App | Port | URL locale recommandée |
-|-----|------|------------------------|
-| citizen-web | 3000 | `http://consulat.local:3000` |
-| backoffice-web | 3002 | `http://admin.consulat.local:3002` |
-| agent-web | 3003 | `http://diplomate.local:3003` |
-
-> Ajouter les domaines locaux dans `/etc/hosts` :
-> ```
-> 127.0.0.1 consulat.local diplomate.local admin.consulat.local
-> ```
-
-## Build
+### Tests et qualité
 
 ```bash
-# Build toutes les apps
-bun run build
-
-# Build une seule app
-cd apps/citizen-web && bun run build
+bun run typecheck    # TypeScript strict mode (turbo)
+bun run lint         # ESLint (turbo)
+bun run format       # Prettier (turbo)
+bun run build        # Build de production de toutes les apps
 ```
 
-## Packages partagés
+---
 
-| Package | Alias d'import | Description |
-|---------|----------------|-------------|
-| `packages/api` | `@workspace/api` | Provider Convex (`AppConvexProvider`), hooks auth, client auth |
-| `packages/ui` | `@workspace/ui` | ~45 composants shadcn/ui (Button, Card, Dialog, etc.) |
-| `packages/i18n` | `@workspace/i18n` | Provider i18next, traductions FR/EN |
-| `packages/shared` | `@workspace/shared` | Types partagés, constantes, utilitaires |
-| `packages/tsconfig` | `@workspace/tsconfig` | Configs TypeScript (`base.json`, `react.json`) |
+## Conventions
 
-### Ajouter un composant shadcn/ui
+- **Code** : anglais (variables, fonctions, types, noms de fichiers en kebab-case, composants React en PascalCase)
+- **Commentaires** : français
+- **UI** : français — utiliser les clés i18n quand disponibles, **jamais** de fallback hardcodé
+- **TypeScript** : strict mode partout, jamais `any` sans justification documentée
+- **Exports** : named exports préférés aux default exports
+- **Styling** : Tailwind CSS, jamais de CSS inline quand Tailwind suffit
+- **Composants UI** : Shadcn/UI — JAMAIS modifier `packages/ui/src/components/ui/` directement, créer des wrappers dans `components/shared/` ou `components/custom/`
+- **Formulaires** : React Hook Form + Zod pour TOUS les formulaires
+- **Toasts** : `sonner` (standard dans tous les projets)
+- **Icônes** : `lucide-react` exclusivement
+- **Design** : palette achromatique 6 gris + 4 accents (bleu, vert, amber, rose). Couleurs Gabon (vert/jaune/bleu) en décoratif uniquement. Voir [`DESIGN_CHARTER.md`](./DESIGN_CHARTER.md).
 
-```bash
-bunx shadcn@latest add <composant> -c packages/ui
-```
+Voir [`CLAUDE.md`](./CLAUDE.md) pour les conventions complètes ainsi que les patterns iAsted Mode God et l'extension des modules.
 
-Les composants sont placés dans `packages/ui/src/components/` et importés via :
+---
 
-```tsx
-import { Button } from "@workspace/ui/components/button";
-```
+## Statut du projet
 
-## Convex (Backend)
+Le projet a été industrialisé en **9 phases**, toutes complétées. Voir [`docs/MIGRATION_FROM_DIPLOMATIE.md`](./docs/MIGRATION_FROM_DIPLOMATIE.md) pour le détail (PRs, commits, dette résiduelle).
 
-Le backend Convex est partagé entre les 3 apps.
+| Phase | Sujet | Statut |
+|---|---|---|
+| 0 | Fork et bootstrap depuis `gabon-diplomatie` | OK (PR #1) |
+| 1 | Modèle organisationnel étendu (12+ types, 28 portefeuilles 2026, tutelleLevel) | OK (PR #2) |
+| 2 | Seeds 5e République (~270 entités) | OK (PR #3) |
+| 3 | Rebranding 3 apps (citizen / agent / backoffice) | OK (PR #4) |
+| 4 | iCorrespondance administratif (8 types ADM-*, `resolveRecipient`) | OK (PR #5) |
+| 5 | Modules MVP iAsted / iArchive / iBoîte + Catalogue National | OK (PR #6) |
+| 6 | iAsted Mode Administration (4 business tools souverains) | OK (PR #7) |
+| 7 | Interconnexion souveraine (canaux + audit immuable) | OK (PR #8) |
+| 8 | CI/CD Cloud Run (workflow `deploy-administration-ga`) | OK (PR #9) |
+| 9 | Documentation (cette branche) | en cours |
 
-```
-convex/
-├── functions/       # Queries et mutations (users, services, requests, etc.)
-├── actions/         # Actions (livekit, envoi SMS/email)
-├── schemas/         # Schémas des tables
-├── betterAuth/      # Configuration Better Auth
-├── ai/              # Chat AI, analyse de documents
-├── lib/             # Helpers, constantes, validators
-├── seeds/           # Données de seed (dev)
-└── http.ts          # Routes HTTP (auth)
-```
-
-### Déploiements Convex
-
-| Environnement | Déploiement |
-|---------------|-------------|
-| Dev | Voir `.env.local` → `CONVEX_DEPLOYMENT` |
-| Production | Voir dashboard Convex |
-
-```bash
-# Lancer en dev (hot-reload)
-bunx convex dev
-
-# Déployer en production
-bunx convex deploy --prod
-```
-
-## Déploiement (Production)
-
-Chaque app se déploie automatiquement sur **GCP Cloud Run** via GitHub Actions au push sur `main`.
-
-### CI/CD
-
-| Workflow | Trigger | Service Cloud Run |
-|----------|---------|-------------------|
-| `deploy-citizen.yml` | `apps/citizen-web/**` ou `packages/**` | `citizen-web` |
-| `deploy-agent.yml` | `apps/agent-web/**` ou `packages/**` | `agent-web` |
-| `deploy-backoffice.yml` | `apps/backoffice-web/**` ou `packages/**` | `backoffice-web` |
-
-Les workflows se lancent aussi manuellement via `workflow_dispatch`.
-
-### Domaines
-
-| App | Domaine | URL Cloud Run (fallback) |
-|-----|---------|--------------------------|
-| citizen-web | `consulat.ga` | `citizen-web-xxx.europe-west1.run.app` |
-| agent-web | `diplomate.ga` | `agent-web-xxx.europe-west1.run.app` |
-| backoffice-web | `admin.consulat.ga` | `backoffice-web-xxx.europe-west1.run.app` |
-
-Les redirections `www.` vers apex sont gérées par un middleware Nitro (`server/middleware/www-redirect.ts`).
-
-### GitHub Secrets
-
-| Secret | Description |
-|--------|-------------|
-| `WIF_PROVIDER` | Workload Identity Federation provider GCP |
-| `NEXT_PUBLIC_CONVEX_URL` | URL Convex **production** |
-| `CONVEX_SITE_URL` | URL site Convex **production** |
-| `NEXT_PUBLIC_POSTHOG_KEY` | Clé PostHog |
-| `NEXT_PUBLIC_POSTHOG_HOST` | Host PostHog |
-| `NEXT_PUBLIC_LIVEKIT_WS_URL` | URL WebSocket LiveKit |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | Token Mapbox |
-
-### Deploy manuel
-
-```bash
-gh workflow run deploy-citizen.yml
-gh workflow run deploy-agent.yml
-gh workflow run deploy-backoffice.yml
-```
-
-## Auth multi-domaine
-
-Better Auth est configuré pour fonctionner sur les 3 domaines simultanément :
-
-- **Server-side** : `baseURL` omis intentionnellement (Better Auth infère depuis la requête)
-- **Client-side** : utilise `window.location.origin` dynamiquement
-- **`TRUSTED_ORIGINS`** : variable d'env Convex contenant tous les domaines autorisés
-- Chaque app a son `auth-server.ts` qui proxy les requêtes auth vers Convex
-
-Pour ajouter un nouveau domaine, mettre à jour `TRUSTED_ORIGINS` sur Convex (dev **et** prod) :
-
-```bash
-# Dev
-CONVEX_DEPLOYMENT=dev:<deployment-name> bunx convex env set TRUSTED_ORIGINS "https://domaine1.com,https://domaine2.com,..."
-
-# Prod
-CONVEX_DEPLOYMENT=prod:<deployment-name> bunx convex env set TRUSTED_ORIGINS "https://domaine1.com,https://domaine2.com,..."
-```
-
-### Sites partenaires externes
-
-Le site `france.consulat.ga` consomme le catalogue de services via un
-second `ConvexReactClient` pointé sur ce déploiement. Il faut donc
-inclure ses origines dans `TRUSTED_ORIGINS` :
-
-```
-https://france.consulat.ga,https://staging.france.consulat.ga
-```
-
-Les queries exposées (`convex/functions/publicServices.ts`) sont
-**non authentifiées** et ne renvoient que des données destinées à
-l'affichage public. Les mutations d'administration
-(`setOrgServiceActive`, etc.) restent protégées par Better Auth — l'admin
-doit donc être connecté à diplomate.ga pour piloter l'activation depuis
-l'interface france.consulat.ga.
+---
 
 ## Licence
 

@@ -171,19 +171,25 @@ Trois items du plan d'audit n'ont PAS ete extraits dans les packages partages. D
 - **tsconfig paths non modifies** : le champ `exports` des `package.json` (ex. `"./room-options": "./src/room-options.ts"`) suffit pour la resolution TypeScript+Next.js. Ajouter manuellement `@workspace/livekit/*` et `@workspace/chat/*` dans chaque `tsconfig.json` est redondant et genere des conflits de resolution.
 - **`AddressWithAutocomplete` (citizen-web) reste per-app**, ne migre PAS vers `@workspace/ui/components/address-input`. Le composant shared est value/onChange-based et pleinement compose (rue + ville + code postal + pays + GPS + score de completion), tandis que le composant citizen-web est `react-hook-form`-bound avec un Select pays restreint a la liste cible. Pour `administration.ga`, le composant citizen-web devra etre adapte aux provinces/departements/communes gabonaises (voir Phase 3 du plan d'implementation).
 
-## Plan d'implementation en 9 phases
+## Plan d'implementation en 9 phases — statut
 
-Voir [`ADMINISTRATION.GA/PROMPT_IMPLEMENTATION_ADMINISTRATION_GA.md`](./ADMINISTRATION.GA/PROMPT_IMPLEMENTATION_ADMINISTRATION_GA.md) pour le decoupage complet :
+Voir [`docs/MIGRATION_FROM_DIPLOMATIE.md`](./docs/MIGRATION_FROM_DIPLOMATIE.md) pour le detail (PRs, commits, dette residuelle).
 
-0. Fork et bootstrap (cette phase est en cours / vient d'etre completee)
-1. Modele organisationnel etendu (Convex)
-2. Seeds : 5e Republique complete (~260 entites)
-3. Renommage et rebranding des apps
-4. Adapter iCorrespondance au contexte administratif
-5. Modules iDocument, iArchive, iBoite, iAgenda, iCom
-6. iAsted Mode Administration
-7. Interconnexion souveraine
-8. Deploiement et CI/CD (Cloud Run)
-9. Documentation
+- [x] Phase 0 — Fork et bootstrap (PR #1)
+- [x] Phase 1 — Modele organisationnel etendu (PR #2)
+- [x] Phase 2 — Seeds 5e Republique 270 entites (PR #3)
+- [x] Phase 3 — Rebranding 3 apps (PR #4)
+- [x] Phase 4 — iCorrespondance administratif (PR #5)
+- [x] Phase 5 — Modules noyau MVP iAsted/iArchive/iBoite (PR #6)
+- [x] Phase 6 — iAsted Mode Administration (PR #7)
+- [x] Phase 7 — Interconnexion souveraine (PR #8)
+- [x] Phase 8 — CI/CD Cloud Run (PR #9)
+- [x] Phase 9 — Documentation (cette branche)
 
-Chaque phase produit un rapport de completion + attend confirmation avant la suivante.
+Documentation projet correspondante :
+- [`README.md`](./README.md) — vue d'ensemble et quickstart
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — architecture technique detaillee
+- [`docs/MIGRATION_FROM_DIPLOMATIE.md`](./docs/MIGRATION_FROM_DIPLOMATIE.md) — migration depuis gabon-diplomatie
+- [`docs/REFERENTIEL_INSTITUTIONS.md`](./docs/REFERENTIEL_INSTITUTIONS.md) — index institutionnel + regle de non-invention
+- [`docs/GOUVERNANCE.md`](./docs/GOUVERNANCE.md) — modele de gouvernance Admin Systeme vs Admin Institution
+- [`ADMINISTRATION.GA/PROMPT_IMPLEMENTATION_ADMINISTRATION_GA.md`](./ADMINISTRATION.GA/PROMPT_IMPLEMENTATION_ADMINISTRATION_GA.md) — prompt d'origine du plan en 9 phases
