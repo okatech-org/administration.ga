@@ -1047,6 +1047,10 @@ export const TASK_CATEGORY_META: Record<TaskCategory, { label: LocalizedString; 
   callRecordings: { label: { fr: "Enregistrements d'appels", en: "Call Recordings" }, icon: "Disc" },
   // AI Assistant Proactif
   ai_assistant: { label: { fr: "Assistant IA", en: "AI Assistant" }, icon: "Sparkles" },
+  // ─── Phase 5 — Noyau administratif (administration.ga) ────────
+  iasted: { label: { fr: "iAsted", en: "iAsted" }, icon: "Sparkles" },
+  iarchive: { label: { fr: "iArchive", en: "iArchive" }, icon: "Archive" },
+  iboite: { label: { fr: "iBoîte", en: "iBoîte" }, icon: "Inbox" },
 };
 
 // ═══════════════════════════════════════════════════════════════

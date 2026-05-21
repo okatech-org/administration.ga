@@ -1812,6 +1812,130 @@ const BUSINESS_TOOLS: GatedTool[] = [
 			},
 		},
 	},
+	// ───────────────────────────────────────────────────────────
+	// Phase 6 — MODE ADMINISTRATION (administration.ga)
+	// ───────────────────────────────────────────────────────────
+	// Outils dédiés au contexte administratif gabonais (5ᵉ République).
+	// Disponibles sur agent + backoffice (masqués côté citoyen via la
+	// whitelist CITIZEN_BUSINESS_TOOLS qui ne les liste pas).
+	// Aucun gating TaskCode supplémentaire : l'authentification suffit pour
+	// les outils de résolution (read-only) ; les mutations re-vérifient
+	// les permissions au backend (Phase 4 : resolveRecipient est authQuery).
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		tool: {
+			type: "function",
+			name: "find_administration",
+			description:
+				"Trouve l'administration gabonaise compétente pour un sujet donné (5ᵉ République : ministères, directions générales, établissements publics, AAI, juridictions, collectivités locales). " +
+				"À UTILISER AVANT d'orienter un citoyen ou d'initier une démarche, pour éviter d'inventer le nom officiel d'une administration. " +
+				"Recherche tolérante aux accents et à la casse, restreinte aux administrations actives avec tutelleLevel <= 2 (institutions souveraines, ministères, DG/AAI/EP/juridictions). " +
+				"Exemples : 'passeport' → DGDI ; 'casier judiciaire' → tribunaux + min. Justice ; 'permis de conduire' → DGT.",
+			parameters: {
+				type: "object",
+				properties: {
+					query: {
+						type: "string",
+						description:
+							"Sujet ou service recherché (ex : 'passeport', 'casier judiciaire', 'permis de conduire', 'CNI', 'agrément fiscal', 'nationalité', 'commerce'). Peut aussi être un nom partiel d'administration ('DGI', 'mairie Libreville', 'ministère santé').",
+					},
+					limit: {
+						type: "number",
+						description: "Nombre maximum de résultats retournés (défaut : 5, max recommandé : 10).",
+					},
+				},
+				required: ["query"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		tool: {
+			type: "function",
+			name: "initiate_demarche",
+			description:
+				"Démarre un dossier administratif (iCorrespondance type adm_*) au nom d'un citoyen. " +
+				"CONFIRMATION ORALE REQUISE avant invocation : rappeler le type de démarche + nom du citoyen + administration cible si fournie, puis attendre 'oui' / 'confirmé'. " +
+				"Types acceptés : adm_cni, adm_passport, adm_extrait_naissance, adm_casier_judiciaire, adm_permis_conduire, adm_nationalite, adm_autorisation_commerce, adm_agrement_fiscal. " +
+				"NOTE MVP : la création réelle du dossier sera câblée dans une phase ultérieure ; l'invocation crée un log d'activité IA et renvoie une suggestion de navigation vers le brouillon iCorrespondance.",
+			parameters: {
+				type: "object",
+				properties: {
+					typeCode: {
+						type: "string",
+						description: "Code du type de démarche administrative (préfixe adm_). Ex : 'adm_passport', 'adm_cni', 'adm_casier_judiciaire'.",
+					},
+					citizenUserId: {
+						type: "string",
+						description: "ID Convex du citoyen pour lequel initier le dossier (résolu via find_contact_by_name ou search_consular_registrations).",
+					},
+					orgSlug: {
+						type: "string",
+						description: "Slug optionnel de l'administration cible (ex : 'dgdi', 'mairie-libreville', 'dgi'). Si omis, l'orientation par défaut du type sera utilisée.",
+					},
+				},
+				required: ["typeCode", "citizenUserId"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		tool: {
+			type: "function",
+			name: "resolve_official",
+			description:
+				"Identifie le titulaire courant d'un poste dans une administration gabonaise. " +
+				"Délègue au helper backend `resolveRecipient` (Phase 4 — iCorrespondance) qui fait le matching membership↔position par slug normalisé. " +
+				"Utiliser pour répondre à 'Qui est le Directeur Général de la DGI ?', 'Qui est le Ministre de la Justice ?', 'À qui s'adresser à la mairie de Libreville ?'. " +
+				"Si le poste n'est pas occupé, le helper renvoie un fallback 'org' (entrée par le secrétariat).",
+			parameters: {
+				type: "object",
+				properties: {
+					orgSlug: {
+						type: "string",
+						description: "Slug de l'administration (ex : 'dgi', 'ministere-justice', 'mairie-libreville', 'dgdi'). Utiliser find_administration au préalable si le slug n'est pas connu.",
+					},
+					role: {
+						type: "string",
+						description: "Rôle / position recherché (ex : 'ministre', 'directeur-general', 'maire', 'secretaire-general', 'directeur-etat-civil'). Tolère les variantes casse/accents.",
+					},
+				},
+				required: ["orgSlug", "role"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		superadminOnly: false,
+		tool: {
+			type: "function",
+			name: "transmit_dossier",
+			description:
+				"Transmet un dossier administratif à l'étape suivante de son workflow. " +
+				"ACTION DESTRUCTIVE : DOUBLE CONFIRMATION ORALE OBLIGATOIRE. " +
+				"Étape 1 (récap initial) : 'Je vais transmettre le dossier X à l'étape Y. Confirmez ?' → 'oui'. " +
+				"Étape 2 (récap final) : 'Confirmation finale : transmission du dossier X vers Y. J'exécute ?' → 'oui'. " +
+				"N'invoquer le tool qu'APRÈS la deuxième confirmation. " +
+				"NOTE MVP : exécution simulée — la transmission réelle (mutation correspondanceCore.transmit) sera câblée en phase ultérieure ; l'invocation produit un log d'activité IA et un message indiquant l'action simulée.",
+			parameters: {
+				type: "object",
+				properties: {
+					dossierId: {
+						type: "string",
+						description: "ID Convex du dossier (table correspondance) à transmettre.",
+					},
+					nextStepKey: {
+						type: "string",
+						description: "Clé de l'étape suivante (ex : 'validation_chef_service', 'signature_dg', 'archivage'). Décrit où le dossier doit aller.",
+					},
+				},
+				required: ["dossierId", "nextStepKey"],
+			},
+		},
+	},
 ];
 
 // ─────────────────────────────────────────────────────────────

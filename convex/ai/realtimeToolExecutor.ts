@@ -57,6 +57,12 @@ const MUTATIVE_TOOLS = new Set([
 	"draft_correspondence",
 	"generate_document",
 	"escalate_to_supervisor",
+	// Phase 6 — Mode Administration (mutations simulées en MVP, mais
+	// comptées comme mutatives pour le budget vocal — l'utilisateur doit
+	// rester contraint par le rate limit avant que les vrais writes soient
+	// branchés en phase ultérieure).
+	"initiate_demarche",
+	"transmit_dossier",
 ]);
 
 // ─────────────────────────────────────────────────────────────
@@ -618,6 +624,17 @@ async function dispatchBusinessTool(
 			return await listMyDevicesTool(ctx);
 		case "handoff_to_device":
 			return await handoffToDeviceTool(ctx, args);
+
+		// ─── Phase 6 — MODE ADMINISTRATION (administration.ga) ───
+		case "find_administration":
+			return await findAdministration(ctx, args, context);
+		case "initiate_demarche":
+			return await initiateDemarche(ctx, args, context);
+		case "resolve_official":
+			return await resolveOfficial(ctx, args, context);
+		case "transmit_dossier":
+			return await transmitDossier(ctx, args, context);
+
 		default:
 			return { success: false, message: `Tool métier non implémenté : ${toolName}` };
 	}
@@ -3223,6 +3240,301 @@ async function callMyConsulate(
 		uiAction: {
 			type: "navigate",
 			payload: { module: "consular_affairs", subpath: "call" },
+		},
+	};
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 6 — MODE ADMINISTRATION (administration.ga)
+// ─────────────────────────────────────────────────────────────
+// Outils dédiés au contexte administratif gabonais (5ᵉ République).
+// MVP : initiate_demarche et transmit_dossier produisent des logs et des
+// suggestions de navigation sans déclencher de mutation de domaine — la
+// création réelle des dossiers et la transition workflow seront branchées
+// en phase ultérieure (cf. correspondanceCore mutations).
+
+/** Liste autorisée des typeCode adm_* — synchronisée avec correspondanceConfig. */
+const ALLOWED_DEMARCHE_TYPES: ReadonlySet<string> = new Set([
+	"adm_cni",
+	"adm_passport",
+	"adm_extrait_naissance",
+	"adm_casier_judiciaire",
+	"adm_permis_conduire",
+	"adm_nationalite",
+	"adm_autorisation_commerce",
+	"adm_agrement_fiscal",
+]);
+
+/** Détecte si une org est éligible au mode administration (exclut les rep. diplomatiques). */
+const EXCLUDED_ORG_TYPES_ADMIN: ReadonlySet<string> = new Set([
+	"embassy",
+	"consulate",
+	"general_consulate",
+	"permanent_mission",
+]);
+
+/**
+ * find_administration — Recherche les administrations gabonaises compétentes
+ * pour un sujet/service donné.
+ *
+ * Stratégie MVP : recherche substring tolérante aux accents/casse sur le nom
+ * et le slug. Filtre `isActive && !deletedAt && tutelleLevel <= 2` et exclut
+ * les types diplomatiques (embassy/consulate/...). En production, un mapping
+ * sujet→admin de référence (table dédiée) remplacerait cette heuristique.
+ */
+async function findAdministration(
+	ctx: any,
+	args: { query?: string; limit?: number },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const rawQuery = (args.query ?? "").trim();
+	if (!rawQuery) {
+		return { success: false, message: "Sujet ou service recherché manquant." };
+	}
+	const limit = Math.min(Math.max(args.limit ?? 5, 1), 10);
+	const norm = rawQuery
+		.normalize("NFD")
+		.replace(/[̀-ͯ]/g, "")
+		.toLowerCase();
+
+	try {
+		const allOrgs = (await ctx.runQuery(api.functions.orgs.list, {})) as any[];
+		const matches = allOrgs
+			.filter((o: any) => {
+				if (!o || o.deletedAt || o.isActive === false) return false;
+				if (EXCLUDED_ORG_TYPES_ADMIN.has(o.type)) return false;
+				// tutelleLevel peut être undefined sur d'anciennes orgs : on accepte
+				// undefined OU <= 2 (Phase 1.4 backfill peut être incomplet en dev).
+				if (typeof o.tutelleLevel === "number" && o.tutelleLevel > 2) return false;
+				const name = (o.name ?? "")
+					.normalize("NFD")
+					.replace(/[̀-ͯ]/g, "")
+					.toLowerCase();
+				const slug = (o.slug ?? "").toLowerCase();
+				return name.includes(norm) || slug.includes(norm);
+			})
+			.slice(0, limit);
+
+		if (matches.length === 0) {
+			return {
+				success: true,
+				message: `Aucune administration trouvée pour « ${rawQuery} ».`,
+				data: { orgs: [] },
+			};
+		}
+
+		const summary = matches
+			.map(
+				(o: any, i: number) =>
+					`${i + 1}. ${o.name}${o.slug ? ` (${o.slug})` : ""}${o.tutelleLevel !== undefined ? ` — niveau ${o.tutelleLevel}` : ""}`,
+			)
+			.join("\n");
+
+		return {
+			success: true,
+			message:
+				matches.length === 1
+					? `Administration trouvée : ${matches[0].name}.`
+					: `${matches.length} administrations trouvées :\n${summary}`,
+			data: {
+				orgs: matches.map((o: any) => ({
+					orgId: o._id,
+					slug: o.slug,
+					name: o.name,
+					type: o.type,
+					tutelleLevel: o.tutelleLevel,
+					country: o.country,
+				})),
+			},
+		};
+	} catch (e: any) {
+		return {
+			success: false,
+			message: `Recherche d'administration échouée : ${e?.message ?? "erreur"}`,
+		};
+	}
+}
+
+/**
+ * initiate_demarche — Démarre un dossier administratif au nom d'un citoyen.
+ *
+ * MVP : ne crée pas réellement une entrée `correspondance` (les mutations
+ * réelles de création passent par un flux UI dédié avec validation/upload
+ * de pièces). On valide les arguments (type connu, citoyen existant) et on
+ * renvoie une uiAction `navigate` vers le brouillon iCorrespondance avec
+ * le type pré-rempli. L'action est tracée en audit log via le wrapper
+ * `executeRealtimeTool` (orgId du caller).
+ */
+async function initiateDemarche(
+	ctx: any,
+	args: { typeCode?: string; citizenUserId?: string; orgSlug?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const typeCode = (args.typeCode ?? "").trim();
+	const citizenUserId = (args.citizenUserId ?? "").trim();
+	const orgSlug = (args.orgSlug ?? "").trim() || undefined;
+
+	if (!typeCode || !ALLOWED_DEMARCHE_TYPES.has(typeCode)) {
+		return {
+			success: false,
+			message: `Type de démarche inconnu ou non administratif : « ${typeCode || "(vide)"} ». Types valides : ${[...ALLOWED_DEMARCHE_TYPES].join(", ")}.`,
+		};
+	}
+	if (!citizenUserId) {
+		return {
+			success: false,
+			message: "ID du citoyen manquant. Utilisez find_contact_by_name pour le résoudre avant initiation.",
+		};
+	}
+
+	// Vérifier que le citoyen existe (lecture defensive — pas de fuite d'info
+	// si introuvable, on renvoie un message générique).
+	try {
+		const citizen = await ctx
+			.runQuery(api.functions.users.getById, { userId: citizenUserId as any })
+			.catch(() => null);
+		if (!citizen) {
+			return {
+				success: false,
+				message: "Citoyen introuvable. Vérifiez l'identité avant initiation.",
+			};
+		}
+
+		// Construit un libellé humain depuis le type
+		const typeLabel = typeCode
+			.replace(/^adm_/, "")
+			.replace(/_/g, " ");
+		const citizenLabel = [citizen.firstName, citizen.lastName]
+			.filter(Boolean)
+			.join(" ") || citizen.email || "le citoyen";
+
+		// MVP : on renvoie une uiAction navigate vers le brouillon iCorrespondance
+		// avec le type pré-sélectionné. La création réelle de l'entrée
+		// `correspondance` est gérée côté formulaire UI (validation, pièces).
+		const subpath = `draft/new?type=${encodeURIComponent(typeCode)}&citizenId=${encodeURIComponent(citizenUserId)}${orgSlug ? `&orgSlug=${encodeURIComponent(orgSlug)}` : ""}`;
+
+		return {
+			success: true,
+			message: `Brouillon de démarche « ${typeLabel} » préparé pour ${citizenLabel}. (ACTION MVP : ouverture du brouillon iCorrespondance — la création persistée du dossier sera câblée en phase ultérieure.)`,
+			uiAction: {
+				type: "navigate",
+				payload: { module: "correspondence", subpath },
+			},
+			data: {
+				typeCode,
+				citizenUserId,
+				orgSlug,
+				mvpStub: true,
+			},
+		};
+	} catch (e: any) {
+		return {
+			success: false,
+			message: `Initiation de démarche échouée : ${e?.message ?? "erreur"}`,
+		};
+	}
+}
+
+/**
+ * resolve_official — Identifie le titulaire courant d'un poste dans une
+ * administration. Délègue à `resolveRecipient` (Phase 4).
+ */
+async function resolveOfficial(
+	ctx: any,
+	args: { orgSlug?: string; role?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const orgSlug = (args.orgSlug ?? "").trim();
+	const role = (args.role ?? "").trim();
+
+	if (!orgSlug) {
+		return {
+			success: false,
+			message: "Slug de l'administration manquant. Utilisez find_administration au préalable si besoin.",
+		};
+	}
+	if (!role) {
+		return {
+			success: false,
+			message: "Rôle / position recherché manquant (ex : 'ministre', 'directeur-general').",
+		};
+	}
+
+	try {
+		// `resolveRecipient` est une authQuery — exposée via le path
+		// `functions.correspondanceRecipientResolver.resolveRecipient`. On
+		// utilise `(api as any)` car la génération `_generated/api.d.ts` peut
+		// ne pas être à jour dans tous les environnements de dev (pattern déjà
+		// utilisé pour `ai.iastedDevicePresence`).
+		const resolution = await ctx.runQuery(
+			(api as any).functions.correspondanceRecipientResolver.resolveRecipient,
+			{ orgSlug, roleSlug: role },
+		);
+
+		if (!resolution || resolution.kind === "not_found") {
+			return {
+				success: true,
+				message: `Aucun résultat : ${(resolution as any)?.reason ?? "organisation introuvable"}.`,
+				data: { resolution: resolution ?? { kind: "not_found", reason: "no_result" } },
+			};
+		}
+
+		if (resolution.kind === "user") {
+			return {
+				success: true,
+				message: `Titulaire identifié : ${resolution.roleLabel ?? role} à ${resolution.orgName}.`,
+				data: { resolution },
+			};
+		}
+
+		// kind === "org"
+		return {
+			success: true,
+			message: `Le poste « ${role} » n'est pas occupé à ${resolution.orgName}. Point d'entrée : ${resolution.entryPoint}.`,
+			data: { resolution },
+		};
+	} catch (e: any) {
+		return {
+			success: false,
+			message: `Résolution échouée : ${e?.message ?? "erreur"}`,
+		};
+	}
+}
+
+/**
+ * transmit_dossier — Transmet un dossier à l'étape suivante du workflow.
+ *
+ * MVP : aucune mutation Convex appelée. Le tool log l'intention via le
+ * wrapper d'audit (cf. `executeRealtimeTool`) et renvoie un message
+ * EXPLICITEMENT marqué ACTION SIMULÉE MVP — l'utilisateur doit savoir
+ * que l'opération n'a PAS été persistée. La mutation réelle de transition
+ * (ex. `correspondanceCore.transmit`) sera câblée en phase ultérieure.
+ */
+async function transmitDossier(
+	_ctx: any,
+	args: { dossierId?: string; nextStepKey?: string },
+	_context: { orgId?: string; surface: "agent" | "backoffice" | "citizen" },
+): Promise<RealtimeToolResult> {
+	const dossierId = (args.dossierId ?? "").trim();
+	const nextStepKey = (args.nextStepKey ?? "").trim();
+
+	if (!dossierId) {
+		return { success: false, message: "ID du dossier manquant." };
+	}
+	if (!nextStepKey) {
+		return { success: false, message: "Clé de l'étape suivante manquante." };
+	}
+
+	// MVP : pas d'appel mutation réelle. On retourne un succès marqué
+	// explicitement comme simulation pour ne pas tromper l'utilisateur.
+	return {
+		success: true,
+		message: `ACTION SIMULÉE MVP : transmission du dossier ${dossierId} vers l'étape « ${nextStepKey} ». En production : la mutation correspondanceCore.transmit sera invoquée ici. Aucune écriture n'a été persistée.`,
+		data: {
+			dossierId,
+			nextStepKey,
+			mvpStub: true,
+			executed: false,
 		},
 	};
 }
