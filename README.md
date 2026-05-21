@@ -214,7 +214,10 @@ Le projet a été industrialisé en **9 phases**, toutes complétées. Voir [`do
 | 6 | iAsted Mode Administration (4 business tools souverains) | OK (PR #7) |
 | 7 | Interconnexion souveraine (canaux + audit immuable) | OK (PR #8) |
 | 8 | CI/CD Cloud Run (workflow `deploy-administration-ga`) | OK (PR #9) |
-| 9 | Documentation (cette branche) | en cours |
+| 9 | Documentation | OK (PR #10) |
+| 10 | Déploiement Firebase Hosting (CDN devant Cloud Run) | OK (PR #11) |
+
+Voir [`docs/FIREBASE_DEPLOYMENT.md`](./docs/FIREBASE_DEPLOYMENT.md) pour l'architecture hybride Firebase + Cloud Run (projet Firebase : `admin-gabon`, URL : <https://admin-gabon.web.app>).
 
 ---
 

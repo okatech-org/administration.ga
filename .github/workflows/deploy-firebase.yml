@@ -1,0 +1,115 @@
+name: Deploy Firebase Hosting
+
+# Déploie les 3 sites Firebase Hosting (CDN + domaines admin-gabon.web.app
+# et al.) qui proxient vers les services Cloud Run agent-web/citizen-web/
+# backoffice-web. Architecture hybride : Firebase = CDN/SSL/domaine,
+# Cloud Run = SSR Next.js 14.
+#
+# Trigger : push main (après workflows Cloud Run terminés), ou dispatch.
+#
+# Pré-requis :
+#   1. Services Cloud Run agent-web/citizen-web/backoffice-web déployés
+#      (cf. deploy-agent.yml, deploy-citizen.yml, deploy-backoffice.yml)
+#   2. Secret FIREBASE_SERVICE_ACCOUNT_ADMIN_GABON configuré (JSON SA key)
+#   3. Service account Firebase a roles/firebasehosting.admin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/deploy-firebase.yml"
+  workflow_run:
+    workflows:
+      - "Deploy Agent Web"
+      - "Deploy Citizen Web"
+      - "Deploy Backoffice Web"
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Site à déployer (all, agent, citizen, backoffice)"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - "all"
+          - "agent"
+          - "citizen"
+          - "backoffice"
+
+env:
+  FIREBASE_PROJECT_ID: admin-gabon
+
+jobs:
+  deploy:
+    # Skip si déclenché par workflow_run en échec
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup public folders (rewrites only — Cloud Run sert le SSR)
+        run: |
+          mkdir -p apps/agent-web/.firebase-public
+          mkdir -p apps/citizen-web/.firebase-public
+          mkdir -p apps/backoffice-web/.firebase-public
+          # Placeholder pour que firebase deploy accepte le dossier vide
+          for d in apps/agent-web apps/citizen-web apps/backoffice-web; do
+            cat > "$d/.firebase-public/robots.txt" <<'EOF'
+          # Géré via Firebase Hosting + Cloud Run rewrites
+          User-agent: *
+          Allow: /
+          EOF
+          done
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@15
+
+      - name: Determine deploy target
+        id: target
+        run: |
+          INPUT="${{ github.event.inputs.target }}"
+          if [ -z "$INPUT" ] || [ "$INPUT" = "all" ]; then
+            echo "only=hosting" >> "$GITHUB_OUTPUT"
+          else
+            echo "only=hosting:${INPUT}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to Firebase Hosting
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa-key.json
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ADMIN_GABON }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+          firebase deploy \
+            --only ${{ steps.target.outputs.only }} \
+            --project "${{ env.FIREBASE_PROJECT_ID }}" \
+            --non-interactive \
+            --force
+          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Summary
+        run: |
+          {
+            echo "## Firebase Hosting deployment"
+            echo ""
+            echo "**Project:** \`${{ env.FIREBASE_PROJECT_ID }}\`"
+            echo "**Target:** \`${{ steps.target.outputs.only }}\`"
+            echo ""
+            echo "### URLs déployées"
+            echo ""
+            echo "| Site | URL Firebase | Domaine cible |"
+            echo "|---|---|---|"
+            echo "| agent | https://admin-gabon.web.app | administration.ga |"
+            echo "| citizen | https://admin-gabon-citizen.web.app | demarche.ga |"
+            echo "| backoffice | https://admin-gabon-backoffice.web.app | admin.administration.ga |"
+            echo ""
+            echo "### Architecture"
+            echo ""
+            echo "Firebase Hosting (CDN/SSL/domaine) → \`run:\` rewrites → Cloud Run (SSR Next.js)"
+          } >> "$GITHUB_STEP_SUMMARY"

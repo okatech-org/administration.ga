@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "default": "admin-gabon",
+    "production": "admin-gabon"
+  },
+  "targets": {
+    "admin-gabon": {
+      "hosting": {
+        "agent": [
+          "admin-gabon"
+        ],
+        "citizen": [
+          "admin-gabon-citizen"
+        ],
+        "backoffice": [
+          "admin-gabon-backoffice"
+        ]
+      }
+    }
+  }
+}
