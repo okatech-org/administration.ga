@@ -32,17 +32,24 @@ jobs:
         # (credentials_json — préféré, plus simple) ou WIF
         # (workload_identity_provider). Au moins l'une des deux doit être
         # présente, ainsi que NEXT_PUBLIC_CONVEX_URL pour le build.
+        # Les secrets sont passés en env vars car interpoler directement
+        # ${{ secrets.X }} dans un test shell casse pour les valeurs
+        # multi-lignes (ex: JSON service-account).
+        env:
+          CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          WIF: ${{ secrets.WIF_PROVIDER }}
         run: |
-          if [ -z "${{ secrets.NEXT_PUBLIC_CONVEX_URL }}" ]; then
+          if [ -z "$CONVEX_URL" ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "auth_method=none" >> "$GITHUB_OUTPUT"
             echo "::warning::NEXT_PUBLIC_CONVEX_URL manquant — déploiement skippé."
             exit 0
           fi
-          if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
+          if [ -n "$SA_KEY" ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
             echo "auth_method=sa_key" >> "$GITHUB_OUTPUT"
-          elif [ -n "${{ secrets.WIF_PROVIDER }}" ]; then
+          elif [ -n "$WIF" ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
             echo "auth_method=wif" >> "$GITHUB_OUTPUT"
           else
