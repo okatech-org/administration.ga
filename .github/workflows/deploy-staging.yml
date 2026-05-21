@@ -1,0 +1,126 @@
+name: Deploy Staging (administration.ga)
+
+# Workflow staging : déploie les 3 apps web sur Cloud Run avec
+# suffixe `-staging` sur les service names, sur le domaine
+# `staging.administration.ga` (et alias admin.staging / staging.demarche).
+#
+# Trigger :
+#  - push sur branche `staging`
+#  - PR ouverte vers `main`
+#  - dispatch manuel
+#
+# Les 3 apps sont déployées EN PARALLÈLE via matrix pour minimiser
+# le temps total du job (chaque app = build + push + deploy indépendants).
+
+on:
+  push:
+    branches: [staging]
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "convex/**"
+      - ".github/workflows/deploy-staging.yml"
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: administration-ga
+  REGION: europe-west1
+  REGISTRY: europe-west1-docker.pkg.dev/administration-ga/docker-registry
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: citizen-web
+            site_url: https://staging.demarche.ga
+          - app: agent-web
+            site_url: https://staging.administration.ga
+          - app: backoffice-web
+            site_url: https://admin.staging.administration.ga
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: github-actions@administration-ga.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        run: |
+          SERVICE_NAME="${{ matrix.app }}-staging"
+          IMAGE="${{ env.REGISTRY }}/${SERVICE_NAME}:${{ github.sha }}"
+          docker build \
+            --no-cache \
+            --platform linux/amd64 \
+            -f apps/${{ matrix.app }}/Dockerfile \
+            --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL_STAGING }} \
+            --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL_STAGING }} \
+            --build-arg NEXT_PUBLIC_SITE_URL=${{ matrix.site_url }} \
+            --build-arg NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }} \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }} \
+            --build-arg NEXT_PUBLIC_LIVEKIT_WS_URL=${{ secrets.NEXT_PUBLIC_LIVEKIT_WS_URL }} \
+            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }} \
+            --build-arg POSTHOG_PERSONAL_API_KEY=${{ secrets.POSTHOG_PERSONAL_API_KEY }} \
+            --build-arg POSTHOG_ENV_ID=${{ secrets.POSTHOG_ENV_ID }} \
+            --build-arg GITHUB_SHA=${{ github.sha }} \
+            -t "$IMAGE" \
+            -t "${{ env.REGISTRY }}/${SERVICE_NAME}:latest" \
+            .
+          docker push "$IMAGE"
+          docker push "${{ env.REGISTRY }}/${SERVICE_NAME}:latest"
+
+      - name: Deploy to Cloud Run (staging)
+        run: |
+          SERVICE_NAME="${{ matrix.app }}-staging"
+          gcloud run deploy "$SERVICE_NAME" \
+            --image="${{ env.REGISTRY }}/${SERVICE_NAME}:${{ github.sha }}" \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=8080 \
+            --memory=512Mi \
+            --cpu=1 \
+            --min-instances=0 \
+            --max-instances=3 \
+            --tag=pr-${{ github.event.pull_request.number || github.run_number }} \
+            --set-env-vars="NODE_ENV=staging,CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL_STAGING }},NEXT_PUBLIC_APP_NAME=ADMINISTRATION.GA,NEXT_PUBLIC_DOMAIN_CITIZEN=staging.demarche.ga,NEXT_PUBLIC_DOMAIN_AGENT=staging.administration.ga,NEXT_PUBLIC_DOMAIN_ADMIN=admin.staging.administration.ga"
+
+          # Force 100% du trafic vers la dernière révision staging
+          gcloud run services update-traffic "$SERVICE_NAME" \
+            --to-latest \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }}
+
+      - name: Comment preview URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const app = "${{ matrix.app }}";
+            const sha = "${{ github.sha }}".substring(0, 7);
+            const url = "${{ matrix.site_url }}";
+            const body = `Staging deployment ready for **${app}** (commit \`${sha}\`)\n\n→ ${url}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

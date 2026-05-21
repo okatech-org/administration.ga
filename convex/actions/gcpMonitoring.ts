@@ -7,7 +7,7 @@
  * using a service account key stored in env vars.
  * Runs in Node.js environment for google-auth-library.
  *
- * Monitors 3 Cloud Run services + 1 LiveKit VM in the gabon-diplomatie project.
+ * Monitors 3 Cloud Run services + 1 LiveKit VM in the administration-ga project.
  */
 import { v } from "convex/values";
 import { action } from "../_generated/server";
@@ -15,7 +15,7 @@ import { internal } from "../_generated/api";
 import { GoogleAuth } from "google-auth-library";
 
 // ─── Constants ───────────────────────────────────────────────
-const PROJECT_ID = "gabon-diplomatie";
+const PROJECT_ID = "administration-ga";
 const REGION = "europe-west1";
 const ZONE = "europe-west1-b";
 const CLOUD_RUN_SERVICES = ["agent-web", "citizen-web", "backoffice-web"] as const;

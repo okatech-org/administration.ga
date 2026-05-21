@@ -1,5 +1,5 @@
 /**
- * releases.ts — Proxy vers les GitHub Releases de `okatech-org/gabon-diplomatie`.
+ * releases.ts — Proxy vers les GitHub Releases de `okatech-org/administration.ga`.
  *
  * Objectif : exposer les binaires desktop (agent-desktop) aux clients publics
  * sans dépendre de la visibilité du repo. Si le repo passe en privé, on injecte
@@ -18,7 +18,7 @@ import { v } from "convex/values";
 import { action } from "../_generated/server";
 
 const REPO_OWNER = "okatech-org";
-const REPO_NAME = "gabon-diplomatie";
+const REPO_NAME = "administration.ga";
 
 /**
  * Architecture détectée depuis le nom de l'asset electron-builder.

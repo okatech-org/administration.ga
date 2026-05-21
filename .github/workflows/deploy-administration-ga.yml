@@ -1,0 +1,114 @@
+name: Deploy ADMINISTRATION.GA (release coordonnée)
+
+# Workflow orchestrateur manuel pour une release coordonnée de toute
+# la plateforme administration.ga (3 apps web + backend Convex).
+#
+# Ordre d'exécution :
+#  1. Convex backend (schéma, queries, mutations) → doit être déployé EN PREMIER
+#     pour que les nouveaux champs/endpoints soient disponibles quand les apps
+#     démarrent.
+#  2. 3 apps web en parallèle (citizen, agent, backoffice) une fois le backend stable.
+#
+# Chaque étape utilise `gh workflow run` puis attend la complétion via
+# `gh run watch`. En cas d'échec à l'étape Convex, les déploiements web
+# sont annulés (préserve la cohérence schéma/code).
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_convex:
+        description: "Sauter le déploiement Convex (uniquement les apps web)"
+        required: false
+        type: boolean
+        default: false
+      skip_web:
+        description: "Sauter les déploiements web (uniquement Convex)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  deploy-convex:
+    if: ${{ !inputs.skip_convex }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy-convex.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Lancement de deploy-convex.yml sur la branche main..."
+          gh workflow run deploy-convex.yml \
+            --repo ${{ github.repository }} \
+            --ref main
+
+      - name: Wait for Convex deployment to finish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Petit délai pour que le run apparaisse dans l'API GitHub
+          sleep 10
+          RUN_ID=$(gh run list \
+            --repo ${{ github.repository }} \
+            --workflow=deploy-convex.yml \
+            --branch=main \
+            --limit=1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+          echo "Watching Convex run #$RUN_ID..."
+          gh run watch "$RUN_ID" --repo ${{ github.repository }} --exit-status
+
+  deploy-web:
+    if: ${{ !inputs.skip_web && (success() || inputs.skip_convex) }}
+    needs: deploy-convex
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow:
+          - deploy-citizen.yml
+          - deploy-agent.yml
+          - deploy-backoffice.yml
+    steps:
+      - name: Trigger ${{ matrix.workflow }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Lancement de ${{ matrix.workflow }} sur la branche main..."
+          gh workflow run ${{ matrix.workflow }} \
+            --repo ${{ github.repository }} \
+            --ref main
+
+      - name: Wait for ${{ matrix.workflow }} to finish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sleep 10
+          RUN_ID=$(gh run list \
+            --repo ${{ github.repository }} \
+            --workflow=${{ matrix.workflow }} \
+            --branch=main \
+            --limit=1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+          echo "Watching ${{ matrix.workflow }} run #$RUN_ID..."
+          gh run watch "$RUN_ID" --repo ${{ github.repository }} --exit-status
+
+  summary:
+    needs: [deploy-convex, deploy-web]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print release summary
+        run: |
+          echo "## Release ADMINISTRATION.GA — Récapitulatif" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Composant | Statut |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Convex backend | ${{ needs.deploy-convex.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Apps web (citizen + agent + backoffice) | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Commit déployé : \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
