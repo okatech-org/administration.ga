@@ -6,14 +6,14 @@
       "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
-      "cwd": "apps/citizen-web"
+      "cwd": "apps/admin-gabon-citizen"
     },
     {
       "name": "backoffice-web",
       "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3002,
-      "cwd": "apps/backoffice-web"
+      "cwd": "apps/admin-gabon-backoffice"
     },
     {
       "name": "agent-web",
@@ -21,7 +21,7 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3003,
       "autoPort": false,
-      "cwd": "apps/agent-web"
+      "cwd": "apps/admin-gabon"
     }
   ]
 }

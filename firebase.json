@@ -2,7 +2,7 @@
   "hosting": [
     {
       "target": "agent",
-      "public": "apps/agent-web/.firebase-public",
+      "public": "apps/admin-gabon/.firebase-public",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -31,7 +31,7 @@
     },
     {
       "target": "citizen",
-      "public": "apps/citizen-web/.firebase-public",
+      "public": "apps/admin-gabon-citizen/.firebase-public",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -60,7 +60,7 @@
     },
     {
       "target": "backoffice",
-      "public": "apps/backoffice-web/.firebase-public",
+      "public": "apps/admin-gabon-backoffice/.firebase-public",
       "ignore": [
         "firebase.json",
         "**/.*",

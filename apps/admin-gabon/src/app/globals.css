@@ -1,0 +1,347 @@
+@import "tailwindcss";
+@import "@workspace/ui/globals.css";
+
+/* ══════════════════════════════════════════════════════════════
+   AGENT DESIGN SYSTEM v3.0 — « Slate Trust & Authority »
+   Tokens et utilitaires pour l'espace agent authentifié
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Gabon Official Colors */
+  --gabon-green: 153 69% 31%;
+  --gabon-green-hex: #009E60;
+  --gabon-yellow: 45 98% 54%;
+  --gabon-yellow-hex: #FCD116;
+  --gabon-blue: 214 52% 50%;
+  --gabon-blue-hex: #3A75C4;
+
+  /* Surface tokens (warm gray scale) */
+  --citizen-surface-s1: var(--secondary);
+  --citizen-surface-s2: #EBE6DC;
+  --citizen-surface-s3: #DCD7C7;
+  --citizen-surface-s4: #FDFCFA;
+  --citizen-surface-card: var(--secondary);
+}
+
+.dark {
+  --citizen-surface-s1: var(--secondary);
+  --citizen-surface-s2: #383633;
+  --citizen-surface-s3: rgba(74, 71, 68, 0.40);
+  --citizen-surface-s4: rgba(33, 32, 30, 0.77);
+  --citizen-surface-card: var(--secondary);
+}
+
+/* ─── Flat Card Border ─── */
+.flat-card-border {
+  border-color: oklch(0 0 0 / 0.05);
+}
+.dark .flat-card-border {
+  border-color: oklch(1 0 0 / 0.05);
+}
+
+/* ─── Global: No shadows inside citizen-layout ─── */
+.citizen-layout *,
+.citizen-layout *::before,
+.citizen-layout *::after {
+  box-shadow: none !important;
+}
+
+/* ─── Design System v3.0 Surface Utilities ─── */
+.citizen-s1 { background: var(--secondary); }
+.dark .citizen-s1 { background: var(--secondary); }
+.citizen-s2 { background: #EBE6DC; }
+.dark .citizen-s2 { background: #383633; }
+.citizen-s3 { background: #DCD7C7; }
+.dark .citizen-s3 { background: rgba(74, 71, 68, 0.40); }
+.citizen-s4 { background: #FDFCFA; }
+.dark .citizen-s4 { background: rgba(33, 32, 30, 0.77); }
+
+/* ─── Gabon Color Utilities ─── */
+.bg-gabon-green { background-color: var(--gabon-green-hex); }
+.bg-gabon-yellow { background-color: var(--gabon-yellow-hex); }
+.bg-gabon-blue { background-color: var(--gabon-blue-hex); }
+.text-gabon-green { color: var(--gabon-green-hex); }
+.text-gabon-yellow { color: var(--gabon-yellow-hex); }
+.text-gabon-blue { color: var(--gabon-blue-hex); }
+.border-gabon-green { border-color: var(--gabon-green-hex); }
+.border-gabon-yellow { border-color: var(--gabon-yellow-hex); }
+.border-gabon-blue { border-color: var(--gabon-blue-hex); }
+
+.bg-gabon-gradient { background: linear-gradient(135deg, var(--gabon-green-hex) 0%, var(--gabon-yellow-hex) 50%, var(--gabon-blue-hex) 100%); }
+.bg-gabon-gradient-h { background: linear-gradient(90deg, var(--gabon-green-hex) 0%, var(--gabon-yellow-hex) 50%, var(--gabon-blue-hex) 100%); }
+.text-gradient-official {
+  background: linear-gradient(135deg, var(--gabon-green-hex), var(--gabon-yellow-hex), var(--gabon-blue-hex));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-gabon-green-tint { background-color: rgba(0, 158, 96, 0.08); }
+.bg-gabon-yellow-tint { background-color: rgba(252, 209, 22, 0.08); }
+.bg-gabon-blue-tint { background-color: rgba(58, 117, 196, 0.08); }
+.dark .bg-gabon-green-tint { background-color: rgba(0, 158, 96, 0.15); }
+.dark .bg-gabon-yellow-tint { background-color: rgba(252, 209, 22, 0.12); }
+.dark .bg-gabon-blue-tint { background-color: rgba(58, 117, 196, 0.15); }
+
+/* ─── Gabon Flag Stripe (decorative) ─── */
+.gabon-stripe {
+  height: 3px;
+  background: linear-gradient(90deg, var(--gabon-green-hex) 33.33%, var(--gabon-yellow-hex) 33.33%, var(--gabon-yellow-hex) 66.66%, var(--gabon-blue-hex) 66.66%);
+  border-radius: 2px;
+}
+.gabon-stripe-vertical {
+  width: 3px;
+  background: linear-gradient(180deg, var(--gabon-green-hex) 33.33%, var(--gabon-yellow-hex) 33.33%, var(--gabon-yellow-hex) 66.66%, var(--gabon-blue-hex) 66.66%);
+  border-radius: 2px;
+}
+
+/* ─── Citizen Space Layout ─── */
+.citizen-layout {
+  background: var(--card);
+  min-height: 100dvh;
+  --muted: 40 8% 90%;
+}
+.dark .citizen-layout {
+  background: #111111;
+  --muted: 30 4% 22%;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Staggered children animation */
+.stagger-children > * { opacity: 0; animation: fadeInUp 0.4s ease-out forwards; }
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+.heading-official { font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+
+/* ─── Scrollbar ─── */
+.citizen-scrollbar::-webkit-scrollbar { width: 5px; }
+.citizen-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.citizen-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 10px; }
+.dark .citizen-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); }
+
+.disable-scrollbars { -ms-overflow-style: none; scrollbar-width: none; }
+.disable-scrollbars::-webkit-scrollbar { display: none; }
+
+/* ─── Accessibilite : reduire les animations ─── */
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ============================================================
+   LANDING PAGE — DESIGN TOKENS PREMIUM
+   ============================================================ */
+
+:root {
+  --shadow-elegant: 0 10px 40px -10px oklch(0.5 0.18 145.5 / 0.25);
+  --shadow-elegant-hover: 0 20px 60px -15px oklch(0.5 0.18 145.5 / 0.35);
+  --gradient-hero: linear-gradient(135deg, oklch(0.1 0.01 250) 0%, oklch(0.13 0.02 145) 50%, oklch(0.08 0.01 250) 100%);
+  --gradient-title: linear-gradient(135deg, oklch(0.72 0.2 145.5) 0%, oklch(0.85 0.15 170) 50%, oklch(0.72 0.2 145.5) 100%);
+  --section-alt: oklch(0.97 0.003 250);
+}
+
+.dark {
+  --shadow-elegant: 0 10px 40px -10px oklch(0.55 0.16 145.5 / 0.3);
+  --shadow-elegant-hover: 0 20px 60px -15px oklch(0.55 0.16 145.5 / 0.45);
+  --section-alt: oklch(0.12 0 0);
+}
+
+@layer utilities {
+  .shadow-elegant { box-shadow: var(--shadow-elegant); }
+  .hover\:shadow-elegant:hover { box-shadow: var(--shadow-elegant-hover); }
+
+  .text-gradient-primary {
+    background: var(--gradient-title);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .bg-section-alt { background-color: var(--section-alt); }
+
+  .card-landing {
+    @apply rounded-3xl border border-border bg-card transition-all duration-300 ease-out;
+  }
+  .card-landing:hover {
+    @apply -translate-y-1;
+    box-shadow: var(--shadow-elegant-hover);
+    border-color: oklch(0.5 0.18 145.5 / 0.3);
+  }
+  .dark .card-landing:hover {
+    border-color: oklch(0.55 0.16 145.5 / 0.4);
+  }
+
+  .card-landing-dark {
+    @apply rounded-3xl border transition-all duration-300 ease-out;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+  }
+  .card-landing-dark:hover {
+    @apply -translate-y-1;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: oklch(0.55 0.16 145.5 / 0.4);
+    box-shadow: 0 20px 60px -15px oklch(0.55 0.16 145.5 / 0.2);
+  }
+
+  .badge-pill-landing {
+    @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase;
+    background: oklch(0.5 0.18 145.5 / 0.12);
+    color: oklch(0.65 0.18 145.5);
+    border: 1px solid oklch(0.5 0.18 145.5 / 0.3);
+  }
+  .dark .badge-pill-landing {
+    background: oklch(0.55 0.16 145.5 / 0.15);
+    color: oklch(0.72 0.15 145.5);
+    border-color: oklch(0.55 0.16 145.5 / 0.25);
+  }
+}
+
+@layer utilities {
+  .landing-scroll-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .landing-scroll-container::-webkit-scrollbar { display: none; }
+
+  .hero-gradient-base {
+    background: linear-gradient(to bottom right, #020617, #0f172a, #022c22);
+  }
+  .hero-gradient-overlay {
+    background: linear-gradient(to bottom, rgba(15, 23, 42, 0.4), transparent 50%, rgba(2, 6, 23, 0.85));
+  }
+  .hero-stats-bar {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(12px);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+@layer utilities {
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl;
+  }
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100]
+           focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg
+           focus:shadow-lg focus:text-sm focus:font-semibold;
+  }
+}
+
+@layer components {
+  .navbar-glass {
+    @apply backdrop-blur-xl border-b;
+    background: oklch(1 0 0 / 0.92);
+    border-color: oklch(0 0 0 / 0.06);
+  }
+  .dark .navbar-glass {
+    background: oklch(0.14 0 0 / 0.95);
+    border-color: oklch(1 0 0 / 0.06);
+  }
+
+  .reveal {
+    @apply opacity-0 translate-y-6 transition-all duration-700 ease-out;
+  }
+  .reveal.visible {
+    @apply opacity-100 translate-y-0;
+  }
+}
+
+/* ── View Transition — cross-fade fluide entre pages ── */
+::view-transition-old(root) {
+  animation: fade-out 120ms ease-out;
+}
+::view-transition-new(root) {
+  animation: fade-in 120ms ease-in;
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Syntax highlighting (hljs) — bloc code Mr Ray ──
+ * Thème léger token-based aligné sur la charte achromatique : un seul
+ * accent (primary) pour les keywords/strings, le reste en variations de
+ * foreground/muted. Lisibilité prioritaire sur palette éclatante.
+ */
+.prose pre,
+.markdown pre,
+pre:has(> code.hljs) {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+:not(pre) > code {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name,
+.hljs-tag {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+.hljs-string,
+.hljs-title,
+.hljs-attr,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+  color: hsl(var(--primary));
+}
+.hljs-number,
+.hljs-literal,
+.hljs-meta {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion {
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }

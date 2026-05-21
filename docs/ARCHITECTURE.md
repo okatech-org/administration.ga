@@ -10,7 +10,7 @@
 
 ADMINISTRATION.GA est un **monorepo Turborepo** composé de :
 
-- 3 applications [Next.js 14](https://nextjs.org) (citizen-web, agent-web, backoffice-web) servant 3 audiences distinctes.
+- 3 applications [Next.js 14](https://nextjs.org) (admin-gabon-citizen, admin-gabon, admin-gabon-backoffice) servant 3 audiences distinctes.
 - 1 application [Electron](https://www.electronjs.org) optionnelle (agent-desktop, en alpha).
 - 1 backend [Convex](https://convex.dev) unique et partagé entre toutes les apps.
 - ~16 packages workspace partagés (UI, i18n, hooks LiveKit/chat, agent-features, etc.).
@@ -21,7 +21,8 @@ Le backend Convex porte la totalité du modèle de données, de la logique méti
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                               BROWSER / DEVICE                                   │
 │                                                                                  │
-│  citizen-web (demarche.ga)   agent-web (administration.ga)   backoffice-web      │
+│  admin-gabon-citizen          admin-gabon                 admin-gabon-backoffice │
+│  (demarche.ga)                (administration.ga)         (admin.administration) │
 │         ↓                            ↓                              ↓            │
 │   ConvexReactClient  ←—————— @workspace/api ——————→   ConvexReactClient          │
 └────────────────────────────────────│─────────────────────────────────────────────┘
@@ -46,9 +47,9 @@ Le backend Convex porte la totalité du modèle de données, de la logique méti
 ```
 administration.ga/
 ├── apps/
-│   ├── citizen-web/        # Portail citoyen (Next.js 14, App Router)
-│   ├── agent-web/          # Poste de travail agent (Next.js 14, App Router)
-│   ├── backoffice-web/     # Back-office souverain (Next.js 14, App Router)
+│   ├── admin-gabon-citizen/    # Portail citoyen (Next.js 14, App Router)
+│   ├── admin-gabon/            # Poste de travail agent (Next.js 14, App Router)
+│   ├── admin-gabon-backoffice/ # Back-office souverain (Next.js 14, App Router)
 │   └── agent-desktop/      # App Electron (alpha)
 ├── packages/
 │   ├── api/                # AppConvexProvider, hooks auth, client Better Auth
@@ -86,7 +87,7 @@ import { useT } from "@workspace/i18n";
 Pour les fichiers internes à une app, l'alias est `@/` :
 
 ```ts
-// dans apps/citizen-web/src/...
+// dans apps/admin-gabon-citizen/src/...
 import { CitizenSidebar } from "@/components/shared/citizen-sidebar";
 ```
 

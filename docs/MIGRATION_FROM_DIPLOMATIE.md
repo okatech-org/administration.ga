@@ -58,9 +58,9 @@ Les deux plateformes restent **interconnectables** via le canal souverain `Presi
 
 | Source `gabon-diplomatie` | Cible `administration.ga` | URL prod | Port dev |
 |---|---|---|---|
-| `apps/agent-web` (diplomate.ga) | `apps/agent-web` | `administration.ga` | 3003 |
-| `apps/backoffice-web` (admin.consulat.ga) | `apps/backoffice-web` | `admin.administration.ga` | 3002 |
-| `apps/citizen-web` (consulat.ga) | `apps/citizen-web` | `demarche.ga` | 3000 |
+| `apps/agent-web` (diplomate.ga) | `apps/admin-gabon` | `administration.ga` | 3003 |
+| `apps/backoffice-web` (admin.consulat.ga) | `apps/admin-gabon-backoffice` | `admin.administration.ga` | 3002 |
+| `apps/citizen-web` (consulat.ga) | `apps/admin-gabon-citizen` | `demarche.ga` | 3000 |
 | `apps/agent-desktop` | `apps/agent-desktop` | — | — |
 
 ### Variables d'environnement de domaine
@@ -142,26 +142,26 @@ Cette section liste ce qui **reste** à finir pour atteindre un état "propre" c
 
 ### 6.1 Textes longs (FAQ, mentions légales, guides)
 
-Environ **~60 fichiers** dans `apps/citizen-web/src/app/(public)/` contiennent encore des chaînes `consulat`, `consulaire`, `diplomatie`, `consulat.ga` ou `diplomate.ga` dans des **textes longs** (paragraphes de FAQ, mentions légales, politique de confidentialité, accessibilité, formulaires, guides "arrivée"/"retour"/"vie pratique", post articles, news, fiches reps).
+Environ **~60 fichiers** dans `apps/admin-gabon-citizen/src/app/(public)/` contiennent encore des chaînes `consulat`, `consulaire`, `diplomatie`, `consulat.ga` ou `diplomate.ga` dans des **textes longs** (paragraphes de FAQ, mentions légales, politique de confidentialité, accessibilité, formulaires, guides "arrivée"/"retour"/"vie pratique", post articles, news, fiches reps).
 
 Périmètre concret identifié :
 
-- `apps/citizen-web/src/app/(public)/faq/faq-items.ts` — questions/réponses FAQ
-- `apps/citizen-web/src/app/(public)/mentions-legales/page.tsx`
-- `apps/citizen-web/src/app/(public)/confidentialite/page.tsx`
-- `apps/citizen-web/src/app/(public)/accessibilite/page.tsx`
-- `apps/citizen-web/src/app/(public)/formulaires/page.tsx`
-- `apps/citizen-web/src/app/(public)/ressources/guides/{arrivee,retour,vie-pratique}/page.tsx`
-- `apps/citizen-web/src/app/(public)/news/page.tsx` + `[slug]/post-detail-client.tsx`
-- `apps/citizen-web/src/app/(public)/reps/reps-page-client.tsx` + `[slug]/org-detail-client.tsx`
-- `apps/citizen-web/src/app/(public)/services/[slug]/service-detail-client.tsx`
-- `apps/citizen-web/src/app/(public)/services/page.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/faq/faq-items.ts` — questions/réponses FAQ
+- `apps/admin-gabon-citizen/src/app/(public)/mentions-legales/page.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/confidentialite/page.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/accessibilite/page.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/formulaires/page.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/ressources/guides/{arrivee,retour,vie-pratique}/page.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/news/page.tsx` + `[slug]/post-detail-client.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/reps/reps-page-client.tsx` + `[slug]/org-detail-client.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/services/[slug]/service-detail-client.tsx`
+- `apps/admin-gabon-citizen/src/app/(public)/services/page.tsx`
 
 Ce travail est **éditorial** plus que technique : il faut réécrire les textes avec le bon vocabulaire administratif (citoyen, démarche administrative, administration publique, etc.). Hors scope d'une PR technique unique.
 
 ### 6.2 Composants à régionaliser
 
-- `AddressWithAutocomplete` (dans `apps/citizen-web/`) : actuellement basé sur une liste de pays restreinte (Schengen + cible diplomatique). À adapter aux provinces / départements / communes gabonaises (9 provinces + ~50 départements + ~150 communes). Voir [`../CLAUDE.md`](../CLAUDE.md) §"Decisions de non-extraction".
+- `AddressWithAutocomplete` (dans `apps/admin-gabon-citizen/`) : actuellement basé sur une liste de pays restreinte (Schengen + cible diplomatique). À adapter aux provinces / départements / communes gabonaises (9 provinces + ~50 départements + ~150 communes). Voir [`../CLAUDE.md`](../CLAUDE.md) §"Decisions de non-extraction".
 
 ### 6.3 Régressions de typecheck héritées
 

@@ -3,14 +3,14 @@ name: Test Citizen Web (E2E)
 on:
   pull_request:
     paths:
-      - "apps/citizen-web/**"
+      - "apps/admin-gabon-citizen/**"
       - "packages/**"
       - "convex/**"
       - ".github/workflows/test-citizen-e2e.yml"
   push:
     branches: [main]
     paths:
-      - "apps/citizen-web/**"
+      - "apps/admin-gabon-citizen/**"
       - "packages/**"
       - "convex/**"
 
@@ -36,7 +36,7 @@ jobs:
 
       - name: Run E2E tests
         run: npx playwright test
-        working-directory: apps/citizen-web
+        working-directory: apps/admin-gabon-citizen
         env:
           NEXT_PUBLIC_CONVEX_URL: ${{ secrets.E2E_CONVEX_URL }}
           CONVEX_SITE_URL: ${{ secrets.E2E_CONVEX_SITE_URL }}
@@ -48,5 +48,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: apps/citizen-web/playwright-report/
+          path: apps/admin-gabon-citizen/playwright-report/
           retention-days: 7
