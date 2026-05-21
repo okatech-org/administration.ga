@@ -23,18 +23,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check E2E secrets availability
+        id: secrets
+        run: |
+          if [ -n "${{ secrets.E2E_CONVEX_URL }}" ] && [ -n "${{ secrets.E2E_CONVEX_SITE_URL }}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::E2E secrets (E2E_CONVEX_URL/E2E_CONVEX_SITE_URL) non configurés — E2E skippé."
+          fi
+
       - name: Setup Bun
+        if: steps.secrets.outputs.available == 'true'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.2.17"
 
       - name: Install dependencies
+        if: steps.secrets.outputs.available == 'true'
         run: bun install --frozen-lockfile
 
       - name: Install Playwright Chromium
+        if: steps.secrets.outputs.available == 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
+        if: steps.secrets.outputs.available == 'true'
         run: npx playwright test
         working-directory: apps/admin-gabon-citizen
         env:
