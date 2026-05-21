@@ -26,19 +26,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
+      - name: Check deploy secrets availability
+        id: secrets
+        # On accepte deux méthodes d'auth GCP : clé service-account JSON
+        # (credentials_json — préféré, plus simple) ou WIF
+        # (workload_identity_provider). Au moins l'une des deux doit être
+        # présente, ainsi que NEXT_PUBLIC_CONVEX_URL pour le build.
+        run: |
+          if [ -z "${{ secrets.NEXT_PUBLIC_CONVEX_URL }}" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "auth_method=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::NEXT_PUBLIC_CONVEX_URL manquant — déploiement skippé."
+            exit 0
+          fi
+          if [ -n "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "auth_method=sa_key" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ secrets.WIF_PROVIDER }}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "auth_method=wif" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "auth_method=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::Aucun secret GCP (GCP_SA_KEY ou WIF_PROVIDER) — déploiement skippé."
+          fi
+
+      - name: Authenticate to Google Cloud (service account key)
+        if: steps.secrets.outputs.auth_method == 'sa_key'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: steps.secrets.outputs.auth_method == 'wif'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: github-actions@administration-ga.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
+        if: steps.secrets.outputs.available == 'true'
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for Artifact Registry
+        if: steps.secrets.outputs.available == 'true'
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
 
       - name: Build and push Docker image
+        if: steps.secrets.outputs.available == 'true'
         run: |
           IMAGE="${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
           docker build \
@@ -62,6 +97,7 @@ jobs:
           docker push "${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:latest"
 
       - name: Deploy to Cloud Run
+        if: steps.secrets.outputs.available == 'true'
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image="${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" \

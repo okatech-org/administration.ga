@@ -15,15 +15,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check deploy secret availability
+        id: secrets
+        run: |
+          if [ -n "${{ secrets.CONVEX_DEPLOY_KEY }}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Secret CONVEX_DEPLOY_KEY non configuré — déploiement Convex skippé."
+          fi
+
       - name: Setup Bun
+        if: steps.secrets.outputs.available == 'true'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.2.17"
 
       - name: Install dependencies
+        if: steps.secrets.outputs.available == 'true'
         run: bun install --frozen-lockfile
 
       - name: Deploy to Convex (production)
+        if: steps.secrets.outputs.available == 'true'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: bunx convex deploy
