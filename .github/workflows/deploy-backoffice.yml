@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: administration-ga
+  PROJECT_ID: admin-gabon
   REGION: europe-west1
   SERVICE_NAME: admin-gabon-backoffice
-  REGISTRY: europe-west1-docker.pkg.dev/administration-ga/docker-registry
+  REGISTRY: europe-west1-docker.pkg.dev/admin-gabon/docker-registry
 
 jobs:
   deploy:
@@ -62,7 +62,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: github-actions@administration-ga.iam.gserviceaccount.com
+          service_account: github-actions@admin-gabon.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         if: steps.secrets.outputs.available == 'true'
