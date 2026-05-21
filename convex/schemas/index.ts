@@ -165,3 +165,9 @@ export {
   professionTitleStatsTable,
   aiEnrichmentRunsTable,
 } from "./skillsAggregation";
+
+// Phase 5 administration.ga — Noyau administratif (MVP)
+// iArchive (archive longue durée) et iBoîte (messagerie institutionnelle).
+// iAsted réutilise les tables existantes (aiActivityLog, orgIAstedConfig).
+export { iArchiveRecordsTable } from "./iArchive";
+export { iBoiteMessagesTable } from "./iBoite";

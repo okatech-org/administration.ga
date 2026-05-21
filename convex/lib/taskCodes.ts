@@ -244,6 +244,45 @@ export const TaskCode = {
     /** Consulter le journal d'activite IA (interventions, couts, performances) */
     audit: "ai_assistant.audit",
   },
+  // ─── Phase 5 administration.ga — Noyau administratif ───────────
+  // Tasks référencées dans MODULE_ACCESS_TASKS (cf. moduleCodes.ts) pour
+  // les 3 modules MVP iAsted / iArchive / iBoîte. Indispensable pour que
+  // `assertCanDoTask(ctx, user, membership, "iarchive.deposit")` typecheck.
+  /** iAsted — Assistant IA institutionnel (RAG sur documents autorisés). */
+  iasted: {
+    /** Voir le statut d'activation et l'historique des invocations. */
+    view: "iasted.view",
+    /** Invoquer l'assistant (mode chat / vocal). */
+    invoke: "iasted.invoke",
+    /** Configurer la persona, le prompt et les outils autorisés au niveau org. */
+    configure: "iasted.configure",
+  },
+  /** iArchive — Archive longue durée (rétention, non-altération, audit). */
+  iarchive: {
+    /** Lister et consulter les pièces archivées. */
+    view: "iarchive.view",
+    /** Déposer une pièce (correspondance, document) dans l'archive. */
+    deposit: "iarchive.deposit",
+    /** Rechercher dans les archives (texte, métadonnées). */
+    search: "iarchive.search",
+    /** Configurer les politiques de rétention par catégorie. */
+    configure_retention: "iarchive.configure_retention",
+    /** Verrouiller une pièce contre toute modification (legal hold). */
+    lock: "iarchive.lock",
+    /** Approuver et exécuter une destruction réglementaire après rétention. */
+    destruct: "iarchive.destruct",
+  },
+  /** iBoîte — Messagerie institutionnelle informelle (inbox, accusés). */
+  iboite: {
+    /** Voir sa boîte de réception et messages envoyés. */
+    view: "iboite.view",
+    /** Envoyer un message institutionnel à un autre membre de l'org. */
+    send: "iboite.send",
+    /** Accuser réception d'un message reçu. */
+    acknowledge: "iboite.acknowledge",
+    /** Configurer les paramètres iBoîte au niveau org (rétention, modèles). */
+    configure: "iboite.configure",
+  },
 } as const;
 
 // ═══════════════════════════════════════════════════════════════
@@ -441,6 +480,20 @@ export const taskCodeValidator = v.union(
   v.literal(TaskCode.ai_assistant.auto_apply),
   v.literal(TaskCode.ai_assistant.admin),
   v.literal(TaskCode.ai_assistant.audit),
+  // ─── Phase 5 — Noyau administratif (iAsted / iArchive / iBoîte) ───
+  v.literal(TaskCode.iasted.view),
+  v.literal(TaskCode.iasted.invoke),
+  v.literal(TaskCode.iasted.configure),
+  v.literal(TaskCode.iarchive.view),
+  v.literal(TaskCode.iarchive.deposit),
+  v.literal(TaskCode.iarchive.search),
+  v.literal(TaskCode.iarchive.configure_retention),
+  v.literal(TaskCode.iarchive.lock),
+  v.literal(TaskCode.iarchive.destruct),
+  v.literal(TaskCode.iboite.view),
+  v.literal(TaskCode.iboite.send),
+  v.literal(TaskCode.iboite.acknowledge),
+  v.literal(TaskCode.iboite.configure),
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -611,4 +664,21 @@ export const TASK_RISK: Record<TaskCodeValue, TaskRisk> = {
   [TaskCode.ai_assistant.auto_apply]: "high",
   [TaskCode.ai_assistant.admin]: "critical",
   [TaskCode.ai_assistant.audit]: "low",
+  // ─── Phase 5 — Noyau administratif ─────────────────────────────
+  // iAsted : invoke est medium (consomme un budget LLM), configure est high.
+  [TaskCode.iasted.view]: "low",
+  [TaskCode.iasted.invoke]: "medium",
+  [TaskCode.iasted.configure]: "high",
+  // iArchive : la destruction et le verrouillage sont critiques (irréversibles).
+  [TaskCode.iarchive.view]: "low",
+  [TaskCode.iarchive.deposit]: "medium",
+  [TaskCode.iarchive.search]: "low",
+  [TaskCode.iarchive.configure_retention]: "high",
+  [TaskCode.iarchive.lock]: "high",
+  [TaskCode.iarchive.destruct]: "critical",
+  // iBoîte : envoi et accusé sont des actions standard ; configure niveau org.
+  [TaskCode.iboite.view]: "low",
+  [TaskCode.iboite.send]: "low",
+  [TaskCode.iboite.acknowledge]: "low",
+  [TaskCode.iboite.configure]: "medium",
 };

@@ -122,6 +122,9 @@ import {
   skillCatalogStatsTable,
   professionTitleStatsTable,
   aiEnrichmentRunsTable,
+  // Phase 5 administration.ga — Noyau administratif (MVP)
+  iArchiveRecordsTable,
+  iBoiteMessagesTable,
 } from "./schemas";
 // Phase 3 — RAG iAsted (schema knowledge + mémoires long terme)
 import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
@@ -294,6 +297,13 @@ export default defineSchema(
   skillCatalogStats: skillCatalogStatsTable,
   professionTitleStats: professionTitleStatsTable,
   aiEnrichmentRuns: aiEnrichmentRunsTable,
+  // Phase 5 administration.ga — Noyau administratif (MVP)
+  // iArchive : pièces archivées (correspondance, document, dossier) avec
+  // rétention, verrouillage juridique et workflow de destruction en 2 temps.
+  iArchive_records: iArchiveRecordsTable,
+  // iBoîte : messagerie institutionnelle informelle interne à l'org (inbox,
+  // accusés de réception, pièces jointes Storage).
+  iBoite_messages: iBoiteMessagesTable,
   },
   { schemaValidation: false },
 );

@@ -17,6 +17,7 @@ import {
 	Globe,
 	Globe2,
 	LayoutDashboard,
+	LayoutGrid,
 	LifeBuoy,
 	LogOut,
 	Moon,
@@ -195,6 +196,22 @@ export function SuperadminSidebarV2() {
 					url: "/events",
 					icon: BookOpen,
 					moduleCode: "community",
+				},
+			],
+		},
+		{
+			label: "Gouvernance",
+			items: [
+				{
+					// Catalogue National des Modules (Phase 5 administration.ga) :
+					// vue en lecture du registre canonique + actions d'activation
+					// globale (placeholders MVP).
+					title: t(
+						"superadmin.nav.catalogueModules",
+						"Catalogue des Modules",
+					),
+					url: "/catalogue-modules",
+					icon: LayoutGrid,
 				},
 			],
 		},
