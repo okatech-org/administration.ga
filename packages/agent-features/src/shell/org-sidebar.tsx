@@ -99,10 +99,10 @@ export function OrgSidebar({ extraSections }: OrgSidebarProps) {
       items: [
         { title: "Dashboard", url: "/", icon: Home },
         {
+          // Module core — toujours visible quel que soit l'org/le rôle
           title: "iProfil",
           url: "/iprofil",
           icon: UserCircle,
-          moduleCode: "profile",
         },
       ],
     },
@@ -133,34 +133,36 @@ export function OrgSidebar({ extraSections }: OrgSidebarProps) {
       ],
     },
     {
+      // Modules core iBureau — toujours visibles dans tous les espaces
+      // utilisateurs (agent / backoffice / citizen).
+      //
+      // iArchive est intentionnellement RETIRÉ de la sidebar : la
+      // fonctionnalité d'archive est couverte par iDocument (capability
+      // `archive` du module documents). Le backend iArchive (table
+      // `iArchive_records` + functions iarchive.*) reste disponible pour
+      // une éventuelle UI dédiée future, mais n'apparaît pas comme item
+      // top-level de navigation.
       label: "iBureau",
       items: [
         {
           title: "iCorrespondance",
           url: "/icorrespondance",
           icon: FolderOpen,
-          requires: "correspondance.view",
-          moduleCode: "correspondence",
         },
         {
           title: "iDocument",
           url: "/idocument",
           icon: FileText,
-          requires: "documents.view",
-          moduleCode: "documents",
         },
         {
           title: "iAgenda",
           url: "/iagenda",
           icon: Calendar,
-          requires: "appointments.view",
-          moduleCode: "calendar",
         },
         {
           title: "iCom",
           url: "/icom",
           icon: MessagesSquare,
-          moduleCode: "messaging",
         },
       ],
     },
