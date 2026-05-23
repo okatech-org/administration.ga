@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/admin-gabon-citizen/**"
+      - "apps/demarche_ga/**"
       - "packages/**"
       - ".github/workflows/deploy-citizen.yml"
   workflow_dispatch:
@@ -86,7 +86,7 @@ jobs:
           docker build \
             --no-cache \
             --platform linux/amd64 \
-            -f apps/admin-gabon-citizen/Dockerfile \
+            -f apps/demarche_ga/Dockerfile \
             --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }} \
             --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }} \
             --build-arg NEXT_PUBLIC_SITE_URL=https://demarche.ga \

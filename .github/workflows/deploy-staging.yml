@@ -39,11 +39,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - app: admin-gabon-citizen
+          - app: demarche_ga
+            service: admin-gabon-citizen
             site_url: https://staging.demarche.ga
-          - app: admin-gabon
+          - app: administration_ga
+            service: admin-gabon
             site_url: https://staging.administration.ga
-          - app: admin-gabon-backoffice
+          - app: admin_administration_ga
+            service: admin-gabon-backoffice
             site_url: https://admin.staging.administration.ga
 
     steps:
@@ -64,7 +67,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          SERVICE_NAME="${{ matrix.app }}-staging"
+          SERVICE_NAME="${{ matrix.service }}-staging"
           IMAGE="${{ env.REGISTRY }}/${SERVICE_NAME}:${{ github.sha }}"
           docker build \
             --no-cache \
@@ -88,7 +91,7 @@ jobs:
 
       - name: Deploy to Cloud Run (staging)
         run: |
-          SERVICE_NAME="${{ matrix.app }}-staging"
+          SERVICE_NAME="${{ matrix.service }}-staging"
           gcloud run deploy "$SERVICE_NAME" \
             --image="${{ env.REGISTRY }}/${SERVICE_NAME}:${{ github.sha }}" \
             --region=${{ env.REGION }} \

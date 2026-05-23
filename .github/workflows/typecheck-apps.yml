@@ -25,9 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         app:
-          - admin-gabon-backoffice
-          - admin-gabon
-          - admin-gabon-citizen
+          - admin_administration_ga
+          - administration_ga
+          - demarche_ga
 
     steps:
       - name: Checkout

@@ -93,8 +93,8 @@ jobs:
         run: |
           # Chaque app expose ses headers via Next.js : headers() async dans next.config.ts.
           declare -A APP_FILES=(
-            ["admin-gabon"]="apps/admin-gabon/next.config.ts"
-            ["admin-gabon-backoffice"]="apps/admin-gabon-backoffice/next.config.ts"
+            ["administration.ga"]="apps/administration_ga/next.config.ts"
+            ["admin.administration.ga"]="apps/admin_administration_ga/next.config.ts"
           )
           for app in "${!APP_FILES[@]}"; do
             FILE="${APP_FILES[$app]}"

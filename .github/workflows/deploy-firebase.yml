@@ -56,11 +56,11 @@ jobs:
 
       - name: Setup public folders (rewrites only — Cloud Run sert le SSR)
         run: |
-          mkdir -p apps/admin-gabon/.firebase-public
-          mkdir -p apps/admin-gabon-citizen/.firebase-public
-          mkdir -p apps/admin-gabon-backoffice/.firebase-public
+          mkdir -p apps/administration_ga/.firebase-public
+          mkdir -p apps/demarche_ga/.firebase-public
+          mkdir -p apps/admin_administration_ga/.firebase-public
           # Placeholder pour que firebase deploy accepte le dossier vide
-          for d in apps/admin-gabon apps/admin-gabon-citizen apps/admin-gabon-backoffice; do
+          for d in apps/administration_ga apps/demarche_ga apps/admin_administration_ga; do
             cat > "$d/.firebase-public/robots.txt" <<'EOF'
           # Géré via Firebase Hosting + Cloud Run rewrites
           User-agent: *
