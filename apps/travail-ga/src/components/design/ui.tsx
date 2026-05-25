@@ -293,7 +293,13 @@ export function EmetteurPill({
     },
     PARTICULIER: { label: "Particulier", icon: <Icons.User size={11} />, tone: "ember" },
   };
-  const entry = map[type];
+  // Fallback : si le type est inconnu (Convex peut retourner undefined avant codegen),
+  // on rend une pill neutre plutot que de crasher la page.
+  const entry = map[type] ?? {
+    label: "Emploi",
+    icon: <Icons.Briefcase size={11} />,
+    tone: "neutral" as BadgeTone,
+  };
   return (
     <Badge tone={entry.tone} icon={entry.icon} size={size}>
       {entry.label}
