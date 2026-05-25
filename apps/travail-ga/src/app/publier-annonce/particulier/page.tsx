@@ -53,7 +53,7 @@ export default function PublierParticulierPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // @ts-expect-error — api.pnpe typé après codegen
-  const create = useMutation(api.pnpe?.offresPubliques?.createByParticulier);
+  const create = useMutation(api.functions?.pnpe?.offresPubliques?.createByParticulier);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
