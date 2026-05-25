@@ -8,6 +8,7 @@
 "use client";
 
 import Link from "next/link";
+import { useQuery } from "convex/react";
 import {
   Briefcase,
   Building2,
@@ -17,13 +18,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-
-const KPI = [
-  { label: "D.E inscrits", value: "—", icon: Users },
-  { label: "Offres publiées", value: "—", icon: Briefcase },
-  { label: "Employeurs vérifiés", value: "—", icon: Building2 },
-  { label: "Antennes opérationnelles", value: "7", icon: LandPlot },
-] as const;
+import { api } from "@workspace/api/convex/_generated/api";
 
 const MODULES = [
   {
@@ -53,6 +48,32 @@ const MODULES = [
 ] as const;
 
 export default function PnpeBackofficeDashboard() {
+  // @ts-expect-error — api.pnpe typé après codegen
+  const kpis = useQuery(api.pnpe?.stats?.nationalKpis, {});
+
+  const KPI = [
+    {
+      label: "D.E inscrits",
+      value: kpis?.demandeursInscrits ?? "—",
+      icon: Users,
+    },
+    {
+      label: "Offres publiées",
+      value: kpis?.offresPubliees ?? "—",
+      icon: Briefcase,
+    },
+    {
+      label: "Employeurs vérifiés",
+      value: kpis?.employeursVerifies ?? "—",
+      icon: Building2,
+    },
+    {
+      label: "Antennes opérationnelles",
+      value: kpis?.antennesOperationnelles ?? 7,
+      icon: LandPlot,
+    },
+  ];
+
   return (
     <div className="container mx-auto px-6 py-8 space-y-8">
       <div>
@@ -79,6 +100,33 @@ export default function PnpeBackofficeDashboard() {
           );
         })}
       </div>
+
+      {kpis && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-xl border bg-card p-4">
+            <div className="text-xs text-muted-foreground mb-1">D.E actifs</div>
+            <div className="text-2xl font-bold font-display">
+              {kpis.demandeursActifs}
+            </div>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="text-xs text-muted-foreground mb-1">Placés</div>
+            <div className="text-2xl font-bold font-display text-emerald-600">
+              {kpis.demandeursPlaces}
+            </div>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="text-xs text-muted-foreground mb-1">
+              Taux de placement
+            </div>
+            <div className="text-2xl font-bold font-display">
+              {kpis.demandeursInscrits > 0
+                ? `${((kpis.demandeursPlaces / kpis.demandeursInscrits) * 100).toFixed(1)}%`
+                : "—"}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {MODULES.map((m) => {
