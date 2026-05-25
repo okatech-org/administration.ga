@@ -5,7 +5,7 @@
   "packageManager": "bun@1.2.17",
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev --concurrency=3",
+    "dev": "turbo dev --concurrency=12",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck",
