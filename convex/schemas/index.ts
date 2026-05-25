@@ -204,3 +204,4 @@ export { antennesPnpeTable } from "./pnpe/antennesPnpe";
 export { contratsSuiviTable } from "./pnpe/contratsSuivi";
 export { programmesAutoEmploiTable } from "./pnpe/programmesAutoEmploi";
 export { bilanCompetencesTable } from "./pnpe/bilanCompetences";
+export { pnpeStaffAssignmentsTable } from "./pnpe/pnpeStaffAssignments";
