@@ -126,7 +126,41 @@ export const statutOffreValidator = v.union(
   v.literal("POURVUE"),
   v.literal("EXPIREE"),
   v.literal("RETIREE"),
+  /**
+   * MASQUEE : offre publiée mais masquée du portail public suite à
+   * signalements (seuil 5/7j ou motif grave) ou décision conseiller. Le
+   * conseiller doit décider sous 48h : republier (→ PUBLIEE) ou retirer
+   * définitivement (→ RETIREE).
+   */
+  v.literal("MASQUEE"),
 );
+
+/**
+ * Motifs de signalement d'une offre. Pondération anti-fraude :
+ *   - Motifs graves (FRAUDE, HARCELEMENT, ESCROQUERIE, CONTENU_ILLEGAL)
+ *     déclenchent un masquage IMMÉDIAT (1 seul signalement suffit).
+ *   - Autres motifs s'additionnent (seuil 3 sur 7j = flag conseiller,
+ *     seuil 5 = masquage auto).
+ */
+export const motifSignalementValidator = v.union(
+  v.literal("SUSPICION_FRAUDE"),
+  v.literal("HARCELEMENT"),
+  v.literal("ESCROQUERIE"),
+  v.literal("CONTENU_ILLEGAL"),
+  v.literal("OFFRE_NON_CONFORME"),
+  v.literal("SALAIRE_NON_LEGAL"),
+  v.literal("DISCRIMINATION"),
+  v.literal("ANNONCE_TROMPEUSE"),
+  v.literal("AUTRE"),
+);
+
+/** Motifs gravissimes qui déclenchent un masquage immédiat (1 suffit). */
+export const MOTIFS_SIGNALEMENT_GRAVES = [
+  "SUSPICION_FRAUDE",
+  "HARCELEMENT",
+  "ESCROQUERIE",
+  "CONTENU_ILLEGAL",
+] as const;
 
 /**
  * Statut d'une candidature D.E sur une offre.
