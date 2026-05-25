@@ -142,6 +142,7 @@ import {
   contratsSuiviTable,
   programmesAutoEmploiTable,
   bilanCompetencesTable,
+  pnpeStaffAssignmentsTable,
 } from "./schemas";
 // Phase 3 — RAG iAsted (schema knowledge + mémoires long terme)
 import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
@@ -348,6 +349,7 @@ export default defineSchema(
   contratsSuivi: contratsSuiviTable,
   programmesAutoEmploi: programmesAutoEmploiTable,
   bilanCompetences: bilanCompetencesTable,
+  pnpeStaffAssignments: pnpeStaffAssignmentsTable,
   },
   { schemaValidation: false },
 );

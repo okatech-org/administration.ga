@@ -23,6 +23,7 @@
     "dev:direction.ga": "bun run dev --filter=direction-gabon",
     "dev:ministere.ga": "bun run dev --filter=ministere-gabon",
     "dev:pnpe.ga": "bun run dev --filter=pnpe-gabon",
+    "dev:travail.ga": "bun run dev --filter=travail-ga",
     "dev:convex": "bunx convex dev",
     "fix:convex-local": "bash scripts/fix-convex-local-ports.sh"
   },

@@ -33,6 +33,8 @@ Le socle technique est **IDENTIQUE** à `gabon-diplomatie` (Turborepo + Convex +
 | `apps/backoffice-web` | `apps/admin-gabon-backoffice` | `admin.administration.ga` | 3002 |
 | `apps/citizen-web` (consulat.ga) | `apps/admin-gabon-citizen` (demarche.ga) | `demarche.ga` | 3000 |
 | `apps/agent-desktop` | `apps/agent-desktop` | — | — |
+| (nouveau) | `apps/pnpe` | `emploi.administration.ga` | 3008 |
+| (nouveau) | `apps/travail-ga` | `travail.ga` | 3009 |
 
 ### Variables d'environnement de domaine
 
@@ -40,6 +42,18 @@ Le socle technique est **IDENTIQUE** à `gabon-diplomatie` (Turborepo + Convex +
 - `NEXT_PUBLIC_DOMAIN_CITIZEN=demarche.ga`
 - `NEXT_PUBLIC_DOMAIN_AGENT=administration.ga`
 - `NEXT_PUBLIC_DOMAIN_ADMIN=admin.administration.ga`
+- `NEXT_PUBLIC_DOMAIN_EMPLOI=emploi.administration.ga`
+- `NEXT_PUBLIC_DOMAIN_TRAVAIL=travail.ga`
+
+### Architecture marché de l'emploi (3 couches)
+
+| Couche | App | Domaine | Public | Rôle |
+|---|---|---|---|---|
+| Portail citoyen universel | `apps/demarche_ga` | `demarche.ga` | Tout citoyen | Démarches administratives génériques. Section « Emploi » → CTA vers TRAVAIL.GA |
+| Vitrine publique marché de l'emploi | `apps/travail-ga` | `travail.ga` | Grand public sans auth | Catalogue d'offres consultable, annuaire des 7 antennes, parcours « je cherche » / « je veux embaucher », statistiques. CTA → PNPE.GA pour s'inscrire |
+| Backoffice opérationnel PNPE | `apps/pnpe` | `emploi.administration.ga` | D.E + Employeurs + Conseillers + Direction PNPE + Admin Ministère | Espaces authentifiés, workflows métier (validation, modération, suivi contrats, BMC Auto-Emploi, entretiens LiveKit, reporting) |
+
+Backend Convex partagé entre les 3 couches : TRAVAIL.GA appelle `api.pnpe.offres.listPublished` / `api.pnpe.antennes.list` / `api.pnpe.stats.nationalKpis` en lecture seule, sans auth.
 
 ### Documents de référence (lecture obligatoire avant tout travail métier)
 
