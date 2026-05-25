@@ -7,6 +7,7 @@
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { authMutation } from "../../lib/customFunctions";
+import { PNPE_VALIDATION_ROLES, requirePnpeRole } from "../../lib/pnpeAuth";
 import {
   codeNAFGabonValidator,
   codeProvinceGaValidator,
@@ -89,7 +90,7 @@ export const validate = authMutation({
     if (offre.statut !== "EN_VALIDATION") {
       throw new Error(`INVALID_TRANSITION: ${offre.statut} → PUBLIEE`);
     }
-    // TODO Phase 7 : vérifier rôle conseiller_pnpe.
+    await requirePnpeRole(ctx, ctx.user, PNPE_VALIDATION_ROLES);
     await ctx.db.patch(args.offreId, {
       statut: "PUBLIEE",
       datePublication: Date.now(),
