@@ -36,7 +36,7 @@ export function Footer() {
 						</span>
 					</div>
 
-					{/* Col 2: Navigation */}
+					{/* Col 2: Navigation + écosystème */}
 					<div>
 						<h4 className="text-sm font-semibold text-slate-300 uppercase tracking-widest mb-5">
 							Navigation
@@ -53,6 +53,22 @@ export function Footer() {
 									</a>
 								</li>
 							))}
+							<li className="pt-2 border-t border-white/10 mt-2">
+								<a
+									href="https://travail.ga"
+									className="text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors inline-block"
+								>
+									→ TRAVAIL.GA (marché public)
+								</a>
+							</li>
+							<li>
+								<a
+									href="https://demarche.ga"
+									className="text-slate-400 hover:text-white text-sm transition-colors inline-block"
+								>
+									→ DEMARCHE.GA (autres démarches)
+								</a>
+							</li>
 						</ul>
 					</div>
 
