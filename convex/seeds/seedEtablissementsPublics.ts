@@ -502,14 +502,19 @@ const EP_FONCTION_PUBLIQUE: EPInput[] = [
     name: "Institut de l'Économie et des Finances",
     parentSlug: "min-fonction-publique",
   },
-  // Note : ONE est listé sous Fonction Publique §4.21 ET sous Travail §4.22.
-  // On le rattache ici, sous le ministère qui le mentionne en premier.
+  // ─── Pôle National de Promotion de l'Emploi (PNPE) ─────────
+  // Héritier de l'ONE (Office National de l'Emploi). Rattaché à la tutelle
+  // réelle (Ministère du Travail, du Plein Emploi, du Dialogue Social et
+  // de la Formation Professionnelle), pas à la Fonction Publique. La
+  // migration `renamePnpeSlug` corrige les bases qui auraient encore
+  // l'ancien slug "one" rattaché à min-fonction-publique.
+  // Partenariat technique ANINF (protocole 17 février 2025).
   {
-    slug: "one",
-    name: "Office National de l'Emploi",
-    parentSlug: "min-fonction-publique",
+    slug: "pnpe",
+    name: "Pôle National de Promotion de l'Emploi",
+    parentSlug: "min-travail",
     description:
-      "Mentionné aussi sous §4.22 Ministère du Travail. Rattachement principal Fonction Publique.",
+      "Opérateur public gabonais de l'emploi (héritier ONE). Sous tutelle du Ministère du Travail, du Plein Emploi, du Dialogue Social et de la Formation Professionnelle. 7 antennes régionales : Libreville (siège), Franceville, Lambaréné, Koulamoutou, Port-Gentil, Tchibanga, Oyem.",
   },
 ];
 

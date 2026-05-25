@@ -180,3 +180,27 @@ export {
   sovereignChannelsTable,
   sovereignChannelEventsTable,
 } from "./sovereignChannels";
+
+// ─── mairie.ga — Modules métier communaux ────────────────────────────
+// Tables propres au pilier "mairie" du monorepo : actes administratifs et
+// délibérations municipales, dossiers d'urbanisme, registre d'état civil.
+// Adapté de mairie.ga (Supabase) vers Convex.
+export { arretesTable } from "./arretes";
+export { deliberationsTable } from "./deliberations";
+export { urbanismeDossiersTable } from "./urbanismeDossiers";
+export { etatCivilActesTable } from "./etatCivilActes";
+
+// ─── pnpe — Modules métier emploi ────────────────────────────────────
+// Pôle National de Promotion de l'Emploi (héritier ONE). Sous tutelle du
+// Ministère du Travail. 8 tables couvrant le cycle complet :
+// inscription D.E, employeurs vérifiés, offres + candidatures, antennes
+// régionales, contrats d'apprentissage/insertion suivis, programme
+// Auto-Emploi (BMC + ANPI-Gabon), bilans de compétences.
+export { demandeursEmploiTable } from "./pnpe/demandeursEmploi";
+export { employeursTable } from "./pnpe/employeurs";
+export { offresEmploiTable } from "./pnpe/offresEmploi";
+export { candidaturesTable } from "./pnpe/candidatures";
+export { antennesPnpeTable } from "./pnpe/antennesPnpe";
+export { contratsSuiviTable } from "./pnpe/contratsSuivi";
+export { programmesAutoEmploiTable } from "./pnpe/programmesAutoEmploi";
+export { bilanCompetencesTable } from "./pnpe/bilanCompetences";

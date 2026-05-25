@@ -128,6 +128,20 @@ import {
   // Phase 7 administration.ga — Interconnexion souveraine
   sovereignChannelsTable,
   sovereignChannelEventsTable,
+  // mairie.ga — Modules métier communaux
+  arretesTable,
+  deliberationsTable,
+  urbanismeDossiersTable,
+  etatCivilActesTable,
+  // pnpe — Modules métier emploi
+  demandeursEmploiTable,
+  employeursTable,
+  offresEmploiTable,
+  candidaturesTable,
+  antennesPnpeTable,
+  contratsSuiviTable,
+  programmesAutoEmploiTable,
+  bilanCompetencesTable,
 } from "./schemas";
 // Phase 3 — RAG iAsted (schema knowledge + mémoires long terme)
 import { iastedKnowledgeTable } from "./schemas/iastedKnowledge";
@@ -312,6 +326,28 @@ export default defineSchema(
   // optionnelle, horodatage qualifié et journal d'évènements (audit immuable).
   sovereignChannels: sovereignChannelsTable,
   sovereignChannelEvents: sovereignChannelEventsTable,
+  // ─── mairie.ga — Modules métier communaux ────────────────────────
+  // Tables du pilier "mairie" du monorepo : arrêtés du Maire, délibérations
+  // du Conseil Municipal, dossiers d'urbanisme, registre d'état civil.
+  // Activées sur les orgs de type "local_authority" avec un
+  // localAuthoritySubType de commune ou de conseil municipal.
+  arretes: arretesTable,
+  deliberations: deliberationsTable,
+  urbanismeDossiers: urbanismeDossiersTable,
+  etatCivilActes: etatCivilActesTable,
+  // ─── pnpe — Modules métier emploi ────────────────────────────────
+  // Pôle National de Promotion de l'Emploi (slug "pnpe" sous tutelle
+  // min-travail, type public_establishment). 8 tables couvrant le cycle
+  // complet : D.E + employeurs + offres + candidatures + antennes +
+  // contrats apprentissage/insertion + parcours Auto-Emploi (BMC) + bilans.
+  demandeursEmploi: demandeursEmploiTable,
+  employeurs: employeursTable,
+  offresEmploi: offresEmploiTable,
+  candidatures: candidaturesTable,
+  antennesPnpe: antennesPnpeTable,
+  contratsSuivi: contratsSuiviTable,
+  programmesAutoEmploi: programmesAutoEmploiTable,
+  bilanCompetences: bilanCompetencesTable,
   },
   { schemaValidation: false },
 );
