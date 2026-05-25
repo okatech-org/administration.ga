@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const STATUT_LABELS: Record<string, { label: string; tone: string }> = {
   ENVOYEE: { label: "Envoyée", tone: "bg-slate-100 text-slate-700" },

@@ -1,11 +1,19 @@
 {
-  "extends": "@workspace/tsconfig/nextjs.json",
+  "extends": "@workspace/tsconfig/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "noEmit": true,
+    "noUncheckedIndexedAccess": false,
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"]
-    },
-    "plugins": [{ "name": "next" }]
+      "@/*": ["./src/*"],
+      "@convex/*": ["../../convex/*"],
+      "@workspace/ui/*": ["../../packages/ui/src/*"],
+      "@workspace/routing/*": ["../../packages/routing/src/*"]
+    }
   },
   "include": [
     "next-env.d.ts",

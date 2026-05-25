@@ -7,7 +7,7 @@ import { useQuery } from "convex/react";
 import { Briefcase, LandPlot, TrendingUp, Users } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function StatistiquesPage() {
   // @ts-expect-error — api.pnpe typé après codegen Convex

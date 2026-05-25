@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Sparkles } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { pnpeLink } from "@/lib/utils";
 
 type FormState = {
