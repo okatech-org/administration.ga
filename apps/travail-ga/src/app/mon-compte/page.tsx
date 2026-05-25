@@ -23,8 +23,8 @@ import { api } from "@convex/_generated/api";
 import { pnpeLink } from "@/lib/utils";
 
 export default function MonComptePage() {
-  // @ts-expect-error — api typé après codegen
-  const status = useQuery(api.functions?.pnpe?.citizenMigration?.migrationStatus) as
+  
+  const status = useQuery((api as any).functions.pnpe.citizenMigration?.migrationStatus) as
     | {
         mode: "DEMANDEUR" | "CITOYEN";
         demandeurId?: string;

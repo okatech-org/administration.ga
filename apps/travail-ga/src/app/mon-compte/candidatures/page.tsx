@@ -37,9 +37,9 @@ const TYPE_ICONS: Record<string, typeof Briefcase> = {
 };
 
 export default function MesCandidaturesPage() {
-  // @ts-expect-error — api typé après codegen
+  
   const candidatures = (useQuery(
-    api.functions?.pnpe?.citizenMigration?.listMyCandidatures,
+    (api as any).functions.pnpe.citizenMigration?.listMyCandidatures,
   ) ?? []) as Array<{
     _id: string;
     statut: string;

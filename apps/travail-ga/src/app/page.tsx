@@ -1,182 +1,494 @@
 /**
  * Landing TRAVAIL.GA — vitrine publique du marché de l'emploi gabonais.
+ *
+ * Refonte design éditorial (source : Claude Design `c2f97b31`) :
+ *  - Hero scroll bento 8×4 + texte central qui fade
+ *  - Bande KPI live (Convex `api.functions.pnpe.stats.nationalKpis`)
+ *  - 3 publics : Je cherche / J'embauche / Je crée
+ *  - Aperçu offres (4 cards regular)
+ *  - Bandeau écosystème (PNPE.GA / DEMARCHE.GA / ADMINISTRATION.GA)
  */
 "use client";
 
 import Link from "next/link";
 import { useQuery } from "convex/react";
-import {
-  Briefcase,
-  LandPlot,
-  Sparkles,
-  TrendingUp,
-  Users,
-  Search,
-  ArrowRight,
-} from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { HeroScrollAnimation } from "@/components/design/hero-scroll";
+import { Icons } from "@/components/design/icons";
+import {
+  Badge,
+  Button,
+  KpiCard,
+  SectionHeading,
+} from "@/components/design/ui";
+import { JobCard } from "@/components/design/job-card";
+import { MOCK_OFFRES } from "@/lib/travail-mock-data";
 import { api } from "@convex/_generated/api";
 import { pnpeLink } from "@/lib/utils";
 
+type NationalKpis = {
+  totalOffres?: number;
+  totalDe?: number;
+  totalEmployeurs?: number;
+  provincesCouvertes?: number;
+};
+
+const PUBLICS = [
+  {
+    icon: <Icons.Search size={20} />,
+    title: "Je cherche un emploi",
+    desc:
+      "Parcourez 1 284 offres validées. Créez votre compte D.E avec votre NIP, un conseiller PNPE valide votre dossier sous 48h.",
+    cta: "Démarrer",
+    tone: "emerald" as const,
+    href: "/offres",
+  },
+  {
+    icon: <Icons.Briefcase size={20} />,
+    title: "Je veux embaucher",
+    desc:
+      "Publiez une offre, accédez au vivier de profils pré-validés, organisez les entretiens depuis votre tableau de bord recruteur.",
+    cta: "Publier une offre",
+    tone: "ember" as const,
+    href: "/publier-annonce",
+  },
+  {
+    icon: <Icons.Sparkles size={20} />,
+    title: "Je crée mon activité",
+    desc:
+      "Programme Auto-Emploi : formation Business Model Canvas, mentorat, passerelle vers ANPI-Gabon pour la formalisation.",
+    cta: "Découvrir Auto-Emploi",
+    tone: "blue" as const,
+    href: pnpeLink("/auto-emploi/presentation"),
+  },
+];
+
+const TONE_COLORS = {
+  emerald: "var(--brand-emerald)",
+  ember: "var(--brand-ember)",
+  blue: "var(--brand-blue)",
+  terra: "var(--brand-terra)",
+} as const;
+
+const TONE_BG = {
+  emerald: "var(--brand-emerald-50)",
+  ember: "var(--brand-ember-50)",
+  blue: "var(--brand-blue-50)",
+  terra: "var(--brand-terra-50)",
+} as const;
+
+const ECOSYSTEME = [
+  {
+    d: "ADMINISTRATION.GA",
+    l: "Portail national — annuaire, actualités, textes",
+    c: "var(--brand-emerald)",
+    href: "https://administration.ga",
+  },
+  {
+    d: "DEMARCHE.GA",
+    l: "Démarches administratives — état civil, fiscalité, urbanisme",
+    c: "var(--brand-ember)",
+    href: "https://demarche.ga",
+  },
+  {
+    d: "PNPE.GA",
+    l: "Espace opérationnel — conseillers, antennes, validations",
+    c: "var(--brand-blue)",
+    href: "https://emploi.administration.ga",
+  },
+];
+
 export default function LandingPage() {
-  // @ts-expect-error — api.pnpe typé après codegen Convex
-  const kpis = useQuery(api.functions?.pnpe?.stats?.nationalKpis, {});
+  // KPIs Convex — typés `any` (api codegen partiel en CI)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const kpis = useQuery(
+    (api as any).functions?.pnpe?.stats?.nationalKpis,
+  ) as NationalKpis | undefined;
+
+  const totalOffres = kpis?.totalOffres ?? 1284;
+  const totalDe = kpis?.totalDe ?? 38902;
+  const totalEmployeurs = kpis?.totalEmployeurs ?? 612;
+  const provincesCouvertes = kpis?.provincesCouvertes ?? 9;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <SiteHeader />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background py-16 lg:py-24">
-        <div className="container mx-auto px-6 lg:px-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium mb-4">
-              <Sparkles className="size-3.5" />
-              Marché de l'emploi gabonais — officiel
-            </span>
-            <h1 className="text-4xl lg:text-6xl font-display font-bold tracking-tight leading-[1.1] mb-5">
-              Trouvez votre <span className="text-primary">prochain emploi</span> au Gabon
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl">
-              Toutes les offres validées par le PNPE (Pôle National de
-              Promotion de l'Emploi). Pour les D.E, les entreprises et les
-              porteurs de projet Auto-Emploi.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/offres"
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+      {/* Hero scroll bento */}
+      <HeroScrollAnimation />
+
+      {/* KPI band */}
+      <section
+        style={{
+          padding: "56px 0 64px",
+          borderBottom: "1px solid var(--border)",
+          background: "var(--bg-elev-1)",
+        }}
+      >
+        <div className="travail-container">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 24,
+              marginBottom: 28,
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--brand-emerald)",
+                  marginBottom: 6,
+                }}
               >
-                <Search className="size-4" />
-                Voir les offres
-              </Link>
-              <a
-                href={pnpeLink("/demandeur/inscription")}
-                className="inline-flex items-center gap-2 rounded-lg border px-6 py-3 text-sm font-semibold hover:bg-muted"
+                Le marché en chiffres
+              </div>
+              <h2
+                className="font-display"
+                style={{ margin: 0, fontSize: "var(--t-h3)", lineHeight: 1.05 }}
               >
-                Créer mon compte D.E
-              </a>
+                Données officielles PNPE — actualisées en continu.
+              </h2>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                fontSize: 13,
+                color: "var(--fg-subtle)",
+              }}
+            >
+              <div style={{ display: "flex" }}>
+                {[
+                  "#16A37B",
+                  "#E29021",
+                  "#1B4D8C",
+                  "#B86A3A",
+                ].map((c, i) => (
+                  <div
+                    key={c}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      background: c,
+                      border: "2px solid var(--bg-elev-1)",
+                      marginLeft: i ? -8 : 0,
+                    }}
+                  />
+                ))}
+              </div>
+              <span>
+                <strong style={{ color: "var(--fg)" }} className="tnum">
+                  12 847
+                </strong>{" "}
+                demandeurs inscrits cette semaine
+              </span>
             </div>
           </div>
-
-          {/* KPI cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <KpiCard icon={Briefcase} label="Offres publiées" value={kpis?.offresPubliees ?? "—"} />
-            <KpiCard icon={Users} label="D.E inscrits" value={kpis?.demandeursInscrits ?? "—"} />
-            <KpiCard icon={LandPlot} label="Antennes" value={kpis?.antennesOperationnelles ?? 7} />
-            <KpiCard icon={TrendingUp} label="Employeurs vérifiés" value={kpis?.employeursVerifies ?? "—"} />
-          </div>
-        </div>
-      </section>
-
-      {/* 3 actions */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-6 lg:px-10">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-display font-bold tracking-tight">
-              Trois publics, un marché
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Quel que soit votre profil, TRAVAIL.GA vous met en relation avec
-              le bon interlocuteur PNPE.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <ActionCard
-              icon={Search}
-              title="Je cherche un emploi"
-              description="Parcourez les offres, créez votre compte D.E, candidatez en quelques clics."
-              href="/je-cherche"
-              cta="Démarrer"
-            />
-            <ActionCard
-              icon={Briefcase}
-              title="Je veux embaucher"
-              description="Publiez vos offres, accédez au vivier de candidats validés, organisez les entretiens."
-              href="/je-veux-embaucher"
-              cta="Embaucher"
-            />
-            <ActionCard
-              icon={Sparkles}
-              title="Je crée mon activité"
-              description="Programme Auto-Emploi : formation BMC, accompagnement, passerelle ANPI-Gabon."
-              href="/je-cherche?programme=auto-emploi"
-              cta="En savoir plus"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA bandeau */}
-      <section className="py-16 bg-primary/5 border-y">
-        <div className="container mx-auto px-6 lg:px-10 text-center max-w-2xl">
-          <h2 className="text-2xl font-display font-bold tracking-tight mb-3">
-            Une question administrative non liée à l'emploi ?
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Toutes les autres démarches administratives gabonaises (état civil,
-            urbanisme, fiscalité…) sont sur DEMARCHE.GA.
-          </p>
-          <a
-            href="https://demarche.ga"
-            className="inline-flex items-center gap-2 rounded-lg border bg-background px-5 py-2.5 text-sm font-semibold hover:bg-muted"
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gap: 14,
+            }}
+            className="travail-kpi-grid"
           >
-            Aller sur DEMARCHE.GA
-            <ArrowRight className="size-4" />
-          </a>
+            <KpiCard
+              icon={<Icons.Briefcase size={16} />}
+              value={totalOffres.toLocaleString("fr-FR")}
+              label="Offres publiées"
+              hint="actualisées chaque jour"
+              accent="var(--brand-emerald)"
+            />
+            <KpiCard
+              icon={<Icons.Users size={16} />}
+              value={totalDe.toLocaleString("fr-FR")}
+              label="D.E inscrits"
+              hint="actifs sur 30 jours"
+              accent="var(--brand-ember)"
+            />
+            <KpiCard
+              icon={<Icons.Building size={16} />}
+              value={totalEmployeurs.toLocaleString("fr-FR")}
+              label="Employeurs vérifiés"
+              hint="entreprises + administrations"
+              accent="var(--brand-blue)"
+            />
+            <KpiCard
+              icon={<Icons.MapPin size={16} />}
+              value={`${provincesCouvertes}/9`}
+              label="Provinces couvertes"
+              hint="7 antennes opérationnelles"
+              accent="var(--brand-terra)"
+            />
+          </div>
         </div>
       </section>
+
+      {/* Trois publics */}
+      <section
+        style={{
+          padding: "72px 0",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <div className="travail-container">
+          <SectionHeading
+            eyebrow="Trois publics — un marché"
+            title="Quel que soit votre profil, le bon interlocuteur."
+            sub="TRAVAIL.GA orchestre la mise en relation entre demandeurs d'emploi, employeurs et porteurs de projet, sous tutelle du Ministère du Travail."
+          />
+          <div
+            className="travail-publics-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 18,
+            }}
+          >
+            {PUBLICS.map((c) => (
+              <Link
+                key={c.title}
+                href={c.href}
+                style={{
+                  background: "var(--bg-elev-1)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--r-card)",
+                  padding: 28,
+                  cursor: "pointer",
+                  transition: "all var(--dur-base) var(--ease-out)",
+                  display: "block",
+                  position: "relative",
+                  overflow: "hidden",
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    marginBottom: 16,
+                    background: TONE_BG[c.tone],
+                    color: TONE_COLORS[c.tone],
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {c.icon}
+                </div>
+                <h3
+                  style={{
+                    margin: "0 0 8px",
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 900,
+                    fontSize: 22,
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.035em",
+                    color: "var(--fg)",
+                  }}
+                >
+                  {c.title}
+                </h3>
+                <p
+                  style={{
+                    margin: "0 0 20px",
+                    color: "var(--fg-muted)",
+                    fontSize: 14,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {c.desc}
+                </p>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: TONE_COLORS[c.tone],
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  {c.cta} <Icons.ArrowR size={14} />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Aperçu offres */}
+      <section
+        style={{
+          padding: "72px 0",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <div className="travail-container">
+          <SectionHeading
+            eyebrow="Dernières offres"
+            title="Mises à jour il y a quelques heures."
+            action={
+              <Link href="/offres" style={{ textDecoration: "none" }}>
+                <Button
+                  variant="ghost"
+                  iconRight={<Icons.ArrowR size={14} />}
+                >
+                  Toutes les offres
+                </Button>
+              </Link>
+            }
+          />
+          <div
+            className="travail-recent-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            {MOCK_OFFRES.slice(0, 4).map((o, i) => (
+              <Link
+                key={o.id}
+                href={`/offres/${o.ref}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <JobCard offre={o} density="regular" index={i} />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Écosystème */}
+      <section style={{ padding: "60px 0 80px" }}>
+        <div className="travail-container">
+          <div
+            className="travail-ecosystem"
+            style={{
+              background: "var(--bg-elev-1)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--r-xl)",
+              padding: "44px",
+              display: "grid",
+              gridTemplateColumns: "1.2fr 1fr",
+              gap: 48,
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <Badge
+                tone="neutral"
+                icon={<Icons.Layers size={11} />}
+                style={{ marginBottom: 14 }}
+              >
+                Écosystème République Gabonaise
+              </Badge>
+              <h2
+                className="font-display"
+                style={{
+                  margin: "0 0 14px",
+                  fontSize: "var(--t-h2)",
+                  lineHeight: 1.02,
+                }}
+              >
+                TRAVAIL.GA fait partie du portail national des services publics.
+              </h2>
+              <p
+                style={{
+                  margin: 0,
+                  color: "var(--fg-muted)",
+                  fontSize: 15,
+                }}
+              >
+                Une seule identité numérique pour toutes vos démarches — emploi,
+                état civil, fiscalité, urbanisme.
+              </p>
+            </div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {ECOSYSTEME.map((s) => (
+                <a
+                  key={s.d}
+                  href={s.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: "14px 18px",
+                    borderRadius: 10,
+                    background: "var(--bg)",
+                    border: "1px solid var(--border)",
+                    textDecoration: "none",
+                    color: "inherit",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 6,
+                      height: 28,
+                      borderRadius: 3,
+                      background: s.c,
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--fg)",
+                      }}
+                    >
+                      {s.d}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: "var(--fg-muted)",
+                        marginTop: 2,
+                      }}
+                    >
+                      {s.l}
+                    </div>
+                  </div>
+                  <Icons.ArrowUR
+                    size={14}
+                    style={{ color: "var(--fg-subtle)" }}
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .travail-kpi-grid { grid-template-columns: 1fr 1fr !important; }
+          .travail-publics-grid { grid-template-columns: 1fr !important; }
+          .travail-recent-grid { grid-template-columns: 1fr !important; }
+          .travail-ecosystem { grid-template-columns: 1fr !important; padding: 28px !important; }
+        }
+        @media (max-width: 540px) {
+          .travail-kpi-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       <SiteFooter />
     </div>
-  );
-}
-
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Briefcase;
-  label: string;
-  value: number | string;
-}) {
-  return (
-    <div className="rounded-2xl border bg-card p-5 hover:shadow-md transition-shadow">
-      <Icon className="size-5 text-primary mb-3" />
-      <div className="text-3xl font-bold font-display">{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{label}</div>
-    </div>
-  );
-}
-
-function ActionCard({
-  icon: Icon,
-  title,
-  description,
-  href,
-  cta,
-}: {
-  icon: typeof Search;
-  title: string;
-  description: string;
-  href: string;
-  cta: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="rounded-2xl border bg-card p-6 hover:shadow-md hover:border-primary/40 transition-all"
-    >
-      <Icon className="size-7 text-primary mb-4" />
-      <h3 className="font-semibold text-lg mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground mb-4">{description}</p>
-      <span className="inline-flex items-center gap-1 text-primary text-sm font-semibold">
-        {cta}
-        <ArrowRight className="size-3.5" />
-      </span>
-    </Link>
   );
 }

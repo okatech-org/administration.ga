@@ -1,0 +1,240 @@
+/* ─────────────────────────────────────────────────────────────
+   TRAVAIL.GA — design tokens
+   Editorial hybrid: civic gravitas + marketplace polish.
+   Source : /Users/okatech/Downloads/TAVAIL.GA/tokens.css (design Claude)
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Brand ─── */
+  --brand-blue: #1B4D8C;
+  --brand-blue-600: #1F58A0;
+  --brand-blue-700: #163E70;
+  --brand-blue-100: #DCE6F4;
+  --brand-blue-50:  #EEF3FA;
+
+  --brand-ember: #E29021;
+  --brand-ember-600: #CC7E18;
+  --brand-ember-50:  #FBEFD9;
+
+  --brand-emerald: #16A37B;
+  --brand-emerald-50: #E1F4EC;
+
+  --brand-terra: #B86A3A;
+  --brand-terra-600: #A06038;
+  --brand-terra-50:  #FAEEE3;
+
+  --brand-gold: #C9A24B;
+
+  /* ─── Semantic ─── */
+  --t-color-success: var(--brand-emerald);
+  --t-color-warning: #C9A24B;
+  --t-color-danger:  #C24343;
+  --t-color-info:    var(--brand-blue);
+
+  /* ─── Neutrals — warm, editorial ─── */
+  --t-bg:          #FAF8F4;
+  --t-bg-elev-1:   #FFFFFF;
+  --t-bg-elev-2:   #F2EFE9;
+  --t-bg-inverse:  #15161A;
+
+  --t-fg:          #22252D;
+  --t-fg-muted:    #5C5F69;
+  --t-fg-subtle:   #8A8D96;
+  --t-fg-faint:    #B4B6BD;
+  --t-fg-on-brand: #FFFFFF;
+
+  --t-border:        #E5E1D8;
+  --t-border-strong: #D1CDC2;
+  --t-border-faint:  #EEEAE0;
+
+  /* Aliases shorts (utilisés massivement dans le design source) */
+  --bg:          var(--t-bg);
+  --bg-elev-1:   var(--t-bg-elev-1);
+  --bg-elev-2:   var(--t-bg-elev-2);
+  --bg-inverse:  var(--t-bg-inverse);
+  --fg:          var(--t-fg);
+  --fg-muted:    var(--t-fg-muted);
+  --fg-subtle:   var(--t-fg-subtle);
+  --fg-faint:    var(--t-fg-faint);
+  --fg-on-brand: var(--t-fg-on-brand);
+  --border:        var(--t-border);
+  --border-strong: var(--t-border-strong);
+  --border-faint:  var(--t-border-faint);
+  --color-success: var(--t-color-success);
+  --color-warning: var(--t-color-warning);
+  --color-danger:  var(--t-color-danger);
+  --color-info:    var(--t-color-info);
+
+  /* ─── Radii ─── */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-card: 16px;
+
+  /* ─── Spacing scale (4px base) ─── */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+  --s-12: 48px; --s-16: 64px; --s-24: 96px;
+
+  /* ─── Shadows ─── */
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-2: 0 2px 4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-3: 0 8px 24px -8px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.04);
+  --shadow-4: 0 20px 40px -16px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-brand: 0 8px 24px -8px rgba(27, 77, 140, 0.28);
+
+  /* ─── Type ─── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --t-caption: clamp(11px, 0.7vw + 9px, 12px);
+  --t-small:   clamp(12px, 0.5vw + 11px, 13px);
+  --t-body:    clamp(14px, 0.4vw + 13px, 15px);
+  --t-lead:    clamp(16px, 0.5vw + 15px, 17px);
+  --t-h4:      clamp(18px, 0.8vw + 16px, 20px);
+  --t-h3:      clamp(22px, 1.2vw + 18px, 26px);
+  --t-h2:      clamp(28px, 2vw + 20px, 38px);
+  --t-h1:      clamp(38px, 4vw + 24px, 64px);
+  --t-display: clamp(48px, 6vw + 24px, 88px);
+
+  /* ─── Motion ─── */
+  --ease-out: cubic-bezier(0.32, 0.72, 0.4, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Dark mode — first-class, not inverted.
+   ───────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --t-bg:          #15161A;
+  --t-bg-elev-1:   #1C1D23;
+  --t-bg-elev-2:   #23252C;
+  --t-bg-inverse:  #FAF8F4;
+
+  --t-fg:          #F2EFE7;
+  --t-fg-muted:    #A0A3AD;
+  --t-fg-subtle:   #777A84;
+  --t-fg-faint:    #4C4F58;
+  --t-fg-on-brand: #FAF8F4;
+
+  --t-border:        #2A2C34;
+  --t-border-strong: #3A3D47;
+  --t-border-faint:  #22242B;
+
+  --brand-blue: #6FA3DD;
+  --brand-blue-600: #82B0E2;
+  --brand-blue-700: #5B91CF;
+  --brand-blue-100: #1F2D44;
+  --brand-blue-50:  #182438;
+
+  --brand-ember: #F0B560;
+  --brand-ember-600: #E8A848;
+  --brand-ember-50:  #3D2D18;
+
+  --brand-emerald: #4FD1A5;
+  --brand-emerald-50: #1A332A;
+
+  --brand-terra: #DC9A6E;
+  --brand-terra-600: #CC865A;
+  --brand-terra-50: #33231A;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-3: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --shadow-4: 0 20px 40px -16px rgba(0, 0, 0, 0.6);
+  --shadow-brand: 0 8px 24px -8px rgba(111, 163, 221, 0.35);
+}
+
+/* ─── Global reset / base TRAVAIL.GA ─── */
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01" on, "cv11" on;
+  font-weight: 400;
+}
+body {
+  overflow-x: hidden;
+  transition: background var(--dur-slow) var(--ease-out), color var(--dur-slow) var(--ease-out);
+}
+
+::selection { background: var(--brand-blue-100); color: var(--brand-blue-700); }
+[data-theme="dark"] ::selection { background: var(--brand-blue-100); color: var(--fg); }
+
+/* ─── Container éditorial ─── */
+.travail-container {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+@media (max-width: 768px) {
+  .travail-container { padding-left: 20px; padding-right: 20px; }
+}
+
+/* ─── Utility primitives ─── */
+.font-display { font-family: var(--font-display); font-weight: 900; letter-spacing: -0.035em; }
+.font-mono { font-family: var(--font-mono); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* focus ring */
+.travail-app :focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ─── Animations ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 420ms var(--ease-out) both; }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--bg-elev-2) 0%,
+    var(--border-faint) 50%,
+    var(--bg-elev-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: var(--r-sm);
+}
+
+@keyframes bookmarkBounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35) rotate(-6deg); }
+  70% { transform: scale(0.92) rotate(2deg); }
+  100% { transform: scale(1); }
+}
+.bookmark-bounce { animation: bookmarkBounce 460ms var(--ease-spring); }
+
+@keyframes scrollHint {
+  0%   { transform: translateY(0); opacity: 1; }
+  60%  { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
