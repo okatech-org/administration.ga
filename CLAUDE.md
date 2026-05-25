@@ -55,16 +55,22 @@ Toute donnée métier (titulaire, libellé officiel, compétence, organigramme, 
 
 ## Performance dev — ⚠️ machines à 16 GB de RAM
 
-Sur une machine 16 GB, **lancer 3 dev servers Next.js + Turbopack simultanément
-sature la RAM et fige le système** (chaque dev server consomme 2.5 à 3.5 GB
-selon les modules chargés : Mapbox-GL ~250 MB, LiveKit ~150 MB, Convex
-WebSocket ~100 MB, Turbopack compilation 1.2 GB, runtime React/Next 250 MB,
-node_modules resolve 400 MB, Bun overhead 300 MB).
+Sur une machine 16 GB, **lancer 3 dev servers Next.js + Turbopack
+simultanément sature la RAM et fige le système** (chaque dev server consomme
+2.0 à 3.5 GB selon les modules chargés : Mapbox-GL ~250 MB, LiveKit ~150 MB,
+Convex WebSocket ~100 MB, Turbopack compilation 1.2 GB, runtime React/Next
+250 MB, node_modules resolve 400 MB, Bun overhead 300 MB).
+
+⚠️ **Cumulé sur les 7 apps, les caches `.next/` peuvent atteindre 10+ GB
+sur disque** — Turbopack ne les purge jamais automatiquement. Ces caches
+ralentissent aussi les compilations incrémentales suivantes quand ils
+deviennent obsolètes (renames apps, deps mises à jour). À purger
+périodiquement.
 
 ### Mécanismes en place
 
 1. **Limite mémoire par process** — `.claude/launch.json` impose
-   `NODE_OPTIONS=--max-old-space-size=2560` (2.56 GB par dev server).
+   `NODE_OPTIONS=--max-old-space-size=2048` (2.0 GB par dev server).
    Si une app dépasse, V8 lance un GC agressif au lieu de laisser le swap
    exploser. Tradeoff : compilations parfois plus lentes mais système stable.
 
@@ -77,38 +83,59 @@ node_modules resolve 400 MB, Bun overhead 300 MB).
    `turbo dev --concurrency=3`. Au-delà, refuser explicitement avec
    `--concurrency=N`.
 
+4. **Scripts de purge** — `bun clean:caches` purge les caches `.next/` et
+   `.turbo/` (libère 5-10 GB de disque, force compilations propres).
+   `bun clean:full` ajoute la purge des `node_modules`.
+
 ### Scripts recommandés (package.json racine)
 
 | Script | Apps lancées | Mémoire estimée |
 |---|---|---|
-| `bun dev:eco` | demarche.ga + admin-gabon-backoffice | ~5 GB |
-| `bun dev:eco-pnpe` | demarche.ga + pnpe-gabon | ~5 GB |
-| `bun dev:eco-trio` | demarche.ga + admin-gabon-backoffice + pnpe-gabon | ~7.5 GB ⚠️ |
-| `bun dev:demarche.ga` | demarche.ga seule | ~2.5 GB |
-| `bun dev:pnpe.ga` | pnpe-gabon seule | ~2.5 GB |
-| `bun dev` (turbo dev par défaut) | TOUTES les apps — **éviter** | ~17 GB ⚠️ |
+| `bun dev:demarche.ga` | demarche.ga seule | ~2.0 GB ✅ |
+| `bun dev:pnpe.ga` | pnpe-gabon seule | ~2.0 GB ✅ |
+| `bun dev:eco` | demarche.ga + admin-gabon-backoffice | ~4 GB ✅ |
+| `bun dev:eco-pnpe` | demarche.ga + pnpe-gabon | ~4 GB ✅ |
+| `bun dev:eco-trio` | demarche.ga + admin-gabon-backoffice + pnpe-gabon | ~6 GB ⚠️ |
+| `bun dev` (turbo dev par défaut) | TOUTES les apps — **éviter** | ~14 GB ⚠️ |
+
+### Routine recommandée sur 16 GB
+
+```bash
+# Une fois par session ou après un crash :
+bun clean:caches          # libère 5-10 GB de disque
+bun install               # restaure node_modules si modifs
+
+# Travail quotidien :
+bun dev:eco               # 2 apps, ~4 GB, marge confortable
+# OU
+bun dev:demarche.ga       # 1 seule app, ~2 GB, le plus économe
+```
 
 ### Si l'ordi rame quand même
 
 Vérifier dans cet ordre :
 
-1. **Convex dev en double** — `lsof -i :3210` ; un seul `bunx convex dev`
+1. **Caches `.next/` gonflés** — `du -sh apps/*/.next` ; si > 5 GB cumulé,
+   `bun clean:caches`. C'est la cause la plus fréquente de lenteurs
+   structurelles.
+2. **Convex dev en double** — `lsof -i :3210` ; un seul `bunx convex dev`
    doit tourner pour tout le monorepo.
-2. **Compilations zombies** — `ps aux | grep next-server` ; tuer les
+3. **Compilations zombies** — `ps aux | grep next-server` ; tuer les
    processus orphelins après un crash.
-3. **Browser tabs ouverts sur tous les ports** — Chrome/Safari maintiennent
+4. **Browser tabs ouverts sur tous les ports** — Chrome/Safari maintiennent
    des connexions WebSocket Convex actives ; fermer les onglets non
    utilisés ramène 200-500 MB.
-4. **`.next/` caches gonflés** — `du -sh apps/*/.next` ; supprimer si > 2 GB
-   par app.
-5. **Mode `dev:eco-pnpe`** quand le travail QA croisé n'est pas requis.
+5. **Applications lourdes en arrière-plan** — Chrome, Slack, Docker Desktop
+   peuvent consommer 1-2 GB chacun. Activity Monitor → trier par mémoire.
+6. **Repasser à 1 app** — `bun dev:demarche.ga` ou `bun dev:pnpe.ga` seule
+   en attendant un upgrade RAM.
 
 ### Si la machine est sous-dimensionnée structurellement
 
 L'écosystème comporte 7 verticales avec un socle Next.js 16 lourd
 (Mapbox + LiveKit + Tiptap + Convex). Cible matérielle confortable :
 **32 GB RAM** (permet 4-5 apps en parallèle). Sur 16 GB, contraindre
-strictement à 2 apps simultanées via `dev:eco*`.
+strictement à 1-2 apps simultanées via `dev:eco*` ou les scripts unitaires.
 
 ## Design System
 
