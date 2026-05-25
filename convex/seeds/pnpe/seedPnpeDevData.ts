@@ -12,6 +12,7 @@
  */
 import { internalMutation } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
+import { CountryCode } from "../../lib/countryCodeValidator";
 
 const NOMS = [
   "ONDIMBA",
@@ -104,7 +105,8 @@ export const run = internalMutation({
         adresseSiege: {
           street: `Avenue Démo ${i + 1}`,
           city: "Libreville",
-          country: "GA",
+          postalCode: "",
+          country: CountryCode.GA,
         },
         provinceSiege: "ESTUAIRE",
         representantLegal: {

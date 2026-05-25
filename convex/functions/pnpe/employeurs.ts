@@ -183,13 +183,12 @@ export const createOffre = authMutation({
     const ts = Date.now().toString().slice(-6);
     const reference = `OE/${year}/${nifTail}/${ts}`;
     return await ctx.db.insert("offresEmploi", {
-      employeurId: args.employeurId,
+      ...args,
       reference,
       statut: "BROUILLON",
       nbVues: 0,
       nbCandidatures: 0,
       createdByUserId: ctx.user._id,
-      ...args,
     });
   },
 });

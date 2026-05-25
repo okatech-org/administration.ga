@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { authMutation } from "../../lib/customFunctions";
+import { addressValidator } from "../../lib/validators";
 import {
   codeProvinceGaValidator,
   statutAntenneValidator,
@@ -48,12 +49,7 @@ export const create = authMutation({
     nom: v.string(),
     province: codeProvinceGaValidator,
     ville: v.string(),
-    adresse: v.object({
-      street: v.optional(v.string()),
-      city: v.optional(v.string()),
-      postalCode: v.optional(v.string()),
-      country: v.optional(v.string()),
-    }),
+    adresse: addressValidator,
     telephone: v.optional(v.string()),
     email: v.optional(v.string()),
     statut: statutAntenneValidator,
