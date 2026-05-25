@@ -11,6 +11,15 @@ export enum ServiceCategory {
   TravelDocument = "travel_document",
   Declaration = "declaration",
   Other = "other",
+  // ─── Municipal categories (Phase mairie.ga) ──────────────
+  // Catégories spécifiques aux communes / mairies. Distinctes des catégories
+  // diplomatiques / nationales historiques pour pouvoir filtrer côté UI
+  // (catalogue grand public, gestion par mairie, etc.).
+  Urbanism = "urbanism", // Permis de construire, certificat d'urbanisme, lotissement
+  Fiscal = "fiscal", // Patente, taxe foncière, taxe d'habitation, redevances
+  Business = "business", // Autorisation commerce, licence alcool, marchés publics
+  Environment = "environment", // Abattage arbres, gestion espaces verts
+  PublicWorks = "public_works", // Occupation voie publique, voirie communale
 }
 
 export enum EmergencyContactType {
@@ -127,6 +136,17 @@ export enum MemberRole {
   Admin = "admin",
   Agent = "agent",
   Viewer = "viewer",
+
+  // ─── PNPE (Pôle National de Promotion de l'Emploi) ──────────
+  // 7 rôles métier pour la verticale emploi. Cf. apps/pnpe et
+  // convex/schemas/pnpe/*.
+  DemandeurEmploi = "demandeur_emploi", // D.E inscrit, recherche emploi
+  Employeur = "employeur", // Représentant RH d'une entreprise
+  ConseillerPnpe = "conseiller_pnpe", // Agent PNPE en antenne
+  ChefAntennePnpe = "chef_antenne_pnpe", // Pilote d'une antenne provinciale
+  DirectionPnpe = "direction_pnpe", // Direction générale PNPE (Libreville)
+  FormateurAutoEmploi = "formateur_auto_emploi", // Anime sessions BMC
+  AdminMinistereTravail = "admin_ministere_travail", // Tutelle ministérielle
 }
 
 /**
@@ -230,6 +250,33 @@ export enum MinistrySubType {
   // Ministre Délégué au Budget (rattaché à EconomyFinance via parentOrgId).
   // Conserve ce subType pour les rapports filtrés sur le portefeuille budgétaire.
   Budget = "budget",
+}
+
+/**
+ * Sous-types de collectivité locale — disambiguent les organismes de type
+ * `local_authority`. Couvre les communes (mairies), provinces, départements,
+ * conseils municipaux et arrondissements de Libreville/Port-Gentil.
+ *
+ * Cf. mairie.ga (Cortex/entities) et 5e-Republique-Gabon-Institutions.md.
+ */
+export enum LocalAuthoritySubType {
+  // ─── Communes ────────────────────────────────────────────
+  // Commune de plein exercice : Libreville, Port-Gentil, Franceville, etc.
+  CommunePleinExercice = "commune_plein_exercice",
+  // Commune de moyen exercice : communes plus petites
+  CommuneMoyenExercice = "commune_moyen_exercice",
+  // Mairie d'arrondissement (Libreville 1er-6e arr., Port-Gentil arr.)
+  MairieArrondissement = "mairie_arrondissement",
+  // ─── Échelons supérieurs ─────────────────────────────────
+  Province = "province",
+  Departement = "departement",
+  Prefecture = "prefecture",
+  SousPrefecture = "sous_prefecture",
+  // ─── Délibératifs ────────────────────────────────────────
+  ConseilMunicipal = "conseil_municipal",
+  ConseilDepartemental = "conseil_departemental",
+  ConseilProvincial = "conseil_provincial",
+  Other = "other",
 }
 
 export enum DocumentStatus {
