@@ -7,16 +7,16 @@ import { useQuery } from "convex/react";
 import { Briefcase, LandPlot, TrendingUp, Users } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function StatistiquesPage() {
   // @ts-expect-error — api.pnpe typé après codegen Convex
-  const kpis = useQuery(api.pnpe?.stats?.nationalKpis, {});
+  const kpis = useQuery(api.functions?.pnpe?.stats?.nationalKpis, {});
   // @ts-expect-error
-  const byProvince = (useQuery(api.pnpe?.stats?.demandeursByProvince, {}) ??
+  const byProvince = (useQuery(api.functions?.pnpe?.stats?.demandeursByProvince, {}) ??
     []) as Array<{ province: string; count: number }>;
   // @ts-expect-error
-  const bySector = (useQuery(api.pnpe?.stats?.offresBySector, {}) ?? []) as Array<{
+  const bySector = (useQuery(api.functions?.pnpe?.stats?.offresBySector, {}) ?? []) as Array<{
     secteur: string;
     count: number;
   }>;

@@ -7,16 +7,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  transpilePackages: [
-    "@workspace/api",
-    "@workspace/ui",
-    "@workspace/routing",
-  ],
+  transpilePackages: ["@workspace/ui", "@workspace/routing"],
   turbopack: {
     resolveAlias: {
       "@tanstack/react-query": "./node_modules/@tanstack/react-query",
       convex: "./node_modules/convex",
       "convex/react": "./node_modules/convex/react",
+      // Alias absolu vers les types Convex générés au root du monorepo.
+      // Permet aux pages d'utiliser `import { api } from "@convex/_generated/api"`.
+      "@convex/_generated/api": "../../convex/_generated/api.js",
+      "@convex/_generated/dataModel": "../../convex/_generated/dataModel.js",
+      "@convex/_generated/server": "../../convex/_generated/server.js",
     },
   },
   webpack: (config) => {
@@ -27,6 +28,7 @@ const nextConfig: NextConfig = {
         "node_modules/@tanstack/react-query",
       ),
       convex: path.resolve(__dirname, "node_modules/convex"),
+      "@convex": path.resolve(__dirname, "../../convex"),
     };
     return config;
   },

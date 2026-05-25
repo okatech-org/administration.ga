@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const CONTRAT_LABELS: Record<string, string> = {
   CDI: "CDI",
@@ -85,7 +85,7 @@ export default function OffresPage() {
   }>({});
 
   // @ts-expect-error — api.pnpe typé après codegen Convex
-  const offres = (useQuery(api.pnpe?.offresPubliques?.listAllPublished, filters) ??
+  const offres = (useQuery(api.functions?.pnpe?.offresPubliques?.listAllPublished, filters) ??
     []) as Array<{
     _id: string;
     reference: string;

@@ -13,7 +13,7 @@ import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type FormState = {
   nom: string;
@@ -53,7 +53,7 @@ export default function PublierParticulierPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // @ts-expect-error — api.pnpe typé après codegen
-  const create = useMutation(api.pnpe?.offresPubliques?.createByParticulier);
+  const create = useMutation(api.functions?.pnpe?.offresPubliques?.createByParticulier);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));

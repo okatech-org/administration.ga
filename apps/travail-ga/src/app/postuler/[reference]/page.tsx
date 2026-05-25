@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { Info } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { pnpeLink } from "@/lib/utils";
 
 type FormState = {
@@ -51,12 +51,12 @@ export default function PostulerPage({
   const [submitting, setSubmitting] = useState(false);
 
   // @ts-expect-error — api.pnpe typé après codegen
-  const offre = useQuery(api.pnpe?.offres?.getByReference, { reference }) as
+  const offre = useQuery(api.functions?.pnpe?.offres?.getByReference, { reference }) as
     | { _id: string; titre: string }
     | null
     | undefined;
   // @ts-expect-error
-  const apply = useMutation(api.pnpe?.candidaturesPubliques?.applyAsCitizen);
+  const apply = useMutation(api.functions?.pnpe?.candidaturesPubliques?.applyAsCitizen);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));

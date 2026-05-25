@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const TYPE_LABELS: Record<string, { label: string; icon: typeof Building2 }> = {
   ENTREPRISE: { label: "Entreprise", icon: Building2 },
@@ -51,7 +51,7 @@ export default function OffreDetailPage({
 }) {
   const { reference } = use(params);
   // @ts-expect-error — api.pnpe typé après codegen
-  const offre = useQuery(api.pnpe?.offresPubliques?.getByReferenceEnriched, {
+  const offre = useQuery(api.functions?.pnpe?.offresPubliques?.getByReferenceEnriched, {
     reference,
   }) as
     | {
