@@ -14,7 +14,7 @@ export default function MesAnnoncesPage() {
   // @ts-expect-error api.pnpe type apres codegen
   const list = useQuery(
     // @ts-expect-error
-    api.pnpe?.citoyenAccount?.listMyAnnonces,
+    api.functions?.pnpe?.citoyenAccount?.listMyAnnonces,
     session?.user ? {} : "skip",
   ) as Array<{
     _id: string;

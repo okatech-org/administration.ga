@@ -51,7 +51,7 @@ export default function OffreDetailPage({
 }) {
   const { reference } = use(params);
   // @ts-expect-error — api.pnpe typé après codegen
-  const offre = useQuery(api.pnpe?.offresPubliques?.getByReferenceEnriched, {
+  const offre = useQuery(api.functions?.pnpe?.offresPubliques?.getByReferenceEnriched, {
     reference,
   }) as
     | {

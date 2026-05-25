@@ -56,7 +56,7 @@ export default function PublierParticulierPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // @ts-expect-error — api.pnpe type apres codegen
-  const create = useMutation(api.pnpe?.offresPubliques?.createByParticulier);
+  const create = useMutation(api.functions?.pnpe?.offresPubliques?.createByParticulier);
 
   // Pre-remplit les coordonnees depuis la session Better Auth
   useEffect(() => {

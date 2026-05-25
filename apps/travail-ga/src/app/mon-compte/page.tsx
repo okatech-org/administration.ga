@@ -30,7 +30,7 @@ export default function MonComptePage() {
   // @ts-expect-error — api.pnpe type apres codegen
   const myCandidatures = useQuery(
     // @ts-expect-error
-    api.pnpe?.citoyenAccount?.listMyCandidatures,
+    api.functions?.pnpe?.citoyenAccount?.listMyCandidatures,
     session?.user ? {} : "skip",
   ) as Array<{
     _id: string;
@@ -42,7 +42,7 @@ export default function MonComptePage() {
   // @ts-expect-error
   const myAnnonces = useQuery(
     // @ts-expect-error
-    api.pnpe?.citoyenAccount?.listMyAnnonces,
+    api.functions?.pnpe?.citoyenAccount?.listMyAnnonces,
     session?.user ? {} : "skip",
   ) as Array<{
     _id: string;

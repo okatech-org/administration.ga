@@ -52,7 +52,7 @@ export default function PublierAdministrationPage() {
     type: string;
   }>;
   // @ts-expect-error — api.pnpe typé après codegen
-  const create = useMutation(api.pnpe?.offresPubliques?.createByAdministration);
+  const create = useMutation(api.functions?.pnpe?.offresPubliques?.createByAdministration);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));

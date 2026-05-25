@@ -14,7 +14,7 @@ export default function MesCandidaturesPage() {
   // @ts-expect-error api.pnpe type apres codegen
   const list = useQuery(
     // @ts-expect-error
-    api.pnpe?.citoyenAccount?.listMyCandidatures,
+    api.functions?.pnpe?.citoyenAccount?.listMyCandidatures,
     session?.user ? {} : "skip",
   ) as Array<{
     _id: string;

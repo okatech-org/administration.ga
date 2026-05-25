@@ -85,7 +85,7 @@ export default function OffresPage() {
   }>({});
 
   // @ts-expect-error — api.pnpe typé après codegen Convex
-  const offres = (useQuery(api.pnpe?.offresPubliques?.listAllPublished, filters) ??
+  const offres = (useQuery(api.functions?.pnpe?.offresPubliques?.listAllPublished, filters) ??
     []) as Array<{
     _id: string;
     reference: string;
