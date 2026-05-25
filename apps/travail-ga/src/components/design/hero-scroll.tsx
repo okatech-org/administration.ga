@@ -89,7 +89,8 @@ function HeroBentoImage({ img }: { img: HeroImage }) {
       style={{
         width: "100%",
         height: "100%",
-        background: errored ? img.grad : "var(--bg-elev-2)",
+        backgroundImage: errored ? img.grad : "none",
+        backgroundColor: errored ? undefined : "var(--bg-elev-2)",
         backgroundSize: "cover",
         backgroundPosition: "center",
         borderRadius: "var(--r-lg)",

@@ -38,8 +38,10 @@ const TYPE_ICONS: Record<string, typeof Briefcase> = {
 
 export default function MesCandidaturesPage() {
   
+  // Auth pas câblée sur TRAVAIL.GA — on skip pour éviter NOT_AUTHENTICATED
   const candidatures = (useQuery(
     (api as any).functions.pnpe.citizenMigration?.listMyCandidatures,
+    "skip",
   ) ?? []) as Array<{
     _id: string;
     statut: string;

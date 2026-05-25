@@ -18,7 +18,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {/* Fonts éditoriales — Inter (sans), Satoshi (display), JetBrains Mono (code) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

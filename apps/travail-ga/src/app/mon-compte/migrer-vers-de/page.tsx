@@ -58,7 +58,8 @@ export default function MigrerVersDePage() {
   const [submitting, setSubmitting] = useState(false);
 
   
-  const prefill = useQuery((api as any).functions.pnpe.citizenMigration?.getMigrationPrefill);
+  // Auth pas câblée sur TRAVAIL.GA — on skip pour éviter NOT_AUTHENTICATED
+  const prefill = useQuery((api as any).functions.pnpe.citizenMigration?.getMigrationPrefill, "skip");
   
   const antennes = (useQuery((api as any).functions.pnpe.antennes?.list, {}) ?? []) as Array<{
     _id: string;

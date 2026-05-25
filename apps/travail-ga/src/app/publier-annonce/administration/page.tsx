@@ -46,7 +46,7 @@ export default function PublierAdministrationPage() {
 
   // Liste les orgs où l'utilisateur est membre actif
   
-  const myOrgs = (useQuery((api as any).functions.orgs?.listMine, {}) ?? []) as Array<{
+  const myOrgs = (useQuery((api as any).functions.orgs?.listMine, "skip") ?? []) as Array<{
     _id: string;
     name: string;
     type: string;
