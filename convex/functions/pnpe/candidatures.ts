@@ -5,8 +5,71 @@
  * → ENTRETIEN → RETENUE | NON_RETENUE). Unicité par (offreId, demandeurId).
  */
 import { v } from "convex/values";
+import { internal } from "../../_generated/api";
 import { authQuery, authMutation } from "../../lib/customFunctions";
 import { statutCandidatureValidator } from "../../lib/validators/pnpe";
+
+/**
+ * Helper : schedule la notification "Candidature recue" a l'employeur.
+ * Resout le destinataire selon typeEmployeur (ENTREPRISE / PARTICULIER /
+ * ADMINISTRATION). Silencieux si pas d'email valide trouve.
+ */
+async function scheduleNotifyCandidatureRecue(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ctx: any,
+  params: {
+    offre: {
+      _id: unknown;
+      reference: string;
+      titre: string;
+      typeEmployeur: "ENTREPRISE" | "ADMINISTRATION" | "PARTICULIER";
+      employeurId?: unknown;
+      orgId?: unknown;
+      particulierInfo?: { email?: string; prenoms?: string; nom?: string } | null;
+      createdByUserId: unknown;
+    };
+    candidatPrenoms: string;
+    candidatNom: string;
+    typeCandidature: "DEMANDEUR_INSCRIT" | "CITOYEN_ORDINAIRE";
+  },
+) {
+  let recipientEmail: string | undefined;
+  let employeurNom: string | undefined;
+  const { offre } = params;
+
+  if (offre.typeEmployeur === "ENTREPRISE" && offre.employeurId) {
+    const emp = await ctx.db.get(offre.employeurId);
+    if (emp?.contact?.email) {
+      recipientEmail = emp.contact.email;
+      employeurNom = emp.raisonSociale;
+    }
+  } else if (offre.typeEmployeur === "PARTICULIER" && offre.particulierInfo) {
+    recipientEmail = offre.particulierInfo.email;
+    employeurNom = `${offre.particulierInfo.prenoms} ${offre.particulierInfo.nom}`;
+  } else if (offre.typeEmployeur === "ADMINISTRATION") {
+    const creator = await ctx.db.get(offre.createdByUserId);
+    if (creator?.email) {
+      recipientEmail = creator.email;
+      employeurNom = creator.firstName;
+    }
+  }
+
+  if (!recipientEmail) return;
+
+  await ctx.scheduler.runAfter(
+    0,
+    internal.functions.pnpe.notifications.notifyCandidatureRecue,
+    {
+      to: recipientEmail,
+      offreReference: offre.reference,
+      offreTitre: offre.titre,
+      candidatPrenoms: params.candidatPrenoms,
+      candidatNom: params.candidatNom,
+      typeCandidature: params.typeCandidature,
+      employeurNom,
+    },
+  );
+}
 
 /** Crée une candidature (D.E → offre). */
 export const create = authMutation({
@@ -63,6 +126,24 @@ export const create = authMutation({
     await ctx.db.patch(args.offreId, {
       nbCandidatures: (offre.nbCandidatures ?? 0) + 1,
     });
+
+    // Notification email employeur (D.E inscrit)
+    await scheduleNotifyCandidatureRecue(ctx, {
+      offre: {
+        _id: offre._id,
+        reference: offre.reference,
+        titre: offre.titre,
+        typeEmployeur: offre.typeEmployeur,
+        employeurId: offre.employeurId,
+        orgId: offre.orgId,
+        particulierInfo: offre.particulierInfo,
+        createdByUserId: offre.createdByUserId,
+      },
+      candidatPrenoms: demandeur.prenoms,
+      candidatNom: demandeur.nom,
+      typeCandidature: "DEMANDEUR_INSCRIT",
+    });
+
     return id;
   },
 });

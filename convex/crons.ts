@@ -295,4 +295,14 @@ crons.interval(
   internal.ai.realtimeToken.keepAliveNodeRuntime,
 );
 
+// --- PNPE / TRAVAIL.GA — Expiration auto des offres d'emploi ---
+// Quotidien a 6h UTC (7h Libreville) : passe en EXPIREE toute offre
+// PUBLIEE dont dateExpiration <= now(). Evite que des offres perimees
+// restent visibles sur TRAVAIL.GA.
+crons.daily(
+  "pnpe-expire-offres",
+  { hourUTC: 6, minuteUTC: 0 },
+  internal.functions.pnpe.expireOffres.expireOffresInternal,
+);
+
 export default crons;

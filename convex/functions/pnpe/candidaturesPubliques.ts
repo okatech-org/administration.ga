@@ -11,6 +11,7 @@
  *    typeCandidature CITOYEN_ORDINAIRE, contact direct + CV optionnel
  */
 import { v } from "convex/values";
+import { internal } from "../../_generated/api";
 import { authMutation } from "../../lib/customFunctions";
 
 /**
@@ -72,6 +73,44 @@ export const applyAsCitizen = authMutation({
     await ctx.db.patch(args.offreId, {
       nbCandidatures: (offre.nbCandidatures ?? 0) + 1,
     });
+
+    // Notification email employeur (citoyen ordinaire)
+    let recipientEmail: string | undefined;
+    let employeurNom: string | undefined;
+
+    if (offre.typeEmployeur === "ENTREPRISE" && offre.employeurId) {
+      const emp = await ctx.db.get(offre.employeurId);
+      if (emp?.contact?.email) {
+        recipientEmail = emp.contact.email;
+        employeurNom = emp.raisonSociale;
+      }
+    } else if (offre.typeEmployeur === "PARTICULIER" && offre.particulierInfo) {
+      recipientEmail = offre.particulierInfo.email;
+      employeurNom = `${offre.particulierInfo.prenoms} ${offre.particulierInfo.nom}`;
+    } else if (offre.typeEmployeur === "ADMINISTRATION") {
+      const creator = await ctx.db.get(offre.createdByUserId);
+      if (creator?.email) {
+        recipientEmail = creator.email;
+        employeurNom = creator.firstName ?? undefined;
+      }
+    }
+
+    if (recipientEmail) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (ctx as any).scheduler.runAfter(
+        0,
+        internal.functions.pnpe.notifications.notifyCandidatureRecue,
+        {
+          to: recipientEmail,
+          offreReference: offre.reference,
+          offreTitre: offre.titre,
+          candidatPrenoms: args.contact.prenoms,
+          candidatNom: args.contact.nom,
+          typeCandidature: "CITOYEN_ORDINAIRE",
+          employeurNom,
+        },
+      );
+    }
 
     return id;
   },

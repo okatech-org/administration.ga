@@ -3,6 +3,9 @@ import path from "node:path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Pour Cloud Run / monorepo : le standalone output doit inclure les
+  // packages workspace en hoisting depuis la racine du monorepo.
+  outputFileTracingRoot: path.resolve(__dirname, "../.."),
   reactCompiler: false,
   typescript: {
     ignoreBuildErrors: true,

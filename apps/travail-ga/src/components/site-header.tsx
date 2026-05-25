@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Briefcase, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn, pnpeLink } from "@/lib/utils";
+import { UserMenu } from "@/components/auth/user-menu";
 
 const NAV = [
   { href: "/offres", label: "Offres" },
@@ -41,14 +42,15 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <UserMenu />
           <a
             href={pnpeLink("/")}
             className={cn(
-              "hidden md:inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground",
+              "hidden xl:inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground",
               "hover:bg-primary/90 transition-colors",
             )}
           >
-            Mon espace PNPE →
+            Espace PNPE →
           </a>
           <button
             type="button"
@@ -74,11 +76,18 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/mon-compte"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted"
+            >
+              Mon compte
+            </Link>
             <a
               href={pnpeLink("/")}
               className="block px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold text-center"
             >
-              Mon espace PNPE →
+              Espace PNPE →
             </a>
           </nav>
         </div>

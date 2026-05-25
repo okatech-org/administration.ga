@@ -6,6 +6,7 @@
  */
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
+import { internal } from "../../_generated/api";
 import { authMutation } from "../../lib/customFunctions";
 import {
   codeNAFGabonValidator,
@@ -79,7 +80,8 @@ export const incrementViews = authMutation({
 
 /**
  * Modération conseiller : valider la publication d'une offre.
- * EN_VALIDATION → PUBLIEE.
+ * EN_VALIDATION → PUBLIEE. Schedule une notification email a l'employeur
+ * une fois la mutation committee.
  */
 export const validate = authMutation({
   args: { offreId: v.id("offresEmploi") },
@@ -96,6 +98,42 @@ export const validate = authMutation({
       validateurUserId: ctx.user._id,
       dateValidation: Date.now(),
     });
+
+    // ─── Notification email a l'employeur ─────────────────────
+    let recipientEmail: string | undefined;
+    let employeurNom: string | undefined;
+
+    if (offre.typeEmployeur === "ENTREPRISE" && offre.employeurId) {
+      const emp = await ctx.db.get(offre.employeurId);
+      if (emp?.contact?.email) {
+        recipientEmail = emp.contact.email;
+        employeurNom = emp.raisonSociale;
+      }
+    } else if (offre.typeEmployeur === "PARTICULIER" && offre.particulierInfo) {
+      recipientEmail = offre.particulierInfo.email;
+      employeurNom = `${offre.particulierInfo.prenoms} ${offre.particulierInfo.nom}`;
+    } else if (offre.typeEmployeur === "ADMINISTRATION") {
+      const creator = await ctx.db.get(offre.createdByUserId);
+      if (creator?.email) {
+        recipientEmail = creator.email;
+        employeurNom = creator.firstName ?? undefined;
+      }
+    }
+
+    if (recipientEmail) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (ctx as any).scheduler.runAfter(
+        0,
+        internal.functions.pnpe.notifications.notifyOffrePubliee,
+        {
+          to: recipientEmail,
+          offreReference: offre.reference,
+          offreTitre: offre.titre,
+          employeurNom,
+        },
+      );
+    }
+
     return { ok: true };
   },
 });

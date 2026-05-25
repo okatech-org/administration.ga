@@ -7,12 +7,14 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { authClient } from "@/lib/auth-client";
 import { api } from "@workspace/api/convex/_generated/api";
 
 type FormState = {
@@ -49,11 +51,28 @@ const initial: FormState = {
 
 export default function PublierParticulierPage() {
   const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api.pnpe typé après codegen
+  // @ts-expect-error — api.pnpe type apres codegen
   const create = useMutation(api.pnpe?.offresPubliques?.createByParticulier);
+
+  // Pre-remplit les coordonnees depuis la session Better Auth
+  useEffect(() => {
+    if (!session?.user || form.email) return;
+    const name = session.user.name ?? "";
+    const parts = name.split(" ");
+    const prenoms = parts.slice(0, -1).join(" ") || parts[0] || "";
+    const nom = parts.length > 1 ? parts[parts.length - 1] : "";
+    setForm((s) => ({
+      ...s,
+      email: session.user.email ?? "",
+      prenoms,
+      nom,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user]);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -94,15 +113,23 @@ export default function PublierParticulierPage() {
         dateExpiration: new Date(form.dateExpiration).getTime(),
       });
       toast.success(
-        "Annonce soumise pour modération. Visible après validation PNPE.",
+        "Annonce soumise pour moderation. Visible apres validation PNPE.",
       );
-      router.push("/offres");
+      router.push("/mon-compte/annonces");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

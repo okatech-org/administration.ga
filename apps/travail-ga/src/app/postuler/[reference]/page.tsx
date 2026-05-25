@@ -1,24 +1,22 @@
 /**
- * Postulation publique (citoyen ordinaire) — TRAVAIL.GA.
+ * Postulation comme citoyen ordinaire — TRAVAIL.GA.
  *
- * Permet à un user Better Auth de candidater à une offre sans avoir un
- * profil D.E PNPE complet. Le candidat fournit son contact direct ;
- * l'employeur le recontactera.
- *
- * Si l'utilisateur est aussi D.E PNPE inscrit, il est invité à utiliser
- * l'espace D.E sur PNPE.GA pour candidater avec son profil complet.
+ * Auth Better Auth requise (middleware). Pre-remplit contact depuis la
+ * session (nom + email). Soumet une candidature avec typeCandidature
+ * CITOYEN_ORDINAIRE ; l'employeur recontacte par email/telephone.
  */
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { api } from "@workspace/api/convex/_generated/api";
+import { authClient } from "@/lib/auth-client";
 import { pnpeLink } from "@/lib/utils";
+import { api } from "@workspace/api/convex/_generated/api";
 
 type FormState = {
   nom: string;
@@ -47,16 +45,35 @@ export default function PostulerPage({
 }) {
   const { reference } = use(params);
   const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api.pnpe typé après codegen
-  const offre = useQuery(api.pnpe?.offres?.getByReference, { reference }) as
-    | { _id: string; titre: string }
+  // @ts-expect-error api.pnpe type apres codegen
+  const offre = useQuery(api.pnpe?.offresPubliques?.getByReferenceEnriched, {
+    reference,
+  }) as
+    | { _id: string; titre: string; statut: string }
     | null
     | undefined;
   // @ts-expect-error
   const apply = useMutation(api.pnpe?.candidaturesPubliques?.applyAsCitizen);
+
+  // Pre-remplit avec les infos de la session une fois disponible
+  useEffect(() => {
+    if (!session?.user || form.email) return;
+    const name = session.user.name ?? "";
+    const parts = name.split(" ");
+    const prenoms = parts.slice(0, -1).join(" ") || parts[0] || "";
+    const nom = parts.length > 1 ? parts[parts.length - 1] : "";
+    setForm((s) => ({
+      ...s,
+      email: session.user.email ?? "",
+      prenoms,
+      nom,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user]);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -78,12 +95,14 @@ export default function PostulerPage({
         },
         lettreMotivation: form.lettreMotivation || undefined,
       });
-      toast.success("Candidature envoyée ! L'employeur vous recontactera.");
-      router.push("/offres");
+      toast.success("Candidature envoyee ! L'employeur vous recontactera.");
+      router.push("/mon-compte/candidatures");
     } catch (err) {
       const m = err instanceof Error ? err.message : "Erreur";
       if (m.includes("ALREADY_APPLIED")) {
-        toast.error("Vous avez déjà postulé à cette offre.");
+        toast.error("Vous avez deja postule a cette offre.");
+      } else if (m.includes("OFFRE_NOT_AVAILABLE")) {
+        toast.error("Cette offre n'est plus disponible.");
       } else {
         toast.error(m);
       }
@@ -92,6 +111,14 @@ export default function PostulerPage({
     }
   };
 
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
@@ -99,17 +126,23 @@ export default function PostulerPage({
       <main className="flex-1 py-10">
         <div className="container mx-auto px-6 lg:px-10 max-w-2xl">
           <h1 className="text-3xl font-display font-bold tracking-tight mb-2">
-            Postuler à cette offre
+            Postuler a cette offre
           </h1>
           <p className="text-muted-foreground mb-6">
-            {offre?.titre ? <>Offre : <strong>{offre.titre}</strong></> : "Chargement…"}
+            {offre?.titre ? (
+              <>
+                Offre : <strong>{offre.titre}</strong>
+              </>
+            ) : (
+              "Chargement…"
+            )}
           </p>
 
           <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 mb-8 flex items-start gap-3">
             <Info className="size-5 text-primary shrink-0 mt-0.5" />
             <div className="text-sm">
-              <strong>Vous êtes déjà D.E inscrit au PNPE ?</strong> Pour
-              candidater avec votre profil complet (CV, parcours, compétences),
+              <strong>Vous etes deja D.E inscrit au PNPE ?</strong> Pour
+              candidater avec votre profil complet (CV, parcours, competences),
               connectez-vous sur{" "}
               <a
                 href={pnpeLink(`/demandeur/offres/${reference}`)}
@@ -123,12 +156,30 @@ export default function PostulerPage({
 
           <form onSubmit={onSubmit} className="space-y-5">
             <section className="rounded-xl border bg-card p-5 space-y-4">
-              <h2 className="font-semibold">Vos coordonnées</h2>
+              <h2 className="font-semibold">Vos coordonnees</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Field label="Nom *" value={form.nom} onChange={(v) => update("nom", v)} />
-                <Field label="Prénoms *" value={form.prenoms} onChange={(v) => update("prenoms", v)} />
-                <Field type="email" label="Email *" value={form.email} onChange={(v) => update("email", v)} />
-                <Field type="tel" label="Téléphone *" value={form.telephone} onChange={(v) => update("telephone", v)} />
+                <Field
+                  label="Nom *"
+                  value={form.nom}
+                  onChange={(v) => update("nom", v)}
+                />
+                <Field
+                  label="Prenoms *"
+                  value={form.prenoms}
+                  onChange={(v) => update("prenoms", v)}
+                />
+                <Field
+                  type="email"
+                  label="Email *"
+                  value={form.email}
+                  onChange={(v) => update("email", v)}
+                />
+                <Field
+                  type="tel"
+                  label="Telephone *"
+                  value={form.telephone}
+                  onChange={(v) => update("telephone", v)}
+                />
               </div>
             </section>
 
@@ -136,18 +187,18 @@ export default function PostulerPage({
               <h2 className="font-semibold">Votre profil</h2>
               <div>
                 <label className="text-sm font-medium block mb-1.5">
-                  Niveau d'études (optionnel)
+                  Niveau d'etudes (optionnel)
                 </label>
                 <select
                   value={form.niveauEtudes}
                   onChange={(e) => update("niveauEtudes", e.target.value)}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">Non renseigné</option>
+                  <option value="">Non renseigne</option>
                   <option value="AUCUN">Aucun</option>
                   <option value="CEP">CEP</option>
                   <option value="BEPC">BEPC</option>
-                  <option value="BAC">Baccalauréat</option>
+                  <option value="BAC">Baccalaureat</option>
                   <option value="BAC_PLUS_2">Bac+2 (BTS, DUT)</option>
                   <option value="BAC_PLUS_3">Bac+3 (Licence)</option>
                   <option value="BAC_PLUS_5">Bac+5 (Master)</option>
@@ -156,7 +207,7 @@ export default function PostulerPage({
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">
-                  Expérience résumée (optionnel)
+                  Experience resumee (optionnel)
                 </label>
                 <textarea
                   value={form.experienceText}
@@ -175,16 +226,17 @@ export default function PostulerPage({
                   onChange={(e) => update("lettreMotivation", e.target.value)}
                   rows={5}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                  placeholder="Pourquoi ce poste vous intéresse…"
+                  placeholder="Pourquoi ce poste vous interesse…"
                 />
               </div>
             </section>
 
             <button
               type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              disabled={submitting || !offre}
+              className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             >
+              {submitting && <Loader2 className="size-4 animate-spin" />}
               {submitting ? "Envoi…" : "Envoyer ma candidature"}
             </button>
           </form>
