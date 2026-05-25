@@ -6,11 +6,12 @@ import { useState } from "react";
 import { cn, pnpeLink } from "@/lib/utils";
 
 const NAV = [
-  { href: "/offres", label: "Offres d'emploi" },
+  { href: "/offres", label: "Offres" },
+  { href: "/publier-annonce", label: "Publier une annonce" },
   { href: "/antennes", label: "Antennes" },
-  { href: "/je-cherche", label: "Je cherche un emploi" },
+  { href: "/je-cherche", label: "Je cherche" },
   { href: "/je-veux-embaucher", label: "Je veux embaucher" },
-  { href: "/statistiques", label: "Statistiques" },
+  { href: "/statistiques", label: "Stats" },
 ];
 
 export function SiteHeader() {
