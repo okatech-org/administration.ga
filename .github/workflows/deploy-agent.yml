@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/admin-gabon/**"
+      - "apps/administration_ga/**"
       - "packages/**"
       - ".github/workflows/deploy-agent.yml"
   workflow_dispatch:
@@ -85,7 +85,7 @@ jobs:
           IMAGE="${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
           docker build \
             --no-cache \
-            -f apps/admin-gabon/Dockerfile \
+            -f apps/administration_ga/Dockerfile \
             --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }} \
             --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }} \
             --build-arg NEXT_PUBLIC_SITE_URL=https://administration.ga \
