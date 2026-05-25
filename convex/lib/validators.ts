@@ -2,6 +2,7 @@ import { Infer, v } from "convex/values";
 import {
   OrganizationType as OrgType,
   MinistrySubType,
+  LocalAuthoritySubType,
   MemberRole,
   PublicUserType,
   RequestStatus,
@@ -169,6 +170,23 @@ export const ministrySubTypeValidator = v.union(
   v.literal(MinistrySubType.Budget),
 );
 
+// Sous-type d'une collectivité locale (uniquement pertinent quand
+// type === "local_authority"). Couvre les communes (mairies), provinces,
+// départements, et conseils délibératifs. Cf. mairie.ga.
+export const localAuthoritySubTypeValidator = v.union(
+  v.literal(LocalAuthoritySubType.CommunePleinExercice),
+  v.literal(LocalAuthoritySubType.CommuneMoyenExercice),
+  v.literal(LocalAuthoritySubType.MairieArrondissement),
+  v.literal(LocalAuthoritySubType.Province),
+  v.literal(LocalAuthoritySubType.Departement),
+  v.literal(LocalAuthoritySubType.Prefecture),
+  v.literal(LocalAuthoritySubType.SousPrefecture),
+  v.literal(LocalAuthoritySubType.ConseilMunicipal),
+  v.literal(LocalAuthoritySubType.ConseilDepartemental),
+  v.literal(LocalAuthoritySubType.ConseilProvincial),
+  v.literal(LocalAuthoritySubType.Other),
+);
+
 // Public user types (for citizen profiles)
 export const publicUserTypeValidator = v.union(
   v.literal(PublicUserType.LongStay),
@@ -205,6 +223,14 @@ export const memberRoleValidator = v.union(
   v.literal(MemberRole.Admin),
   v.literal(MemberRole.Agent),
   v.literal(MemberRole.Viewer),
+  // PNPE roles (Phase 7)
+  v.literal(MemberRole.DemandeurEmploi),
+  v.literal(MemberRole.Employeur),
+  v.literal(MemberRole.ConseillerPnpe),
+  v.literal(MemberRole.ChefAntennePnpe),
+  v.literal(MemberRole.DirectionPnpe),
+  v.literal(MemberRole.FormateurAutoEmploi),
+  v.literal(MemberRole.AdminMinistereTravail),
 );
 
 // Request status (11 statuts - workflow complet)
@@ -288,6 +314,12 @@ export const serviceCategoryValidator = v.union(
   v.literal(ServiceCategory.Transcript),
   v.literal(ServiceCategory.Declaration),
   v.literal(ServiceCategory.Other),
+  // Municipal categories (Phase mairie.ga)
+  v.literal(ServiceCategory.Urbanism),
+  v.literal(ServiceCategory.Fiscal),
+  v.literal(ServiceCategory.Business),
+  v.literal(ServiceCategory.Environment),
+  v.literal(ServiceCategory.PublicWorks),
 );
 
 // Owner type for documents
