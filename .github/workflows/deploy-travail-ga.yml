@@ -1,0 +1,114 @@
+name: Deploy TRAVAIL.GA
+
+# Workflow Cloud Run pour l'app TRAVAIL.GA (vitrine publique marché de
+# l'emploi gabonais). Service séparé `travail-gabon` (région europe-west1),
+# domaine `travail.ga`. Calqué sur deploy-pnpe.yml — auth dual-rail SA key
+# / WIF, build Docker, push Artifact Registry, deploy Cloud Run.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/travail-ga/**"
+      - "packages/**"
+      - ".github/workflows/deploy-travail-ga.yml"
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: admin-gabon
+  REGION: europe-west1
+  SERVICE_NAME: travail-gabon
+  REGISTRY: europe-west1-docker.pkg.dev/admin-gabon/docker-registry
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check deploy secrets availability
+        id: secrets
+        env:
+          CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          WIF: ${{ secrets.WIF_PROVIDER }}
+        run: |
+          if [ -z "$CONVEX_URL" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "auth_method=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::NEXT_PUBLIC_CONVEX_URL manquant — déploiement TRAVAIL.GA skippé."
+            exit 0
+          fi
+          if [ -n "$SA_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "auth_method=sa_key" >> "$GITHUB_OUTPUT"
+          elif [ -n "$WIF" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "auth_method=wif" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "auth_method=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::Aucun secret GCP — déploiement TRAVAIL.GA skippé."
+          fi
+
+      - name: Authenticate to Google Cloud (service account key)
+        if: steps.secrets.outputs.auth_method == 'sa_key'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: steps.secrets.outputs.auth_method == 'wif'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: github-actions@admin-gabon.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        if: steps.secrets.outputs.available == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        if: steps.secrets.outputs.available == 'true'
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build \
+            --no-cache \
+            --platform linux/amd64 \
+            -f apps/travail-ga/Dockerfile \
+            --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }} \
+            --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }} \
+            --build-arg NEXT_PUBLIC_SITE_URL=https://travail.ga \
+            --build-arg NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }} \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }} \
+            --build-arg GITHUB_SHA=${{ github.sha }} \
+            -t "$IMAGE" \
+            -t "${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:latest" \
+            .
+          docker push "$IMAGE"
+          docker push "${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:latest"
+
+      - name: Deploy to Cloud Run
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image="${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=8080 \
+            --memory=512Mi \
+            --cpu=1 \
+            --min-instances=0 \
+            --max-instances=20 \
+            --set-env-vars="NODE_ENV=production,CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }},NEXT_PUBLIC_APP_NAME=TRAVAIL.GA,NEXT_PUBLIC_DOMAIN_TRAVAIL=travail.ga,NEXT_PUBLIC_DOMAIN_PNPE=emploi.administration.ga,NEXT_PUBLIC_DOMAIN_DEMARCHE=demarche.ga"

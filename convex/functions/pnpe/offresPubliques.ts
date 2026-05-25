@@ -305,35 +305,152 @@ export const getByReferenceEnriched = query({
 
 /**
  * Signaler une offre suspecte (offres PARTICULIER majoritairement).
- * Incrémente le compteur ; au seuil 3, l'offre est flaggée pour
- * modération conseiller.
+ *
+ * Règles modération automatisées :
+ *  - **Motif grave** (SUSPICION_FRAUDE, HARCELEMENT, ESCROQUERIE,
+ *    CONTENU_ILLEGAL) → masquage IMMÉDIAT (statut MASQUEE), 1 signalement
+ *    suffit. Conseiller décide sous 48h.
+ *  - **3 signalements / 7 jours glissants** → flaggedForReview = true
+ *    (alerté dans dashboard conseiller, offre reste visible).
+ *  - **5 signalements / 7 jours glissants** → statut MASQUEE auto.
+ *
+ * Le compteur historique reste cumulé pour les statistiques, mais la
+ * fenêtre 7j sert au déclenchement modération.
  */
+const MOTIFS_GRAVES = new Set([
+  "SUSPICION_FRAUDE",
+  "HARCELEMENT",
+  "ESCROQUERIE",
+  "CONTENU_ILLEGAL",
+]);
+
+const SEUIL_FLAG = 3;
+const SEUIL_MASQUAGE = 5;
+const FENETRE_GLISSANTE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const signaler = authMutation({
   args: {
     offreId: v.id("offresEmploi"),
     motif: v.string(),
+    commentaire: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const offre = await ctx.db.get(args.offreId);
     if (!offre) throw new Error("OFFRE_NOT_FOUND");
 
-    const prev = offre.signalements ?? { count: 0, flaggedForReview: false };
-    const newCount = prev.count + 1;
-    await ctx.db.patch(args.offreId, {
+    const now = Date.now();
+    const prev = offre.signalements ?? {
+      count: 0,
+      historique: [],
+      flaggedForReview: false,
+    };
+    const newEntry = {
+      date: now,
+      motif: args.motif,
+      commentaire: args.commentaire,
+      reporterUserId: ctx.user._id,
+    };
+    const newHistorique = [...(prev.historique ?? []), newEntry];
+
+    // Fenêtre glissante 7 jours
+    const recentCount = newHistorique.filter(
+      (s) => now - s.date < FENETRE_GLISSANTE_MS,
+    ).length;
+
+    const isMotifGrave = MOTIFS_GRAVES.has(args.motif);
+    const shouldMask = isMotifGrave || recentCount >= SEUIL_MASQUAGE;
+    const shouldFlag = recentCount >= SEUIL_FLAG;
+
+    // Construction du patch
+    const patch: Record<string, unknown> = {
       signalements: {
-        count: newCount,
-        lastSignaledAt: Date.now(),
-        flaggedForReview: newCount >= 3,
+        count: prev.count + 1,
+        historique: newHistorique,
+        lastSignaledAt: now,
+        flaggedForReview: shouldFlag || shouldMask,
+        ...(shouldMask
+          ? {
+              maskedAt: now,
+              maskedReason: isMotifGrave
+                ? `Motif grave : ${args.motif}`
+                : `Seuil ${SEUIL_MASQUAGE} signalements/7j atteint`,
+            }
+          : {}),
       },
-      // metadata pour stocker les motifs (lectur conseiller)
-      metadata: {
-        ...(offre.metadata as object | undefined),
-        signalementsMotifs: [
-          ...(((offre.metadata as { signalementsMotifs?: string[] })?.signalementsMotifs) ?? []),
-          `${new Date().toISOString()} — ${args.motif}`,
-        ],
-      },
-    });
-    return { ok: true, count: newCount };
+    };
+
+    // Masquage immédiat si motif grave ou seuil 5
+    if (shouldMask && offre.statut === "PUBLIEE") {
+      patch.statut = "MASQUEE";
+    }
+
+    await ctx.db.patch(args.offreId, patch);
+
+    return {
+      ok: true,
+      count: prev.count + 1,
+      recentCount,
+      flagged: shouldFlag,
+      masked: shouldMask,
+      reason: shouldMask
+        ? isMotifGrave
+          ? "MOTIF_GRAVE"
+          : "SEUIL_DEPASSE"
+        : null,
+    };
+  },
+});
+
+// ─── Modération conseiller ────────────────────────────────────
+
+/**
+ * Décision conseiller suite à signalement / masquage auto.
+ * Permet de republier (MASQUEE → PUBLIEE) ou retirer définitivement
+ * (MASQUEE → RETIREE).
+ */
+export const decisionApresMasquage = authMutation({
+  args: {
+    offreId: v.id("offresEmploi"),
+    decision: v.union(v.literal("REPUBLIER"), v.literal("RETIRER")),
+    motif: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const offre = await ctx.db.get(args.offreId);
+    if (!offre) throw new Error("OFFRE_NOT_FOUND");
+    if (offre.statut !== "MASQUEE") {
+      throw new Error(`INVALID_TRANSITION: ${offre.statut} → ?`);
+    }
+    // TODO Polish B : requirePnpeRole(ctx, ctx.user, PNPE_VALIDATION_ROLES)
+    if (args.decision === "REPUBLIER") {
+      await ctx.db.patch(args.offreId, {
+        statut: "PUBLIEE",
+        signalements: offre.signalements
+          ? {
+              ...offre.signalements,
+              flaggedForReview: false,
+              maskedAt: undefined,
+              maskedReason: undefined,
+            }
+          : undefined,
+      });
+    } else {
+      await ctx.db.patch(args.offreId, {
+        statut: "RETIREE",
+        motifRejet: args.motif ?? "Retiré après modération suite à signalements",
+      });
+    }
+    return { ok: true };
+  },
+});
+
+/** Liste les offres MASQUEE (vue conseiller modération). */
+export const listMasked = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("offresEmploi")
+      .withIndex("by_statut", (q) => q.eq("statut", "MASQUEE"))
+      .order("desc")
+      .take(args.limit ?? 50);
   },
 });
