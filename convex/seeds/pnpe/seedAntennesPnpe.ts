@@ -8,6 +8,7 @@
  *   internal.seeds.pnpe.seedAntennesPnpe.run
  */
 import { internalMutation } from "../../_generated/server";
+import { CountryCode } from "../../lib/countryCodeValidator";
 
 type AntenneInput = {
   slug: string;
@@ -136,7 +137,8 @@ export const run = internalMutation({
         adresse: {
           street: a.ville_adresse,
           city: a.ville,
-          country: "GA",
+          postalCode: "",
+          country: CountryCode.GA,
         },
         telephone: a.telephone,
         email: a.email,
