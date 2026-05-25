@@ -6,7 +6,7 @@ import { ArrowLeft, Briefcase, Loader2, Plus } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { authClient } from "@/lib/auth-client";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function MesAnnoncesPage() {
   const { data: session, isPending } = authClient.useSession();

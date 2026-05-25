@@ -128,6 +128,7 @@ export const run = internalMutation({
     const offreIds: Id<"offresEmploi">[] = [];
     for (let i = 0; i < 5; i++) {
       const id = await ctx.db.insert("offresEmploi", {
+        typeEmployeur: "ENTREPRISE" as const,
         employeurId: employeurIds[i % employeurIds.length],
         reference: `OE/2026/DEMO/${(1000 + i).toString()}`,
         titre: [
@@ -179,6 +180,7 @@ export const run = internalMutation({
       const statut = STATUTS[i % STATUTS.length];
       await ctx.db.insert("candidatures", {
         offreId,
+        typeCandidature: "DEMANDEUR_INSCRIT" as const,
         demandeurId,
         cvStorageId: adminUser._id as unknown as Id<"_storage">, // fake (codegen-permissif)
         statut,

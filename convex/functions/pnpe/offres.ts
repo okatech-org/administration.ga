@@ -8,6 +8,7 @@ import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import { authMutation } from "../../lib/customFunctions";
+import { PNPE_VALIDATION_ROLES, requirePnpeRole } from "../../lib/pnpeAuth";
 import {
   codeNAFGabonValidator,
   codeProvinceGaValidator,
@@ -91,7 +92,7 @@ export const validate = authMutation({
     if (offre.statut !== "EN_VALIDATION") {
       throw new Error(`INVALID_TRANSITION: ${offre.statut} → PUBLIEE`);
     }
-    // TODO Phase 7 : vérifier rôle conseiller_pnpe.
+    await requirePnpeRole(ctx, ctx.user, PNPE_VALIDATION_ROLES);
     await ctx.db.patch(args.offreId, {
       statut: "PUBLIEE",
       datePublication: Date.now(),
@@ -105,8 +106,11 @@ export const validate = authMutation({
 
     if (offre.typeEmployeur === "ENTREPRISE" && offre.employeurId) {
       const emp = await ctx.db.get(offre.employeurId);
-      if (emp?.contact?.email) {
-        recipientEmail = emp.contact.email;
+      if (emp?.contactRH?.email) {
+        recipientEmail = emp.contactRH.email;
+        employeurNom = emp.raisonSociale;
+      } else if (emp?.representantLegal?.email) {
+        recipientEmail = emp.representantLegal.email;
         employeurNom = emp.raisonSociale;
       }
     } else if (offre.typeEmployeur === "PARTICULIER" && offre.particulierInfo) {
@@ -122,16 +126,17 @@ export const validate = authMutation({
 
     if (recipientEmail) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (ctx as any).scheduler.runAfter(
-        0,
-        internal.functions.pnpe.notifications.notifyOffrePubliee,
-        {
+      const fn = (internal.functions as any).pnpe?.notifications
+        ?.notifyOffrePubliee;
+      if (fn) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (ctx as any).scheduler.runAfter(0, fn, {
           to: recipientEmail,
           offreReference: offre.reference,
           offreTitre: offre.titre,
           employeurNom,
-        },
-      );
+        });
+      }
     }
 
     return { ok: true };

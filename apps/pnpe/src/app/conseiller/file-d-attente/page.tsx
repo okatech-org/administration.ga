@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { CheckCircle2, Inbox, Phone } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function FileAttentePage() {
   const [selectedAntenneId, setSelectedAntenneId] = useState<string>("");

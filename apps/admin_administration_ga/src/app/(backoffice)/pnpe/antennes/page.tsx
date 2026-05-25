@@ -5,7 +5,7 @@
 
 import { useQuery } from "convex/react";
 import { LandPlot, MapPin, Phone, Mail } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const STATUT_TONE: Record<string, string> = {
   OPERATIONNELLE: "bg-emerald-100 text-emerald-700",

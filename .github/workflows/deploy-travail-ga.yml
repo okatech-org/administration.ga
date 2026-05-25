@@ -1,8 +1,9 @@
-name: Deploy TRAVAIL.GA (travail.ga)
+name: Deploy TRAVAIL.GA
 
-# Workflow Cloud Run pour l'app TRAVAIL.GA (vitrine publique du marche
-# de l'emploi gabonais). Calque sur deploy-pnpe.yml — auth dual-rail
-# SA key / WIF, build Docker, push Artifact Registry, deploy Cloud Run.
+# Workflow Cloud Run pour l'app TRAVAIL.GA (vitrine publique marché de
+# l'emploi gabonais). Service séparé `travail-gabon` (région europe-west1),
+# domaine `travail.ga`. Calqué sur deploy-pnpe.yml — auth dual-rail SA key
+# / WIF, build Docker, push Artifact Registry, deploy Cloud Run.
 
 on:
   push:
@@ -16,7 +17,7 @@ on:
 env:
   PROJECT_ID: admin-gabon
   REGION: europe-west1
-  SERVICE_NAME: travail-ga
+  SERVICE_NAME: travail-gabon
   REGISTRY: europe-west1-docker.pkg.dev/admin-gabon/docker-registry
 
 jobs:
@@ -40,7 +41,7 @@ jobs:
           if [ -z "$CONVEX_URL" ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "auth_method=none" >> "$GITHUB_OUTPUT"
-            echo "::warning::NEXT_PUBLIC_CONVEX_URL manquant — deploiement TRAVAIL.GA skippe."
+            echo "::warning::NEXT_PUBLIC_CONVEX_URL manquant — déploiement TRAVAIL.GA skippé."
             exit 0
           fi
           if [ -n "$SA_KEY" ]; then
@@ -52,7 +53,7 @@ jobs:
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "auth_method=none" >> "$GITHUB_OUTPUT"
-            echo "::warning::Aucun secret GCP — deploiement TRAVAIL.GA skippe."
+            echo "::warning::Aucun secret GCP — déploiement TRAVAIL.GA skippé."
           fi
 
       - name: Authenticate to Google Cloud (service account key)
@@ -87,6 +88,8 @@ jobs:
             --build-arg NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }} \
             --build-arg CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }} \
             --build-arg NEXT_PUBLIC_SITE_URL=https://travail.ga \
+            --build-arg NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }} \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }} \
             --build-arg GITHUB_SHA=${{ github.sha }} \
             -t "$IMAGE" \
             -t "${{ env.REGISTRY }}/${{ env.SERVICE_NAME }}:latest" \
@@ -107,5 +110,5 @@ jobs:
             --memory=512Mi \
             --cpu=1 \
             --min-instances=0 \
-            --max-instances=10 \
+            --max-instances=20 \
             --set-env-vars="NODE_ENV=production,CONVEX_SITE_URL=${{ secrets.CONVEX_SITE_URL }},NEXT_PUBLIC_APP_NAME=TRAVAIL.GA,NEXT_PUBLIC_DOMAIN_TRAVAIL=travail.ga,NEXT_PUBLIC_DOMAIN_PNPE=emploi.administration.ga,NEXT_PUBLIC_DOMAIN_DEMARCHE=demarche.ga"

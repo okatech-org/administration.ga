@@ -13,7 +13,7 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type Candidature = {
   _id: string;

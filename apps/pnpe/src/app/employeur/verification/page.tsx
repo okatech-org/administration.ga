@@ -9,7 +9,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { toast } from "sonner";
 import { FileCheck2, ShieldCheck } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function VerificationPage() {
   // @ts-expect-error — api.pnpe typé après codegen

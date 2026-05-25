@@ -15,8 +15,8 @@ import { Info, Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { authClient } from "@/lib/auth-client";
+import { api } from "@convex/_generated/api";
 import { pnpeLink } from "@/lib/utils";
-import { api } from "@workspace/api/convex/_generated/api";
 
 type FormState = {
   nom: string;
@@ -49,17 +49,17 @@ export default function PostulerPage({
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error api.pnpe type apres codegen
+  // @ts-expect-error — api.pnpe typé après codegen
   const offre = useQuery(api.functions?.pnpe?.offresPubliques?.getByReferenceEnriched, {
     reference,
   }) as
     | { _id: string; titre: string; statut: string }
     | null
     | undefined;
-  // @ts-expect-error
+  // @ts-expect-error — api.pnpe typé après codegen
   const apply = useMutation(api.functions?.pnpe?.candidaturesPubliques?.applyAsCitizen);
 
-  // Pre-remplit avec les infos de la session une fois disponible
+  // Pré-remplit avec les infos de la session une fois disponible
   useEffect(() => {
     if (!session?.user || form.email) return;
     const name = session.user.name ?? "";
@@ -95,12 +95,12 @@ export default function PostulerPage({
         },
         lettreMotivation: form.lettreMotivation || undefined,
       });
-      toast.success("Candidature envoyee ! L'employeur vous recontactera.");
+      toast.success("Candidature envoyée ! L'employeur vous recontactera.");
       router.push("/mon-compte/candidatures");
     } catch (err) {
       const m = err instanceof Error ? err.message : "Erreur";
       if (m.includes("ALREADY_APPLIED")) {
-        toast.error("Vous avez deja postule a cette offre.");
+        toast.error("Vous avez déjà postulé à cette offre.");
       } else if (m.includes("OFFRE_NOT_AVAILABLE")) {
         toast.error("Cette offre n'est plus disponible.");
       } else {
@@ -126,7 +126,7 @@ export default function PostulerPage({
       <main className="flex-1 py-10">
         <div className="container mx-auto px-6 lg:px-10 max-w-2xl">
           <h1 className="text-3xl font-display font-bold tracking-tight mb-2">
-            Postuler a cette offre
+            Postuler à cette offre
           </h1>
           <p className="text-muted-foreground mb-6">
             {offre?.titre ? (
@@ -141,8 +141,8 @@ export default function PostulerPage({
           <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 mb-8 flex items-start gap-3">
             <Info className="size-5 text-primary shrink-0 mt-0.5" />
             <div className="text-sm">
-              <strong>Vous etes deja D.E inscrit au PNPE ?</strong> Pour
-              candidater avec votre profil complet (CV, parcours, competences),
+              <strong>Vous êtes déjà D.E inscrit au PNPE ?</strong> Pour
+              candidater avec votre profil complet (CV, parcours, compétences),
               connectez-vous sur{" "}
               <a
                 href={pnpeLink(`/demandeur/offres/${reference}`)}
@@ -156,7 +156,7 @@ export default function PostulerPage({
 
           <form onSubmit={onSubmit} className="space-y-5">
             <section className="rounded-xl border bg-card p-5 space-y-4">
-              <h2 className="font-semibold">Vos coordonnees</h2>
+              <h2 className="font-semibold">Vos coordonnées</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Field
                   label="Nom *"
@@ -164,7 +164,7 @@ export default function PostulerPage({
                   onChange={(v) => update("nom", v)}
                 />
                 <Field
-                  label="Prenoms *"
+                  label="Prénoms *"
                   value={form.prenoms}
                   onChange={(v) => update("prenoms", v)}
                 />
@@ -176,7 +176,7 @@ export default function PostulerPage({
                 />
                 <Field
                   type="tel"
-                  label="Telephone *"
+                  label="Téléphone *"
                   value={form.telephone}
                   onChange={(v) => update("telephone", v)}
                 />
@@ -187,18 +187,18 @@ export default function PostulerPage({
               <h2 className="font-semibold">Votre profil</h2>
               <div>
                 <label className="text-sm font-medium block mb-1.5">
-                  Niveau d'etudes (optionnel)
+                  Niveau d'études (optionnel)
                 </label>
                 <select
                   value={form.niveauEtudes}
                   onChange={(e) => update("niveauEtudes", e.target.value)}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">Non renseigne</option>
+                  <option value="">Non renseigné</option>
                   <option value="AUCUN">Aucun</option>
                   <option value="CEP">CEP</option>
                   <option value="BEPC">BEPC</option>
-                  <option value="BAC">Baccalaureat</option>
+                  <option value="BAC">Baccalauréat</option>
                   <option value="BAC_PLUS_2">Bac+2 (BTS, DUT)</option>
                   <option value="BAC_PLUS_3">Bac+3 (Licence)</option>
                   <option value="BAC_PLUS_5">Bac+5 (Master)</option>
@@ -207,7 +207,7 @@ export default function PostulerPage({
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1.5">
-                  Experience resumee (optionnel)
+                  Expérience résumée (optionnel)
                 </label>
                 <textarea
                   value={form.experienceText}
@@ -226,7 +226,7 @@ export default function PostulerPage({
                   onChange={(e) => update("lettreMotivation", e.target.value)}
                   rows={5}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                  placeholder="Pourquoi ce poste vous interesse…"
+                  placeholder="Pourquoi ce poste vous intéresse…"
                 />
               </div>
             </section>

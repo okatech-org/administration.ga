@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { Briefcase, PlusCircle } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const STATUT_COLORS: Record<string, string> = {
   BROUILLON: "bg-slate-100 text-slate-700",

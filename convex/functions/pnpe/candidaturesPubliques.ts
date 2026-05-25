@@ -80,8 +80,11 @@ export const applyAsCitizen = authMutation({
 
     if (offre.typeEmployeur === "ENTREPRISE" && offre.employeurId) {
       const emp = await ctx.db.get(offre.employeurId);
-      if (emp?.contact?.email) {
-        recipientEmail = emp.contact.email;
+      if (emp?.contactRH?.email) {
+        recipientEmail = emp.contactRH.email;
+        employeurNom = emp.raisonSociale;
+      } else if (emp?.representantLegal?.email) {
+        recipientEmail = emp.representantLegal.email;
         employeurNom = emp.raisonSociale;
       }
     } else if (offre.typeEmployeur === "PARTICULIER" && offre.particulierInfo) {
@@ -97,10 +100,11 @@ export const applyAsCitizen = authMutation({
 
     if (recipientEmail) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (ctx as any).scheduler.runAfter(
-        0,
-        internal.functions.pnpe.notifications.notifyCandidatureRecue,
-        {
+      const fn = (internal.functions as any).pnpe?.notifications
+        ?.notifyCandidatureRecue;
+      if (fn) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (ctx as any).scheduler.runAfter(0, fn, {
           to: recipientEmail,
           offreReference: offre.reference,
           offreTitre: offre.titre,
@@ -108,8 +112,8 @@ export const applyAsCitizen = authMutation({
           candidatNom: args.contact.nom,
           typeCandidature: "CITOYEN_ORDINAIRE",
           employeurNom,
-        },
-      );
+        });
+      }
     }
 
     return id;

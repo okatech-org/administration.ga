@@ -8,12 +8,9 @@
     "noUncheckedIndexedAccess": false,
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@convex/*": ["../../convex/*"],
-      "@workspace/api/convex/_generated/*": ["../../convex/_generated/*"],
-      "@workspace/api/*": ["../../packages/api/src/*"],
       "@workspace/ui/*": ["../../packages/ui/src/*"],
       "@workspace/routing/*": ["../../packages/routing/src/*"]
     }

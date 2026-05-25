@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Inbox } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function CandidaturesEmployeurPage() {
   const [selectedOffre, setSelectedOffre] = useState<string | null>(null);

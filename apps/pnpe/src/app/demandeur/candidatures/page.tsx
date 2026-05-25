@@ -9,7 +9,7 @@
 
 import { useQuery } from "convex/react";
 import { Send } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const COLUMNS = [
   { key: "ENVOYEE", label: "Envoyées", tone: "bg-slate-100 text-slate-700" },

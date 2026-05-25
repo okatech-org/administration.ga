@@ -10,7 +10,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { CheckCircle2, Clock, FileWarning } from "lucide-react";
 
 const STATUT_BADGES: Record<string, { label: string; tone: string; icon: typeof Clock }> = {

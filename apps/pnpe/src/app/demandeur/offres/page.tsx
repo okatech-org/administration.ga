@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Briefcase, Filter, MapPin } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const CONTRAT_LABELS: Record<string, string> = {
   CDI: "CDI",

@@ -12,7 +12,7 @@
 
 import { useQuery } from "convex/react";
 import { useMemo } from "react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import {
   PNPE_MODULES_CLIENT,
   type PnpeModuleClient,

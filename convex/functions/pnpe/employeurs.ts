@@ -7,6 +7,11 @@
  */
 import { v } from "convex/values";
 import { authQuery, authMutation } from "../../lib/customFunctions";
+import {
+  PNPE_STAFF_ROLES,
+  PNPE_VALIDATION_ROLES,
+  requirePnpeRole,
+} from "../../lib/pnpeAuth";
 import { addressValidator } from "../../lib/validators";
 import {
   codeNAFGabonValidator,
@@ -100,7 +105,7 @@ export const validate = authMutation({
     nouveauStatut: verificationEmployeurValidator,
   },
   handler: async (ctx, args) => {
-    // TODO Phase 7 : restreindre au rôle conseiller_pnpe.
+    await requirePnpeRole(ctx, ctx.user, PNPE_VALIDATION_ROLES);
     const employeur = await ctx.db.get(args.employeurId);
     if (!employeur) throw new Error("EMPLOYEUR_NOT_FOUND");
     await ctx.db.patch(args.employeurId, {
@@ -116,6 +121,7 @@ export const validate = authMutation({
 export const listByStatut = authQuery({
   args: { statut: verificationEmployeurValidator },
   handler: async (ctx, args) => {
+    await requirePnpeRole(ctx, ctx.user, PNPE_STAFF_ROLES);
     return await ctx.db
       .query("employeurs")
       .withIndex("by_statut_verification", (q) =>
@@ -184,6 +190,7 @@ export const createOffre = authMutation({
     const reference = `OE/${year}/${nifTail}/${ts}`;
     return await ctx.db.insert("offresEmploi", {
       ...args,
+      typeEmployeur: "ENTREPRISE" as const,
       reference,
       statut: "BROUILLON",
       nbVues: 0,
@@ -199,8 +206,9 @@ export const submitOffre = authMutation({
   handler: async (ctx, args) => {
     const offre = await ctx.db.get(args.offreId);
     if (!offre) throw new Error("OFFRE_NOT_FOUND");
+    if (!offre.employeurId) throw new Error("OFFRE_NOT_OWNED_BY_EMPLOYEUR");
     const employeur = await ctx.db.get(offre.employeurId);
-    if (!employeur || employeur.userId !== ctx.user._id) {
+    if (!employeur || !("userId" in employeur) || employeur.userId !== ctx.user._id) {
       throw new Error("FORBIDDEN");
     }
     if (offre.statut !== "BROUILLON") {
@@ -217,8 +225,9 @@ export const markAsFilled = authMutation({
   handler: async (ctx, args) => {
     const offre = await ctx.db.get(args.offreId);
     if (!offre) throw new Error("OFFRE_NOT_FOUND");
+    if (!offre.employeurId) throw new Error("OFFRE_NOT_OWNED_BY_EMPLOYEUR");
     const employeur = await ctx.db.get(offre.employeurId);
-    if (!employeur || employeur.userId !== ctx.user._id) {
+    if (!employeur || !("userId" in employeur) || employeur.userId !== ctx.user._id) {
       throw new Error("FORBIDDEN");
     }
     await ctx.db.patch(args.offreId, { statut: "POURVUE" });

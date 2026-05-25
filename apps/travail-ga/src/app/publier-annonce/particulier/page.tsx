@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { authClient } from "@/lib/auth-client";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type FormState = {
   nom: string;
@@ -55,10 +55,10 @@ export default function PublierParticulierPage() {
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api.pnpe type apres codegen
+  // @ts-expect-error — api.pnpe typé après codegen
   const create = useMutation(api.functions?.pnpe?.offresPubliques?.createByParticulier);
 
-  // Pre-remplit les coordonnees depuis la session Better Auth
+  // Pré-remplit les coordonnées depuis la session Better Auth
   useEffect(() => {
     if (!session?.user || form.email) return;
     const name = session.user.name ?? "";

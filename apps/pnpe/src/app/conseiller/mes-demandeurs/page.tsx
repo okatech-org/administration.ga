@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Users } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const STATUT_LABELS: Record<string, string> = {
   BROUILLON: "Brouillon",

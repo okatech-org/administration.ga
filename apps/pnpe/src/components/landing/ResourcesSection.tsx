@@ -13,10 +13,10 @@ const RESOURCES: {
 }[] = [
 	{
 		icon: BookOpen,
-		title: "Conventions de Vienne",
+		title: "Code du travail gabonais",
 		description:
-			"Accédez aux textes officiels des Conventions de Vienne de 1961 (Relations diplomatiques) et 1963 (Relations consulaires). Articles commentés et annotés avec les fonctionnalités correspondantes de la plateforme.",
-		badge: "12 articles clés",
+			"Accédez aux articles clés du Code du travail gabonais : contrats (L. 27+), apprentissage, rupture, congés, salaires. Annoté avec les actions PNPE correspondantes (vérification employeur, suivi contrat).",
+		badge: "Articles clés",
 		color: "text-blue-600 dark:text-blue-400",
 		iconBg: "bg-blue-50 dark:bg-blue-950/40",
 		href: "#ressources",
@@ -25,7 +25,7 @@ const RESOURCES: {
 		icon: Layers,
 		title: "Atouts de la plateforme",
 		description:
-			"Découvrez comment chacun des 4 modules (iArchive, iCorrespondance, iDocument, iAsted) répond aux exigences légales des conventions internationales. Matrice de conformité complète.",
+			"Découvrez comment les 4 modules PNPE (catalogue d'offres, vivier employeur, parcours BMC Auto-Emploi, suivi de contrats) servent les 3 programmes : Emploi Salarié, Auto-Emploi, Formation.",
 		badge: "4 modules",
 		color: "text-primary",
 		iconBg: "bg-primary/10",
@@ -35,7 +35,7 @@ const RESOURCES: {
 		icon: GraduationCap,
 		title: "Tutoriels Pratiques",
 		description:
-			"Guides pas-à-pas pour maîtriser rapidement chaque fonctionnalité. Filtrés par niveau (Débutant, Intermédiaire, Avancé) avec durée estimée et conseils pratiques.",
+			"Guides pas-à-pas pour les D.E (inscription, candidature, BMC) et les employeurs (publication d'offre, vérification, suivi candidatures). Filtrés par niveau et durée estimée.",
 		badge: "6 guides",
 		color: "text-violet-600 dark:text-violet-400",
 		iconBg: "bg-violet-50 dark:bg-violet-950/40",

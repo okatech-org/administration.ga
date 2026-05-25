@@ -125,13 +125,37 @@ export const offresEmploiTable = defineTable({
 
   /**
    * Signalements communautaires (anti-fraude pour offres PARTICULIER
-   * majoritairement). Compteur incrémental + flag "à modérer" si seuil.
+   * majoritairement). Voir convex/functions/pnpe/offresPubliques.signaler.
+   *
+   * Règles modération :
+   *   - 3 signalements / 7 jours glissants → flaggedForReview = true
+   *   - 5 signalements / 7 jours OU 1 motif grave → statut bascule MASQUEE
+   *     (conseiller doit décider sous 48h : RETIREE ou re-PUBLIEE)
    */
   signalements: v.optional(
     v.object({
+      /** Compteur total cumulé (historique). */
       count: v.number(),
+      /**
+       * Historique détaillé : un entrée par signalement. Sert à calculer
+       * la fenêtre glissante 7j et à afficher les motifs côté conseiller.
+       */
+      historique: v.optional(
+        v.array(
+          v.object({
+            date: v.number(),
+            motif: v.string(),
+            commentaire: v.optional(v.string()),
+            reporterUserId: v.optional(v.id("users")),
+          }),
+        ),
+      ),
       lastSignaledAt: v.optional(v.number()),
       flaggedForReview: v.boolean(),
+      /** Date du masquage auto si applicable. */
+      maskedAt: v.optional(v.number()),
+      /** Motif qui a déclenché le masquage (grave ou seuil dépassé). */
+      maskedReason: v.optional(v.string()),
     }),
   ),
 

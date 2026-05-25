@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { Briefcase, FileText, ArrowRight, Lightbulb } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function ParticulierDashboard() {
   // @ts-expect-error api.pnpe type apres codegen

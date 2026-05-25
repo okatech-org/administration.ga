@@ -1,20 +1,40 @@
 import { motion } from "motion/react";
-import { Globe, Shield, Scale } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Briefcase, Sparkles, GraduationCap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-const ICONS: LucideIcon[] = [Globe, Shield, Scale];
+const ICONS: LucideIcon[] = [Briefcase, Sparkles, GraduationCap];
+
+// Contenu PNPE — 3 piliers de l'opérateur public de l'emploi gabonais.
+const PNPE_MISSIONS = {
+	badge: "Nos 3 programmes",
+	titleStart: "L'emploi pour",
+	titleHighlight: "tous les Gabonais",
+	subtitle:
+		"Trois programmes complémentaires pour répondre à toutes les situations : recherche d'emploi salarié, création d'activité, formation et apprentissage.",
+	items: [
+		{
+			title: "Emploi Salarié",
+			description:
+				"Mise en correspondance des Demandeurs d'Emploi avec les offres des entreprises gabonaises (CDI, CDD, stage, alternance, intérim). Validation conseiller PNPE et appui à la candidature.",
+		},
+		{
+			title: "Auto-Emploi",
+			description:
+				"Accompagnement entrepreneurial avec formation Business Model Canvas (BMC) en présentiel ou en ligne (Ediandza). Passerelle automatique vers l'ANPI-Gabon pour la formalisation.",
+		},
+		{
+			title: "Formation & Apprentissage",
+			description:
+				"Suivi des contrats d'apprentissage, de professionnalisation, d'adaptation et d'insertion. Visites de suivi et bilan de fin de contrat par le conseiller référent.",
+		},
+	],
+} as const;
 
 export function MissionsSection() {
-	const { t } = useTranslation();
-
-	const items = t("agentLanding.missions.items", { returnObjects: true }) as Array<{
-		title: string;
-		description: string;
-	}>;
+	const items = PNPE_MISSIONS.items;
 
 	return (
-		<section aria-label="Nos missions diplomatiques" className="h-full flex flex-col justify-center bg-white/5">
+		<section aria-label="Nos 3 programmes" className="h-full flex flex-col justify-center bg-white/5">
 			<div className="container mx-auto px-6 lg:px-12">
 				{/* Header */}
 				<motion.div
@@ -24,16 +44,16 @@ export function MissionsSection() {
 					className="text-center max-w-2xl mx-auto mb-8 lg:mb-10"
 				>
 					<span className="badge-pill-landing mb-4">
-						{t("agentLanding.missions.badge")}
+						{PNPE_MISSIONS.badge}
 					</span>
 					<h2 className="text-2xl lg:text-3xl font-display font-bold text-white tracking-tight">
-						{t("agentLanding.missions.title")}{" "}
+						{PNPE_MISSIONS.titleStart}{" "}
 						<span className="text-gradient-primary">
-							{t("agentLanding.missions.titleGradient")}
+							{PNPE_MISSIONS.titleHighlight}
 						</span>
 					</h2>
 					<p className="text-slate-300 text-sm lg:text-base mt-3 leading-relaxed">
-						{t("agentLanding.missions.subtitle")}
+						{PNPE_MISSIONS.subtitle}
 					</p>
 				</motion.div>
 

@@ -299,10 +299,15 @@ crons.interval(
 // Quotidien a 6h UTC (7h Libreville) : passe en EXPIREE toute offre
 // PUBLIEE dont dateExpiration <= now(). Evite que des offres perimees
 // restent visibles sur TRAVAIL.GA.
-crons.daily(
-  "pnpe-expire-offres",
-  { hourUTC: 6, minuteUTC: 0 },
-  internal.functions.pnpe.expireOffres.expireOffresInternal,
-);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pnpeExpireOffresFn = (internal.functions as any).pnpe?.expireOffres
+  ?.expireOffresInternal;
+if (pnpeExpireOffresFn) {
+  crons.daily(
+    "pnpe-expire-offres",
+    { hourUTC: 6, minuteUTC: 0 },
+    pnpeExpireOffresFn,
+  );
+}
 
 export default crons;

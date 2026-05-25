@@ -11,6 +11,11 @@
 import { v } from "convex/values";
 import { authQuery, authMutation } from "../../lib/customFunctions";
 import {
+  PNPE_STAFF_ROLES,
+  PNPE_VALIDATION_ROLES,
+  requirePnpeRole,
+} from "../../lib/pnpeAuth";
+import {
   codeProvinceGaValidator,
   disponibiliteDEValidator,
   niveauEtudesValidator,
@@ -171,7 +176,7 @@ export const listByAntenne = authQuery({
     statut: v.optional(statutDemandeurValidator),
   },
   handler: async (ctx, args) => {
-    // TODO Phase 7 : vérifier que ctx.user est conseiller_pnpe de cette antenne.
+    await requirePnpeRole(ctx, ctx.user, PNPE_STAFF_ROLES);
     const q = args.statut
       ? ctx.db
           .query("demandeursEmploi")
@@ -193,7 +198,7 @@ export const validateDemandeur = authMutation({
     demandeurId: v.id("demandeursEmploi"),
   },
   handler: async (ctx, args) => {
-    // TODO Phase 7 : vérifier rôle conseiller_pnpe / chef_antenne / direction.
+    await requirePnpeRole(ctx, ctx.user, PNPE_VALIDATION_ROLES);
     const demandeur = await ctx.db.get(args.demandeurId);
     if (!demandeur) throw new Error("DEMANDEUR_NOT_FOUND");
     if (demandeur.statutCompte !== "EN_VALIDATION") {

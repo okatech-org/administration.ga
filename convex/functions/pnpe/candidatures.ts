@@ -56,19 +56,19 @@ async function scheduleNotifyCandidatureRecue(
 
   if (!recipientEmail) return;
 
-  await ctx.scheduler.runAfter(
-    0,
-    internal.functions.pnpe.notifications.notifyCandidatureRecue,
-    {
-      to: recipientEmail,
-      offreReference: offre.reference,
-      offreTitre: offre.titre,
-      candidatPrenoms: params.candidatPrenoms,
-      candidatNom: params.candidatNom,
-      typeCandidature: params.typeCandidature,
-      employeurNom,
-    },
-  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fn = (internal.functions as any).pnpe?.notifications
+    ?.notifyCandidatureRecue;
+  if (!fn) return;
+  await ctx.scheduler.runAfter(0, fn, {
+    to: recipientEmail,
+    offreReference: offre.reference,
+    offreTitre: offre.titre,
+    candidatPrenoms: params.candidatPrenoms,
+    candidatNom: params.candidatNom,
+    typeCandidature: params.typeCandidature,
+    employeurNom,
+  });
 }
 
 /** Crée une candidature (D.E → offre). */
@@ -108,7 +108,9 @@ export const create = authMutation({
     }
     const id = await ctx.db.insert("candidatures", {
       offreId: args.offreId,
+      typeCandidature: "DEMANDEUR_INSCRIT" as const,
       demandeurId: args.demandeurId,
+      applicantUserId: ctx.user._id,
       cvStorageId: args.cvStorageId,
       lettreMotivation: args.lettreMotivation,
       documentsJoints: args.documentsJoints,
@@ -231,8 +233,9 @@ export const withdraw = authMutation({
   handler: async (ctx, args) => {
     const candidature = await ctx.db.get(args.candidatureId);
     if (!candidature) throw new Error("CANDIDATURE_NOT_FOUND");
+    if (!candidature.demandeurId) throw new Error("CANDIDATURE_NOT_OWNED");
     const demandeur = await ctx.db.get(candidature.demandeurId);
-    if (!demandeur || demandeur.userId !== ctx.user._id) {
+    if (!demandeur || !("userId" in demandeur) || demandeur.userId !== ctx.user._id) {
       throw new Error("FORBIDDEN");
     }
     await ctx.db.patch(args.candidatureId, {

@@ -4,14 +4,27 @@ import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { SignInCard } from "@/components/auth/SignInCard";
 
-export const HeroSection = forwardRef<HTMLDivElement, { onNext?: () => void }>(function HeroSection({ onNext }, signInRef) {
-	const { t } = useTranslation();
+// Textes PNPE hardcodés (override de `agentLanding.*` héritage diplomate).
+// TODO i18n : migrer vers un namespace `pnpeLanding` dans packages/i18n quand
+// l'app sera ouverte à l'anglais.
+const PNPE_CONTENT = {
+	badge: "Portail PNPE — Emploi & Insertion",
+	titleLine1: "Le Pôle National",
+	titleHighlight: "de Promotion",
+	titleLine2: "de l'Emploi",
+	description:
+		"Mise en correspondance D.E ↔ employeurs, accompagnement à l'auto-emploi (BMC + ANPI-Gabon), formation et apprentissage. Sous tutelle du Ministère du Travail, du Plein Emploi, du Dialogue Social et de la Formation Professionnelle.",
+	stats: [
+		{ value: "7", label: "Antennes régionales" },
+		{ value: "3", label: "Programmes (Salarié, Auto-Emploi, Formation)" },
+		{ value: "9", label: "Provinces couvertes" },
+	],
+	nextLabel: "Programmes",
+};
 
-	const STATS = [
-		{ ...t("agentLanding.hero.stats.missions", { returnObjects: true }) as { value: string; label: string } },
-		{ ...t("agentLanding.hero.stats.agents", { returnObjects: true }) as { value: string; label: string } },
-		{ ...t("agentLanding.hero.stats.conventions", { returnObjects: true }) as { value: string; label: string } },
-	];
+export const HeroSection = forwardRef<HTMLDivElement, { onNext?: () => void }>(function HeroSection({ onNext }, signInRef) {
+	const { t: _t } = useTranslation();
+	const STATS = PNPE_CONTENT.stats;
 
 	return (
 		<section
@@ -41,21 +54,21 @@ export const HeroSection = forwardRef<HTMLDivElement, { onNext?: () => void }>(f
 							transition={{ duration: 0.5, delay: 0.3 }}
 							className="badge-pill-landing mb-8"
 						>
-							{t("agentLanding.hero.badge")}
+							{PNPE_CONTENT.badge}
 						</motion.span>
 
 						<h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-display font-bold tracking-tight mb-6 leading-[1.08] text-white">
-							{t("agentLanding.hero.title")}{" "}
+							{PNPE_CONTENT.titleLine1}{" "}
 							<br className="hidden sm:block" />
 							<span className="text-gradient-primary">
-								{t("agentLanding.hero.titleGradient")}
+								{PNPE_CONTENT.titleHighlight}
 							</span>{" "}
 							<br className="hidden lg:block" />
-							{t("agentLanding.hero.titleSuffix")}
+							{PNPE_CONTENT.titleLine2}
 						</h1>
 
 						<p className="text-base sm:text-lg mb-8 max-w-xl font-light leading-relaxed mx-auto lg:mx-0 text-slate-200">
-							{t("agentLanding.hero.description")}
+							{PNPE_CONTENT.description}
 						</p>
 					</motion.div>
 
@@ -118,7 +131,7 @@ export const HeroSection = forwardRef<HTMLDivElement, { onNext?: () => void }>(f
 					aria-label="Volet suivant"
 				>
 					<span className="hidden sm:block text-xs tracking-widest uppercase">
-						{t("agentLanding.hero.nextPanel")}
+						{PNPE_CONTENT.nextLabel}
 					</span>
 					<ChevronRight className="w-6 h-6" />
 				</motion.button>
