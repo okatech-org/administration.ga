@@ -55,8 +55,7 @@ export default function PublierParticulierPage() {
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api.pnpe typé après codegen
-  const create = useMutation(api.functions?.pnpe?.offresPubliques?.createByParticulier);
+  const create = useMutation((api as any).functions.pnpe.offresPubliques?.createByParticulier);
 
   // Pré-remplit les coordonnées depuis la session Better Auth
   useEffect(() => {

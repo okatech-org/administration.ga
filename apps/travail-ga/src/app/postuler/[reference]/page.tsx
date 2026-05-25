@@ -49,15 +49,14 @@ export default function PostulerPage({
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api.pnpe typé après codegen
-  const offre = useQuery(api.functions?.pnpe?.offresPubliques?.getByReferenceEnriched, {
+  const offre = useQuery((api as any).functions.pnpe.offresPubliques?.getByReferenceEnriched, {
     reference,
   }) as
     | { _id: string; titre: string; statut: string }
     | null
     | undefined;
-  // @ts-expect-error — api.pnpe typé après codegen
-  const apply = useMutation(api.functions?.pnpe?.candidaturesPubliques?.applyAsCitizen);
+  
+  const apply = useMutation((api as any).functions.pnpe.candidaturesPubliques?.applyAsCitizen);
 
   // Pré-remplit avec les infos de la session une fois disponible
   useEffect(() => {

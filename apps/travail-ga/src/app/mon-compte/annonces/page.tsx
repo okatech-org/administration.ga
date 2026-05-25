@@ -11,10 +11,9 @@ import { api } from "@convex/_generated/api";
 export default function MesAnnoncesPage() {
   const { data: session, isPending } = authClient.useSession();
 
-  // @ts-expect-error api.pnpe type apres codegen
   const list = useQuery(
-    // @ts-expect-error
-    api.functions?.pnpe?.citoyenAccount?.listMyAnnonces,
+    
+    (api as any).functions.pnpe.citoyenAccount?.listMyAnnonces,
     session?.user ? {} : "skip",
   ) as Array<{
     _id: string;

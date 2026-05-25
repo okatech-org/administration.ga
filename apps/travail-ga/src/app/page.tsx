@@ -20,8 +20,8 @@ import { api } from "@convex/_generated/api";
 import { pnpeLink } from "@/lib/utils";
 
 export default function LandingPage() {
-  // @ts-expect-error — api.pnpe typé après codegen Convex
-  const kpis = useQuery(api.functions?.pnpe?.stats?.nationalKpis, {});
+  
+  const kpis = useQuery((api as any).functions.pnpe.stats?.nationalKpis, {});
 
   return (
     <div className="min-h-screen flex flex-col">
