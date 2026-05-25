@@ -7,6 +7,11 @@
  */
 import { v } from "convex/values";
 import { authQuery, authMutation } from "../../lib/customFunctions";
+import {
+  PNPE_STAFF_ROLES,
+  PNPE_VALIDATION_ROLES,
+  requirePnpeRole,
+} from "../../lib/pnpeAuth";
 import { addressValidator } from "../../lib/validators";
 import {
   codeNAFGabonValidator,
@@ -100,7 +105,7 @@ export const validate = authMutation({
     nouveauStatut: verificationEmployeurValidator,
   },
   handler: async (ctx, args) => {
-    // TODO Phase 7 : restreindre au rôle conseiller_pnpe.
+    await requirePnpeRole(ctx, ctx.user, PNPE_VALIDATION_ROLES);
     const employeur = await ctx.db.get(args.employeurId);
     if (!employeur) throw new Error("EMPLOYEUR_NOT_FOUND");
     await ctx.db.patch(args.employeurId, {
@@ -116,6 +121,7 @@ export const validate = authMutation({
 export const listByStatut = authQuery({
   args: { statut: verificationEmployeurValidator },
   handler: async (ctx, args) => {
+    await requirePnpeRole(ctx, ctx.user, PNPE_STAFF_ROLES);
     return await ctx.db
       .query("employeurs")
       .withIndex("by_statut_verification", (q) =>

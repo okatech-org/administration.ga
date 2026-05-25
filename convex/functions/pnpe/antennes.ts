@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 import { query } from "../../_generated/server";
 import { authMutation } from "../../lib/customFunctions";
+import { PNPE_ADMIN_ROLES, requirePnpeRole } from "../../lib/pnpeAuth";
 import { addressValidator } from "../../lib/validators";
 import {
   codeProvinceGaValidator,
@@ -56,7 +57,7 @@ export const create = authMutation({
     dateOuverture: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // TODO Phase 7 : restreindre au rôle direction_pnpe / admin_ministere_travail.
+    await requirePnpeRole(ctx, ctx.user, PNPE_ADMIN_ROLES);
     const existing = await ctx.db
       .query("antennesPnpe")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
