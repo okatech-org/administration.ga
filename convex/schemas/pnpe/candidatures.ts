@@ -3,36 +3,62 @@ import { v } from "convex/values";
 import { statutCandidatureValidator } from "../../lib/validators/pnpe";
 
 /**
- * Candidatures D.E sur offres d'emploi PNPE.
+ * Candidatures sur offres d'emploi PNPE / TRAVAIL.GA.
  *
- * Représente l'acte unique d'un D.E qui candidate à une offre. Le statut suit
- * un workflow piloté par l'employeur (et parfois le conseiller PNPE) :
+ * Deux profils de candidat supportés :
+ *  - **D.E PNPE** (inscrit, validé) : `demandeurId` renseigné.
+ *    Workflow complet : CV PDF + lettre + suivi conseiller.
+ *  - **Citoyen ordinaire** (sans inscription D.E préalable) :
+ *    `applicantUserId` + `applicantContact` renseignés.
+ *    Workflow simplifié : contact direct entre l'employeur et le candidat,
+ *    avec invitation à compléter une inscription D.E si plusieurs candidatures.
  *
- *   ENVOYEE -> VUE -> PRESELECTIONNEE -> ENTRETIEN -> RETENUE | NON_RETENUE
- *                                                  \-> RETIREE (D.E)
+ * Statut workflow piloté par l'employeur (et parfois le conseiller PNPE).
  *
- * L'`issueFinale` est saisie par l'employeur (ou auto-déduite du statut)
- * à la clôture du processus pour alimenter les statistiques de placement
- * du PNPE.
- *
- * Contrainte : un D.E ne peut candidater qu'une seule fois par offre
- * (vérifié côté mutation via `by_offre_demandeur` index).
+ * Contrainte : un candidat ne peut postuler qu'une fois par offre (vérifié
+ * côté mutation via `by_offre_demandeur` ou `by_offre_applicant`).
  */
 export const candidaturesTable = defineTable({
   offreId: v.id("offresEmploi"),
-  demandeurId: v.id("demandeursEmploi"),
+
+  /**
+   * Type de candidature. Détermine si on consulte le profil D.E ou le
+   * contact simplifié.
+   */
+  typeCandidature: v.union(
+    v.literal("DEMANDEUR_INSCRIT"),
+    v.literal("CITOYEN_ORDINAIRE"),
+  ),
+
+  /** Lien D.E si typeCandidature=DEMANDEUR_INSCRIT. */
+  demandeurId: v.optional(v.id("demandeursEmploi")),
+
+  /** Lien user Better Auth si typeCandidature=CITOYEN_ORDINAIRE. */
+  applicantUserId: v.optional(v.id("users")),
+
+  /**
+   * Contact direct pour les candidats CITOYEN_ORDINAIRE (sans profil D.E).
+   * Permet à l'employeur de contacter le candidat.
+   */
+  applicantContact: v.optional(
+    v.object({
+      nom: v.string(),
+      prenoms: v.string(),
+      email: v.string(),
+      telephone: v.string(),
+      niveauEtudes: v.optional(v.string()),
+      experienceText: v.optional(v.string()),
+    }),
+  ),
 
   // ─── Pièces jointes ─────────────────────────────────────────
-  /** Snapshot du CV au moment de la candidature. */
-  cvStorageId: v.id("_storage"),
-  /** Lettre de motivation (texte ou storage selon préférence). */
+  /** CV PDF storage (optionnel pour citoyens ordinaires). */
+  cvStorageId: v.optional(v.id("_storage")),
   lettreMotivation: v.optional(v.string()),
-  /** Pièces complémentaires (portfolios, diplômes scannés…). */
   documentsJoints: v.optional(v.array(v.id("_storage"))),
 
   // ─── Statut et historique ───────────────────────────────────
   statut: statutCandidatureValidator,
-  /** Trace des transitions de statut pour audit / dashboard D.E. */
   historiqueStatuts: v.optional(
     v.array(
       v.object({
@@ -47,14 +73,9 @@ export const candidaturesTable = defineTable({
   // ─── Notes & échanges ───────────────────────────────────────
   notesEmployeur: v.optional(v.string()),
   notesConseiller: v.optional(v.string()),
-  /** Tags internes de l'employeur (favori, à recontacter, etc.). */
   tagsEmployeur: v.optional(v.array(v.string())),
 
   // ─── Issue finale ───────────────────────────────────────────
-  /**
-   * Résultat consolidé pour les statistiques d'insertion PNPE.
-   * Marqué par l'employeur (post-embauche ou clôture) ou auto-déduit.
-   */
   issueFinale: v.optional(
     v.union(
       v.literal("EMBAUCHE"),
@@ -69,6 +90,8 @@ export const candidaturesTable = defineTable({
 })
   .index("by_offre", ["offreId"])
   .index("by_demandeur", ["demandeurId"])
+  .index("by_applicant_user", ["applicantUserId"])
   .index("by_offre_statut", ["offreId", "statut"])
   .index("by_demandeur_statut", ["demandeurId", "statut"])
-  .index("by_offre_demandeur", ["offreId", "demandeurId"]); // unicité
+  .index("by_offre_demandeur", ["offreId", "demandeurId"])
+  .index("by_offre_applicant", ["offreId", "applicantUserId"]);

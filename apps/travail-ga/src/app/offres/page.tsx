@@ -1,19 +1,25 @@
 /**
- * Catalogue public d'offres d'emploi — TRAVAIL.GA.
+ * Catalogue public d'offres multi-source — TRAVAIL.GA.
  *
- * Pas d'auth, consultation libre. Pour candidater, redirection vers PNPE.GA
- * (inscription D.E requise).
+ * Affiche les offres `PUBLIEE` quel que soit le typeEmployeur, avec badge
+ * et filtre dédié.
  */
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "convex/react";
-import { Briefcase, Filter, MapPin, Search } from "lucide-react";
+import {
+  Briefcase,
+  Building2,
+  Landmark,
+  MapPin,
+  Search,
+  User,
+} from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { api } from "@workspace/api/convex/_generated/api";
-import { pnpeLink } from "@/lib/utils";
 
 const CONTRAT_LABELS: Record<string, string> = {
   CDI: "CDI",
@@ -49,25 +55,46 @@ const PROVINCE_LABELS: Record<string, string> = {
   WOLEU_NTEM: "Woleu-Ntem",
 };
 
+const TYPE_META: Record<
+  string,
+  { label: string; icon: typeof Building2; tone: string }
+> = {
+  ENTREPRISE: {
+    label: "Entreprise",
+    icon: Building2,
+    tone: "bg-blue-100 text-blue-700",
+  },
+  ADMINISTRATION: {
+    label: "Administration",
+    icon: Landmark,
+    tone: "bg-emerald-100 text-emerald-700",
+  },
+  PARTICULIER: {
+    label: "Particulier",
+    icon: User,
+    tone: "bg-amber-100 text-amber-700",
+  },
+};
+
 export default function OffresPage() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<{
+    typeEmployeur?: string;
     typeContrat?: string;
     province?: string;
   }>({});
 
   // @ts-expect-error — api.pnpe typé après codegen Convex
-  const offres = (useQuery(api.pnpe?.offres?.listPublished, filters) ??
+  const offres = (useQuery(api.pnpe?.offresPubliques?.listAllPublished, filters) ??
     []) as Array<{
     _id: string;
     reference: string;
     titre: string;
     description?: string;
     typeContrat: string;
+    typeEmployeur: string;
     lieuTravail: { ville: string; province: string };
-    secteurActivite?: string;
     salaire?: { min: number; max: number; devise: string };
-    datePublication?: number;
     nbCandidatures?: number;
   }>;
 
@@ -91,20 +118,33 @@ export default function OffresPage() {
             </h1>
             <p className="text-muted-foreground mb-6">
               {filteredOffres.length} offre{filteredOffres.length > 1 ? "s" : ""}{" "}
-              validée{filteredOffres.length > 1 ? "s" : ""} par le PNPE
+              validée{filteredOffres.length > 1 ? "s" : ""} par le PNPE — toutes
+              sources confondues (entreprises, administrations, particuliers)
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_200px_200px] gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_180px_180px] gap-3">
               <div className="relative">
                 <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Rechercher un titre, mot-clé…"
+                  placeholder="Rechercher…"
                   className="w-full pl-9 rounded-lg border bg-background px-3 py-2.5 text-sm"
                 />
               </div>
+              <select
+                value={filters.typeEmployeur ?? ""}
+                onChange={(e) =>
+                  setFilters({ ...filters, typeEmployeur: e.target.value || undefined })
+                }
+                className="rounded-lg border bg-background px-3 py-2.5 text-sm"
+              >
+                <option value="">Tous émetteurs</option>
+                <option value="ENTREPRISE">Entreprises</option>
+                <option value="ADMINISTRATION">Administrations</option>
+                <option value="PARTICULIER">Particuliers</option>
+              </select>
               <select
                 value={filters.typeContrat ?? ""}
                 onChange={(e) =>
@@ -142,67 +182,62 @@ export default function OffresPage() {
             {filteredOffres.length === 0 ? (
               <div className="rounded-xl border bg-card p-12 text-center">
                 <Briefcase className="size-12 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">
+                <p className="text-muted-foreground">
                   Aucune offre ne correspond aux critères.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuery("");
-                    setFilters({});
-                  }}
-                  className="text-sm text-primary font-medium"
-                >
-                  Réinitialiser les filtres
-                </button>
               </div>
             ) : (
-              filteredOffres.map((o) => (
-                <article
-                  key={o._id}
-                  className="rounded-xl border bg-card p-5 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        href={`/offres/${o.reference}`}
-                        className="font-semibold text-base hover:text-primary"
+              filteredOffres.map((o) => {
+                const meta = TYPE_META[o.typeEmployeur] ?? TYPE_META.ENTREPRISE;
+                const TypeIcon = meta.icon;
+                return (
+                  <Link
+                    key={o._id}
+                    href={`/offres/${o.reference}`}
+                    className="block rounded-xl border bg-card p-5 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${meta.tone}`}
                       >
-                        {o.titre}
-                      </Link>
-                      <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <Briefcase className="size-3.5" />
-                          {CONTRAT_LABELS[o.typeContrat] ?? o.typeContrat}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="size-3.5" />
-                          {o.lieuTravail.ville} ·{" "}
-                          {PROVINCE_LABELS[o.lieuTravail.province]}
-                        </span>
-                        <span className="font-mono">{o.reference}</span>
-                        {o.salaire && (
-                          <span>
-                            {o.salaire.min.toLocaleString("fr-FR")}–
-                            {o.salaire.max.toLocaleString("fr-FR")} {o.salaire.devise}
-                          </span>
-                        )}
-                      </div>
-                      {o.description && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                          {o.description}
-                        </p>
-                      )}
+                        <TypeIcon className="size-3" />
+                        {meta.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {o.reference}
+                      </span>
                     </div>
-                    <a
-                      href={pnpeLink(`/demandeur/offres/${o.reference}`)}
-                      className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-                    >
-                      Candidater →
-                    </a>
-                  </div>
-                </article>
-              ))
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h2 className="font-semibold text-base mb-1">
+                          {o.titre}
+                        </h2>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Briefcase className="size-3.5" />
+                            {CONTRAT_LABELS[o.typeContrat] ?? o.typeContrat}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="size-3.5" />
+                            {o.lieuTravail.ville} ·{" "}
+                            {PROVINCE_LABELS[o.lieuTravail.province]}
+                          </span>
+                          {o.salaire && (
+                            <span>
+                              {o.salaire.min.toLocaleString("fr-FR")}–
+                              {o.salaire.max.toLocaleString("fr-FR")}{" "}
+                              {o.salaire.devise}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-primary text-sm font-medium shrink-0">
+                        Voir →
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })
             )}
           </div>
         </section>

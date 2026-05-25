@@ -10,23 +10,62 @@ import {
 } from "../../lib/validators/pnpe";
 
 /**
- * Offres d'emploi publiées sur la plateforme PNPE.
+ * Offres d'emploi publiées sur la plateforme TRAVAIL.GA / PNPE.
  *
  * Workflow :
  *   BROUILLON -> EN_VALIDATION -> (par conseiller PNPE)
  *             -> PUBLIEE -> (visible sur le portail public)
  *             -> POURVUE (marquage employeur post-embauche)
  *             -> EXPIREE (auto à dateExpiration)
- *             -> RETIREE (employeur retire avant expiration)
+ *             -> RETIREE (retiré avant expiration)
  *
- * Référence unique par employeur : `OE/YYYY/<SLUG_EMPLOYEUR>/<SEQ>` (générée
- * côté mutation `pnpe.offres.create`).
+ * Trois types d'émetteurs supportés (`typeEmployeur`) :
+ *   - **ENTREPRISE** : société commerciale avec NIF/RCCM, vérifiée DGI/CNSS.
+ *     Référence : OE/YYYY/<NIF_TAIL>/<SEQ>. Lien `employeurId`.
+ *   - **ADMINISTRATION** : organisme public déjà référencé dans `orgs`
+ *     (ministère, DG, mairie, EP). Pas de vérification supplémentaire.
+ *     Référence : ADM/YYYY/<ORG_SLUG>/<SEQ>. Lien `orgId`.
+ *   - **PARTICULIER** : personne physique (emploi domestique, garde
+ *     d'enfants, jardinier, etc.). Pas de vérification entreprise.
+ *     Modération PNPE plus stricte + signalement possible.
+ *     Référence : PAR/YYYY/<USER_TAIL>/<SEQ>. Identité dans `particulierInfo`.
  */
 export const offresEmploiTable = defineTable({
-  /** Employeur émetteur de l'offre. */
-  employeurId: v.id("employeurs"),
+  /**
+   * Type d'émetteur de l'offre. Détermine quels champs employeur/org/
+   * particulier sont renseignés.
+   */
+  typeEmployeur: v.union(
+    v.literal("ENTREPRISE"),
+    v.literal("ADMINISTRATION"),
+    v.literal("PARTICULIER"),
+  ),
 
-  /** Référence officielle PNPE — `OE/YYYY/<slug>/<seq>`. Unique. */
+  /** Employeur si typeEmployeur=ENTREPRISE. */
+  employeurId: v.optional(v.id("employeurs")),
+
+  /** Org si typeEmployeur=ADMINISTRATION (lien vers `orgs` table). */
+  orgId: v.optional(v.id("orgs")),
+
+  /**
+   * Identité du particulier si typeEmployeur=PARTICULIER. La création
+   * d'un compte user n'est pas obligatoire — un email/téléphone suffit
+   * pour le contact.
+   */
+  particulierInfo: v.optional(
+    v.object({
+      nom: v.string(),
+      prenoms: v.string(),
+      email: v.string(),
+      telephone: v.string(),
+      /** Carte d'identité (NIP optionnel pour anti-fraude). */
+      nip: v.optional(v.string()),
+      /** Lien vers le user Better Auth si le particulier est connecté. */
+      userId: v.optional(v.id("users")),
+    }),
+  ),
+
+  /** Référence officielle. Format dépend du type employeur (cf. docstring). */
   reference: v.string(),
 
   // ─── Contenu de l'offre ──────────────────────────────────────
@@ -63,7 +102,7 @@ export const offresEmploiTable = defineTable({
     v.object({
       min: v.number(),
       max: v.number(),
-      devise: v.string(), // "XAF" par défaut
+      devise: v.string(),
       periodicite: v.union(
         v.literal("HORAIRE"),
         v.literal("MENSUEL"),
@@ -74,19 +113,27 @@ export const offresEmploiTable = defineTable({
   avantages: v.optional(v.array(v.string())),
 
   // ─── Dates ───────────────────────────────────────────────────
-  /** Date d'embauche prévue. */
   dateDebut: v.optional(v.number()),
-  /** Date limite de candidature (auto-bascule en EXPIREE). */
   dateExpiration: v.number(),
   datePublication: v.optional(v.number()),
 
   // ─── Workflow et modération ──────────────────────────────────
   statut: statutOffreValidator,
-  /** Conseiller PNPE qui a validé la publication. */
   validateurUserId: v.optional(v.id("users")),
   dateValidation: v.optional(v.number()),
-  /** Motif de rejet si applicable. */
   motifRejet: v.optional(v.string()),
+
+  /**
+   * Signalements communautaires (anti-fraude pour offres PARTICULIER
+   * majoritairement). Compteur incrémental + flag "à modérer" si seuil.
+   */
+  signalements: v.optional(
+    v.object({
+      count: v.number(),
+      lastSignaledAt: v.optional(v.number()),
+      flaggedForReview: v.boolean(),
+    }),
+  ),
 
   // ─── Statistiques ────────────────────────────────────────────
   nbVues: v.optional(v.number()),
@@ -97,6 +144,8 @@ export const offresEmploiTable = defineTable({
 })
   .index("by_reference", ["reference"])
   .index("by_employeur_statut", ["employeurId", "statut"])
+  .index("by_org_statut", ["orgId", "statut"])
+  .index("by_type_statut", ["typeEmployeur", "statut"])
   .index("by_statut", ["statut"])
   .index("by_secteur_statut", ["secteurActivite", "statut"])
   .index("by_type_contrat_statut", ["typeContrat", "statut"])
