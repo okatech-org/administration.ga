@@ -30,6 +30,55 @@ export const getMine = authQuery({
   },
 });
 
+/**
+ * Génère une URL signée d'upload pour le CV (PDF) du D.E.
+ * Le client POST le fichier directement sur cette URL, récupère un
+ * storageId, puis appelle `attachCv` pour lier au profil.
+ */
+export const generateCvUploadUrl = authMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Attache un CV (storageId Convex) au profil D.E. */
+export const attachCv = authMutation({
+  args: {
+    demandeurId: v.id("demandeursEmploi"),
+    cvStorageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const demandeur = await ctx.db.get(args.demandeurId);
+    if (!demandeur) throw new Error("DEMANDEUR_NOT_FOUND");
+    if (demandeur.userId !== ctx.user._id) {
+      throw new Error("FORBIDDEN");
+    }
+    // Supprime l'ancien CV s'il existe (économie de storage)
+    if (demandeur.cvStorageId && demandeur.cvStorageId !== args.cvStorageId) {
+      try {
+        await ctx.storage.delete(demandeur.cvStorageId);
+      } catch {
+        // tolérant si déjà supprimé
+      }
+    }
+    await ctx.db.patch(args.demandeurId, {
+      cvStorageId: args.cvStorageId,
+    });
+    return { ok: true };
+  },
+});
+
+/** Récupère l'URL signée de téléchargement du CV. */
+export const getCvUrl = authQuery({
+  args: { demandeurId: v.id("demandeursEmploi") },
+  handler: async (ctx, args) => {
+    const demandeur = await ctx.db.get(args.demandeurId);
+    if (!demandeur || !demandeur.cvStorageId) return null;
+    return await ctx.storage.getUrl(demandeur.cvStorageId);
+  },
+});
+
 /** Crée le profil D.E (inscription initiale, statut BROUILLON). */
 export const create = authMutation({
   args: {
