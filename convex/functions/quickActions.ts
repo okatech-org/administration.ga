@@ -1,9 +1,8 @@
-import { Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { internalAction, internalMutation } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { buildRegistrationFormData } from "./profiles";
-import { ChildProfileStatus } from "../lib/constants";
 
 /**
  * Quick Action — batch mutation.

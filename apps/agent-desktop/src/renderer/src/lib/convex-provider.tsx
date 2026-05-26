@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
 import { ConvexQueryClient } from "@convex-dev/react-query"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -6,10 +8,10 @@ import { useEffect, useMemo, useRef } from "react"
 import { api } from "@convex/_generated/api"
 import { authClient } from "./auth-client"
 
-const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
 
 console.log("[convex] VITE_CONVEX_URL =", CONVEX_URL)
-console.log("[convex] VITE_CONVEX_SITE_URL =", (import.meta as any).env.VITE_CONVEX_SITE_URL)
+console.log("[convex] VITE_CONVEX_SITE_URL =", import.meta.env.VITE_CONVEX_SITE_URL)
 console.log("[convex] all env =", JSON.stringify(import.meta.env))
 
 if (!CONVEX_URL) {

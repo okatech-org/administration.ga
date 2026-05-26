@@ -1,4 +1,4 @@
-import { MutationCtx } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 
 /**
  * Helper to create a placeholder user for an invite.

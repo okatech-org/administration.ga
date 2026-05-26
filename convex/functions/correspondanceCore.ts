@@ -20,9 +20,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import {
   correspondanceTypeValidator,
   correspondancePriorityValidator,
-  correspondanceStatusValidator,
   recipientStatusValidator,
-  correspondanceDocumentValidator,
   returnedCategoryValidator,
 } from "../schemas/correspondance";
 import {
@@ -393,7 +391,6 @@ export const sendCorrespondance = authMutation({
                 if (rule.conditionType === "if_recipient_rank_above") {
                   // Compare le grade du destinataire avec la valeur de condition
                   // Si pas de conditionValue, considérer comme "au-dessus de agent"
-                  const thresholdGrade = rule.conditionValue ?? "agent";
                   // On ne peut pas connaître le grade du destinataire ici sans query
                   // supplémentaire. Par sécurité, si la condition est configurée,
                   // on l'active pour les destinataires externes.
@@ -938,7 +935,6 @@ export const respondToCorrespondance = authMutation({
     const orgId = item.copyOwnerOrgId ?? item.orgId;
     await requireCorrespondanceAccess(ctx, ctx.user, orgId, "create");
 
-    const org = await ctx.db.get(orgId) as any;
     const reference = await generateSequentialReference(ctx, args.type, orgId);
 
     // Créer la réponse en brouillon avec expéditeur/destinataire inversés

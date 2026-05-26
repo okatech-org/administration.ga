@@ -1,6 +1,5 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
-import { countryCodeValidator } from "../lib/countryCodeValidator";
 
 /**
  * Guide types — les 3 piliers de contenu contextualise

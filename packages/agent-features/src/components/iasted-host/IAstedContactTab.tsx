@@ -52,7 +52,6 @@ import { Input } from "@workspace/ui/components/input";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { useOrg } from "../../shell/org-provider";
 import {
-	type ContactFilters,
 	type ContactResultItem,
 	type ContactSource,
 } from "../../hooks/useContactSearch";

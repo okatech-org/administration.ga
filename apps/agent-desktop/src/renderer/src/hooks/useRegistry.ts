@@ -13,7 +13,9 @@ export function useRegistry(orgId: Id<"orgs"> | null) {
 
   const readyForPrint = useQuery(
     api.functions.consularRegistrations.getReadyForPrint,
-    orgId ? { orgId } : "skip"
+    orgId
+      ? { orgId, paginationOpts: { numItems: 100, cursor: null } }
+      : "skip"
   )
 
   // paginatedListByOrg uses custom aggregate pagination with cursor/pageSize

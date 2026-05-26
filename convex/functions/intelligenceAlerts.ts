@@ -35,16 +35,6 @@ const ruleTypeValidator = v.union(
 	v.literal("custom"),
 );
 
-const alertTargetTypeValidator = v.union(
-	v.literal("profile"),
-	v.literal("child_profile"),
-	v.literal("diplomatic_target"),
-	v.literal("agent"),
-	v.literal("case"),
-	v.literal("note"),
-	v.literal("watchlist_item"),
-);
-
 // ─── ALERT RULES ────────────────────────────────────────────────────
 
 export const listRules = authQuery({

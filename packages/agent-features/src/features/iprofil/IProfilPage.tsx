@@ -29,7 +29,6 @@ import {
 	X,
 } from "lucide-react";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useOrg } from "../../shell/org-provider";
 import { usePageContext } from "../../hooks/use-page-context";
 import {
@@ -47,7 +46,6 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { useConvexMutationQuery } from "@workspace/api/hooks";
 import { cn } from "@workspace/ui/lib/utils";
 
 // ─── Status config ─────────────────────────────────────────────
@@ -109,7 +107,6 @@ const LANG_NAMES: Record<string, string> = {
 
 // ─── Main Page ─────────────────────────────────────────────────
 export default function IProfilPage() {
-	const { t } = useTranslation();
 	const { activeOrgId } = useOrg();
 	const [activeTab, setActiveTab] = useState("identite");
 	const [isEditing, setIsEditing] = useState(false);
@@ -119,11 +116,6 @@ export default function IProfilPage() {
 		api.functions.diplomaticProfile.getMyDiplomaticProfile,
 		{},
 	);
-
-	const { mutateAsync: updateProfile, isPending: isSaving } =
-		useConvexMutationQuery(
-			api.functions.diplomaticProfile.updateMyDiplomaticProfile,
-		);
 
 	usePageContext({
 		module: "iprofil",

@@ -14,7 +14,6 @@ import {
   localizedStringValidator,
 } from "../lib/validators";
 import { countryCodeValidator } from "../lib/countryCodeValidator";
-import { moduleCodeValidator } from "../lib/moduleCodes";
 
 /**
  * Organizations table - consulats/ambassades

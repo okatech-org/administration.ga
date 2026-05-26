@@ -9,7 +9,6 @@ import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION, CORTEX } from "../lib/types";
 import {
   globalCounts,
-  requestsByOrg,
   requestsGlobal,
   orgsGlobal,
   servicesGlobal,
@@ -2528,7 +2527,7 @@ export const createExternalUser = superadminMutation({
  *   - AdminSystem → can configure Admin, Corps Admin, Agents (not SuperAdmin or AdminSystem)
  *   - Admin → can configure Corps Admin and Agents only
  */
-import { moduleCodeValidator, CORE_MODULE_CODES, ALL_MODULE_CODES, MODULE_REGISTRY, accessLevelValidator, type ModuleCodeValue, type ModuleAccessLevel } from "../lib/moduleCodes";
+import { moduleCodeValidator, CORE_MODULE_CODES, ALL_MODULE_CODES, accessLevelValidator, type ModuleCodeValue, type ModuleAccessLevel } from "../lib/moduleCodes";
 
 export const updateUserModules = backofficeMutation({
   args: {

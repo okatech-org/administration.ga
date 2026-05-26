@@ -42,7 +42,6 @@ import {
 	Stamp,
 	Trash2,
 	Undo2,
-	UserCheck,
 	X,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -1162,7 +1161,7 @@ function Thumbnail({
 	onMoveUp,
 	onMoveDown,
 	isCopy,
-	isDeleted,
+	isDeleted: _isDeleted,
 	canReorderUp,
 	canReorderDown,
 	canDrag,

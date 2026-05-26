@@ -12,7 +12,6 @@
  * statuts, c'est ~350 appels d'agrégat — négligeable.
  */
 
-import { v } from "convex/values";
 import { backofficeQuery } from "../lib/customFunctions";
 import { correspondanceItemsByOrg } from "../lib/aggregates";
 

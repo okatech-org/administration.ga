@@ -9,7 +9,6 @@
 import { v } from "convex/values";
 import { authMutation, authQuery } from "../lib/customFunctions";
 import { DocumentStatus } from "../lib/constants";
-import { correspondanceDocumentValidator } from "../schemas/correspondance";
 import {
   requireCorrespondanceAccess,
   generateSequentialReference,

@@ -388,7 +388,7 @@ export const executeAction = action({
     orgId: v.id("orgs"),
     conversationId: v.optional(v.id("conversations")),
   },
-  handler: async (ctx, { actionType, actionArgs, orgId, conversationId }) => {
+  handler: async (ctx, { actionType, actionArgs, orgId: _orgId, conversationId }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("NOT_AUTHENTICATED");

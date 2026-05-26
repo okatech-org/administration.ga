@@ -1,7 +1,8 @@
 /**
  * Seed data : Guides generiques (WORLD) — fallback pour les pays sans guide specifique
  */
-import { mutation, MutationCtx } from "../_generated/server";
+import { mutation } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 
 export async function seedWorldGuides(ctx: MutationCtx) {
   const now = Date.now();

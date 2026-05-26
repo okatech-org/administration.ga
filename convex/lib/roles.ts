@@ -784,13 +784,6 @@ const CONSULATE_MODULES: ModuleCodeValue[] = [
   ModuleCode.statistics,
 ];
 
-/** Core + news + messaging — for honorary consulates */
-const HONORARY_MODULES: ModuleCodeValue[] = [
-  ...CORE_MODULE_CODES,
-  ModuleCode.news,
-  ModuleCode.messaging,
-];
-
 /** Core + community + news + messaging + statistics — for permanent missions */
 const MISSION_MODULES: ModuleCodeValue[] = [
   ...CORE_MODULE_CODES,

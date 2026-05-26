@@ -17,8 +17,6 @@ import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 import { dispatchAppointmentNotification } from "../lib/appointmentNotify";
 import {
   signAppointmentIcalToken,
-  buildAppointmentIcs,
-  verifyAppointmentIcalToken,
 } from "../lib/ical";
 import { internalQuery } from "../_generated/server";
 import { internal } from "../_generated/api";
@@ -327,10 +325,6 @@ export const bookDynamicAppointment = authMutation({
     const duration = type === "pickup"
       ? (orgService.pickupAppointmentDurationMinutes ?? orgService.appointmentDurationMinutes ?? 15)
       : (orgService.appointmentDurationMinutes ?? 15);
-
-    const _breakMins = type === "pickup"
-      ? (orgService.pickupAppointmentBreakMinutes ?? orgService.appointmentBreakMinutes ?? 0)
-      : (orgService.appointmentBreakMinutes ?? 0);
 
     const capacity = orgService.appointmentCapacity ?? 1;
 

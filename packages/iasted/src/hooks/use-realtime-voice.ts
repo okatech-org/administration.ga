@@ -26,7 +26,6 @@ import type {
 	RealtimeSessionInit,
 	RealtimeToolHandler,
 	RealtimeToolResult,
-	RealtimeVoice,
 	RealtimeVoiceTool,
 	VoiceState,
 } from "./use-realtime-voice-types";

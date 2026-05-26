@@ -5,7 +5,6 @@ import {
 	Bot,
 	Calendar,
 	ClipboardList,
-	Handshake,
 	Home,
 	MessagesSquare,
 	Menu,
@@ -75,7 +74,7 @@ function NavBarItem({
 
 export function AgentMobileNav() {
 	const pathname = usePathname();
-	const { t, i18n } = useTranslation();
+	const { i18n } = useTranslation();
 	const { theme, setTheme } = useTheme();
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const authClient = useAuthClient();

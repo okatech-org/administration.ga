@@ -8,7 +8,7 @@
 
 import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { v } from "convex/values";
-import { query, mutation, internalMutation, internalQuery } from "../_generated/server";
+import { query, internalMutation, internalQuery } from "../_generated/server";
 import { authQuery, authMutation, backofficeMutation, backofficeQuery } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { logCortexAction } from "../lib/neocortex";

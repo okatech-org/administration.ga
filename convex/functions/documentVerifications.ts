@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { query, internalMutation } from "../_generated/server";
 import { authMutation } from "../lib/customFunctions";
-import { internal } from "../_generated/api";
 
 // ============================================================================
 // PUBLIC QUERIES (for verification page)

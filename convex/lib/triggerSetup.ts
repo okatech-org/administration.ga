@@ -7,7 +7,7 @@
  * are registered in triggers/index.ts.
  */
 import { Triggers } from "convex-helpers/server/triggers";
-import { DataModel } from "../_generated/dataModel";
+import type { DataModel } from "../_generated/dataModel";
 
 export const triggers = new Triggers<DataModel>();
 export default triggers;

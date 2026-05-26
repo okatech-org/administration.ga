@@ -7,7 +7,7 @@
  */
 
 import { v } from "convex/values";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import {
 	internalMutation,

@@ -639,7 +639,7 @@ function createPartImpact(data: ProjectData): any[] {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createConclusion(data: ProjectData): any[] {
+function createConclusion(_data: ProjectData): any[] {
   return [
     h1("CONCLUSION"),
     p("Ce projet de coopération constitue une réponse stratégique aux défis de développement identifiés. " +

@@ -45,7 +45,7 @@ export interface OcrProvider {
 
 class MockOcrProvider implements OcrProvider {
   readonly id = "mock";
-  async extractText(req: OcrRequest): Promise<OcrResult> {
+  async extractText(_req: OcrRequest): Promise<OcrResult> {
     return {
       text: "",
       confidence: 0,

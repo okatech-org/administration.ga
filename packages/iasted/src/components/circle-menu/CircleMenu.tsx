@@ -22,7 +22,7 @@ import { type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, us
 import { cn } from "@workspace/ui/lib/utils";
 import { CIRCLE_MENU } from "../../tokens/animation";
 import { IAstedTrigger3D } from "./IAstedTrigger3D";
-import type { CircleMenuItemConfig, CircleMenuProps } from "./types";
+import type { CircleMenuProps } from "./types";
 
 const C = CIRCLE_MENU;
 

@@ -75,15 +75,27 @@ export function ImpressionPage() {
       const errors: string[] = []
       for (let i = 0; i < records.length; i++) {
         try {
-          // Use printCard with field values for each record
-          const result = await window.desktopApi?.printer?.printCard({
-            // TODO: render card from active design + fieldValues
-            // For now, use the printCard API directly
+          // TODO: `printCard` n'est pas exposé par le bridge IPC `printer`
+          // (cf. apps/agent-desktop/src/main/ipc/printer.ipc.ts qui expose
+          // `print` et `printFromBuffer`). Le pipeline rendu→impression du
+          // batch print doit être finalisé : rendre la carte (Konva) depuis
+          // les fieldValues, exporter en buffer, puis appeler `printFromBuffer`.
+          const printer = window.desktopApi?.printer as
+            | (typeof window.desktopApi.printer & {
+                printCard?: (opts: {
+                  frontBuffer: Uint8Array | undefined
+                  duplex: boolean
+                }) => Promise<{ success: boolean; errorMessage?: string }>
+              })
+            | undefined
+          const result = await printer?.printCard?.({
             frontBuffer: undefined,
             duplex: false,
           })
           if (result && !result.success) {
-            errors.push(`#${i + 1}: ${result.errorMessage}`)
+            errors.push(`#${i + 1}: ${result.errorMessage ?? "printCard non implémenté"}`)
+          } else if (!result) {
+            errors.push(`#${i + 1}: printCard IPC non disponible`)
           }
         } catch (err) {
           errors.push(`#${i + 1}: ${String(err)}`)

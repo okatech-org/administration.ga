@@ -19,15 +19,6 @@ import type { Id } from "../_generated/dataModel";
 
 const PDF_MIME = "application/pdf";
 
-const TYPE_LABELS: Record<string, string> = {
-  note_verbale: "Note Verbale",
-  lettre_officielle: "Lettre Officielle",
-  circulaire: "Circulaire",
-  telegramme: "Télégramme",
-  memorandum: "Mémorandum",
-  communique: "Communiqué",
-};
-
 const CONFIDENTIALITE_LABELS: Record<string, string> = {
   standard: "Standard",
   confidentiel: "CONFIDENTIEL",

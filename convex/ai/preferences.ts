@@ -21,7 +21,6 @@ import { assertCanDoTask, canDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { sensitivityValidator, channelValidator } from "../schemas/userAIPreferences";
 import { CAPABILITY_CODES, CAPABILITY_REGISTRY, type CapabilityCode } from "./capabilityRegistry";
-import type { Doc, Id } from "../_generated/dataModel";
 import type { TaskCodeValue } from "../lib/taskCodes";
 
 // ═══════════════════════════════════════════════════════════════

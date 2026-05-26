@@ -8,7 +8,7 @@ import {
 } from "@livekit/components-react";
 import { ConnectionState } from "livekit-client";
 import { Send, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";

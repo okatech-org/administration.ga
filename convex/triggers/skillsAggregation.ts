@@ -23,13 +23,6 @@ type ChangeOf<T extends "cv" | "cvSkillItems" | "profiles" | "aiSuggestedSkillIt
 
 type SkillLevelT = (typeof SkillLevel)[keyof typeof SkillLevel];
 
-const LEVELS: SkillLevelT[] = [
-  SkillLevel.Beginner,
-  SkillLevel.Intermediate,
-  SkillLevel.Advanced,
-  SkillLevel.Expert,
-];
-
 function emptyByLevel() {
   return {
     beginner: 0,

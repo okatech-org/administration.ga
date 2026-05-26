@@ -8,7 +8,6 @@ import { useDesignPersistence } from "../../hooks/useDesignPersistence"
 import { useOrg } from "../../hooks/useOrg"
 import type { CardElement, CardDesign, ElementType } from "../../lib/card-types"
 import { createDefaultElement } from "../../lib/card-types"
-import { canvasToBmp } from "../../lib/bmp-encoder"
 import { SAMPLE_PROFILES, type CitizenProfileData } from "../../lib/dynamic-fields"
 import { DEFAULT_TEMPLATES } from "../../lib/default-card-templates"
 import { DesignerCanvas } from "./DesignerCanvas"
@@ -122,62 +121,9 @@ export function CardDesigner() {
     [dispatch, isAuthenticated, orgId, persistence],
   )
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleExportBmp = useCallback(
-    async (face: "front" | "back" = "front") => {
-      if (!stageRef.current) return
-      if (face !== state.activeFace) {
-        dispatch({ type: "SET_ACTIVE_FACE", face })
-        await new Promise((r) => setTimeout(r, 100))
-      }
-      const canvas = stageRef.current.toCanvas({ pixelRatio: 1 })
-      const bmp = canvasToBmp(canvas)
-      const fileName = `${state.name.replace(/\s+/g, "_")}_${face}.bmp`
-      if (window.desktopApi?.fileDialog) {
-        const result = await window.desktopApi.fileDialog.save({
-          title: "Exporter le design BMP",
-          defaultPath: fileName,
-          filters: [{ name: "BMP Image", extensions: ["bmp"] }],
-          data: bmp.buffer as ArrayBuffer,
-        })
-        if (!result.canceled) toast.success(`BMP ${face} exporté`)
-      } else {
-        const blob = new Blob([bmp as BlobPart], { type: "image/bmp" })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = fileName
-        a.click()
-        URL.revokeObjectURL(url)
-        toast.success(`BMP ${face} exporté`)
-      }
-    },
-    [state.activeFace, state.name, dispatch],
-  )
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handlePrint = useCallback(async () => {
-    if (!stageRef.current) return
-    dispatch({ type: "SET_ACTIVE_FACE", face: "front" })
-    dispatch({ type: "SELECT_ELEMENT", id: null })
-    await new Promise((r) => setTimeout(r, 150))
-    const frontCanvas = stageRef.current.toCanvas({ pixelRatio: 1 })
-    const _frontBmp = canvasToBmp(frontCanvas)
-    const frontPath = `/tmp/card_front_${Date.now()}.bmp`
-    try {
-      const result = await window.desktopApi.printer.print({
-        frontImagePath: frontPath,
-        duplex: false,
-      })
-      if (result.success) {
-        toast.success("Impression lancée !")
-      } else {
-        toast.error(`Erreur : ${result.errorMessage}`)
-      }
-    } catch (err) {
-      toast.error(`Erreur impression: ${err}`)
-    }
-  }, [dispatch])
+  // Handlers `_handleExportBmp` et `_handlePrint` supprimés (code mort) —
+  // stubs TODO d'un sprint preview-impression jamais finalisé. Les pages
+  // d'impression actives utilisent `usePrintJobExecutor`.
 
   // --- Copy / Paste ---
   const handleCopy = useCallback(() => {

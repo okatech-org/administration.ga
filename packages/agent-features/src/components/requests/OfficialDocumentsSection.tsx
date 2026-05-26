@@ -84,15 +84,6 @@ interface AvailablePath {
 	sampleValue: string;
 }
 
-const SOURCES: SourceName[] = [
-	"user",
-	"profile",
-	"request",
-	"formData",
-	"org",
-	"system",
-];
-
 const SOURCE_OPTIONS: ComboboxOption<SourceName>[] = [
 	{ value: "formData", label: "Champs du formulaire" },
 	{ value: "request", label: "Demande" },

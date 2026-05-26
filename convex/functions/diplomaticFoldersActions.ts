@@ -1458,7 +1458,7 @@ export const generateLetterDocument = rawInternalAction({
     const sanitizedType = sanitizeFilename(letter.type);
 
     // ── DOCX ──
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } =
+    const { Document, Packer, Paragraph, TextRun, AlignmentType } =
       await import("docx");
 
     const doc = new Document({
@@ -1791,7 +1791,6 @@ export const generateReportDocument = rawInternalAction({
     const pdfBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
     const storageId = await ctx.storage.store(pdfBlob);
 
-    const sanitizedTitle = sanitizeFilename(report.title);
     const period = report.period ? sanitizeFilename(report.period) : new Date().getFullYear().toString();
 
     await ctx.runMutation(
@@ -1825,8 +1824,6 @@ export const generateProjectDocument = rawInternalAction({
   handler: async (ctx, args) => {
     // Imports des générateurs extraits
     const { normalizeProjectData, sanitizeFilename: sanitizeFn } = await import("../lib/projectDocHelpers");
-    const { generateProjectDocx } = await import("../lib/projectDocxGenerator");
-    const { generateProjectPptx } = await import("../lib/projectPptxGenerator");
     const { generateProjectPdf } = await import("../lib/projectPdfGenerator");
 
     const project: any = await ctx.runQuery(

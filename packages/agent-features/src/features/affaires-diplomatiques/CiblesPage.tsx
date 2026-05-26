@@ -712,7 +712,7 @@ function EmptyTargets({
 function AddTargetDialog({
 	open,
 	onOpenChange,
-	orgId,
+	orgId: _orgId,
 	onSubmit,
 }: {
 	open: boolean;
@@ -897,7 +897,7 @@ function AddTargetDialog({
 function KBImportDialog({
 	open,
 	onOpenChange,
-	orgId,
+	orgId: _orgId,
 	existingDocs,
 	onDocumentImported,
 }: {

@@ -29,7 +29,6 @@ import { rateLimiter } from "./rateLimiter";
 import type { RealtimeSessionResponse, RealtimeVoice } from "./realtimeTypes";
 import {
 	DEFAULT_IASTED_LOCALE,
-	getIastedLocale,
 	isIastedLocaleSupported,
 } from "../lib/iastedLocales";
 
@@ -184,7 +183,6 @@ export const create = action({
 		const locale = isIastedLocaleSupported(requestedLocale)
 			? requestedLocale
 			: DEFAULT_IASTED_LOCALE;
-		const localeDef = getIastedLocale(locale);
 
 		// ── 8. Build du system prompt diplomatique ────────────────
 		const tPromptStart = Date.now();

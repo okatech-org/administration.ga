@@ -6,7 +6,7 @@
  */
 
 import type { ProjectData } from "./projectDocHelpers";
-import { COLORS, riskColor } from "./projectDocHelpers";
+import { COLORS } from "./projectDocHelpers";
 
 // Couleurs en RGB pour pdf-lib
 function hexToRgb(hex: string) {

@@ -7,7 +7,6 @@ import type { Id } from "../_generated/dataModel";
 import {
   RegistrationStatus,
   RegistrationType,
-  RegistrationDuration,
   registrationDurationValidator,
   registrationTypeValidator,
   registrationStatusValidator,

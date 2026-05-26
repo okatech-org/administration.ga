@@ -20,9 +20,6 @@ export const resend = new Resend(components.resend, {
   testMode: false,
 });
 
-// Default platform config (citizen) — overridden per-call when platform is known
-const DEFAULT_PLATFORM = getPlatformConfig("citizen");
-
 // ============================================================================
 // EMAIL TEMPLATES CONTENT
 // ============================================================================

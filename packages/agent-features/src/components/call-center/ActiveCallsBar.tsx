@@ -73,7 +73,6 @@ function SlotPill({
   isActive,
   onFocus,
   onEnd,
-  onHold,
   onResume,
 }: {
   slot: ActiveCallSlot;

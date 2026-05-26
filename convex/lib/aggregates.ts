@@ -7,7 +7,7 @@
  * @see https://www.convex.dev/components/aggregate
  */
 import { components } from "../_generated/api";
-import { DataModel } from "../_generated/dataModel";
+import type { DataModel } from "../_generated/dataModel";
 import { TableAggregate } from "@convex-dev/aggregate";
 
 // ---------------------------------------------------------------------------

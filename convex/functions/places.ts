@@ -42,7 +42,7 @@ export const autocomplete = action({
   },
   handler: async (
     _,
-    { input, types, language, components },
+    { input, types: _types, language, components },
   ): Promise<{
     success: boolean;
     predictions: PlaceAutocompleteResult[];
