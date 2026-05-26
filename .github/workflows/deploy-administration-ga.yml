@@ -70,8 +70,9 @@ jobs:
       matrix:
         workflow:
           - deploy-citizen.yml
-          - deploy-agent.yml
           - deploy-backoffice.yml
+          - deploy-pnpe.yml
+          - deploy-travail-ga.yml
     steps:
       - name: Trigger ${{ matrix.workflow }}
         env:

@@ -42,12 +42,15 @@ jobs:
           - app: demarche_ga
             service: admin-gabon-citizen
             site_url: https://staging.demarche.ga
-          - app: administration_ga
-            service: admin-gabon
-            site_url: https://staging.administration.ga
-          - app: admin_administration_ga
+          - app: admin-gabon-backoffice
             service: admin-gabon-backoffice
             site_url: https://admin.staging.administration.ga
+          - app: pnpe
+            service: pnpe-gabon
+            site_url: https://staging.emploi.administration.ga
+          - app: travail-ga
+            service: travail-ga
+            site_url: https://staging.travail.ga
 
     steps:
       - name: Checkout

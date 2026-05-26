@@ -9,7 +9,7 @@ name: Deploy Firebase Hosting
 #
 # Pré-requis :
 #   1. Services Cloud Run admin-gabon/admin-gabon-citizen/admin-gabon-backoffice déployés
-#      (cf. deploy-agent.yml, deploy-citizen.yml, deploy-backoffice.yml)
+#      (cf. deploy-citizen.yml, deploy-backoffice.yml)
 #   2. Secret FIREBASE_SERVICE_ACCOUNT_ADMIN_GABON configuré (JSON SA key)
 #   3. Service account Firebase a roles/firebasehosting.admin
 
@@ -22,7 +22,6 @@ on:
       - ".github/workflows/deploy-firebase.yml"
   workflow_run:
     workflows:
-      - "Deploy Agent Web"
       - "Deploy Citizen Web"
       - "Deploy Backoffice Web"
     types: [completed]
@@ -56,11 +55,10 @@ jobs:
 
       - name: Setup public folders (rewrites only — Cloud Run sert le SSR)
         run: |
-          mkdir -p apps/administration_ga/.firebase-public
+          mkdir -p apps/admin-gabon-backoffice/.firebase-public
           mkdir -p apps/demarche_ga/.firebase-public
-          mkdir -p apps/admin_administration_ga/.firebase-public
           # Placeholder pour que firebase deploy accepte le dossier vide
-          for d in apps/administration_ga apps/demarche_ga apps/admin_administration_ga; do
+          for d in apps/admin-gabon-backoffice apps/demarche_ga; do
             cat > "$d/.firebase-public/robots.txt" <<'EOF'
           # Géré via Firebase Hosting + Cloud Run rewrites
           User-agent: *
