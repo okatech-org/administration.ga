@@ -190,6 +190,7 @@ export const createOffre = authMutation({
     const reference = `OE/${year}/${nifTail}/${ts}`;
     return await ctx.db.insert("offresEmploi", {
       ...args,
+      typeEmployeur: "ENTREPRISE",
       reference,
       statut: "BROUILLON",
       nbVues: 0,
@@ -205,6 +206,9 @@ export const submitOffre = authMutation({
   handler: async (ctx, args) => {
     const offre = await ctx.db.get(args.offreId);
     if (!offre) throw new Error("OFFRE_NOT_FOUND");
+    if (!offre.employeurId) {
+      throw new Error("OFFRE_NOT_ENTREPRISE");
+    }
     const employeur = await ctx.db.get(offre.employeurId);
     if (!employeur || employeur.userId !== ctx.user._id) {
       throw new Error("FORBIDDEN");
@@ -223,6 +227,9 @@ export const markAsFilled = authMutation({
   handler: async (ctx, args) => {
     const offre = await ctx.db.get(args.offreId);
     if (!offre) throw new Error("OFFRE_NOT_FOUND");
+    if (!offre.employeurId) {
+      throw new Error("OFFRE_NOT_ENTREPRISE");
+    }
     const employeur = await ctx.db.get(offre.employeurId);
     if (!employeur || employeur.userId !== ctx.user._id) {
       throw new Error("FORBIDDEN");
