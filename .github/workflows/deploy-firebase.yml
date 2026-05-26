@@ -1,15 +1,16 @@
 name: Deploy Firebase Hosting
 
-# Déploie les 3 sites Firebase Hosting (CDN + domaines admin-gabon.web.app
-# et al.) qui proxient vers les services Cloud Run admin-gabon/admin-gabon-citizen/
-# admin-gabon-backoffice. Architecture hybride : Firebase = CDN/SSL/domaine,
-# Cloud Run = SSR Next.js 14.
+# Déploie les 4 sites Firebase Hosting (CDN + domaines admin-gabon.web.app
+# et al.) qui proxient vers les services Cloud Run admin-gabon / admin-gabon-citizen
+# / admin-gabon-backoffice / pnpe-gabon. Architecture hybride : Firebase =
+# CDN/SSL/domaine, Cloud Run = SSR Next.js 16.
 #
 # Trigger : push main (après workflows Cloud Run terminés), ou dispatch.
 #
 # Pré-requis :
-#   1. Services Cloud Run admin-gabon/admin-gabon-citizen/admin-gabon-backoffice déployés
-#      (cf. deploy-citizen.yml, deploy-backoffice.yml)
+#   1. Services Cloud Run admin-gabon / admin-gabon-citizen / admin-gabon-backoffice
+#      / pnpe-gabon déployés (cf. deploy-citizen.yml, deploy-backoffice.yml,
+#      deploy-pnpe.yml)
 #   2. Secret FIREBASE_SERVICE_ACCOUNT_ADMIN_GABON configuré (JSON SA key)
 #   3. Service account Firebase a roles/firebasehosting.admin
 
@@ -24,11 +25,12 @@ on:
     workflows:
       - "Deploy Citizen Web"
       - "Deploy Backoffice Web"
+      - "Deploy PNPE (emploi.administration.ga)"
     types: [completed]
   workflow_dispatch:
     inputs:
       target:
-        description: "Site à déployer (all, agent, citizen, backoffice)"
+        description: "Site à déployer (all, agent, citizen, backoffice, pnpe)"
         required: false
         default: "all"
         type: choice
@@ -37,6 +39,7 @@ on:
           - "agent"
           - "citizen"
           - "backoffice"
+          - "pnpe"
 
 env:
   FIREBASE_PROJECT_ID: admin-gabon
@@ -57,8 +60,11 @@ jobs:
         run: |
           mkdir -p apps/admin-gabon-backoffice/.firebase-public
           mkdir -p apps/demarche_ga/.firebase-public
-          # Placeholder pour que firebase deploy accepte le dossier vide
-          for d in apps/admin-gabon-backoffice apps/demarche_ga; do
+          mkdir -p apps/pnpe/.firebase-public
+          # Placeholder pour que firebase deploy accepte le dossier vide.
+          # NB: pnpe a deja un index.html committe (placeholder PNPE branded)
+          # qui sera preserve — robots.txt ne fait que s'ajouter.
+          for d in apps/admin-gabon-backoffice apps/demarche_ga apps/pnpe; do
             cat > "$d/.firebase-public/robots.txt" <<'EOF'
           # Géré via Firebase Hosting + Cloud Run rewrites
           User-agent: *
@@ -106,8 +112,9 @@ jobs:
             echo "| agent | admin-gabon | https://admin-gabon.web.app | administration.ga |"
             echo "| citizen | admin-gabon-citizen | https://admin-gabon-citizen.web.app | demarche.ga |"
             echo "| backoffice | admin-gabon-backoffice | https://admin-gabon-backoffice.web.app | admin.administration.ga |"
+            echo "| pnpe | pnpe-gabon | https://pnpe.web.app | emploi.administration.ga |"
             echo ""
             echo "### Architecture"
             echo ""
-            echo "Firebase Hosting (CDN/SSL/domaine) → \`run:\` rewrites → Cloud Run (SSR Next.js)"
+            echo "Firebase Hosting (CDN/SSL/domaine) → \`run:\` rewrites ou redirect → Cloud Run (SSR Next.js)"
           } >> "$GITHUB_STEP_SUMMARY"
