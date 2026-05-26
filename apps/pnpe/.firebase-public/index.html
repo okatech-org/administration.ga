@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ADMINISTRATION.GA — Espace agent</title>
-  <meta name="description" content="Plateforme de digitalisation de l'administration publique gabonaise — espace agent." />
+  <title>PNPE — Pôle National de Promotion de l'Emploi | République Gabonaise</title>
+  <meta name="description" content="Pôle National de Promotion de l'Emploi — opérateur public gabonais du marché de l'emploi. Sous tutelle du Ministère du Travail, du Plein Emploi, du Dialogue Social et de la Formation Professionnelle." />
   <meta name="robots" content="noindex" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231a1a1a'/%3E%3Ctext x='50' y='62' font-family='system-ui' font-size='40' font-weight='800' fill='%23ffffff' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231a1a1a'/%3E%3Ctext x='50' y='62' font-family='system-ui' font-size='34' font-weight='800' fill='%23ffffff' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -78,18 +78,49 @@
       font-size: clamp(1.75rem, 4vw, 2.5rem);
       font-weight: 800;
       letter-spacing: -0.025em;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .tagline {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 1rem;
     }
     .subtitle {
       color: var(--muted);
       font-size: 1.05rem;
       margin-bottom: 2rem;
     }
+    .programs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .program {
+      background: oklch(0.96 0 0);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      font-size: 0.85rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      .program { background: oklch(0.22 0 0); }
+    }
+    .program-title {
+      font-weight: 700;
+      color: var(--fg);
+      margin-bottom: 0.15rem;
+    }
+    .program-desc {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
     .info {
       background: oklch(0.94 0 0);
       border-radius: 1rem;
       padding: 1.25rem 1.5rem;
-      margin-top: 1.5rem;
+      margin-top: 0.5rem;
       font-size: 0.9rem;
     }
     @media (prefers-color-scheme: dark) {
@@ -105,6 +136,8 @@
       align-items: center;
       font-size: 0.8rem;
       color: var(--muted);
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
     .footer a {
       color: var(--primary);
@@ -118,16 +151,33 @@
   <div class="container">
     <div class="card">
       <div class="stripe"></div>
-      <span class="badge">Espace agent</span>
-      <h1>ADMINISTRATION.GA</h1>
-      <p class="subtitle">Plateforme de digitalisation de l'administration publique gabonaise.</p>
+      <span class="badge">Marché de l'emploi</span>
+      <h1>PNPE</h1>
+      <p class="tagline">Pôle National de Promotion de l'Emploi</p>
+      <p class="subtitle">Opérateur public gabonais de l'emploi — sous tutelle du Ministère du Travail, du Plein Emploi, du Dialogue Social et de la Formation Professionnelle.</p>
+
+      <div class="programs">
+        <div class="program">
+          <div class="program-title">Emploi salarié</div>
+          <div class="program-desc">CDI · CDD · intérim · stage · alternance</div>
+        </div>
+        <div class="program">
+          <div class="program-title">Auto-emploi</div>
+          <div class="program-desc">Formation BMC · passerelle ANPI</div>
+        </div>
+        <div class="program">
+          <div class="program-title">Apprentissage</div>
+          <div class="program-desc">Suivi des contrats de formation</div>
+        </div>
+      </div>
+
       <div class="info">
         <strong>Déploiement en cours.</strong><br />
-        L'application <em>admin-gabon</em> sera disponible une fois le service Cloud Run mis en route. Cette page de transition est servie par Firebase Hosting (<code>admin-gabon.web.app</code>).
+        L'application PNPE sera disponible une fois le service Cloud Run mis en route sur <code>emploi.administration.ga</code>. Cette page de transition est servie par Firebase Hosting (<code>pnpe.web.app</code>).
       </div>
       <div class="footer">
-        <span>République Gabonaise</span>
-        <a href="https://admin-gabon.web.app">Espace admin</a>
+        <span>République Gabonaise · 7 antennes régionales</span>
+        <a href="https://pnpe.web.app">pnpe.web.app</a>
       </div>
     </div>
   </div>

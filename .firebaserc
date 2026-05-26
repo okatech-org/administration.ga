@@ -14,6 +14,9 @@
         ],
         "backoffice": [
           "admin-gabon"
+        ],
+        "pnpe": [
+          "pnpe"
         ]
       }
     }

@@ -57,6 +57,27 @@
           "destination": "/index.html"
         }
       ]
+    },
+    {
+      "target": "pnpe",
+      "public": "apps/pnpe/.firebase-public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "https://pnpe-gabon-pmblxfgmba-ew.a.run.app/",
+          "type": 301
+        },
+        {
+          "source": "/:path*",
+          "destination": "https://pnpe-gabon-pmblxfgmba-ew.a.run.app/:path*",
+          "type": 301
+        }
+      ]
     }
   ]
 }
