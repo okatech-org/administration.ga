@@ -66,16 +66,27 @@
         "**/.*",
         "**/node_modules/**"
       ],
-      "redirects": [
+      "headers": [
         {
-          "source": "/",
-          "destination": "https://pnpe-gabon-pmblxfgmba-ew.a.run.app/",
-          "type": 301
+          "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|avif|ico)",
+          "headers": [
+            { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+          ]
         },
         {
-          "source": "/:path*",
-          "destination": "https://pnpe-gabon-pmblxfgmba-ew.a.run.app/:path*",
-          "type": 301
+          "source": "**/_next/static/**",
+          "headers": [
+            { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+          ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "pnpe-gabon",
+            "region": "europe-west1"
+          }
         }
       ]
     }
