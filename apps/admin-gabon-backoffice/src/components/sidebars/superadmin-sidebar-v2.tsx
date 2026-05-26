@@ -20,6 +20,7 @@ import {
 	Globe,
 	Globe2,
 	History,
+	Landmark,
 	LayoutDashboard,
 	LayoutGrid,
 	LifeBuoy,
@@ -99,6 +100,19 @@ export function SuperadminSidebarV2() {
 					title: t("superadmin.nav.representations", "Administrations"),
 					url: "/reps",
 					icon: Building2,
+					moduleCode: "team",
+				},
+				{
+					// Vue spécialisée Gabon : référentiel filtré sur les 13 types
+					// "Administration nationale" (Présidence, ministères, DG, EP,
+					// AAI, parlement, juridictions, collectivités locales).
+					// Drill-down vers /reps/[orgId] pour le CRUD existant.
+					title: t(
+						"superadmin.nav.administrations",
+						"Catalogue des Administrations",
+					),
+					url: "/administrations",
+					icon: Landmark,
 					moduleCode: "team",
 				},
 				{
