@@ -18,6 +18,13 @@ import {
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/design-system/page-header";
 import { RepsGrid } from "@/components/admin/reps-grid";
@@ -115,11 +122,36 @@ const NATIONAL_ADMIN_TYPES: ReadonlySet<string> = new Set(
 	ADMINISTRATION_TYPES.filter((t) => t.value !== "all").map((t) => t.value),
 );
 
+// Niveaux de tutelle gabonais (cf. convex/schemas/orgs.ts ligne 55-63).
+//   0 = institution souveraine — pas de tutelle (Présidence, Vice-Présidence,
+//       Parlement, juridictions suprêmes, AAI, institution consultative)
+//   1 = ministère ou ministère délégué (rattaché à la Présidence)
+//   2 = direction générale / établissement public / agence nationale /
+//       collectivité locale (rattaché à un ministère)
+//   3 = service / sous-direction / bureau d'ordre (rattaché à une DG)
+const TUTELLE_LEVELS = [
+	{ value: "all", labelFr: "Tous niveaux", labelEn: "All levels" },
+	{
+		value: "0",
+		labelFr: "0 · Institution souveraine",
+		labelEn: "0 · Sovereign institution",
+	},
+	{ value: "1", labelFr: "1 · Ministère", labelEn: "1 · Ministry" },
+	{
+		value: "2",
+		labelFr: "2 · Direction / Établissement",
+		labelEn: "2 · Directorate / Establishment",
+	},
+	{ value: "3", labelFr: "3 · Service / Bureau", labelEn: "3 · Service / Office" },
+] as const;
+
 export default function AdministrationsPage() {
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("fr") ? "fr" : "en";
 
 	const [selectedType, setSelectedType] = useState<string>("all");
+	const [selectedTutelleLevel, setSelectedTutelleLevel] =
+		useState<string>("all");
 	const [searchQuery, setSearchQuery] = useState("");
 
 	const {
@@ -129,7 +161,8 @@ export default function AdministrationsPage() {
 	} = useAuthenticatedConvexQuery(api.functions.admin.listOrgs, {});
 
 	// Filtres successifs : (1) types Administration nationale, (2) type
-	// sélectionné dans les tabs, (3) recherche texte sur nom/slug.
+	// sélectionné dans les tabs, (3) niveau de tutelle, (4) recherche texte
+	// sur nom/slug.
 	const filteredOrgs = useMemo(() => {
 		if (!orgs) return [] as Doc<"orgs">[];
 		let result = (orgs as Doc<"orgs">[]).filter((o) =>
@@ -137,6 +170,10 @@ export default function AdministrationsPage() {
 		);
 		if (selectedType !== "all") {
 			result = result.filter((o) => o.type === selectedType);
+		}
+		if (selectedTutelleLevel !== "all") {
+			const lvl = Number(selectedTutelleLevel);
+			result = result.filter((o) => o.tutelleLevel === lvl);
 		}
 		if (searchQuery.trim()) {
 			const q = searchQuery.toLowerCase();
@@ -147,7 +184,7 @@ export default function AdministrationsPage() {
 			);
 		}
 		return result;
-	}, [orgs, selectedType, searchQuery]);
+	}, [orgs, selectedType, selectedTutelleLevel, searchQuery]);
 
 	// Comptes par type (et total) pour les badges des tabs.
 	const countByType = useMemo(() => {
@@ -188,18 +225,39 @@ export default function AdministrationsPage() {
 				}
 			/>
 
-			<div className="relative max-w-md">
-				<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-				<Input
-					placeholder={
-						lang === "fr"
-							? "Rechercher par nom ou slug…"
-							: "Search by name or slug…"
-					}
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-					className="pl-9"
-				/>
+			<div className="flex flex-wrap items-center gap-3">
+				<div className="relative max-w-md flex-1 min-w-[240px]">
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Input
+						placeholder={
+							lang === "fr"
+								? "Rechercher par nom ou slug…"
+								: "Search by name or slug…"
+						}
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						className="pl-9"
+					/>
+				</div>
+				<Select
+					value={selectedTutelleLevel}
+					onValueChange={setSelectedTutelleLevel}
+				>
+					<SelectTrigger className="w-[260px]">
+						<SelectValue
+							placeholder={
+								lang === "fr" ? "Niveau de tutelle" : "Tutelle level"
+							}
+						/>
+					</SelectTrigger>
+					<SelectContent>
+						{TUTELLE_LEVELS.map((lvl) => (
+							<SelectItem key={lvl.value} value={lvl.value}>
+								{lang === "fr" ? lvl.labelFr : lvl.labelEn}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
 
 			<Tabs
