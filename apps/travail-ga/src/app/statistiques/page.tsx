@@ -10,13 +10,13 @@ import { SiteFooter } from "@/components/site-footer";
 import { api } from "@convex/_generated/api";
 
 export default function StatistiquesPage() {
-  // @ts-expect-error — api.pnpe typé après codegen Convex
-  const kpis = useQuery(api.functions?.pnpe?.stats?.nationalKpis, {});
-  // @ts-expect-error
-  const byProvince = (useQuery(api.functions?.pnpe?.stats?.demandeursByProvince, {}) ??
+  
+  const kpis = useQuery((api as any).functions.pnpe.stats?.nationalKpis, {});
+  
+  const byProvince = (useQuery((api as any).functions.pnpe.stats?.demandeursByProvince, {}) ??
     []) as Array<{ province: string; count: number }>;
-  // @ts-expect-error
-  const bySector = (useQuery(api.functions?.pnpe?.stats?.offresBySector, {}) ?? []) as Array<{
+  
+  const bySector = (useQuery((api as any).functions.pnpe.stats?.offresBySector, {}) ?? []) as Array<{
     secteur: string;
     count: number;
   }>;
