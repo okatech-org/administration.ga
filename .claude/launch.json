@@ -2,17 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "demarche-citizen",
-      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev"],
-      "env": {
-        "NODE_OPTIONS": "--max-old-space-size=2048"
-      },
-      "port": 3000,
-      "autoPort": false,
-      "cwd": "apps/demarche_ga"
-    },
-    {
       "name": "admin-backoffice",
       "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
