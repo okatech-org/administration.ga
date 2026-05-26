@@ -2,17 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "demarche-citizen",
-      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev"],
-      "env": {
-        "NODE_OPTIONS": "--max-old-space-size=2048"
-      },
-      "port": 3000,
-      "autoPort": false,
-      "cwd": "apps/demarche_ga"
-    },
-    {
       "name": "admin-backoffice",
       "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
       "runtimeArgs": ["run", "dev"],
@@ -21,51 +10,7 @@
       },
       "port": 3002,
       "autoPort": false,
-      "cwd": "apps/admin_administration_ga"
-    },
-    {
-      "name": "administration-agent",
-      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev"],
-      "env": {
-        "NODE_OPTIONS": "--max-old-space-size=2048"
-      },
-      "port": 3003,
-      "autoPort": false,
-      "cwd": "apps/administration_ga"
-    },
-    {
-      "name": "mairie",
-      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev"],
-      "env": {
-        "NODE_OPTIONS": "--max-old-space-size=2048"
-      },
-      "port": 3005,
-      "autoPort": false,
-      "cwd": "apps/mairie_ga"
-    },
-    {
-      "name": "direction",
-      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev"],
-      "env": {
-        "NODE_OPTIONS": "--max-old-space-size=2048"
-      },
-      "port": 3006,
-      "autoPort": false,
-      "cwd": "apps/direction_ga"
-    },
-    {
-      "name": "ministere",
-      "runtimeExecutable": "/Users/okatech/.bun/bin/bun",
-      "runtimeArgs": ["run", "dev"],
-      "env": {
-        "NODE_OPTIONS": "--max-old-space-size=2048"
-      },
-      "port": 3007,
-      "autoPort": false,
-      "cwd": "apps/ministere_ga"
+      "cwd": "apps/admin-gabon-backoffice"
     },
     {
       "name": "pnpe",

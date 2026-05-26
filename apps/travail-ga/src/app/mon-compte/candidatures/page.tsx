@@ -37,9 +37,11 @@ const TYPE_ICONS: Record<string, typeof Briefcase> = {
 };
 
 export default function MesCandidaturesPage() {
-  // @ts-expect-error — api typé après codegen
+  
+  // Auth pas câblée sur TRAVAIL.GA — on skip pour éviter NOT_AUTHENTICATED
   const candidatures = (useQuery(
-    api.functions?.pnpe?.citizenMigration?.listMyCandidatures,
+    (api as any).functions.pnpe.citizenMigration?.listMyCandidatures,
+    "skip",
   ) ?? []) as Array<{
     _id: string;
     statut: string;
@@ -102,7 +104,7 @@ export default function MesCandidaturesPage() {
                       <>
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <Link
-                            href={`/offres/${c.offre.reference}`}
+                            href={`/offres/${encodeURIComponent(c.offre.reference)}`}
                             className="font-semibold text-base hover:text-primary"
                           >
                             {c.offre.titre}

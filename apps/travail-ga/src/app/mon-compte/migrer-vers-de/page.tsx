@@ -57,17 +57,18 @@ export default function MigrerVersDePage() {
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api typé après codegen
-  const prefill = useQuery(api.functions?.pnpe?.citizenMigration?.getMigrationPrefill);
-  // @ts-expect-error
-  const antennes = (useQuery(api.functions?.pnpe?.antennes?.list, {}) ?? []) as Array<{
+  
+  // Auth pas câblée sur TRAVAIL.GA — on skip pour éviter NOT_AUTHENTICATED
+  const prefill = useQuery((api as any).functions.pnpe.citizenMigration?.getMigrationPrefill, "skip");
+  
+  const antennes = (useQuery((api as any).functions.pnpe.antennes?.list, {}) ?? []) as Array<{
     _id: string;
     slug: string;
     nom: string;
     province: string;
   }>;
-  // @ts-expect-error
-  const migrate = useMutation(api.functions?.pnpe?.citizenMigration?.migrateToDemandeur);
+  
+  const migrate = useMutation((api as any).functions.pnpe.citizenMigration?.migrateToDemandeur);
 
   useEffect(() => {
     if (prefill && !form.email) {

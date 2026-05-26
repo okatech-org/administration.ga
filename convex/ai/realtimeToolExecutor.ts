@@ -635,6 +635,16 @@ async function dispatchBusinessTool(
 		case "transmit_dossier":
 			return await transmitDossier(ctx, args, context);
 
+		// ─── Phase F — MODE EMPLOI (PNPE / TRAVAIL.GA) ───
+		case "match_candidates":
+			return await matchCandidatesTool(ctx, args);
+		case "draft_job_offer":
+			return await draftJobOfferTool(ctx, args);
+		case "suggest_trainings":
+			return await suggestTrainingsTool(ctx, args);
+		case "explain_labor_code":
+			return await explainLaborCodeTool(ctx, args);
+
 		default:
 			return { success: false, message: `Tool métier non implémenté : ${toolName}` };
 	}
@@ -3537,4 +3547,173 @@ async function transmitDossier(
 			executed: false,
 		},
 	};
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase F — MODE EMPLOI (PNPE / TRAVAIL.GA)
+// ─────────────────────────────────────────────────────────────
+// Wrappers fins autour des queries `convex/functions/pnpe/iastedEmploi.ts`.
+// Re-mappent les retours en `RealtimeToolResult` parlant pour l'agent vocal.
+
+async function matchCandidatesTool(
+	ctx: any,
+	args: { offreId?: string; limit?: number },
+): Promise<RealtimeToolResult> {
+	if (!args.offreId) {
+		return { success: false, message: "ID de l'offre manquant." };
+	}
+	try {
+		const matches = (await ctx.runQuery(
+			(api as any).functions.pnpe.iastedEmploi.matchCandidates,
+			{ offreId: args.offreId, limit: args.limit },
+		)) as Array<{
+			demandeurId: string;
+			nom: string;
+			prenoms: string;
+			province: string;
+			score: number;
+			reasons: string[];
+		}>;
+		if (!matches || matches.length === 0) {
+			return {
+				success: true,
+				message: "Aucun candidat ne dépasse le seuil de match (30 pts) pour cette offre.",
+				data: { matches: [] },
+			};
+		}
+		const top = matches.slice(0, 3);
+		const summary = top
+			.map(
+				(m, i) =>
+					`${i + 1}. ${m.prenoms} ${m.nom} (${m.province}) — ${m.score} pts : ${m.reasons.join(", ")}`,
+			)
+			.join("\n");
+		const more = matches.length > 3 ? `\n…et ${matches.length - 3} autre(s) candidat(s).` : "";
+		return {
+			success: true,
+			message: `${matches.length} candidat(s) match l'offre. Top 3 :\n${summary}${more}`,
+			data: { matches },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Matching échoué : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function draftJobOfferTool(
+	ctx: any,
+	args: {
+		titre?: string;
+		secteur?: string;
+		typeContrat?: string;
+		niveauEtudes?: string;
+		salaireMin?: number;
+		salaireMax?: number;
+	},
+): Promise<RealtimeToolResult> {
+	if (!args.titre || !args.secteur || !args.typeContrat) {
+		return {
+			success: false,
+			message: "Paramètres manquants : titre, secteur et type de contrat sont requis.",
+		};
+	}
+	try {
+		const draft = (await ctx.runQuery(
+			(api as any).functions.pnpe.iastedEmploi.draftJobOffer,
+			{
+				titre: args.titre,
+				secteur: args.secteur,
+				typeContrat: args.typeContrat,
+				niveauEtudes: args.niveauEtudes,
+				salaireMin: args.salaireMin,
+				salaireMax: args.salaireMax,
+			},
+		)) as {
+			titre: string;
+			description: string;
+			missions: string[];
+			profilRecherche: string;
+			typeContrat: string;
+			secteurActivite: string;
+		};
+		return {
+			success: true,
+			message:
+				`Brouillon d'offre généré pour « ${draft.titre} » (${draft.typeContrat}, ${draft.secteurActivite}). ` +
+				`Sections Missions / Profil / Conditions à compléter par l'employeur. ` +
+				`Description prête à coller dans le formulaire de publication.`,
+			data: { draft },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Génération du brouillon échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function suggestTrainingsTool(
+	ctx: any,
+	args: { demandeurId?: string; gapSkills?: string[] },
+): Promise<RealtimeToolResult> {
+	if (!args.demandeurId) {
+		return { success: false, message: "ID du demandeur d'emploi manquant." };
+	}
+	try {
+		const trainings = (await ctx.runQuery(
+			(api as any).functions.pnpe.iastedEmploi.suggestTrainings,
+			{ demandeurId: args.demandeurId, gapSkills: args.gapSkills },
+		)) as Array<{
+			slug: string;
+			titre: string;
+			organisme: string;
+			duree: string;
+			eligibility: string;
+		}>;
+		if (!trainings || trainings.length === 0) {
+			return {
+				success: true,
+				message: "Aucune formation correspondante dans le catalogue MVP.",
+				data: { trainings: [] },
+			};
+		}
+		const summary = trainings
+			.slice(0, 3)
+			.map((t, i) => `${i + 1}. ${t.titre} (${t.organisme}, ${t.duree}) — ${t.eligibility}`)
+			.join("\n");
+		return {
+			success: true,
+			message: `${trainings.length} formation(s) suggérée(s) :\n${summary}`,
+			data: { trainings },
+		};
+	} catch (e: any) {
+		return { success: false, message: `Suggestion de formations échouée : ${e?.message ?? "erreur"}` };
+	}
+}
+
+async function explainLaborCodeTool(
+	ctx: any,
+	args: { question?: string; contexte?: string },
+): Promise<RealtimeToolResult> {
+	if (!args.question) {
+		return { success: false, message: "Question manquante." };
+	}
+	try {
+		const result = (await ctx.runQuery(
+			(api as any).functions.pnpe.iastedEmploi.explainLaborCode,
+			{ question: args.question, contexte: args.contexte },
+		)) as {
+			reponse: string;
+			articlesCites: string[];
+			source: string;
+			avertissement: string;
+		};
+		const articles =
+			result.articlesCites.length > 0
+				? ` (articles cités : ${result.articlesCites.join(", ")})`
+				: "";
+		return {
+			success: true,
+			message: `${result.reponse}${articles}\n\n⚠️ ${result.avertissement}`,
+			data: result,
+		};
+	} catch (e: any) {
+		return { success: false, message: `Consultation du Code du travail échouée : ${e?.message ?? "erreur"}` };
+	}
 }

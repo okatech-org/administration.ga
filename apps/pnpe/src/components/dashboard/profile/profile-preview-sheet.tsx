@@ -73,7 +73,7 @@ export function ProfilePreviewSheet({
 	const footer = profileId ? (
 		<div className="flex justify-end">
 			<Button asChild variant="default" size="sm" className="gap-2">
-				<Link href={`/affaires-consulaires/profiles/${profileId}` as any}>
+				<Link href={`/conseiller/mes-demandeurs/${profileId}` as any}>
 					Ouvrir le dossier complet
 					<ArrowUpRight className="h-3.5 w-3.5" />
 				</Link>
