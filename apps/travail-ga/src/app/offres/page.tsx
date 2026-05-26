@@ -29,6 +29,8 @@ import {
   type EmetteurCode,
 } from "@/lib/travail-constants";
 import { MOCK_OFFRES } from "@/lib/travail-mock-data";
+import { offreHref } from "@/lib/utils";
+import { useFavoris } from "@/lib/use-favoris";
 import { api } from "@convex/_generated/api";
 
 type FeedFilters = {
@@ -140,6 +142,8 @@ export default function OffresPage() {
   });
   const [sort, setSort] = useState<SortKey>("recent");
   const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [showFavorisOnly, setShowFavorisOnly] = useState(false);
+  const { isFavori, toggle, count: favorisCount } = useFavoris();
 
   const offres: OffreCard[] = useMemo(() => {
     if (offresQuery && offresQuery.length > 0) {
@@ -163,6 +167,7 @@ export default function OffresPage() {
       if (filters.type && o.type !== filters.type) return false;
       if (filters.teletravail && (!o.teletravail || o.teletravail === "Non"))
         return false;
+      if (showFavorisOnly && !isFavori(o.ref)) return false;
       return true;
     });
     if (sort === "salaire") {
@@ -179,7 +184,7 @@ export default function OffresPage() {
       );
     }
     return list;
-  }, [offres, query, filters, sort]);
+  }, [offres, query, filters, sort, showFavorisOnly, isFavori]);
 
   const resetFilters = () =>
     setFilters({
@@ -365,6 +370,17 @@ export default function OffresPage() {
               >
                 <Icons.Home size={11} /> Télétravail
               </ChipToggle>
+              {favorisCount > 0 && (
+                <ChipToggle
+                  active={showFavorisOnly}
+                  onClick={() => setShowFavorisOnly((v) => !v)}
+                >
+                  <Icons.Bookmark size={11} /> Favoris{" "}
+                  <span className="tnum" style={{ opacity: 0.7 }}>
+                    ({favorisCount})
+                  </span>
+                </ChipToggle>
+              )}
               {activeFilterCount > 0 && (
                 <button
                   onClick={resetFilters}
@@ -449,10 +465,16 @@ export default function OffresPage() {
               {filtered.map((o, i) => (
                 <Link
                   key={o.id}
-                  href={`/offres/${o.ref}`}
+                  href={offreHref(o.ref)}
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  <JobCard offre={o} density="regular" index={i} />
+                  <JobCard
+                    offre={o}
+                    density="regular"
+                    index={i}
+                    bookmarked={isFavori(o.ref)}
+                    onBookmark={() => toggle(o.ref)}
+                  />
                 </Link>
               ))}
             </div>

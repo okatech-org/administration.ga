@@ -1,11 +1,15 @@
 /**
  * Mon compte — TRAVAIL.GA.
  *
- * Vue d'ensemble du compte citoyen. Pour l'instant TRAVAIL.GA n'a pas
- * d'auth wired (Better Auth doit être branché — cf. PR #29 en attente).
- * On affiche donc un état "non connecté" avec CTA vers PNPE.GA pour les
- * vrais espaces D.E authentifiés. Une fois l'auth câblée, on passera
- * `"skip"` -> args réels et on affichera le DashboardScreen du design.
+ * Vue d'ensemble du compte. Deux états :
+ *  - Non connecté → CTA PNPE.GA + indication "DEV switcher" en bas à gauche
+ *    (en dev local uniquement).
+ *  - Connecté (session Better Auth) → en-tête identité + KPIs placeholder
+ *    + raccourcis vers /mon-compte/candidatures, /offres et PNPE.GA.
+ *
+ * Les workflows métier authentifiés (candidatures réelles, matching, messages
+ * recruteurs) restent dans PNPE.GA. TRAVAIL.GA est une vitrine + transit
+ * d'identité tant que `BMC Auto-Emploi` n'est pas câblé côté backoffice.
  */
 "use client";
 
@@ -15,8 +19,23 @@ import { SiteFooter } from "@/components/site-footer";
 import { Icons } from "@/components/design/icons";
 import { Badge, Button, KpiCard } from "@/components/design/ui";
 import { pnpeLink } from "@/lib/utils";
+import { authClient } from "@/lib/auth-client";
+
+function initialsFrom(name?: string | null, email?: string | null): string {
+  const source = (name || email || "?").trim();
+  if (!source) return "?";
+  const parts = source.split(/[\s@.]+/).filter(Boolean);
+  if (parts.length === 0) return source.slice(0, 2).toUpperCase();
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
 
 export default function MonComptePage() {
+  const { data: session, isPending } = authClient.useSession();
+  const isAuthed = !!session?.user;
+  const userName = session?.user?.name ?? null;
+  const userEmail = session?.user?.email ?? null;
+
   return (
     <div
       style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
@@ -30,11 +49,13 @@ export default function MonComptePage() {
         >
           <div style={{ marginBottom: 32 }}>
             <Badge
-              tone="emerald"
+              tone={isAuthed ? "blue" : "emerald"}
               icon={<Icons.ShieldCheck size={11} />}
               style={{ marginBottom: 14 }}
             >
-              Vitrine publique TRAVAIL.GA
+              {isAuthed
+                ? "Session active · TRAVAIL.GA"
+                : "Vitrine publique TRAVAIL.GA"}
             </Badge>
             <h1
               className="font-display"
@@ -44,7 +65,9 @@ export default function MonComptePage() {
                 lineHeight: 0.96,
               }}
             >
-              Mon espace candidat
+              {isAuthed
+                ? `Bonjour, ${userName?.split(" ")[0] ?? "Compte"}`
+                : "Mon espace candidat"}
             </h1>
             <p
               style={{
@@ -54,76 +77,182 @@ export default function MonComptePage() {
                 maxWidth: 640,
               }}
             >
-              Connectez-vous sur PNPE.GA pour gérer vos candidatures, suivre
-              votre pipeline et accéder à votre profil D.E.
+              {isAuthed
+                ? "Vous êtes connecté. Les workflows complets (matching IA, candidatures, suivi conseiller) restent sur PNPE.GA."
+                : "Connectez-vous sur PNPE.GA pour gérer vos candidatures, suivre votre pipeline et accéder à votre profil D.E."}
             </p>
           </div>
 
-          {/* Carte connexion PNPE */}
-          <div
-            style={{
-              background: "var(--bg-elev-1)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--r-xl)",
-              padding: 32,
-              marginBottom: 24,
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: 32,
-              alignItems: "center",
-              boxShadow: "var(--shadow-2)",
-            }}
-            className="travail-mon-compte-card"
-          >
-            <div>
+          {/* Carte identité authentifiée OU CTA PNPE */}
+          {isAuthed ? (
+            <div
+              style={{
+                background: "var(--bg-elev-1)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--r-xl)",
+                padding: 28,
+                marginBottom: 24,
+                display: "grid",
+                gridTemplateColumns: "auto 1fr auto",
+                gap: 24,
+                alignItems: "center",
+                boxShadow: "var(--shadow-2)",
+              }}
+              className="travail-mon-compte-card"
+            >
               <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "var(--brand-blue)",
-                  marginBottom: 8,
+                  width: 64,
+                  height: 64,
+                  borderRadius: 14,
+                  background: "var(--brand-blue)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 800,
+                  fontSize: 22,
+                  letterSpacing: "-0.02em",
                 }}
               >
-                Accès D.E
+                {initialsFrom(userName, userEmail)}
               </div>
-              <h2
-                className="font-display"
-                style={{
-                  margin: "0 0 10px",
-                  fontSize: "var(--t-h2)",
-                  lineHeight: 1.05,
-                }}
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--brand-blue)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Identité fédérée
+                </div>
+                <h2
+                  className="font-display"
+                  style={{
+                    margin: "0 0 4px",
+                    fontSize: 22,
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.02em",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {userName ?? userEmail ?? "Compte"}
+                </h2>
+                {userEmail && (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "var(--fg-muted)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {userEmail}
+                  </div>
+                )}
+              </div>
+              <a
+                href={pnpeLink("/dashboard")}
+                style={{ textDecoration: "none" }}
               >
-                Connectez-vous à PNPE.GA pour gérer votre dossier.
-              </h2>
-              <p
-                style={{
-                  margin: 0,
-                  color: "var(--fg-muted)",
-                  fontSize: 15,
-                  lineHeight: 1.55,
-                  maxWidth: 560,
-                }}
-              >
-                PNPE.GA est l&apos;espace opérationnel du Pôle National de
-                Promotion de l&apos;Emploi. Une fois connecté, vous y retrouvez
-                vos candidatures actives, votre matching IA et votre antenne
-                référente.
-              </p>
+                <Button
+                  size="lg"
+                  iconRight={<Icons.ArrowUR size={16} />}
+                >
+                  Ouvrir PNPE.GA
+                </Button>
+              </a>
             </div>
-            <a
-              href={pnpeLink("/auth/sign-in")}
-              style={{ textDecoration: "none" }}
+          ) : (
+            <div
+              style={{
+                background: "var(--bg-elev-1)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--r-xl)",
+                padding: 32,
+                marginBottom: 24,
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                gap: 32,
+                alignItems: "center",
+                boxShadow: "var(--shadow-2)",
+              }}
+              className="travail-mon-compte-card"
             >
-              <Button size="lg" iconRight={<Icons.ArrowUR size={16} />}>
-                Aller sur PNPE.GA
-              </Button>
-            </a>
-          </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--brand-blue)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Accès D.E
+                </div>
+                <h2
+                  className="font-display"
+                  style={{
+                    margin: "0 0 10px",
+                    fontSize: "var(--t-h2)",
+                    lineHeight: 1.05,
+                  }}
+                >
+                  Connectez-vous à PNPE.GA pour gérer votre dossier.
+                </h2>
+                <p
+                  style={{
+                    margin: 0,
+                    color: "var(--fg-muted)",
+                    fontSize: 15,
+                    lineHeight: 1.55,
+                    maxWidth: 560,
+                  }}
+                >
+                  PNPE.GA est l&apos;espace opérationnel du Pôle National de
+                  Promotion de l&apos;Emploi. Une fois connecté, vous y
+                  retrouvez vos candidatures actives, votre matching IA et
+                  votre antenne référente.
+                </p>
+                {!isPending &&
+                  process.env.NODE_ENV !== "production" && (
+                    <p
+                      style={{
+                        marginTop: 14,
+                        fontSize: 12.5,
+                        color: "var(--fg-faint)",
+                      }}
+                    >
+                      Astuce dev : utilisez le bouton{" "}
+                      <strong style={{ color: "var(--brand-emerald)" }}>
+                        DEV
+                      </strong>{" "}
+                      en bas à droite pour basculer entre comptes de démo.
+                    </p>
+                  )}
+              </div>
+              <a
+                href={pnpeLink("/auth/sign-in")}
+                style={{ textDecoration: "none" }}
+              >
+                <Button size="lg" iconRight={<Icons.ArrowUR size={16} />}>
+                  Aller sur PNPE.GA
+                </Button>
+              </a>
+            </div>
+          )}
 
-          {/* Aperçu KPIs (mock pendant que auth pas branchée) */}
+          {/* Aperçu KPIs (placeholders — données réelles côté PNPE) */}
           <div
             style={{
               display: "grid",
@@ -135,21 +264,21 @@ export default function MonComptePage() {
           >
             <KpiCard
               icon={<Icons.Briefcase size={16} />}
-              value="—"
+              value={isAuthed ? "0" : "—"}
               label="Candidatures actives"
-              hint="Visible après connexion"
+              hint={isAuthed ? "Synchronisé avec PNPE" : "Visible après connexion"}
               accent="var(--brand-emerald)"
             />
             <KpiCard
               icon={<Icons.Eye size={16} />}
-              value="—"
+              value={isAuthed ? "0" : "—"}
               label="Vues du profil"
               hint="Sur 7 jours"
               accent="var(--brand-ember)"
             />
             <KpiCard
               icon={<Icons.Mail size={16} />}
-              value="—"
+              value={isAuthed ? "0" : "—"}
               label="Messages recruteurs"
               hint="Inbox PNPE"
               accent="var(--brand-blue)"
@@ -294,6 +423,34 @@ export default function MonComptePage() {
               </p>
             </Link>
           </div>
+
+          {isAuthed && (
+            <div style={{ marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  await authClient.signOut();
+                  window.location.reload();
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: 36,
+                  padding: "0 14px",
+                  borderRadius: 10,
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  color: "var(--fg-muted)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Se déconnecter
+              </button>
+            </div>
+          )}
         </div>
       </main>
 

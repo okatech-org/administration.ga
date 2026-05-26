@@ -104,7 +104,7 @@ export default function MesCandidaturesPage() {
                       <>
                         <div className="flex items-start justify-between gap-3 mb-2">
                           <Link
-                            href={`/offres/${c.offre.reference}`}
+                            href={`/offres/${encodeURIComponent(c.offre.reference)}`}
                             className="font-semibold text-base hover:text-primary"
                           >
                             {c.offre.titre}

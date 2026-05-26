@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { Icons } from "@/components/design/icons";
 import { useTheme } from "@/components/design/theme-provider";
 import { CommandPalette } from "@/components/design/command-palette";
+import { UserButton } from "@/components/auth/user-button";
 
 type NavItem = { href: string; label: string; disabled?: boolean };
 
@@ -372,42 +373,7 @@ export function SiteHeader() {
             />
           </button>
 
-          <Link
-            href="/mon-compte"
-            className="travail-user-btn"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              height: 36,
-              padding: "0 4px 0 10px",
-              borderRadius: 10,
-              background: "var(--bg-elev-1)",
-              border: "1px solid var(--border)",
-              color: "var(--fg)",
-              textDecoration: "none",
-              fontSize: 13,
-              fontWeight: 550,
-            }}
-          >
-            <span>Sylvianne</span>
-            <span
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 7,
-                background: "var(--brand-blue)",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              SO
-            </span>
-          </Link>
+          <UserButton />
 
           <button
             type="button"

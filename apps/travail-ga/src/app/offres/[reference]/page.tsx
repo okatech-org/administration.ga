@@ -15,9 +15,10 @@
  */
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
+import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Icons } from "@/components/design/icons";
@@ -30,6 +31,8 @@ import {
 } from "@/components/design/ui";
 import { MOCK_OFFRES } from "@/lib/travail-mock-data";
 import { PROVINCES, CONTRATS } from "@/lib/travail-constants";
+import { postulerHref } from "@/lib/utils";
+import { useFavoris } from "@/lib/use-favoris";
 import { api } from "@convex/_generated/api";
 
 export default function OffreDetailPage({
@@ -37,7 +40,9 @@ export default function OffreDetailPage({
 }: {
   params: Promise<{ reference: string }>;
 }) {
-  const { reference } = use(params);
+  const { reference: rawReference } = use(params);
+  // Les références PNPE peuvent contenir des "/" encodés en URL.
+  const reference = decodeURIComponent(rawReference);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const convex = useQuery(
@@ -53,7 +58,8 @@ export default function OffreDetailPage({
     : fallback;
 
   const province = PROVINCES.find((p) => p.code === offre.province)?.label;
-  const [applied, setApplied] = useState(false);
+  const { isFavori, toggle: toggleFavori } = useFavoris();
+  const isSaved = isFavori(offre.ref);
 
   return (
     <div
@@ -550,26 +556,38 @@ export default function OffreDetailPage({
               </div>
 
               <Link
-                href={`/postuler/${offre.ref}`}
+                href={postulerHref(offre.ref)}
                 style={{ textDecoration: "none", display: "block" }}
               >
                 <Button
                   size="lg"
                   style={{ width: "100%", marginBottom: 8 }}
-                  icon={applied ? <Icons.CheckCircle size={16} /> : undefined}
-                  onClick={() => setApplied(true)}
-                  variant={applied ? "secondary" : "primary"}
+                  variant="primary"
                 >
-                  {applied ? "Candidature envoyée" : "Postuler à cette offre"}
+                  Postuler à cette offre
                 </Button>
               </Link>
               <Button
                 size="md"
-                variant="ghost"
+                variant={isSaved ? "secondary" : "ghost"}
                 style={{ width: "100%" }}
-                icon={<Icons.Bookmark size={14} />}
+                icon={
+                  isSaved ? (
+                    <Icons.CheckCircle size={14} />
+                  ) : (
+                    <Icons.Bookmark size={14} />
+                  )
+                }
+                onClick={() => {
+                  toggleFavori(offre.ref);
+                  toast.success(
+                    isSaved
+                      ? "Retiré des favoris"
+                      : "Ajouté à vos favoris (stocké sur cet appareil)",
+                  );
+                }}
               >
-                Sauvegarder
+                {isSaved ? "Sauvegardée" : "Sauvegarder"}
               </Button>
 
               <div

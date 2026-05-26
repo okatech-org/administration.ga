@@ -1,15 +1,19 @@
 "use client";
 
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { Toaster } from "@workspace/ui/components/sonner";
+import AppConvexProvider from "@/lib/convex-provider";
 import { TravailThemeProvider } from "@/components/design/theme-provider";
-
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+import { DevAccountSwitcher } from "@/components/auth/dev-account-switcher";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const tree = (
-    <TravailThemeProvider>{children}</TravailThemeProvider>
+  return (
+    <AppConvexProvider ensureUserMutation={api.functions.users.ensureUser}>
+      <TravailThemeProvider>
+        {children}
+        <Toaster richColors />
+        <DevAccountSwitcher />
+      </TravailThemeProvider>
+    </AppConvexProvider>
   );
-  if (!convex) return tree;
-  return <ConvexProvider client={convex}>{tree}</ConvexProvider>;
 }

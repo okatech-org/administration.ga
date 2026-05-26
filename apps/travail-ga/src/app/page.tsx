@@ -25,7 +25,8 @@ import {
 import { JobCard } from "@/components/design/job-card";
 import { MOCK_OFFRES } from "@/lib/travail-mock-data";
 import { api } from "@convex/_generated/api";
-import { pnpeLink } from "@/lib/utils";
+import { offreHref, pnpeLink } from "@/lib/utils";
+import { useFavoris } from "@/lib/use-favoris";
 
 type NationalKpis = {
   totalOffres?: number;
@@ -105,6 +106,8 @@ export default function LandingPage() {
   const kpis = useQuery(
     (api as any).functions?.pnpe?.stats?.nationalKpis,
   ) as NationalKpis | undefined;
+
+  const { isFavori, toggle: toggleFavori } = useFavoris();
 
   const totalOffres = kpis?.totalOffres ?? 1284;
   const totalDe = kpis?.totalDe ?? 38902;
@@ -362,10 +365,16 @@ export default function LandingPage() {
             {MOCK_OFFRES.slice(0, 4).map((o, i) => (
               <Link
                 key={o.id}
-                href={`/offres/${o.ref}`}
+                href={offreHref(o.ref)}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <JobCard offre={o} density="regular" index={i} />
+                <JobCard
+                  offre={o}
+                  density="regular"
+                  index={i}
+                  bookmarked={isFavori(o.ref)}
+                  onBookmark={() => toggleFavori(o.ref)}
+                />
               </Link>
             ))}
           </div>

@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { Icons } from "./icons";
 import { Avatar } from "./ui";
 import { MOCK_OFFRES } from "@/lib/travail-mock-data";
+import { offreHref } from "@/lib/utils";
 
 type Action = {
   id: string;
@@ -109,7 +110,7 @@ export function CommandPalette({
       label: o.titre,
       sub: `${o.employeur} · ${o.ville}`,
       icon: <Avatar logo={o.logo} size={20} />,
-      run: () => router.push(`/offres/${o.ref}`),
+      run: () => router.push(offreHref(o.ref)),
     }));
     const eco: Action[] = [
       {
