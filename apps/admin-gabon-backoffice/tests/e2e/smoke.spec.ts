@@ -30,7 +30,13 @@ test.describe("Backoffice smoke tests", () => {
 
   test("unauthenticated admin routes don't crash", async ({ page }) => {
     // Ces routes DOIVENT soit charger, soit rediriger — jamais 5xx.
-    const routes = ["/reps", "/reps/new", "/admin", "/admin/users"];
+    const routes = [
+      "/reps",
+      "/reps/new",
+      "/admin",
+      "/admin/users",
+      "/administrations",
+    ];
     for (const route of routes) {
       const response = await page.goto(route);
       expect(
@@ -38,6 +44,18 @@ test.describe("Backoffice smoke tests", () => {
         `Route ${route} should not crash`,
       ).toBeLessThan(500);
     }
+  });
+
+  test("/administrations route compiles and is reachable", async ({ page }) => {
+    // Smoke pour le volet "Catalogue des Administrations" (Phase 1 admin.ga).
+    // La route est protégée par SuperAdminGuard, donc on attend soit le contenu
+    // (si une session admin existe) soit une redirection vers /sign-in.
+    const response = await page.goto("/administrations");
+    expect(response?.status() ?? 500).toBeLessThan(500);
+    // Vérifie qu'on atterrit soit sur la page elle-même, soit sur la page de
+    // connexion — pas sur une 5xx ni sur une page d'erreur Next.js.
+    const url = page.url();
+    expect(url).toMatch(/(\/administrations|\/sign-in|\/login)/);
   });
 });
 
