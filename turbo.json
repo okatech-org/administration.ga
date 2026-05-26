@@ -18,8 +18,7 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true,
-      "interactive": true
+      "persistent": true
     },
     "test:e2e": {
       "cache": false,

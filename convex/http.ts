@@ -1191,4 +1191,230 @@ http.route({
   }),
 });
 
+// ============================================================================
+// PNPE Auto-Emploi — webhooks partenaires (Phase 7.6)
+// ============================================================================
+//
+// Reçoit les notifications de statut depuis Ediandza (formation BMC) et
+// ANPI-Gabon (formalisation) pour synchroniser l'état des programmes
+// Auto-Emploi côté PNPE.
+//
+// Sécurité : signature HMAC obligatoire en production. Le secret est partagé
+// avec le partenaire (EDIANDZA_WEBHOOK_SECRET / ANPI_WEBHOOK_SECRET) ; le
+// header `X-Signature` doit contenir le HMAC-SHA256 du corps brut.
+// En dev (PNPE_MOCK_INTEGRATIONS=1), la signature n'est pas vérifiée.
+
+async function verifyHmacSignature(
+  rawBody: string,
+  signature: string | null,
+  secret: string,
+): Promise<boolean> {
+  if (!signature) return false;
+  // Web Crypto API (disponible dans le runtime Convex / Node récent)
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sigBuf = await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody));
+  const expected = Array.from(new Uint8Array(sigBuf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return signature === expected || signature === `sha256=${expected}`;
+}
+
+// ─── Ediandza webhook ────────────────────────────────────────────────
+//
+// Payload attendu (à valider à la signature du protocole) :
+// {
+//   "event": "formation.statut_change" | "formation.completion",
+//   "parcoursId": "EDIANDZA-XXX",
+//   "statutSuivi": "EN_COURS" | "TERMINE" | "ABANDON",
+//   "note"?: 17
+// }
+http.route({
+  path: "/integrations/ediandza/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const mockMode = process.env.PNPE_MOCK_INTEGRATIONS === "1";
+    const secret = process.env.EDIANDZA_WEBHOOK_SECRET;
+    const rawBody = await request.text();
+
+    if (!mockMode) {
+      if (!secret) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "webhook_not_configured" }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      const signature = request.headers.get("x-signature");
+      const valid = await verifyHmacSignature(rawBody, signature, secret);
+      if (!valid) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "invalid_signature" }),
+          { status: 401, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    let payload: {
+      event?: string;
+      parcoursId?: string;
+      statutSuivi?: "INSCRIT" | "EN_COURS" | "TERMINE" | "ABANDON";
+      note?: number;
+    };
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return new Response(
+        JSON.stringify({ ok: false, error: "invalid_json" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    if (!payload.parcoursId || !payload.statutSuivi) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "missing_fields" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const programme = await ctx.runQuery(
+      (internal as any).functions.pnpe.autoEmploi.getByEdiandzaParcoursId,
+      { ediandzaParcoursId: payload.parcoursId },
+    );
+
+    if (!programme) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "programme_not_found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const prevFormation = programme.formationBMC;
+    if (!prevFormation) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "formation_bmc_missing" }),
+        { status: 422, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    await ctx.runMutation(
+      (internal as any).functions.pnpe.autoEmploi.setEdiandzaParcoursId,
+      {
+        programmeId: programme._id,
+        ediandzaParcoursId: payload.parcoursId,
+        formationBMC: {
+          sessionId: prevFormation.sessionId,
+          dateDebut: prevFormation.dateDebut,
+          dateFin: prevFormation.dateFin,
+          statutSuivi: payload.statutSuivi,
+          note: payload.note ?? prevFormation.note,
+        },
+      },
+    );
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+// ─── ANPI-Gabon webhook ──────────────────────────────────────────────
+//
+// Payload attendu :
+// {
+//   "event": "dossier.statut_change" | "dossier.immatriculation",
+//   "dossierId": "ANPI-XXX",
+//   "statutDossier": "RECU" | "INSTRUCTION" | "VALIDATION" | "IMMATRICULATION" | "REJET",
+//   "companyImmatriculation"?: { "rccm": "...", "nif": "..." }
+// }
+http.route({
+  path: "/integrations/anpi/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const mockMode = process.env.PNPE_MOCK_INTEGRATIONS === "1";
+    const secret = process.env.ANPI_WEBHOOK_SECRET;
+    const rawBody = await request.text();
+
+    if (!mockMode) {
+      if (!secret) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "webhook_not_configured" }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      const signature = request.headers.get("x-signature");
+      const valid = await verifyHmacSignature(rawBody, signature, secret);
+      if (!valid) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "invalid_signature" }),
+          { status: 401, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    let payload: {
+      event?: string;
+      dossierId?: string;
+      statutDossier?:
+        | "RECU"
+        | "INSTRUCTION"
+        | "VALIDATION"
+        | "IMMATRICULATION"
+        | "REJET";
+    };
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return new Response(
+        JSON.stringify({ ok: false, error: "invalid_json" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    if (!payload.dossierId || !payload.statutDossier) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "missing_fields" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const programme = await ctx.runQuery(
+      (internal as any).functions.pnpe.autoEmploi.getByAnpiDossierId,
+      { anpiDossierId: payload.dossierId },
+    );
+
+    if (!programme) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "programme_not_found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // Avance le programme en LANCEMENT uniquement à l'IMMATRICULATION
+    // effective (la validation ANPI seule ne suffit pas — l'activité doit
+    // être immatriculée pour être considérée comme lancée).
+    const avancer = payload.statutDossier === "IMMATRICULATION";
+
+    await ctx.runMutation(
+      (internal as any).functions.pnpe.autoEmploi.setAnpiDossierId,
+      {
+        programmeId: programme._id,
+        anpiDossierId: payload.dossierId,
+        avancerEnLancement: avancer,
+      },
+    );
+
+    return new Response(
+      JSON.stringify({ ok: true, advanced: avancer }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }),
+});
+
 export default http;

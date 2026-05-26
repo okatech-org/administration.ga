@@ -209,7 +209,7 @@ export function ProfileDetailView({
 
 	const basePath =
 		context === "agent"
-			? "/affaires-consulaires/profiles"
+			? "/conseiller/mes-demandeurs"
 			: "/admin/profiles";
 	const requestsBasePath =
 		context === "agent" ? "/requests" : "/admin/requests";

@@ -11,15 +11,32 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0072B9",
+  themeColor: "#1B4D8C",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body className="font-sans bg-background text-foreground antialiased">
+    <html lang="fr" suppressHydrationWarning data-scroll-behavior="smooth">
+      <head>
+        {/* Fonts éditoriales — Inter (sans), Satoshi (display), JetBrains Mono (code) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;550;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,901&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="travail-app antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
