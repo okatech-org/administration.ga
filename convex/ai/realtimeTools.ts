@@ -1936,6 +1936,144 @@ const BUSINESS_TOOLS: GatedTool[] = [
 			},
 		},
 	},
+
+	// ─────────────────────────────────────────────────────────────
+	// Phase F — MODE EMPLOI (PNPE / TRAVAIL.GA)
+	// ─────────────────────────────────────────────────────────────
+	// Tous lecture seule : queries sur demandeursEmploi / offresEmploi,
+	// template d'offre, FAQ Code du travail. Exposés en agent + backoffice
+	// (les D.E côté citizen ont leurs propres flux). Pas de TaskCode requis :
+	// l'auth seule suffit, la sensibilité business est faible.
+	{
+		requiredTask: null,
+		excludeSurfaces: ["citizen"],
+		tool: {
+			type: "function",
+			name: "match_candidates",
+			description:
+				"Matche les Demandeurs d'Emploi ACTIFS dont le profil correspond à une offre d'emploi PNPE. " +
+				"Scoring déterministe : province (+50), niveau études (+20), type contrat préféré (+15), " +
+				"compétences partagées (+15 max). Retourne jusqu'à 10 candidats triés par score, avec les raisons du match. " +
+				"À utiliser quand l'employeur ou le conseiller demande « trouve-moi des candidats pour cette offre », " +
+				"« qui correspondrait au poste X », ou similaire. Annoncer le nombre de matches puis les 3 meilleurs candidats à l'oral.",
+			parameters: {
+				type: "object",
+				properties: {
+					offreId: {
+						type: "string",
+						description: "ID Convex de l'offre d'emploi (table offresEmploi). Obtenir d'abord via la conversation ou la navigation.",
+					},
+					limit: {
+						type: "number",
+						description: "Nombre max de candidats à retourner (défaut : 10).",
+					},
+				},
+				required: ["offreId"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		excludeSurfaces: ["citizen"],
+		tool: {
+			type: "function",
+			name: "draft_job_offer",
+			description:
+				"Génère un brouillon textuel d'offre d'emploi à partir de paramètres minimaux (titre, secteur, contrat). " +
+				"Produit un canevas avec sections Missions / Profil / Conditions à compléter. " +
+				"À utiliser quand un employeur dit « aide-moi à rédiger une offre pour un poste de X », « écris-moi un brouillon d'offre Y ». " +
+				"Demander oralement les paramètres manquants AVANT d'invoquer le tool (titre, secteur, type contrat — niveau et salaire optionnels). " +
+				"Lire le brouillon à l'oral en demandant à l'employeur ce qu'il veut affiner.",
+			parameters: {
+				type: "object",
+				properties: {
+					titre: {
+						type: "string",
+						description: "Intitulé du poste (ex : 'Comptable senior', 'Conducteur d'engins BTP').",
+					},
+					secteur: {
+						type: "string",
+						description: "Code NAF Gabon du secteur (ex : 'COMMERCE', 'BTP', 'AGRICULTURE', 'INDUSTRIE_EXTRACTIVE', 'SERVICES_FINANCIERS'). Voir validators/pnpe.ts.",
+					},
+					typeContrat: {
+						type: "string",
+						description: "'CDI', 'CDD', 'STAGE', 'ALTERNANCE', 'INTERIM'.",
+					},
+					niveauEtudes: {
+						type: "string",
+						description: "Niveau minimum requis : 'AUCUN', 'CEP', 'BEPC', 'BAC', 'BTS_DUT', 'LICENCE', 'MASTER', 'DOCTORAT' (optionnel).",
+					},
+					salaireMin: {
+						type: "number",
+						description: "Salaire minimum mensuel en XAF (optionnel).",
+					},
+					salaireMax: {
+						type: "number",
+						description: "Salaire maximum mensuel en XAF (optionnel).",
+					},
+				},
+				required: ["titre", "secteur", "typeContrat"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		excludeSurfaces: ["citizen"],
+		tool: {
+			type: "function",
+			name: "suggest_trainings",
+			description:
+				"Recommande des formations à un Demandeur d'Emploi selon ses compétences manquantes. " +
+				"Cataloguage MVP hardcodé (8 formations Ediandza / partenaires PNPE). " +
+				"À utiliser quand le conseiller dit « quelles formations je peux proposer à ce D.E », " +
+				"« qu'est-ce qui manque à ce candidat pour le poste ». " +
+				"Annoncer les 2-3 formations les plus pertinentes avec organisme et durée.",
+			parameters: {
+				type: "object",
+				properties: {
+					demandeurId: {
+						type: "string",
+						description: "ID Convex du Demandeur d'Emploi (table demandeursEmploi).",
+					},
+					gapSkills: {
+						type: "array",
+						description: "Liste des compétences manquantes identifiées (ex : ['Excel', 'anglais', 'comptabilité']). Optionnel — si absent, retourne les 3 formations génériques.",
+						items: { type: "string" },
+					},
+				},
+				required: ["demandeurId"],
+			},
+		},
+	},
+	{
+		requiredTask: null,
+		excludeSurfaces: ["citizen"],
+		tool: {
+			type: "function",
+			name: "explain_labor_code",
+			description:
+				"Répond à une question simple sur le Code du travail gabonais via une FAQ MVP de 6 sujets clés " +
+				"(période d'essai, congés payés, préavis/rupture, SMIG, maternité, apprentissage). " +
+				"Cite les articles applicables. " +
+				"À utiliser quand l'utilisateur (employeur ou D.E ou conseiller) demande « combien de temps de préavis pour un CDI », " +
+				"« qu'est-ce que dit le code sur la période d'essai », etc. " +
+				"TOUJOURS rappeler oralement que la réponse est indicative et qu'un cas concret nécessite un conseiller juridique.",
+			parameters: {
+				type: "object",
+				properties: {
+					question: {
+						type: "string",
+						description: "Question en langage naturel sur le Code du travail gabonais.",
+					},
+					contexte: {
+						type: "string",
+						description: "Catégorie indicative : 'embauche', 'rupture', 'conges', 'salaires', 'maternite', 'apprentissage' (optionnel).",
+					},
+				},
+				required: ["question"],
+			},
+		},
+	},
 ];
 
 // ─────────────────────────────────────────────────────────────
