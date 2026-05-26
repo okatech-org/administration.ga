@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { Briefcase, PlusCircle } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const STATUT_COLORS: Record<string, string> = {
   BROUILLON: "bg-slate-100 text-slate-700",
@@ -27,8 +27,7 @@ const STATUT_LABELS: Record<string, string> = {
 };
 
 export default function MesOffresPage() {
-  // @ts-expect-error — api.pnpe typé après codegen
-  const offres = (useQuery(api.pnpe?.employeurs?.listMyOffres, {}) ?? []) as Array<{
+  const offres = (useQuery((api as any).functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
     _id: string;
     reference: string;
     titre: string;

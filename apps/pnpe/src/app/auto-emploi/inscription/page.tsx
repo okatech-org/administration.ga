@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function InscriptionAutoEmploi() {
   const router = useRouter();
@@ -15,10 +15,8 @@ export default function InscriptionAutoEmploi() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api.pnpe typé après codegen
-  const demandeur = useQuery(api.pnpe?.demandeurs?.getMine);
-  // @ts-expect-error
-  const enroll = useMutation(api.pnpe?.autoEmploi?.enroll);
+  const demandeur = useQuery((api as any).functions.pnpe.demandeurs.getMine);
+  const enroll = useMutation((api as any).functions.pnpe.autoEmploi.enroll);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

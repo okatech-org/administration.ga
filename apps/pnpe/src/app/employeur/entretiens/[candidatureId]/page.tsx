@@ -15,7 +15,7 @@ import { LIVEKIT_CALL_ROOM_OPTIONS } from "@workspace/livekit/room-options";
 import { useLiveKitDisconnectGuard } from "@workspace/livekit/use-livekit-disconnect-guard";
 import { toast } from "sonner";
 import { Video } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function EntretienVisioPage({
   params,
@@ -31,8 +31,7 @@ export default function EntretienVisioPage({
       setToken(null);
     });
 
-  // @ts-expect-error — api.pnpe typé après codegen
-  const requestToken = useAction(api.actions?.pnpeLivekit?.getEntretienToken);
+  const requestToken = useAction((api as any).actions.pnpeLivekit.getEntretienToken);
 
   useEffect(() => {
     let cancelled = false;

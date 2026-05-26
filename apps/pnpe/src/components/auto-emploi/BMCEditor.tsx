@@ -13,7 +13,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Bold, Italic, List, ListOrdered } from "lucide-react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const BMC_BLOCS = [
   { key: "partenairesCles", label: "1. Partenaires clés", hint: "Fournisseurs, alliés, prestataires." },
@@ -113,6 +113,16 @@ function BMCBloc({
     },
   });
 
+  if (!editor) {
+    return (
+      <div className="rounded-xl border bg-card p-4">
+        <label className="font-semibold text-sm block">{label}</label>
+        <p className="text-xs text-muted-foreground mb-2">{hint}</p>
+        <div className="text-xs text-muted-foreground">Initialisation de l'éditeur…</div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border bg-card p-4">
       <label className="font-semibold text-sm block">{label}</label>
@@ -140,8 +150,7 @@ export function BMCEditor({
   const [saving, setSaving] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // @ts-expect-error — api.pnpe typé après codegen
-  const update = useMutation(api.pnpe?.autoEmploi?.updateBusinessPlan);
+  const update = useMutation((api as any).functions.pnpe.autoEmploi.updateBusinessPlan);
 
   const save = useCallback(
     async (next: BMCContent) => {

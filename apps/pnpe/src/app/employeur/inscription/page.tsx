@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type FormState = {
   raisonSociale: string;
@@ -47,8 +47,7 @@ export default function InscriptionEmployeurPage() {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
-  // @ts-expect-error — api.pnpe typé après codegen
-  const createEmployeur = useMutation(api.pnpe?.employeurs?.create);
+  const createEmployeur = useMutation((api as any).functions.pnpe.employeurs.create);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));

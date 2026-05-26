@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type FormState = {
   titre: string;
@@ -57,12 +57,9 @@ export default function NouvelleOffrePage() {
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // @ts-expect-error — api.pnpe typé après codegen
-  const employeur = useQuery(api.pnpe?.employeurs?.getMine);
-  // @ts-expect-error
-  const createOffre = useMutation(api.pnpe?.employeurs?.createOffre);
-  // @ts-expect-error
-  const submitOffre = useMutation(api.pnpe?.employeurs?.submitOffre);
+  const employeur = useQuery((api as any).functions.pnpe.employeurs.getMine);
+  const createOffre = useMutation((api as any).functions.pnpe.employeurs.createOffre);
+  const submitOffre = useMutation((api as any).functions.pnpe.employeurs.submitOffre);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));

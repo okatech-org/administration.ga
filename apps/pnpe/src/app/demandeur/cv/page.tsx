@@ -13,23 +13,19 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { Download, FileText, Upload } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const MAX_SIZE_MB = 5;
 
 export default function CvPage() {
   const [uploading, setUploading] = useState(false);
-  // @ts-expect-error — api.pnpe typé après codegen
-  const demandeur = useQuery(api.pnpe?.demandeurs?.getMine);
-  // @ts-expect-error
+  const demandeur = useQuery((api as any).functions.pnpe.demandeurs.getMine);
   const cvUrl = useQuery(
-    demandeur?._id ? api.pnpe?.demandeurs?.getCvUrl : "skip",
+    demandeur?._id ? (api as any).functions.pnpe.demandeurs.getCvUrl : "skip",
     demandeur?._id ? { demandeurId: demandeur._id } : "skip",
   );
-  // @ts-expect-error
-  const generateUrl = useMutation(api.pnpe?.demandeurs?.generateCvUploadUrl);
-  // @ts-expect-error
-  const attach = useMutation(api.pnpe?.demandeurs?.attachCv);
+  const generateUrl = useMutation((api as any).functions.pnpe.demandeurs.generateCvUploadUrl);
+  const attach = useMutation((api as any).functions.pnpe.demandeurs.attachCv);
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

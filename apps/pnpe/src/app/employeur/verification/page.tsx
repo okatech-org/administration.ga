@@ -9,13 +9,11 @@
 import { useQuery, useMutation } from "convex/react";
 import { toast } from "sonner";
 import { FileCheck2, ShieldCheck } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function VerificationPage() {
-  // @ts-expect-error — api.pnpe typé après codegen
-  const employeur = useQuery(api.pnpe?.employeurs?.getMine);
-  // @ts-expect-error
-  const request = useMutation(api.pnpe?.employeurs?.requestVerification);
+  const employeur = useQuery((api as any).functions.pnpe.employeurs.getMine);
+  const request = useMutation((api as any).functions.pnpe.employeurs.requestVerification);
 
   if (employeur === undefined) {
     return <div className="h-64 bg-muted/50 animate-pulse rounded-xl" />;

@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type Province =
   | "ESTUAIRE"
@@ -61,15 +61,13 @@ export default function InscriptionDemandeurPage() {
     antenneSlug: "",
   });
 
-  // @ts-expect-error — api.pnpe typé après codegen Convex
-  const antennes = (useQuery(api.pnpe?.antennes?.list, {}) ?? []) as Array<{
+  const antennes = (useQuery((api as any).functions.pnpe.antennes.list, {}) ?? []) as Array<{
     _id: string;
     slug: string;
     nom: string;
     province: Province;
   }>;
-  // @ts-expect-error — idem
-  const createDemandeur = useMutation(api.pnpe?.demandeurs?.create);
+  const createDemandeur = useMutation((api as any).functions.pnpe.demandeurs.create);
 
   const filteredAntennes = antennes.filter(
     (a) => !form.provinceResidence || a.province === form.provinceResidence,

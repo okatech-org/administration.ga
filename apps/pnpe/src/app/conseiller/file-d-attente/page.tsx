@@ -11,19 +11,17 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { CheckCircle2, Inbox, Phone } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 export default function FileAttentePage() {
   const [selectedAntenneId, setSelectedAntenneId] = useState<string>("");
-  // @ts-expect-error — api.pnpe typé après codegen
-  const antennes = (useQuery(api.pnpe?.antennes?.list, {}) ?? []) as Array<{
+  const antennes = (useQuery((api as any).functions.pnpe.antennes.list, {}) ?? []) as Array<{
     _id: string;
     slug: string;
     nom: string;
   }>;
-  // @ts-expect-error
   const demandeurs = (useQuery(
-    selectedAntenneId ? api.pnpe?.demandeurs?.listByAntenne : "skip",
+    selectedAntenneId ? (api as any).functions.pnpe.demandeurs.listByAntenne : "skip",
     selectedAntenneId
       ? { antenneId: selectedAntenneId, statut: "EN_VALIDATION" }
       : "skip",
@@ -35,8 +33,7 @@ export default function FileAttentePage() {
     telephoneWhatsApp?: string;
     _creationTime: number;
   }>;
-  // @ts-expect-error
-  const validate = useMutation(api.pnpe?.demandeurs?.validateDemandeur);
+  const validate = useMutation((api as any).functions.pnpe.demandeurs.validateDemandeur);
 
   const onValidate = async (id: string) => {
     try {
