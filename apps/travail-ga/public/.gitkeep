@@ -1,0 +1,2 @@
+# Dossier public Next.js requis par le Dockerfile (COPY public ./public).
+# Reste vide tant qu'aucun asset statique n'est ajouté à travail-ga.
