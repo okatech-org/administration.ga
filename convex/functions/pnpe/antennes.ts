@@ -71,3 +71,123 @@ export const create = authMutation({
     });
   },
 });
+
+/**
+ * Mise à jour d'une antenne — direction PNPE / admin Ministère.
+ *
+ * Patch partiel : tous les champs sont optionnels. Le slug et la
+ * province ne sont volontairement pas modifiables (changement d'identité
+ * territoriale = création + désaffectation, pas un update).
+ */
+export const update = authMutation({
+  args: {
+    antenneId: v.id("antennesPnpe"),
+    nom: v.optional(v.string()),
+    ville: v.optional(v.string()),
+    adresse: v.optional(addressValidator),
+    telephone: v.optional(v.union(v.string(), v.null())),
+    email: v.optional(v.union(v.string(), v.null())),
+    statut: v.optional(statutAntenneValidator),
+    dateOuverture: v.optional(v.union(v.number(), v.null())),
+  },
+  handler: async (ctx, args) => {
+    await requirePnpeRole(ctx, ctx.user, PNPE_ADMIN_ROLES);
+    const existing = await ctx.db.get(args.antenneId);
+    if (!existing) {
+      throw new Error("ANTENNE_NOT_FOUND");
+    }
+    const patch: Record<string, unknown> = {};
+    if (args.nom !== undefined) patch.nom = args.nom;
+    if (args.ville !== undefined) patch.ville = args.ville;
+    if (args.adresse !== undefined) patch.adresse = args.adresse;
+    if (args.telephone !== undefined) {
+      patch.telephone = args.telephone ?? undefined;
+    }
+    if (args.email !== undefined) {
+      patch.email = args.email ?? undefined;
+    }
+    if (args.statut !== undefined) patch.statut = args.statut;
+    if (args.dateOuverture !== undefined) {
+      patch.dateOuverture = args.dateOuverture ?? undefined;
+    }
+    await ctx.db.patch(args.antenneId, patch);
+    return args.antenneId;
+  },
+});
+
+/**
+ * Suspension/réactivation d'une antenne — bascule rapide entre
+ * OPERATIONNELLE et SUSPENDUE. Crée un évènement d'audit.
+ *
+ * Pour fermer définitivement, utiliser `update` avec `statut: "SUSPENDUE"`
+ * et `dateOuverture: null` (la fermeture définitive n'est pas un patch
+ * binaire car elle peut nécessiter une procédure RH avec ré-affectation
+ * des conseillers).
+ */
+export const toggleStatut = authMutation({
+  args: { antenneId: v.id("antennesPnpe") },
+  handler: async (ctx, args) => {
+    await requirePnpeRole(ctx, ctx.user, PNPE_ADMIN_ROLES);
+    const antenne = await ctx.db.get(args.antenneId);
+    if (!antenne) {
+      throw new Error("ANTENNE_NOT_FOUND");
+    }
+    const next =
+      antenne.statut === "OPERATIONNELLE" ? "SUSPENDUE" : "OPERATIONNELLE";
+    await ctx.db.patch(args.antenneId, { statut: next });
+    return { previous: antenne.statut, next };
+  },
+});
+
+// ─── Staff PNPE — gestion administrateur ────────────────────────
+
+/**
+ * Active ou désactive un agent PNPE.
+ *
+ * `isActive` détermine si l'agent peut accéder aux espaces métier
+ * (conseiller, file d'attente, etc.). Une désactivation ne supprime
+ * pas le membership ; les données restent attachées pour traçabilité.
+ */
+export const toggleStaffActive = authMutation({
+  args: { staffId: v.id("pnpeStaffAssignments") },
+  handler: async (ctx, args) => {
+    await requirePnpeRole(ctx, ctx.user, PNPE_ADMIN_ROLES);
+    const staff = await ctx.db.get(args.staffId);
+    if (!staff) {
+      throw new Error("STAFF_NOT_FOUND");
+    }
+    await ctx.db.patch(args.staffId, { isActive: !staff.isActive });
+    return { previous: staff.isActive, next: !staff.isActive };
+  },
+});
+
+/**
+ * Réaffecte un agent à une nouvelle antenne.
+ *
+ * Cas typique : un conseiller muté de Libreville à Port-Gentil.
+ * Pour les rôles non-géolocalisés (DG, admin ministère), passer
+ * `antenneId: null`.
+ */
+export const reassignStaffAntenne = authMutation({
+  args: {
+    staffId: v.id("pnpeStaffAssignments"),
+    antenneId: v.union(v.id("antennesPnpe"), v.null()),
+  },
+  handler: async (ctx, args) => {
+    await requirePnpeRole(ctx, ctx.user, PNPE_ADMIN_ROLES);
+    const staff = await ctx.db.get(args.staffId);
+    if (!staff) {
+      throw new Error("STAFF_NOT_FOUND");
+    }
+    if (args.antenneId) {
+      const antenne = await ctx.db.get(args.antenneId);
+      if (!antenne) {
+        throw new Error("ANTENNE_NOT_FOUND");
+      }
+    }
+    await ctx.db.patch(args.staffId, {
+      antenneId: args.antenneId ?? undefined,
+    });
+    return { previous: staff.antenneId, next: args.antenneId };
+  },
+});

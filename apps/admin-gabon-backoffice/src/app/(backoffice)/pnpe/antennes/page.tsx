@@ -10,7 +10,9 @@
  */
 "use client";
 
+import { useMutation } from "convex/react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { api } from "@convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,7 @@ import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
 import { SectionHeader } from "@/components/design-system/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateAntenneDialog } from "@/components/pnpe/CreateAntenneDialog";
 import {
 	AlertTriangle,
 	Building2,
@@ -26,8 +29,9 @@ import {
 	Clock,
 	Mail,
 	MapPin,
+	PauseCircle,
 	Phone,
-	PlusCircle,
+	PlayCircle,
 	XCircle,
 } from "lucide-react";
 
@@ -81,6 +85,26 @@ function AntenneCard({ antenne }: AntenneCardProps) {
 		rose: "border-rose-500/30 bg-rose-500/5",
 	}[statutMeta.tone] ?? "";
 
+	const toggleStatut = useMutation(api.functions.pnpe.antennes.toggleStatut);
+
+	const onToggle = async () => {
+		try {
+			const res = await toggleStatut({ antenneId: antenne._id });
+			toast.success(
+				`Antenne ${res.previous} → ${res.next}.`,
+			);
+		} catch (err) {
+			const m = err instanceof Error ? err.message : "Erreur";
+			if (m.includes("INSUFFICIENT_PERMISSIONS")) {
+				toast.error("Permissions insuffisantes.");
+			} else {
+				toast.error(m);
+			}
+		}
+	};
+
+	const isOperational = antenne.statut === "OPERATIONNELLE";
+
 	return (
 		<FlatCard className={`relative ${toneClass}`}>
 			<div className="p-4 space-y-3">
@@ -125,7 +149,27 @@ function AntenneCard({ antenne }: AntenneCardProps) {
 					<span className="text-muted-foreground">
 						{antenne.conseillers?.length ?? 0} conseiller(s) affecté(s)
 					</span>
-					<span className="font-mono text-muted-foreground">{antenne.slug}</span>
+					<div className="flex items-center gap-2">
+						<Button
+							size="sm"
+							variant="ghost"
+							className="h-7 gap-1 text-xs"
+							onClick={onToggle}
+						>
+							{isOperational ? (
+								<>
+									<PauseCircle className="h-3 w-3" />
+									Suspendre
+								</>
+							) : (
+								<>
+									<PlayCircle className="h-3 w-3" />
+									Réactiver
+								</>
+							)}
+						</Button>
+						<span className="font-mono text-muted-foreground">{antenne.slug}</span>
+					</div>
 				</div>
 			</div>
 		</FlatCard>
@@ -137,9 +181,8 @@ function AntenneCard({ antenne }: AntenneCardProps) {
 export default function PnpeAntennesPage() {
 	const { t } = useTranslation();
 
-	// Cast `(api as any)` : codegen Convex stale (cf. PR #33).
 	const { data: antennes, isLoading } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.antennes.list,
+		api.functions.pnpe.antennes.list,
 		{},
 	);
 
@@ -160,12 +203,7 @@ export default function PnpeAntennesPage() {
 					"Gestion du réseau territorial — 7 antennes ouvertes, 2 provinces à couvrir (Ngounié, Ogooué-Ivindo)",
 				)}
 				icon={MapPin}
-				actions={
-					<Button size="sm" disabled className="gap-1.5">
-						<PlusCircle className="h-4 w-4" />
-						{t("pnpe.antennes.create", "Ouvrir une antenne")}
-					</Button>
-				}
+				actions={<CreateAntenneDialog />}
 			/>
 
 			{/* ─── Synthèse couverture territoriale ──── */}

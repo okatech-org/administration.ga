@@ -16,6 +16,8 @@ import {
   Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PnpeRoleGate } from "@/components/auth/PnpeRoleGate";
+import { PnpeRole } from "@/lib/pnpe/roles";
 
 const NAV_ITEMS = [
   { href: "/employeur/tableau-de-bord", label: "Tableau de bord", icon: Home },
@@ -33,6 +35,7 @@ export default function EmployeurLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isInscription = pathname?.startsWith("/employeur/inscription");
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,7 +78,15 @@ export default function EmployeurLayout({
               })}
             </nav>
           </aside>
-          <main className="min-w-0">{children}</main>
+          <main className="min-w-0">
+            {isInscription ? (
+              children
+            ) : (
+              <PnpeRoleGate allowedRoles={[PnpeRole.Employeur]}>
+                {children}
+              </PnpeRoleGate>
+            )}
+          </main>
         </div>
       </div>
     </div>

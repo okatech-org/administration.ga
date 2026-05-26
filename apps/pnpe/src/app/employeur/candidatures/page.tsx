@@ -7,17 +7,18 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Inbox } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 export default function CandidaturesEmployeurPage() {
   const [selectedOffre, setSelectedOffre] = useState<string | null>(null);
-  const offres = (useQuery((api as any).functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
+  const offres = (useQuery(api.functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
     _id: string;
     titre: string;
     nbCandidatures?: number;
   }>;
   const candidatures = (useQuery(
-    selectedOffre ? (api as any).functions.pnpe.candidatures.listByOffre : "skip",
-    selectedOffre ? { offreId: selectedOffre } : "skip",
+    api.functions.pnpe.candidatures.listByOffre,
+    selectedOffre ? { offreId: selectedOffre as Id<"offresEmploi"> } : "skip",
   ) ?? []) as Array<{
     _id: string;
     statut: string;

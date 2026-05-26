@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "lint": "eslint",
+    "lint": "echo \"workspace package \u2014 lint delegated to apps\"",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },

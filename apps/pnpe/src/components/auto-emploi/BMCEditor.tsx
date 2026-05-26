@@ -14,6 +14,7 @@ import { Bold, Italic, List, ListOrdered } from "lucide-react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 const BMC_BLOCS = [
   { key: "partenairesCles", label: "1. Partenaires clés", hint: "Fournisseurs, alliés, prestataires." },
@@ -138,7 +139,7 @@ export function BMCEditor({
   initialContent,
   initialVersion,
 }: {
-  programmeId: string;
+  programmeId: Id<"programmesAutoEmploi">;
   initialContent?: Partial<BMCContent>;
   initialVersion?: number;
 }) {
@@ -150,7 +151,7 @@ export function BMCEditor({
   const [saving, setSaving] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const update = useMutation((api as any).functions.pnpe.autoEmploi.updateBusinessPlan);
+  const update = useMutation(api.functions.pnpe.autoEmploi.updateBusinessPlan);
 
   const save = useCallback(
     async (next: BMCContent) => {

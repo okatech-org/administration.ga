@@ -1,18 +1,23 @@
 /**
- * Middleware Next.js — dispatch par rôle PNPE.
+ * Middleware Next.js — couche d'authentification PNPE.
  *
- * Le middleware s'exécute à chaque requête. Il vérifie la session
- * Better Auth via cookie et redirige selon le rôle :
- *  - demandeur_emploi          → /demandeur/*
- *  - employeur                  → /employeur/*
- *  - conseiller_pnpe, chef_*    → /conseiller/*
- *  - admin_ministere_travail   → /pnpe (backoffice — sur admin.administration.ga)
- *  - non authentifié            → /
+ * Architecture en 2 couches :
+ *  1. **Ce middleware** : vérifie la présence du cookie Better Auth et
+ *     redirige vers `/` les utilisateurs non-authentifiés tentant
+ *     d'accéder à une route protégée. Rapide, pas d'appel réseau.
+ *  2. **Layouts client (`PnpeRoleGate`)** : récupère le rôle PNPE de
+ *     l'utilisateur via `api.functions.pnpe.session.getMyRole` et
+ *     restreint l'accès aux routes selon le rôle :
+ *       - demandeur_emploi → /demandeur/*
+ *       - employeur → /employeur/*
+ *       - conseiller_pnpe, chef_*, direction_pnpe → /conseiller/*
+ *       - formateur_auto_emploi → /auto-emploi/formation
+ *       - admin_ministere_travail → /pnpe (backoffice administratif)
  *
- * NOTE Phase 7+ : pour l'instant, le middleware ne fait que protéger
- * les routes auth requises et laisse Convex/Better Auth gérer l'auth
- * réelle côté API. Le dispatch par rôle complet sera ajouté quand
- * l'extraction du rôle depuis le cookie sera stable.
+ * Ce pattern évite de décoder le cookie Better Auth côté Edge Runtime
+ * (qui demanderait l'export du secret de signature) et profite de la
+ * réactivité Convex pour mettre à jour le rôle en temps réel après
+ * une promotion ou un changement d'antenne.
  */
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -49,10 +54,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 3. TODO Phase 7+ : dispatch par rôle Better Auth (lecture du rôle
-  // depuis la session, redirection si le rôle ne match pas la route).
-  // Pour l'instant, l'auth Convex côté API rejette les requêtes RBAC.
-
+  // 3. Le dispatch par rôle est délégué aux layouts client via
+  // `PnpeRoleGate` qui appelle `api.functions.pnpe.session.getMyRole`.
   return NextResponse.next();
 }
 

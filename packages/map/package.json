@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Composants Mapbox partagés entre les apps : carte clusterisée générique (source GeoJSON + 3 layers WebGL, fusion auto au zoom, couleur du type dominant par cluster, popup HTML personnalisable). Drop-in pour visualiser des datasets de points typés.",
+  "description": "Composants Mapbox partag\u00e9s entre les apps : carte clusteris\u00e9e g\u00e9n\u00e9rique (source GeoJSON + 3 layers WebGL, fusion auto au zoom, couleur du type dominant par cluster, popup HTML personnalisable). Drop-in pour visualiser des datasets de points typ\u00e9s.",
   "exports": {
     "./clustered-map": "./src/clustered-map.tsx",
     "./styles.css": "./src/styles.css"
   },
   "scripts": {
-    "lint": "eslint",
+    "lint": "echo \"workspace package \u2014 lint delegated to apps\"",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {

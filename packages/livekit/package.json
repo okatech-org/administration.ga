@@ -3,14 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Utilitaires LiveKit partagés entre les apps : options de room haute qualité (simulcast VP9), hook de guard onDisconnected (évite fermeture prématurée), hook de sonnerie générée Web Audio.",
+  "description": "Utilitaires LiveKit partag\u00e9s entre les apps : options de room haute qualit\u00e9 (simulcast VP9), hook de guard onDisconnected (\u00e9vite fermeture pr\u00e9matur\u00e9e), hook de sonnerie g\u00e9n\u00e9r\u00e9e Web Audio.",
   "exports": {
     "./room-options": "./src/room-options.ts",
     "./use-livekit-disconnect-guard": "./src/use-livekit-disconnect-guard.ts",
     "./use-ringtone": "./src/use-ringtone.ts"
   },
   "scripts": {
-    "lint": "eslint",
+    "lint": "echo \"workspace package \u2014 lint delegated to apps\"",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {

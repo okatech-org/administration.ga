@@ -47,6 +47,15 @@ const DEV_ACCOUNTS: DevSeedAccount[] = [
 	{ email: "patrick.obiang@admin.ga", name: "OBIANG Patrick (Franceville)" },
 	{ email: "entreprise.demo@admin.ga", name: "SARL DEMO — Représentant légal" },
 
+	// ── Staff PNPE — verticale Emploi (apps/pnpe, port 3008) ──
+	// Emails alignés avec convex/seeds/pnpe/staffAccountsPnpe.ts. Après ce
+	// seed, lancer staffAccountsPnpe:run pour créer les memberships et les
+	// pnpeStaffAssignments (rôle, antenne, modules métier).
+	{ email: "dg@national.demo.pnpe.administration.ga", name: "EDZANG Anicet (DG PNPE)" },
+	{ email: "admin-min-travail@national.demo.pnpe.administration.ga", name: "ILOGUE Jacqueline (Cabinet Min. Travail)" },
+	{ email: "chef@libreville.demo.pnpe.administration.ga", name: "MBA Marie (Chef antenne Libreville)" },
+	{ email: "conseiller-1@libreville.demo.pnpe.administration.ga", name: "NGUEMA Jean (Conseiller Libreville)" },
+
 	// ─────────────────────────────────────────────────────────────
 	// ── Comptes héritage gabon-diplomatie (backwards compat) ──
 	// ─────────────────────────────────────────────────────────────

@@ -16,8 +16,8 @@ const STATUT_LABELS: Record<string, { label: string; tone: string; icon: typeof 
 };
 
 export default function EmployeurDashboardPage() {
-  const employeur = useQuery((api as any).functions.pnpe.employeurs.getMine);
-  const offres = (useQuery((api as any).functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
+  const employeur = useQuery(api.functions.pnpe.employeurs.getMine);
+  const offres = (useQuery(api.functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
     statut: string;
     nbCandidatures?: number;
   }>;

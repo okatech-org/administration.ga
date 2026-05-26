@@ -44,9 +44,9 @@ export default function OffreDetailPage({
   // Les références PNPE peuvent contenir des "/" encodés en URL.
   const reference = decodeURIComponent(rawReference);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const convex = useQuery(
-    (api as any).functions?.pnpe?.offresPubliques?.getByReferenceEnriched,
+    api.functions?.pnpe?.offresPubliques?.getByReferenceEnriched,
     { reference },
   ) as Record<string, unknown> | null | undefined;
 

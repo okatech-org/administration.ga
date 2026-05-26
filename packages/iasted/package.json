@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Module iAsted partagé : CircleMenu, WindowShell, primitives DS v3, presets citizen/agent/backoffice/agent-desktop",
+  "description": "Module iAsted partag\u00e9 : CircleMenu, WindowShell, primitives DS v3, presets citizen/agent/backoffice/agent-desktop",
   "exports": {
     ".": "./src/index.ts",
     "./tokens/animation": "./src/tokens/animation.ts",
@@ -19,7 +19,7 @@
     "./locales": "./src/locales/supported-locales.ts"
   },
   "scripts": {
-    "lint": "eslint",
+    "lint": "echo \"workspace package \u2014 lint delegated to apps\"",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },

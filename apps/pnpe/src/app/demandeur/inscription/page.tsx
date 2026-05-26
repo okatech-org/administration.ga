@@ -1,30 +1,38 @@
 /**
- * Inscription Demandeur d'Emploi.
+ * Inscription Demandeur d'Emploi — React Hook Form + Zod.
  *
- * Formulaire MVP Phase 2 en useState + validation manuelle. À migrer vers
- * React Hook Form + Zod en Phase 7 (cf. plan), une fois `@hookform/resolvers`
- * ajouté aux deps `apps/pnpe`.
+ * Validation côté client avec Zod, soumission via `pnpe.demandeurs.create`.
+ * Le statut initial est `BROUILLON` ; un conseiller PNPE valide ensuite
+ * via contact (WhatsApp ou visite agence) pour passer en `ACTIF`.
  */
 "use client";
 
-import { useState } from "react";
+import { forwardRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
-type Province =
-  | "ESTUAIRE"
-  | "HAUT_OGOOUE"
-  | "MOYEN_OGOOUE"
-  | "NGOUNIE"
-  | "NYANGA"
-  | "OGOOUE_IVINDO"
-  | "OGOOUE_LOLO"
-  | "OGOOUE_MARITIME"
-  | "WOLEU_NTEM";
+// ─── Référentiel provinces ──────────────────────────────────────
 
-const PROVINCE_LABELS: Record<Province, string> = {
+const PROVINCES = [
+  "ESTUAIRE",
+  "HAUT_OGOOUE",
+  "MOYEN_OGOOUE",
+  "NGOUNIE",
+  "NYANGA",
+  "OGOOUE_IVINDO",
+  "OGOOUE_LOLO",
+  "OGOOUE_MARITIME",
+  "WOLEU_NTEM",
+] as const;
+
+const PROVINCE_LABELS: Record<(typeof PROVINCES)[number], string> = {
   ESTUAIRE: "Estuaire",
   HAUT_OGOOUE: "Haut-Ogooué",
   MOYEN_OGOOUE: "Moyen-Ogooué",
@@ -36,65 +44,87 @@ const PROVINCE_LABELS: Record<Province, string> = {
   WOLEU_NTEM: "Woleu-Ntem",
 };
 
-type FormState = {
-  nip: string;
-  nom: string;
-  prenoms: string;
-  email: string;
-  telephone: string;
-  telephoneWhatsApp: string;
-  provinceResidence: Province | "";
-  antenneSlug: string;
-};
+// ─── Schéma Zod ─────────────────────────────────────────────────
+
+const inscriptionSchema = z.object({
+  nip: z
+    .string()
+    .min(6, "Le NIP doit comporter au moins 6 caractères")
+    .max(20, "Le NIP est trop long"),
+  nom: z.string().min(1, "Nom requis").max(60),
+  prenoms: z.string().min(1, "Prénoms requis").max(80),
+  email: z.string().email("Email invalide"),
+  telephone: z
+    .string()
+    .regex(
+      /^\+?[0-9 ]{8,}$/,
+      "Téléphone invalide (8 chiffres minimum, optionnellement préfixé par +)",
+    ),
+  telephoneWhatsApp: z
+    .string()
+    .regex(/^\+?[0-9 ]{8,}$/, "WhatsApp invalide")
+    .or(z.literal(""))
+    .optional(),
+  provinceResidence: z.enum(PROVINCES, {
+    message: "Province requise",
+  }),
+  antenneSlug: z.string().min(1, "Antenne requise"),
+});
+
+type InscriptionForm = z.infer<typeof inscriptionSchema>;
+
+// ─── Page ───────────────────────────────────────────────────────
 
 export default function InscriptionDemandeurPage() {
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState<FormState>({
-    nip: "",
-    nom: "",
-    prenoms: "",
-    email: "",
-    telephone: "",
-    telephoneWhatsApp: "",
-    provinceResidence: "",
-    antenneSlug: "",
-  });
-
-  const antennes = (useQuery((api as any).functions.pnpe.antennes.list, {}) ?? []) as Array<{
+  const antennes = (useQuery(api.functions.pnpe.antennes.list, {}) ?? []) as Array<{
     _id: string;
     slug: string;
     nom: string;
-    province: Province;
+    province: (typeof PROVINCES)[number];
   }>;
-  const createDemandeur = useMutation((api as any).functions.pnpe.demandeurs.create);
+  const createDemandeur = useMutation(api.functions.pnpe.demandeurs.create);
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<InscriptionForm>({
+    resolver: zodResolver(inscriptionSchema),
+    defaultValues: {
+      nip: "",
+      nom: "",
+      prenoms: "",
+      email: "",
+      telephone: "",
+      telephoneWhatsApp: "",
+      provinceResidence: "ESTUAIRE",
+      antenneSlug: "",
+    },
+  });
+
+  const provinceResidence = watch("provinceResidence");
   const filteredAntennes = antennes.filter(
-    (a) => !form.provinceResidence || a.province === form.provinceResidence,
+    (a) => !provinceResidence || a.province === provinceResidence,
   );
 
-  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
-    setForm((s) => ({ ...s, [key]: value }));
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.provinceResidence || !form.antenneSlug || form.nip.length < 6) {
-      toast.error("Renseignez NIP, province et antenne.");
-      return;
-    }
-    setSubmitting(true);
+  const onSubmit = handleSubmit(async (values) => {
     try {
-      const antenne = antennes.find((a) => a.slug === form.antenneSlug);
-      if (!antenne) throw new Error("Antenne introuvable");
+      const antenne = antennes.find((a) => a.slug === values.antenneSlug);
+      if (!antenne) {
+        toast.error("Antenne introuvable.");
+        return;
+      }
       await createDemandeur({
-        nip: form.nip,
-        nom: form.nom,
-        prenoms: form.prenoms,
-        email: form.email,
-        telephone: form.telephone,
-        telephoneWhatsApp: form.telephoneWhatsApp || undefined,
-        provinceResidence: form.provinceResidence,
-        antenneId: antenne._id,
+        nip: values.nip,
+        nom: values.nom,
+        prenoms: values.prenoms,
+        email: values.email,
+        telephone: values.telephone,
+        telephoneWhatsApp: values.telephoneWhatsApp || undefined,
+        provinceResidence: values.provinceResidence,
+        antenneId: antenne._id as Id<"antennesPnpe">,
       });
       toast.success("Inscription enregistrée ! Complétez votre profil.");
       router.push("/demandeur/profil");
@@ -107,15 +137,13 @@ export default function InscriptionDemandeurPage() {
       } else {
         toast.error(message);
       }
-    } finally {
-      setSubmitting(false);
     }
-  };
+  });
 
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-display font-bold tracking-tight mb-2">
-        Inscription Demandeur d'Emploi
+        Inscription Demandeur d&apos;Emploi
       </h1>
       <p className="text-muted-foreground mb-8">
         Renseignez vos informations principales. Votre compte sera validé par
@@ -123,125 +151,98 @@ export default function InscriptionDemandeurPage() {
       </p>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <div>
-          <label className="text-sm font-medium block mb-1.5" htmlFor="nip">
-            NIP (Numéro d'Identification Personnel)
-            <span className="text-destructive ml-0.5">*</span>
-          </label>
-          <input
-            id="nip"
-            value={form.nip}
-            onChange={(e) => update("nip", e.target.value)}
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-            placeholder="Ex : 1234567890"
+        <Field
+          id="nip"
+          label="NIP — Numéro d'Identification Personnel"
+          placeholder="Ex : 1234567890"
+          required
+          error={errors.nip?.message}
+          {...register("nip")}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field
+            id="nom"
+            label="Nom"
             required
+            error={errors.nom?.message}
+            {...register("nom")}
+          />
+          <Field
+            id="prenoms"
+            label="Prénoms"
+            required
+            error={errors.prenoms?.message}
+            {...register("prenoms")}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium block mb-1.5" htmlFor="nom">
-              Nom<span className="text-destructive ml-0.5">*</span>
-            </label>
-            <input
-              id="nom"
-              value={form.nom}
-              onChange={(e) => update("nom", e.target.value)}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1.5" htmlFor="prenoms">
-              Prénoms<span className="text-destructive ml-0.5">*</span>
-            </label>
-            <input
-              id="prenoms"
-              value={form.prenoms}
-              onChange={(e) => update("prenoms", e.target.value)}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium block mb-1.5" htmlFor="email">
-              Email<span className="text-destructive ml-0.5">*</span>
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={form.email}
-              onChange={(e) => update("email", e.target.value)}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1.5" htmlFor="telephone">
-              Téléphone<span className="text-destructive ml-0.5">*</span>
-            </label>
-            <input
-              id="telephone"
-              type="tel"
-              value={form.telephone}
-              onChange={(e) => update("telephone", e.target.value)}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-              placeholder="+241 ..."
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium block mb-1.5" htmlFor="wa">
-            Téléphone WhatsApp (utilisé pour la validation)
-          </label>
-          <input
-            id="wa"
+          <Field
+            id="email"
+            type="email"
+            label="Email"
+            required
+            error={errors.email?.message}
+            {...register("email")}
+          />
+          <Field
+            id="telephone"
             type="tel"
-            value={form.telephoneWhatsApp}
-            onChange={(e) => update("telephoneWhatsApp", e.target.value)}
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+            label="Téléphone"
+            placeholder="+241 ..."
+            required
+            error={errors.telephone?.message}
+            {...register("telephone")}
           />
         </div>
 
+        <Field
+          id="telephoneWhatsApp"
+          type="tel"
+          label="Téléphone WhatsApp (utilisé pour la validation)"
+          error={errors.telephoneWhatsApp?.message}
+          {...register("telephoneWhatsApp")}
+        />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium block mb-1.5" htmlFor="province">
+            <label
+              className="text-sm font-medium block mb-1.5"
+              htmlFor="provinceResidence"
+            >
               Province de résidence
               <span className="text-destructive ml-0.5">*</span>
             </label>
             <select
-              id="province"
-              value={form.provinceResidence}
-              onChange={(e) =>
-                update("provinceResidence", e.target.value as Province)
-              }
+              id="provinceResidence"
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-              required
+              {...register("provinceResidence")}
             >
-              <option value="">-- Choisir --</option>
-              {Object.entries(PROVINCE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
+              {PROVINCES.map((p) => (
+                <option key={p} value={p}>
+                  {PROVINCE_LABELS[p]}
                 </option>
               ))}
             </select>
+            {errors.provinceResidence && (
+              <p className="text-xs text-destructive mt-1">
+                {errors.provinceResidence.message}
+              </p>
+            )}
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1.5" htmlFor="antenne">
+            <label
+              className="text-sm font-medium block mb-1.5"
+              htmlFor="antenneSlug"
+            >
               Antenne de rattachement
               <span className="text-destructive ml-0.5">*</span>
             </label>
             <select
-              id="antenne"
-              value={form.antenneSlug}
-              onChange={(e) => update("antenneSlug", e.target.value)}
+              id="antenneSlug"
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-              required
+              {...register("antenneSlug")}
             >
               <option value="">-- Choisir --</option>
               {filteredAntennes.map((a) => (
@@ -250,19 +251,56 @@ export default function InscriptionDemandeurPage() {
                 </option>
               ))}
             </select>
+            {errors.antenneSlug && (
+              <p className="text-xs text-destructive mt-1">
+                {errors.antenneSlug.message}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="pt-2">
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full md:w-auto rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            disabled={isSubmitting}
+            className="w-full md:w-auto inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {submitting ? "Inscription en cours…" : "Créer mon compte D.E"}
+            {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+            {isSubmitting ? "Inscription en cours…" : "Créer mon compte D.E"}
           </button>
         </div>
       </form>
     </div>
   );
 }
+
+// ─── Composants helper ─────────────────────────────────────────
+
+type FieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  label: string;
+  required?: boolean;
+  error?: string;
+};
+
+const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
+  { id, label, required, error, ...rest },
+  ref,
+) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-sm font-medium block mb-1.5">
+        {label}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </label>
+      <input
+        id={id}
+        ref={ref}
+        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+        aria-invalid={!!error}
+        {...rest}
+      />
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+    </div>
+  );
+});

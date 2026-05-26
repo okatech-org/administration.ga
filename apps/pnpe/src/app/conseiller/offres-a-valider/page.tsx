@@ -19,6 +19,7 @@ import {
   User,
 } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 const CONTRAT_LABELS: Record<string, string> = {
   CDI: "CDI",
@@ -64,9 +65,9 @@ type Offre = {
 
 export default function OffresAValiderPage() {
   const [filterType, setFilterType] = useState<string>("");
-  const offres = (useQuery((api as any).functions.pnpe.offres.listPending, { limit: 100 }) ??
+  const offres = (useQuery(api.functions.pnpe.offres.listPending, { limit: 100 }) ??
     []) as Offre[];
-  const validate = useMutation((api as any).functions.pnpe.offres.validate);
+  const validate = useMutation(api.functions.pnpe.offres.validate);
 
   const filtered = filterType
     ? offres.filter((o) => o.typeEmployeur === filterType)
@@ -74,7 +75,7 @@ export default function OffresAValiderPage() {
 
   const onValidate = async (id: string) => {
     try {
-      await validate({ offreId: id });
+      await validate({ offreId: id as Id<"offresEmploi"> });
       toast.success("Offre publiée.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erreur");

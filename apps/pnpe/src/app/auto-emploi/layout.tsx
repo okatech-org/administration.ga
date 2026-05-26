@@ -15,6 +15,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PnpeRoleGate } from "@/components/auth/PnpeRoleGate";
+import { PnpeRole } from "@/lib/pnpe/roles";
 
 const NAV = [
   { href: "/auto-emploi/presentation", label: "Présentation", icon: Sparkles },
@@ -32,6 +34,10 @@ export default function AutoEmploiLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // Présentation et formation sont accessibles aux formateurs en plus.
+  const isPublicPart =
+    pathname === "/auto-emploi/presentation" ||
+    pathname?.startsWith("/auto-emploi/formation");
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
@@ -71,7 +77,24 @@ export default function AutoEmploiLayout({
             );
           })}
         </aside>
-        <main className="min-w-0">{children}</main>
+        <main className="min-w-0">
+          <PnpeRoleGate
+            allowedRoles={
+              isPublicPart
+                ? [
+                    PnpeRole.DemandeurEmploi,
+                    PnpeRole.FormateurAutoEmploi,
+                    PnpeRole.ConseillerPnpe,
+                    PnpeRole.ChefAntennePnpe,
+                    PnpeRole.DirectionPnpe,
+                  ]
+                : [PnpeRole.DemandeurEmploi]
+            }
+            redirectMissingProfile={false}
+          >
+            {children}
+          </PnpeRoleGate>
+        </main>
       </div>
     </div>
   );

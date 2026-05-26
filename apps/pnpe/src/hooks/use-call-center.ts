@@ -20,7 +20,7 @@ const DEBUG_CALLS =
   process.env.NEXT_PUBLIC_DEBUG_CALLS === "true";
 const trace = (...args: unknown[]) => {
   if (DEBUG_CALLS) {
-    // eslint-disable-next-line no-console
+     
     console.debug("[CallSlot]", ...args);
   }
 };

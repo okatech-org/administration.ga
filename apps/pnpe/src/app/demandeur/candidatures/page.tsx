@@ -28,7 +28,7 @@ type Candidature = {
 };
 
 export default function CandidaturesPage() {
-  const candidatures = (useQuery((api as any).functions.pnpe.candidatures.listMine, {}) ?? []) as Candidature[];
+  const candidatures = (useQuery(api.functions.pnpe.candidatures.listMine, {}) ?? []) as Candidature[];
 
   const byStatus = COLUMNS.reduce(
     (acc, col) => {

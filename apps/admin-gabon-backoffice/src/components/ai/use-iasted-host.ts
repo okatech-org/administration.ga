@@ -57,44 +57,44 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 	// Cast `api as any` : voir la note dans agent-web/.../use-iasted-host.ts
 	// — codegen Convex pas encore régénéré pour ces actions, l'appel runtime
 	// fonctionnera dès `bunx convex dev` actif.
-	const createToken = useAction((api as any).ai.realtimeToken.create);
-	const executeTool = useAction((api as any).ai.realtimeToolExecutor.executeRealtimeTool);
+	const createToken = useAction(api.ai.realtimeToken.create);
+	const executeTool = useAction(api.ai.realtimeToolExecutor.executeRealtimeTool);
 	const recordSessionEnd = useAction(
-		(api as any).ai.realtimeSessions.recordSessionEnd,
+		api.ai.realtimeSessions.recordSessionEnd,
 	);
 	// Sprint 2 — E1 : flip du flag d'onboarding après 1ʳᵉ session vocale.
 	const markOnboarded = useMutation(
-		(api as any).ai.voicePreferences.markVoiceOnboarded,
+		api.ai.voicePreferences.markVoiceOnboarded,
 	);
 	// Sprint 3 — A1 : écriture d'un context de fin de session pour personnaliser
 	// la salutation lors de la prochaine session vocale.
 	const writeSessionContext = useMutation(
-		(api as any).ai.iastedMemories.writeSessionContext,
+		api.ai.iastedMemories.writeSessionContext,
 	);
 	// Sprint 6 — C1 : analyse d'image via OpenAI Vision pour le tool
 	// `capture_screen_region`. Action Node — exécution serveur.
-	const analyzeImage = useAction((api as any).ai.vision.describeImage);
+	const analyzeImage = useAction(api.ai.vision.describeImage);
 	// Sprint 7 — persistance vocal ↔ texte : chaque tour est upserté
 	// dans `iastedConversations` pour permettre reprise dans iChat et
 	// la continuité < 1 h dans la prochaine session vocale.
 	const appendConvMessage = useMutation(
-		(api as any).ai.iastedConversations.appendMessage,
+		api.ai.iastedConversations.appendMessage,
 	);
 	// Sprint 10 — A4 : presence multi-device (register/heartbeat/handoff).
 	const registerDevice = useMutation(
-		(api as any).ai.iastedDevicePresence.registerDevice,
+		api.ai.iastedDevicePresence.registerDevice,
 	);
 	const heartbeatDevice = useMutation(
-		(api as any).ai.iastedDevicePresence.heartbeatDevice,
+		api.ai.iastedDevicePresence.heartbeatDevice,
 	);
 	const requestHandoff = useMutation(
-		(api as any).ai.iastedDevicePresence.requestHandoff,
+		api.ai.iastedDevicePresence.requestHandoff,
 	);
 	const completeHandoff = useMutation(
-		(api as any).ai.iastedDevicePresence.completeHandoff,
+		api.ai.iastedDevicePresence.completeHandoff,
 	);
 	const myDevices = useQuery(
-		(api as any).ai.iastedDevicePresence.listMyDevices,
+		api.ai.iastedDevicePresence.listMyDevices,
 		{},
 	) as
 		| Array<{
@@ -112,7 +112,7 @@ export function useIAstedHost({ orgId }: UseIAstedHostOptions = {}): IAstedVoice
 	// Préférences vocales (locale notamment). Lecture passive — quand
 	// l'utilisateur change la langue dans Réglages, on force une reconnexion
 	// pour appliquer le nouveau bloc « LANGUE DE LA SESSION » + Whisper.
-	const voicePrefs = useQuery((api as any).ai.voicePreferences.getMyVoicePreferences, {});
+	const voicePrefs = useQuery(api.ai.voicePreferences.getMyVoicePreferences, {});
 	const preferredLocale = voicePrefs?.preferredLocale as string | undefined;
 
 	const dispatchUiAction = useCallback(

@@ -23,7 +23,7 @@ const STATUT_LABELS: Record<string, string> = {
 
 export default function AntennesPage() {
   
-  const antennes = (useQuery((api as any).functions.pnpe.antennes?.list, {}) ?? []) as Array<{
+  const antennes = (useQuery(api.functions.pnpe.antennes?.list, {}) ?? []) as Array<{
     _id: string;
     nom: string;
     ville: string;

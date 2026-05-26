@@ -127,9 +127,9 @@ function fromConvex(o: ConvexOffre, idx: number): OffreCard {
 }
 
 export default function OffresPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const offresQuery = useQuery(
-    (api as any).functions?.pnpe?.offresPubliques?.listAllPublished,
+    api.functions?.pnpe?.offresPubliques?.listAllPublished,
     {},
   ) as ConvexOffre[] | undefined;
 

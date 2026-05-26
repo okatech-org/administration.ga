@@ -14,6 +14,18 @@ import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+
+type Province =
+  | "ESTUAIRE"
+  | "HAUT_OGOOUE"
+  | "MOYEN_OGOOUE"
+  | "NGOUNIE"
+  | "NYANGA"
+  | "OGOOUE_IVINDO"
+  | "OGOOUE_LOLO"
+  | "OGOOUE_MARITIME"
+  | "WOLEU_NTEM";
 
 type FormState = {
   orgId: string;
@@ -21,7 +33,7 @@ type FormState = {
   description: string;
   typeContrat: "CDD" | "CDI" | "STAGE" | "ALTERNANCE" | "INTERIM";
   ville: string;
-  province: string;
+  province: Province;
   salaireMin: string;
   salaireMax: string;
   dateExpiration: string;
@@ -44,15 +56,17 @@ export default function PublierAdministrationPage() {
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  // Liste les orgs où l'utilisateur est membre actif
-  
-  const myOrgs = (useQuery((api as any).functions.orgs?.listMine, "skip") ?? []) as Array<{
+  // Liste les orgs où l'utilisateur est membre actif (l'auth doit déjà être
+  // câblée pour récupérer ses memberships ; sur travail-ga, comme la session
+  // n'est pas systématiquement câblée, on garde "skip" tant qu'on n'a pas
+  // d'auth context dispo, et la page affiche le bandeau "Aucune org rattachée".
+  const myOrgs = (useQuery(api.functions.orgs.listMine, "skip") ?? []) as Array<{
     _id: string;
     name: string;
     type: string;
   }>;
-  
-  const create = useMutation((api as any).functions.pnpe.offresPubliques?.createByAdministration);
+
+  const create = useMutation(api.functions.pnpe.offresPubliques.createByAdministration);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -66,7 +80,7 @@ export default function PublierAdministrationPage() {
     setSubmitting(true);
     try {
       await create({
-        orgId: form.orgId,
+        orgId: form.orgId as Id<"orgs">,
         titre: form.titre,
         description: form.description,
         typeContrat: form.typeContrat,
@@ -198,7 +212,9 @@ export default function PublierAdministrationPage() {
                     </label>
                     <select
                       value={form.province}
-                      onChange={(e) => update("province", e.target.value)}
+                      onChange={(e) =>
+                        update("province", e.target.value as Province)
+                      }
                       className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                     >
                       <option value="ESTUAIRE">Estuaire</option>

@@ -1,80 +1,171 @@
 /**
- * Inscription Employeur PNPE.
+ * Inscription Employeur PNPE — React Hook Form + Zod.
+ *
+ * Crée le compte entreprise (statut `NON_VERIFIE`). L'employeur doit
+ * ensuite passer à l'étape `verification` pour soumettre ses documents
+ * DGI/CNSS et passer en `VERIFIE`.
  */
 "use client";
 
-import { useState } from "react";
+import { forwardRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import { CountryCode } from "@convex/lib/countryCodeValidator";
 
-type FormState = {
-  raisonSociale: string;
-  nif: string;
-  rccm: string;
-  secteurActivite: string;
-  tailleEntreprise: "TPE" | "PME" | "ETI" | "GE";
-  effectif: string;
-  adresseRue: string;
-  adresseVille: string;
-  provinceSiege: string;
-  representantNom: string;
-  representantPrenoms: string;
-  representantFonction: string;
-  representantEmail: string;
-  representantTelephone: string;
+// ─── Référentiels ───────────────────────────────────────────────
+
+const SECTEURS = [
+  "AGRICULTURE_PECHE",
+  "MINES_EXTRACTION",
+  "PETROLE_GAZ",
+  "INDUSTRIE_MANUFACTURE",
+  "BTP_CONSTRUCTION",
+  "COMMERCE",
+  "TRANSPORT_LOGISTIQUE",
+  "HOTELLERIE_RESTAURATION",
+  "TELECOMS_NUMERIQUE",
+  "BANQUE_ASSURANCE",
+  "SANTE_SOCIAL",
+  "EDUCATION_FORMATION",
+  "ADMINISTRATION_PUBLIQUE",
+  "SERVICES_AUX_ENTREPRISES",
+  "ARTS_CULTURE_SPORT",
+  "ENERGIE_EAU",
+  "AUTRES",
+] as const;
+
+const SECTEUR_LABELS: Record<(typeof SECTEURS)[number], string> = {
+  AGRICULTURE_PECHE: "Agriculture / Pêche",
+  MINES_EXTRACTION: "Mines / Extraction",
+  PETROLE_GAZ: "Pétrole / Gaz",
+  INDUSTRIE_MANUFACTURE: "Industrie / Manufacture",
+  BTP_CONSTRUCTION: "BTP / Construction",
+  COMMERCE: "Commerce",
+  TRANSPORT_LOGISTIQUE: "Transport / Logistique",
+  HOTELLERIE_RESTAURATION: "Hôtellerie / Restauration",
+  TELECOMS_NUMERIQUE: "Télécoms / Numérique",
+  BANQUE_ASSURANCE: "Banque / Assurance",
+  SANTE_SOCIAL: "Santé / Social",
+  EDUCATION_FORMATION: "Éducation / Formation",
+  ADMINISTRATION_PUBLIQUE: "Administration publique",
+  SERVICES_AUX_ENTREPRISES: "Services aux entreprises",
+  ARTS_CULTURE_SPORT: "Arts / Culture / Sport",
+  ENERGIE_EAU: "Énergie / Eau",
+  AUTRES: "Autres",
 };
 
-const initial: FormState = {
-  raisonSociale: "",
-  nif: "",
-  rccm: "",
-  secteurActivite: "AUTRES",
-  tailleEntreprise: "PME",
-  effectif: "",
-  adresseRue: "",
-  adresseVille: "",
-  provinceSiege: "ESTUAIRE",
-  representantNom: "",
-  representantPrenoms: "",
-  representantFonction: "",
-  representantEmail: "",
-  representantTelephone: "",
+const PROVINCES = [
+  "ESTUAIRE",
+  "HAUT_OGOOUE",
+  "MOYEN_OGOOUE",
+  "NGOUNIE",
+  "NYANGA",
+  "OGOOUE_IVINDO",
+  "OGOOUE_LOLO",
+  "OGOOUE_MARITIME",
+  "WOLEU_NTEM",
+] as const;
+
+const PROVINCE_LABELS: Record<(typeof PROVINCES)[number], string> = {
+  ESTUAIRE: "Estuaire",
+  HAUT_OGOOUE: "Haut-Ogooué",
+  MOYEN_OGOOUE: "Moyen-Ogooué",
+  NGOUNIE: "Ngounié",
+  NYANGA: "Nyanga",
+  OGOOUE_IVINDO: "Ogooué-Ivindo",
+  OGOOUE_LOLO: "Ogooué-Lolo",
+  OGOOUE_MARITIME: "Ogooué-Maritime",
+  WOLEU_NTEM: "Woleu-Ntem",
 };
+
+// ─── Schéma Zod ─────────────────────────────────────────────────
+
+const inscriptionEmployeurSchema = z.object({
+  raisonSociale: z.string().min(2, "Raison sociale requise"),
+  nif: z.string().min(4, "NIF requis"),
+  rccm: z.string().optional(),
+  secteurActivite: z.enum(SECTEURS, {
+    message: "Secteur requis",
+  }),
+  tailleEntreprise: z.enum(["TPE", "PME", "ETI", "GE"]),
+  effectif: z
+    .string()
+    .regex(/^\d*$/, "Effectif doit être un nombre")
+    .optional(),
+  adresseRue: z.string().min(1, "Adresse requise"),
+  adresseVille: z.string().min(1, "Ville requise"),
+  provinceSiege: z.enum(PROVINCES, {
+    message: "Province requise",
+  }),
+  representantNom: z.string().min(1, "Nom requis"),
+  representantPrenoms: z.string().min(1, "Prénoms requis"),
+  representantFonction: z.string().min(1, "Fonction requise"),
+  representantEmail: z.string().email("Email invalide"),
+  representantTelephone: z
+    .string()
+    .regex(/^\+?[0-9 ]{8,}$/, "Téléphone invalide"),
+});
+
+type InscriptionEmployeurForm = z.infer<typeof inscriptionEmployeurSchema>;
+
+// ─── Page ───────────────────────────────────────────────────────
 
 export default function InscriptionEmployeurPage() {
   const router = useRouter();
-  const [form, setForm] = useState<FormState>(initial);
-  const [submitting, setSubmitting] = useState(false);
-  const createEmployeur = useMutation((api as any).functions.pnpe.employeurs.create);
+  const createEmployeur = useMutation(api.functions.pnpe.employeurs.create);
 
-  const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
-    setForm((s) => ({ ...s, [k]: v }));
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<InscriptionEmployeurForm>({
+    resolver: zodResolver(inscriptionEmployeurSchema),
+    defaultValues: {
+      raisonSociale: "",
+      nif: "",
+      rccm: "",
+      secteurActivite: "AUTRES",
+      tailleEntreprise: "PME",
+      effectif: "",
+      adresseRue: "",
+      adresseVille: "",
+      provinceSiege: "ESTUAIRE",
+      representantNom: "",
+      representantPrenoms: "",
+      representantFonction: "",
+      representantEmail: "",
+      representantTelephone: "",
+    },
+  });
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const onSubmit = handleSubmit(async (values) => {
     try {
       await createEmployeur({
-        raisonSociale: form.raisonSociale,
-        nif: form.nif,
-        rccm: form.rccm || undefined,
-        secteurActivite: form.secteurActivite,
-        tailleEntreprise: form.tailleEntreprise,
-        effectif: form.effectif ? Number(form.effectif) : undefined,
+        raisonSociale: values.raisonSociale,
+        nif: values.nif,
+        rccm: values.rccm || undefined,
+        secteurActivite: values.secteurActivite,
+        tailleEntreprise: values.tailleEntreprise,
+        effectif: values.effectif ? Number(values.effectif) : undefined,
         adresseSiege: {
-          street: form.adresseRue,
-          city: form.adresseVille,
-          country: "GA",
+          street: values.adresseRue,
+          city: values.adresseVille,
+          postalCode: "",
+          country: CountryCode.GA,
         },
-        provinceSiege: form.provinceSiege,
+        provinceSiege: values.provinceSiege,
         representantLegal: {
-          nom: form.representantNom,
-          prenoms: form.representantPrenoms,
-          fonction: form.representantFonction,
-          email: form.representantEmail,
-          telephone: form.representantTelephone,
+          nom: values.representantNom,
+          prenoms: values.representantPrenoms,
+          fonction: values.representantFonction,
+          email: values.representantEmail,
+          telephone: values.representantTelephone,
         },
       });
       toast.success("Compte employeur créé ! Procédez à la vérification.");
@@ -82,10 +173,8 @@ export default function InscriptionEmployeurPage() {
     } catch (err) {
       const m = err instanceof Error ? err.message : "Erreur";
       toast.error(m);
-    } finally {
-      setSubmitting(false);
     }
-  };
+  });
 
   return (
     <div className="max-w-3xl">
@@ -93,8 +182,8 @@ export default function InscriptionEmployeurPage() {
         Créer un compte entreprise
       </h1>
       <p className="text-muted-foreground mb-8">
-        Renseignez l'identité légale de votre entreprise. La vérification (DGI
-        + CNSS) sera demandée à l'étape suivante.
+        Renseignez l&apos;identité légale de votre entreprise. La vérification
+        (DGI + CNSS) sera demandée à l&apos;étape suivante.
       </p>
 
       <form onSubmit={onSubmit} className="space-y-6">
@@ -102,33 +191,27 @@ export default function InscriptionEmployeurPage() {
           <h2 className="font-semibold mb-4">Identité légale</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="text-sm font-medium block mb-1.5">
-                Raison sociale *
-              </label>
-              <input
-                value={form.raisonSociale}
-                onChange={(e) => update("raisonSociale", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+              <Field
+                id="raisonSociale"
+                label="Raison sociale"
                 required
+                error={errors.raisonSociale?.message}
+                {...register("raisonSociale")}
               />
             </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">NIF *</label>
-              <input
-                value={form.nif}
-                onChange={(e) => update("nif", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">RCCM</label>
-              <input
-                value={form.rccm}
-                onChange={(e) => update("rccm", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+            <Field
+              id="nif"
+              label="NIF"
+              required
+              error={errors.nif?.message}
+              {...register("nif")}
+            />
+            <Field
+              id="rccm"
+              label="RCCM"
+              error={errors.rccm?.message}
+              {...register("rccm")}
+            />
           </div>
         </section>
 
@@ -136,31 +219,34 @@ export default function InscriptionEmployeurPage() {
           <h2 className="font-semibold mb-4">Activité & taille</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium block mb-1.5">Secteur</label>
+              <label className="text-sm font-medium block mb-1.5" htmlFor="secteurActivite">
+                Secteur
+              </label>
               <select
-                value={form.secteurActivite}
-                onChange={(e) => update("secteurActivite", e.target.value)}
+                id="secteurActivite"
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                {...register("secteurActivite")}
               >
-                <option value="BTP_CONSTRUCTION">BTP / Construction</option>
-                <option value="COMMERCE">Commerce</option>
-                <option value="SERVICES_AUX_ENTREPRISES">Services aux entreprises</option>
-                <option value="INDUSTRIE_MANUFACTURE">Industrie / Manufacture</option>
-                <option value="HOTELLERIE_RESTAURATION">Hôtellerie / Restauration</option>
-                <option value="TELECOMS_NUMERIQUE">Télécoms / Numérique</option>
-                <option value="BANQUE_ASSURANCE">Banque / Assurance</option>
-                <option value="TRANSPORT_LOGISTIQUE">Transport / Logistique</option>
-                <option value="AUTRES">Autres</option>
+                {SECTEURS.map((s) => (
+                  <option key={s} value={s}>
+                    {SECTEUR_LABELS[s]}
+                  </option>
+                ))}
               </select>
+              {errors.secteurActivite && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.secteurActivite.message}
+                </p>
+              )}
             </div>
             <div>
-              <label className="text-sm font-medium block mb-1.5">Taille</label>
+              <label className="text-sm font-medium block mb-1.5" htmlFor="tailleEntreprise">
+                Taille
+              </label>
               <select
-                value={form.tailleEntreprise}
-                onChange={(e) =>
-                  update("tailleEntreprise", e.target.value as FormState["tailleEntreprise"])
-                }
+                id="tailleEntreprise"
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                {...register("tailleEntreprise")}
               >
                 <option value="TPE">TPE (0-9)</option>
                 <option value="PME">PME (10-49)</option>
@@ -168,14 +254,56 @@ export default function InscriptionEmployeurPage() {
                 <option value="GE">GE (250+)</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Effectif</label>
-              <input
-                type="number"
-                value={form.effectif}
-                onChange={(e) => update("effectif", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+            <Field
+              id="effectif"
+              type="number"
+              label="Effectif"
+              error={errors.effectif?.message}
+              {...register("effectif")}
+            />
+          </div>
+        </section>
+
+        <section className="rounded-xl border bg-card p-5">
+          <h2 className="font-semibold mb-4">Adresse du siège</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <Field
+                id="adresseRue"
+                label="Rue"
+                required
+                error={errors.adresseRue?.message}
+                {...register("adresseRue")}
               />
+            </div>
+            <Field
+              id="adresseVille"
+              label="Ville"
+              required
+              error={errors.adresseVille?.message}
+              {...register("adresseVille")}
+            />
+            <div>
+              <label className="text-sm font-medium block mb-1.5" htmlFor="provinceSiege">
+                Province
+                <span className="text-destructive ml-0.5">*</span>
+              </label>
+              <select
+                id="provinceSiege"
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                {...register("provinceSiege")}
+              >
+                {PROVINCES.map((p) => (
+                  <option key={p} value={p}>
+                    {PROVINCE_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+              {errors.provinceSiege && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.provinceSiege.message}
+                </p>
+              )}
             </div>
           </div>
         </section>
@@ -183,52 +311,44 @@ export default function InscriptionEmployeurPage() {
         <section className="rounded-xl border bg-card p-5">
           <h2 className="font-semibold mb-4">Représentant légal</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Nom *</label>
-              <input
-                value={form.representantNom}
-                onChange={(e) => update("representantNom", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Prénoms *</label>
-              <input
-                value={form.representantPrenoms}
-                onChange={(e) => update("representantPrenoms", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Fonction *</label>
-              <input
-                value={form.representantFonction}
-                onChange={(e) => update("representantFonction", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                placeholder="DG, DRH…"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Email *</label>
-              <input
-                type="email"
-                value={form.representantEmail}
-                onChange={(e) => update("representantEmail", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                required
-              />
-            </div>
+            <Field
+              id="representantNom"
+              label="Nom"
+              required
+              error={errors.representantNom?.message}
+              {...register("representantNom")}
+            />
+            <Field
+              id="representantPrenoms"
+              label="Prénoms"
+              required
+              error={errors.representantPrenoms?.message}
+              {...register("representantPrenoms")}
+            />
+            <Field
+              id="representantFonction"
+              label="Fonction"
+              placeholder="DG, DRH…"
+              required
+              error={errors.representantFonction?.message}
+              {...register("representantFonction")}
+            />
+            <Field
+              id="representantEmail"
+              type="email"
+              label="Email"
+              required
+              error={errors.representantEmail?.message}
+              {...register("representantEmail")}
+            />
             <div className="md:col-span-2">
-              <label className="text-sm font-medium block mb-1.5">Téléphone *</label>
-              <input
+              <Field
+                id="representantTelephone"
                 type="tel"
-                value={form.representantTelephone}
-                onChange={(e) => update("representantTelephone", e.target.value)}
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                label="Téléphone"
                 required
+                error={errors.representantTelephone?.message}
+                {...register("representantTelephone")}
               />
             </div>
           </div>
@@ -237,13 +357,45 @@ export default function InscriptionEmployeurPage() {
         <div>
           <button
             type="submit"
-            disabled={submitting}
-            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {submitting ? "Création…" : "Créer mon compte entreprise"}
+            {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+            {isSubmitting ? "Création…" : "Créer mon compte entreprise"}
           </button>
         </div>
       </form>
     </div>
   );
 }
+
+// ─── Composants helper ─────────────────────────────────────────
+
+type FieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  label: string;
+  required?: boolean;
+  error?: string;
+};
+
+const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
+  { id, label, required, error, ...rest },
+  ref,
+) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-sm font-medium block mb-1.5">
+        {label}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </label>
+      <input
+        id={id}
+        ref={ref}
+        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+        aria-invalid={!!error}
+        {...rest}
+      />
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+    </div>
+  );
+});
