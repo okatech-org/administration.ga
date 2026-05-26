@@ -92,9 +92,12 @@ jobs:
       - name: Check CSP headers exist in all apps
         run: |
           # Chaque app expose ses headers via Next.js : headers() async dans next.config.ts.
+          # Cible : les apps Next.js vivantes du monorepo (cf. CLAUDE.md mapping).
           declare -A APP_FILES=(
-            ["administration.ga"]="apps/administration_ga/next.config.ts"
-            ["admin.administration.ga"]="apps/admin_administration_ga/next.config.ts"
+            ["admin.administration.ga"]="apps/admin-gabon-backoffice/next.config.ts"
+            ["demarche.ga"]="apps/admin-gabon-citizen/next.config.ts"
+            ["emploi.administration.ga"]="apps/pnpe/next.config.ts"
+            ["travail.ga"]="apps/travail-ga/next.config.ts"
           )
           for app in "${!APP_FILES[@]}"; do
             FILE="${APP_FILES[$app]}"

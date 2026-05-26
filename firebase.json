@@ -1,35 +1,6 @@
 {
   "hosting": [
     {
-      "target": "agent",
-      "public": "apps/administration_ga/.firebase-public",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "headers": [
-        {
-          "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|avif|ico)",
-          "headers": [
-            { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-          ]
-        },
-        {
-          "source": "**/_next/static/**",
-          "headers": [
-            { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-          ]
-        }
-      ],
-      "rewrites": [
-        {
-          "source": "**",
-          "destination": "/index.html"
-        }
-      ]
-    },
-    {
       "target": "citizen",
       "public": "apps/demarche_ga/.firebase-public",
       "ignore": [
@@ -60,7 +31,7 @@
     },
     {
       "target": "backoffice",
-      "public": "apps/admin_administration_ga/.firebase-public",
+      "public": "apps/admin-gabon-backoffice/.firebase-public",
       "ignore": [
         "firebase.json",
         "**/.*",
