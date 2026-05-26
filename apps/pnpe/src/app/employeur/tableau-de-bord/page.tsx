@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { Briefcase, CheckCircle2, Clock, Inbox } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const STATUT_LABELS: Record<string, { label: string; tone: string; icon: typeof Clock }> = {
   NON_VERIFIE: { label: "Non vérifié", tone: "bg-slate-100 text-slate-700", icon: Clock },
@@ -16,10 +16,8 @@ const STATUT_LABELS: Record<string, { label: string; tone: string; icon: typeof 
 };
 
 export default function EmployeurDashboardPage() {
-  // @ts-expect-error — api.pnpe typé après codegen
-  const employeur = useQuery(api.pnpe?.employeurs?.getMine);
-  // @ts-expect-error
-  const offres = (useQuery(api.pnpe?.employeurs?.listMyOffres, {}) ?? []) as Array<{
+  const employeur = useQuery((api as any).functions.pnpe.employeurs.getMine);
+  const offres = (useQuery((api as any).functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
     statut: string;
     nbCandidatures?: number;
   }>;

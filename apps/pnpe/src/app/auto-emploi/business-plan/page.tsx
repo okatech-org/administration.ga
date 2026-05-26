@@ -7,12 +7,11 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { BMCEditor } from "@/components/auto-emploi/BMCEditor";
 
 export default function BusinessPlanPage() {
-  // @ts-expect-error — api.pnpe typé après codegen
-  const programme = useQuery(api.pnpe?.autoEmploi?.getMine);
+  const programme = useQuery((api as any).functions.pnpe.autoEmploi.getMine);
 
   return (
     <div className="space-y-6">

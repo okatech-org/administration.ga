@@ -18,7 +18,7 @@ import {
   ListChecks,
   User,
 } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const CONTRAT_LABELS: Record<string, string> = {
   CDI: "CDI",
@@ -64,11 +64,9 @@ type Offre = {
 
 export default function OffresAValiderPage() {
   const [filterType, setFilterType] = useState<string>("");
-  // @ts-expect-error — api.pnpe typé après codegen
-  const offres = (useQuery(api.pnpe?.offres?.listPending, { limit: 100 }) ??
+  const offres = (useQuery((api as any).functions.pnpe.offres.listPending, { limit: 100 }) ??
     []) as Offre[];
-  // @ts-expect-error
-  const validate = useMutation(api.pnpe?.offres?.validate);
+  const validate = useMutation((api as any).functions.pnpe.offres.validate);
 
   const filtered = filterType
     ? offres.filter((o) => o.typeEmployeur === filterType)

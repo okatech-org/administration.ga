@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Users } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const STATUT_LABELS: Record<string, string> = {
   BROUILLON: "Brouillon",
@@ -22,14 +22,12 @@ const STATUT_LABELS: Record<string, string> = {
 export default function MesDemandeursPage() {
   const [selectedAntenneId, setSelectedAntenneId] = useState<string>("");
   const [statutFilter, setStatutFilter] = useState<string>("");
-  // @ts-expect-error — api.pnpe typé après codegen
-  const antennes = (useQuery(api.pnpe?.antennes?.list, {}) ?? []) as Array<{
+  const antennes = (useQuery((api as any).functions.pnpe.antennes.list, {}) ?? []) as Array<{
     _id: string;
     nom: string;
   }>;
-  // @ts-expect-error
   const demandeurs = (useQuery(
-    selectedAntenneId ? api.pnpe?.demandeurs?.listByAntenne : "skip",
+    selectedAntenneId ? (api as any).functions.pnpe.demandeurs.listByAntenne : "skip",
     selectedAntenneId
       ? {
           antenneId: selectedAntenneId,

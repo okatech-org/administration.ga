@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Briefcase, Filter, MapPin } from "lucide-react";
-import { api } from "@workspace/api/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 const CONTRAT_LABELS: Record<string, string> = {
   CDI: "CDI",
@@ -28,8 +28,7 @@ export default function OffresPage() {
     province?: string;
   }>({});
 
-  // @ts-expect-error — api.pnpe sera typé après codegen Convex
-  const offres = useQuery(api.pnpe?.offres?.listPublished, filters) ?? [];
+  const offres = useQuery((api as any).functions.pnpe.offres.listPublished, filters) ?? [];
 
   return (
     <div className="space-y-6">
