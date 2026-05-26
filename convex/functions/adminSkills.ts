@@ -35,14 +35,6 @@ import type { Doc, Id } from "../_generated/dataModel";
 
 // ─── Constantes utilitaires ─────────────────────────────────────────
 
-const ENRICHMENT_STATUSES = [
-  "no_title",
-  "pending",
-  "enriched",
-  "ai_failed",
-] as const;
-type EnrichmentStatus = (typeof ENRICHMENT_STATUSES)[number];
-
 const WORK_STATUS_VALUES = [
   WorkStatus.Employee,
   WorkStatus.SelfEmployed,

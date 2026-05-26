@@ -4,7 +4,6 @@
  */
 
 import { useState, useMemo, useCallback } from "react"
-import { useTranslation } from "react-i18next"
 import { ArrowRight, Wand2, X } from "lucide-react"
 import {
   Dialog,
@@ -34,8 +33,6 @@ export function ColumnMappingDialog({
   sampleRow,
   onApply,
 }: ColumnMappingDialogProps) {
-  const { t } = useTranslation()
-
   const [mappings, setMappings] = useState<ColumnMapping[]>(() =>
     csvHeaders.map((h) => ({ csvColumn: h, templateField: null }))
   )

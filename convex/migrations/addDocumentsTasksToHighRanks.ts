@@ -15,8 +15,7 @@
  */
 
 import { internalMutation } from "../_generated/server";
-import type { Doc } from "../_generated/dataModel";
-import { ModuleCode, MODULE_ACCESS_TASKS } from "../lib/moduleCodes";
+import { ModuleCode } from "../lib/moduleCodes";
 import type { TaskCodeValue } from "../lib/taskCodes";
 
 const KEY_TASKS: TaskCodeValue[] = [
@@ -102,20 +101,3 @@ export const run = internalMutation({
 	},
 });
 
-/**
- * Pour debug : dérive les tasks effectives d'une position, reproduit la
- * logique de `getTasksForMembership` (moduleAccess non-vide > tasks[] legacy).
- */
-function _resolveEffectiveTasks(position: Doc<"positions">): Set<string> {
-	const moduleAccess = position.moduleAccess;
-	if (moduleAccess && moduleAccess.length > 0) {
-		const set = new Set<string>();
-		for (const entry of moduleAccess) {
-			const mapping = MODULE_ACCESS_TASKS[entry.moduleCode as keyof typeof MODULE_ACCESS_TASKS];
-			if (!mapping) continue;
-			for (const task of mapping[entry.accessLevel]) set.add(task);
-		}
-		return set;
-	}
-	return new Set(position.tasks ?? []);
-}

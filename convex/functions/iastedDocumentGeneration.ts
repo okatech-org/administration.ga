@@ -43,7 +43,7 @@ interface TemplateDefinition {
 const TEMPLATE_DEFINITIONS: Record<TemplateCode, TemplateDefinition> = {
   attestation_residence: {
     title: "ATTESTATION DE RÉSIDENCE",
-    intro: (name) =>
+    intro: (_name) =>
       `Le soussigné, Représentant officiel de la République Gabonaise, atteste par la présente que :`,
     body: (name) =>
       `${name}\n\nest régulièrement inscrit(e) au registre consulaire de cette circonscription et y réside effectivement à la date d'émission du présent document.\n\nLa présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.`,
@@ -51,7 +51,7 @@ const TEMPLATE_DEFINITIONS: Record<TemplateCode, TemplateDefinition> = {
   },
   laissez_passer_consulaire: {
     title: "LAISSEZ-PASSER CONSULAIRE",
-    intro: (name) =>
+    intro: (_name) =>
       `Les autorités consulaires gabonaises requièrent et prient les autorités compétentes de laisser passer librement, sans délai ni entrave, le ressortissant désigné ci-après :`,
     body: (name) =>
       `${name}\n\nde nationalité gabonaise, et de lui accorder, en cas de besoin, toute assistance et protection.\n\nLe présent laissez-passer tient lieu de document de voyage temporaire, dans l'attente de la délivrance d'un titre de voyage régulier.`,
@@ -59,7 +59,7 @@ const TEMPLATE_DEFINITIONS: Record<TemplateCode, TemplateDefinition> = {
   },
   certificat_inscription_consulaire: {
     title: "CERTIFICAT D'INSCRIPTION CONSULAIRE",
-    intro: (name) =>
+    intro: (_name) =>
       `Le soussigné certifie que la personne désignée ci-après figure régulièrement sur le registre des Gabonais établis hors du territoire national :`,
     body: (name) =>
       `${name}\n\nLe présent certificat est délivré pour faire valoir ses droits auprès des administrations gabonaises et étrangères, conformément à la réglementation en vigueur.`,

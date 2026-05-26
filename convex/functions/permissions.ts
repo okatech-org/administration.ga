@@ -8,7 +8,7 @@ import {
 import { permissionEffectValidator } from "../lib/validators";
 import { getMembership } from "../lib/auth";
 import { getTasksForMembership, isSuperAdmin, assertCanDoTask } from "../lib/permissions";
-import { MODULE_ACCESS_TASKS, ALL_MODULE_CODES, type ModuleCodeValue } from "../lib/moduleCodes";
+import { MODULE_ACCESS_TASKS } from "../lib/moduleCodes";
 import { ALL_TASK_CODES, taskCodeValidator } from "../lib/taskCodes";
 
 // ============================================================================

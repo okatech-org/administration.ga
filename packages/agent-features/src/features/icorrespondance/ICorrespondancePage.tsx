@@ -2,7 +2,6 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { DocumentSheet } from "@workspace/ui/components/document-sheet";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import type { ComponentType } from "react";
 import { toast } from "sonner";
@@ -877,7 +876,6 @@ export default function ICorrespondancePage({
 	const { activeOrgId } = useOrg();
 	const { hasMin: hasCorrAccess } = useModuleAccess("correspondence");
 	const canCreateCorr = hasCorrAccess("editor");
-	const canAdminCorr = hasCorrAccess("admin");
 
 	// ─── URL-synced state ──────────────────────────────────
 	const router = useRouter();
@@ -1194,11 +1192,6 @@ export default function ICorrespondancePage({
 		api.functions.correspondanceCore.getCorbeille,
 		activeOrgId ? { orgId: activeOrgId } : "skip",
 	);
-	const { data: espaceCounts } = useAuthenticatedConvexQuery(
-		api.functions.correspondanceCore.getEspaceCounts,
-		activeOrgId ? { orgId: activeOrgId } : "skip",
-	);
-
 	// ─── Recherche full-text serveur ────────────────────────
 	const [search, setSearch] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -1227,9 +1220,6 @@ export default function ICorrespondancePage({
 	const createFolderMutation = useConvexMutationQuery(
 		api.functions.correspondance.createFolder,
 	);
-	const createItemMutation = useConvexMutationQuery(
-		api.functions.correspondance.createItem,
-	);
 	const deleteFolderMutation = useConvexMutationQuery(
 		api.functions.correspondance.deleteFolder,
 	);
@@ -1238,9 +1228,6 @@ export default function ICorrespondancePage({
 	);
 	const deleteItemMutation = useConvexMutationQuery(
 		api.functions.correspondance.deleteItem,
-	);
-	const archiveItemMutation = useConvexMutationQuery(
-		api.functions.correspondance.archiveItem,
 	);
 
 	// ─── Map Convex data → UI types ─────────────────────────
@@ -1596,20 +1583,6 @@ export default function ICorrespondancePage({
 			}
 		},
 		[folders, deleteFolderMutation, deleteItemMutation],
-	);
-
-	const handleArchive = useCallback(
-		async (id: string) => {
-			try {
-				await archiveItemMutation.mutateAsync({
-					itemId: id as Id<"correspondanceItems">,
-				});
-				toast.success("Correspondance archivée");
-			} catch {
-				toast.error("Erreur lors de l'archivage");
-			}
-		},
-		[archiveItemMutation],
 	);
 
 	const hasActiveFilters = statusFilter !== "all" || search;

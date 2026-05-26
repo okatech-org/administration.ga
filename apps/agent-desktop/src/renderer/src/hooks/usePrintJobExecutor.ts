@@ -94,16 +94,10 @@ export function usePrintJobExecutor({ printer, orgId }: UsePrintJobExecutorOptio
           }
         }
 
-        // 3b. Save debug BMP for inspection
-        try {
-          await window.desktopApi?.printer?.saveDebugBmp({
-            frontBuffer,
-            backBuffer,
-            label: job.profileName?.replace(/[^a-zA-Z0-9-_]/g, "_")?.substring(0, 40),
-          })
-        } catch (dbgErr) {
-          console.warn("[PrintJobExecutor] Debug BMP save failed:", dbgErr)
-        }
+        // 3b. Save debug BMP for inspection — désactivé : `saveDebugBmp`
+        // n'est pas exposé par le bridge IPC printer. Feature debug non
+        // livrée ; les buffers BMP peuvent être inspectés via les logs main
+        // process ou un export manuel via fileDialog.save côté CardDesigner.
 
         // 4. Send to printer
         console.log(`[PrintJobExecutor] Sending to printer: front=${frontBuffer.byteLength} bytes, duplex=${job.printDuplex}`)

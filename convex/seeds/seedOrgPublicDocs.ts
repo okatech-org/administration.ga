@@ -11,7 +11,7 @@
  */
 import { v } from "convex/values";
 import { action, internalMutation } from "../_generated/server";
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 
 // PDF minimal valide (8 ko, vide avec juste une page A4 + titre).

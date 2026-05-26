@@ -196,7 +196,7 @@ export function TemplateEditor({
 	marginRight,
 	marginBottom,
 	marginLeft,
-	onUploadImage,
+	onUploadImage: _onUploadImage,
 	initialHeaderContent,
 	onHeaderChange,
 	headerEditable,

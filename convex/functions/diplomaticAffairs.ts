@@ -1753,18 +1753,6 @@ export const getDashboardStats = authQuery({
   },
 });
 
-function groupBy<T extends Record<string, unknown>>(
-  items: T[],
-  key: string,
-): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const item of items) {
-    const val = (item[key] as string) ?? "unassigned";
-    result[val] = (result[val] ?? 0) + 1;
-  }
-  return result;
-}
-
 // ═════════════════════════════════════════════════════════════════════════════
 // SUPERADMIN — Suppression de cibles
 // ═════════════════════════════════════════════════════════════════════════════

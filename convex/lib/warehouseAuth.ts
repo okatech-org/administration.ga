@@ -1,5 +1,3 @@
-import { GenericActionCtx } from "convex/server";
-
 /**
  * Validates the warehouse API key from the Authorization header.
  * Uses constant-time comparison to prevent timing attacks.

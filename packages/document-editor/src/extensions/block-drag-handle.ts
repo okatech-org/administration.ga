@@ -25,7 +25,6 @@
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { Fragment } from "@tiptap/pm/model";
 
 const HANDLE_WIDTH = 20; // px
 const HANDLE_OFFSET_LEFT = 4; // px — léger décalage vers l'intérieur

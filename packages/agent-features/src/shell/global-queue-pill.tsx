@@ -17,7 +17,6 @@
 import {
 	Bell,
 	BellOff,
-	ChevronUp,
 	Loader2,
 	Minus,
 	Phone,

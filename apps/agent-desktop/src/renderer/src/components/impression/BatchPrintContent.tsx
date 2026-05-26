@@ -10,7 +10,6 @@
  */
 
 import { useState, useCallback, useMemo } from "react"
-import { useTranslation } from "react-i18next"
 import {
   Upload,
   Columns3,
@@ -43,8 +42,6 @@ export function BatchPrintContent({
   onPrintBatch,
   templateFields,
 }: BatchPrintContentProps) {
-  const { t } = useTranslation()
-
   const [csvData, setCsvData] = useState<CSVData | null>(null)
   const [mappings, setMappings] = useState<ColumnMapping[]>([])
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
@@ -64,8 +61,20 @@ export function BatchPrintContent({
 
       if (!result?.filePaths?.length) return
 
-      const text = await window.desktopApi?.fileDialog?.readText(result.filePaths[0])
-      if (!text) return
+      // TODO: `readText` n'est pas exposé par le bridge IPC `fileDialog`
+      // (cf. apps/agent-desktop/src/main/ipc/file-dialog.ipc.ts qui n'a
+      // que `save` et `open`). À implémenter dans le main process en
+      // ajoutant `readText(path) → fs.readFile(path, 'utf-8')`.
+      const fileDialog = window.desktopApi?.fileDialog as
+        | (typeof window.desktopApi.fileDialog & {
+            readText?: (path: string) => Promise<string | null>
+          })
+        | undefined
+      const text = await fileDialog?.readText?.(result.filePaths[0])
+      if (!text) {
+        toast.error("Lecture du fichier non disponible (IPC readText à implémenter).")
+        return
+      }
       const data = parseCSV(text)
 
       if (data.rowCount === 0) {

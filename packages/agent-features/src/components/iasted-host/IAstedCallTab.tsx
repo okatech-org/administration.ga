@@ -41,13 +41,11 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
-import { PostCallNoteDrawer } from "@workspace/iasted";
 import { CallCenterShell } from "../call-center";
 import { DirectCallView } from "../meetings/DirectCallView";
 import { IAstedLiveKitBridge } from "../iasted-bridge";
 import { useOrg } from "../../shell/org-provider";
 import { useContactSearch, type ContactSource } from "../../hooks/useContactSearch";
-import { useCallCenter } from "../../hooks/use-call-center";
 import { useMeeting } from "../../hooks/use-meeting";
 import { useRingtone } from "../../hooks/use-ringtone";
 import { useAuthenticatedConvexQuery, useConvexMutationQuery } from "@workspace/api/hooks";
@@ -197,87 +195,6 @@ function IAstedCallTabPanelContext() {
 	});
 	void activeOrgId;
 	return null;
-}
-
-/**
- * Wrapper Phase ζ : détecte la fin d'un appel et ouvre le drawer PostCallNote.
- * NE MODIFIE PAS CallCenterShell (Sprint 6 verrouillé).
- */
-function CallCenterWithPostCallNote({
-	selectedLineId,
-	onSelectLineId,
-	ringtoneMuted,
-	compact,
-	VoicemailsList,
-}: {
-	selectedLineId?: string | "all";
-	onSelectLineId?: (id: string | "all") => void;
-	ringtoneMuted?: boolean;
-	compact?: boolean;
-	VoicemailsList?: React.ComponentType<{ orgId: Id<"orgs"> | null }>;
-}) {
-	const { activeOrgId } = useOrg();
-	const { activeCalls } = useCallCenter();
-	// On garde le snapshot complet des appels précédents pour calculer le diff
-	// (l'appel qui vient de disparaître = celui qu'on doit attacher à la note).
-	// L'ancienne implémentation ne stockait qu'un compteur → meetingId perdu et
-	// les notes finissaient sauvées avec l'ID littéral "placeholder".
-	const prevCallsRef = useRef<Array<{ _id: string }>>(
-		(activeCalls as Array<{ _id: string }>) ?? [],
-	);
-	const [lastEndedMeetingId, setLastEndedMeetingId] = useState<Id<"meetings"> | null>(null);
-	const [showPostCallNote, setShowPostCallNote] = useState(false);
-
-	const { mutateAsync: upsertNote } = useConvexMutationQuery(
-		api.functions.callNotes.upsertCallNote,
-	);
-
-	// Détecte un appel qui vient de se terminer en comparant les snapshots
-	// successifs de `activeCalls`. On capture l'ID exact pour le passer à la
-	// mutation upsertCallNote — fini le placeholder.
-	useEffect(() => {
-		const current = (activeCalls as Array<{ _id: string }>) ?? [];
-		const previous = prevCallsRef.current;
-		if (previous.length > current.length) {
-			const currentIds = new Set(current.map((c) => c._id));
-			const ended = previous.find((c) => !currentIds.has(c._id));
-			if (ended) {
-				setLastEndedMeetingId(ended._id as Id<"meetings">);
-				setShowPostCallNote(true);
-			}
-		}
-		prevCallsRef.current = current;
-	}, [activeCalls]);
-
-	return (
-		<>
-			<CallCenterShell
-				selectedLineId={selectedLineId}
-				onSelectLineId={onSelectLineId}
-				ringtoneMuted={ringtoneMuted}
-				compact={compact}
-				VoicemailsList={VoicemailsList}
-			/>
-			<PostCallNoteDrawer
-				open={showPostCallNote}
-				onOpenChange={(next) => {
-					setShowPostCallNote(next);
-					if (!next) setLastEndedMeetingId(null);
-				}}
-				meetingLabel="Documentez cet appel avant de passer à la suite."
-				onSave={async (payload) => {
-					if (!activeOrgId || !lastEndedMeetingId) return;
-					await upsertNote({
-						meetingId: lastEndedMeetingId,
-						orgId: activeOrgId,
-						content: payload.content,
-						actionItems: payload.actionItems,
-						sentiment: payload.sentiment,
-					});
-				}}
-			/>
-		</>
-	);
 }
 
 function LegacyCallTab() {

@@ -1,8 +1,7 @@
 import { v } from "convex/values";
-import { ObjectType, PropertyValidators } from "convex/values";
 import { assertCanTransition } from "../lib/requestWorkflow";
 import { paginationOptsValidator } from "convex/server";
-import { query, internalQuery } from "../_generated/server";
+import { internalQuery } from "../_generated/server";
 import type { QueryCtx } from "../_generated/server";
 import { triggeredInternalMutation } from "../lib/customFunctions";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -13,7 +12,6 @@ import { logCortexAction } from "../lib/neocortex";
 import { SIGNAL_TYPES, CATEGORIES_ACTION } from "../lib/types";
 import { assertCanDoTask, assertCanAccessService } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
-import { generateReferenceNumber } from "../lib/utils";
 import { generateRequestReference } from "../lib/referenceHelpers";
 import {
   requestStatusValidator,

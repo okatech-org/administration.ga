@@ -1,10 +1,12 @@
 import {
+  internalQuery,
+} from "../_generated/server"
+import type {
   QueryCtx,
   MutationCtx,
   ActionCtx,
-  internalQuery,
 } from "../_generated/server"
-import { Id } from "../_generated/dataModel"
+import type { Id } from "../_generated/dataModel"
 import { v } from "convex/values"
 import { error, ErrorCode } from "./errors"
 import { UserRole } from "./constants"

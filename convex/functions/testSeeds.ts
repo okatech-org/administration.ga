@@ -10,7 +10,6 @@
  */
 
 import { v } from "convex/values";
-import { authMutation } from "../lib/customFunctions";
 import { mutation } from "../_generated/server";
 import { error, ErrorCode } from "../lib/errors";
 import type { Id } from "../_generated/dataModel";

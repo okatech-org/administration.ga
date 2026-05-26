@@ -131,7 +131,7 @@ export default function IAgendaPage() {
 	const [currentMonth, setCurrentMonth] = useState(new Date());
 	const { activeOrgId } = useOrg();
 	const { hasMin: hasAgendaAccess } = useModuleAccess("calendar");
-	const canManage = hasAgendaAccess("editor");
+	void hasAgendaAccess;
 
 	// ── Données Convex ──
 	const { data: rawCommunityEventsResult, isPending: eventsLoading } =

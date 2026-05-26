@@ -6,7 +6,7 @@
  * Shared between agent-web (Next.js) and agent-desktop (Electron).
  */
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { api } from "@convex/_generated/api";
 import { Link, useRouter } from "@workspace/routing";
 import {

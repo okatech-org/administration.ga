@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { query } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { authQuery, authMutation } from "../lib/customFunctions";
 import { error, ErrorCode } from "../lib/errors";
 import { calculateCompletionScore } from "../lib/utils";
@@ -69,8 +69,6 @@ export function buildRegistrationFormData(
   const homeland = addresses.homeland ?? {};
   // Support both new array format and legacy fields
   const emergencyContacts = contacts.emergencyContacts ?? [];
-  const emergencyRes = emergencyContacts[0] ?? contacts.emergencyResidence ?? {};
-  const emergencyHome = emergencyContacts[1] ?? contacts.emergencyHomeland ?? {};
 
   return {
     // Meta

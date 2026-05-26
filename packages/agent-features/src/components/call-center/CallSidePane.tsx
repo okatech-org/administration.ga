@@ -21,7 +21,6 @@ import {
   Loader2,
   StickyNote,
 } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Id } from "@convex/_generated/dataModel";
 import {

@@ -13,7 +13,12 @@ export function useProfileLookup() {
 
   const results = useQuery(
     api.functions.profiles.searchProfiles,
-    shouldSearch ? { query: debouncedTerm } : "skip"
+    shouldSearch
+      ? {
+          searchTerm: debouncedTerm,
+          paginationOpts: { numItems: 50, cursor: null },
+        }
+      : "skip"
   )
 
   const selectedProfile = useQuery(
@@ -24,7 +29,9 @@ export function useProfileLookup() {
   return {
     searchTerm,
     setSearchTerm,
-    results: results ?? [],
+    // `searchProfiles` est paginée — on consomme uniquement la première page
+    // dans ce hook (lookup ponctuel, 50 résultats suffisent).
+    results: results?.page ?? [],
     isSearching: shouldSearch && results === undefined,
     selectedProfileId,
     setSelectedProfileId,

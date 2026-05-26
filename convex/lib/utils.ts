@@ -1,5 +1,5 @@
 import { countryDialCodes, CountryCode } from "./constants";
-import { LocalizedString } from "./validators";
+import type { LocalizedString } from "./validators";
 
 /**
  * Get dial code for a country

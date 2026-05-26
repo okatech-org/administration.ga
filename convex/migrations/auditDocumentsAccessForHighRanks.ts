@@ -21,11 +21,6 @@ import { internalQuery } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 import { ModuleCode, MODULE_ACCESS_TASKS } from "../lib/moduleCodes";
 
-const KEY_TASKS = [
-	"documents.manage_templates",
-	"documents.sign",
-	"documents.publish",
-] as const;
 
 export const run = internalQuery({
 	args: {},

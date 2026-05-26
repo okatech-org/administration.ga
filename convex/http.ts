@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api, internal, components } from "./_generated/api";
-import { authComponent, createAuth } from "./betterAuth/auth";
+import { internal, components } from "./_generated/api";
+import { createAuth } from "./betterAuth/auth";
 import { hashPassword } from "better-auth/crypto";
 import { generateRandomString } from "better-auth/crypto";
 import { validateWarehouseApiKey } from "./lib/warehouseAuth";

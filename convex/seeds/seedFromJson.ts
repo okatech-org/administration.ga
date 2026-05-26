@@ -46,9 +46,6 @@ type Localized = { fr: string; en?: string };
 const isLocalized = (x: unknown): x is Localized =>
   typeof x === "object" && x !== null && "fr" in x && typeof (x as { fr: unknown }).fr === "string";
 
-/** Garde la structure {fr, en} (pour les champs services qui l'attendent). */
-const keepLocalized = <T,>(x: T): T => x;
-
 /** Aplatit {fr, en} → fr (pour les schémas qui veulent v.string()). */
 const pickFr = (x: unknown): string => {
   if (typeof x === "string") return x;

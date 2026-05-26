@@ -21,10 +21,8 @@ import {
 	BellOff,
 	Contact,
 	MessageSquare,
-	Minimize2,
 	Phone,
 	Settings,
-	ShieldCheck,
 	Video,
 	Voicemail as VoicemailIcon,
 	X,
@@ -119,7 +117,7 @@ export default function IAstedPage({
 }: IAstedPageProps) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
-	const { activeOrg, activeOrgId } = useOrg();
+	const { activeOrgId } = useOrg();
 
 	// ── Tab actif (single source of truth : le query param) ──
 	const activeTab: TabId = (() => {

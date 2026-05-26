@@ -8,16 +8,6 @@
 import { mutation } from "../_generated/server";
 import { OrganizationType } from "../lib/constants";
 
-// Mapping des types depuis consulat-core vers les nouveaux types
-const TYPE_MAP: Record<string, OrganizationType> = {
-  AMBASSADE: OrganizationType.Embassy,
-  CONSULAT_GENERAL: OrganizationType.GeneralConsulate,
-  CONSULAT: OrganizationType.GeneralConsulate,
-  CONSULAT_HONORAIRE: OrganizationType.GeneralConsulate,
-  HAUT_COMMISSARIAT: OrganizationType.HighCommission,
-  MISSION_PERMANENTE: OrganizationType.PermanentMission,
-};
-
 // Données du réseau diplomatique
 const DIPLOMATIC_NETWORK = [
   // ═══════════════════════════════════════════════════════════════════════════

@@ -27,13 +27,6 @@ const TYPE_LABELS: Record<string, string> = {
   communique: "Communiqué",
 };
 
-/** Labels des niveaux de priorité */
-const PRIORITY_LABELS: Record<string, string> = {
-  normal: "Normal",
-  urgent: "URGENT",
-  confidentiel: "CONFIDENTIEL",
-};
-
 /**
  * Génère le HTML de l'email de correspondance diplomatique.
  */
@@ -51,7 +44,6 @@ function buildCorrespondanceEmail(args: {
 }) {
   const platform = getPlatformConfig("agent");
   const typeLabel = TYPE_LABELS[args.type] ?? args.type;
-  const priorityLabel = PRIORITY_LABELS[args.priority] ?? args.priority;
 
   const priorityBadge =
     args.priority === "urgent"

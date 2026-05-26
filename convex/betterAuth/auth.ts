@@ -8,7 +8,7 @@ import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 // TRIGGER REBUILD GLOBAL PATCH ALL
 import authConfig from "../auth.config";
 import { components, internal } from "../_generated/api";
-import { internalMutation, mutation, query } from "../_generated/server";
+import { internalMutation, query } from "../_generated/server";
 import { resend } from "../functions/notifications";
 import { sendSms } from "../lib/bird";
 import { detectPlatform, fromEmail } from "../lib/platform";

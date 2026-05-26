@@ -1773,9 +1773,6 @@ export const findRecallableMissedCall = authQuery({
     };
 
     // Collecter les missed calls pending les plus récents par org
-    type MissedCallDoc = Awaited<ReturnType<typeof ctx.db.query>> extends never
-      ? never
-      : any;
     const candidates: Array<{
       missedCallId: Id<"missedCalls">;
       callerUserId: Id<"users">;

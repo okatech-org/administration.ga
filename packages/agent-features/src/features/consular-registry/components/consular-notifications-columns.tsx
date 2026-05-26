@@ -6,7 +6,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
 	BadgeCheck,
 	Calendar,
-	CheckCircle2,
 	Clock,
 	ExternalLink,
 	User,

@@ -689,7 +689,7 @@ async function listMyDevicesTool(ctx: any): Promise<RealtimeToolResult> {
 }
 
 async function handoffToDeviceTool(
-	ctx: any,
+	_ctx: any,
 	args: { targetDeviceId?: string },
 ): Promise<RealtimeToolResult> {
 	const targetDeviceId = args.targetDeviceId?.trim();

@@ -3,8 +3,6 @@
 import {
   Phone,
   PhoneIncoming,
-  Plus,
-  Search,
   User,
   Voicemail as VoicemailIcon,
   X,
@@ -81,8 +79,6 @@ export function CallCenterShell({
     hold,
     resume,
     transfer,
-    missedCalls,
-    callBackMissed,
     recentCalls,
     callBackRecent,
   } = useCallCenter();
@@ -139,22 +135,6 @@ export function CallCenterShell({
   const handleEndActive = async (id: Id<"meetings">) => {
     await hangup(id);
     if (focusedMeetingId === id) setFocusedMeetingId(null);
-  };
-
-  const handleCallBackMissed = async (missedCallId: Id<"missedCalls">) => {
-    setCallingBackIds((prev) => new Set(prev).add(missedCallId as string));
-    try {
-      const { meetingId } = await callBackMissed(missedCallId);
-      setFocusedMeetingId(meetingId);
-    } catch {
-      // erreur déjà remontée via toast dans use-call-center
-    } finally {
-      setCallingBackIds((prev) => {
-        const next = new Set(prev);
-        next.delete(missedCallId as string);
-        return next;
-      });
-    }
   };
 
   const handleCallBackRecent = async (

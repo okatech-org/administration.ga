@@ -6,7 +6,6 @@ import { error, ErrorCode } from "../lib/errors";
 import {
   TicketStatus,
   TicketPriority,
-  TicketCategory,
 } from "../lib/constants";
 import {
   ticketCategoryValidator,

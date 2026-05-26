@@ -6,7 +6,6 @@
  */
 
 import { v } from "convex/values";
-import { query } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { authQuery, authMutation } from "../lib/customFunctions";
@@ -14,7 +13,6 @@ import { error, ErrorCode } from "../lib/errors";
 import { ChildProfileStatus, ServiceCategory, PublicUserType } from "../lib/constants";
 import {
   genderValidator,
-  childProfileStatusValidator,
   nationalityAcquisitionValidator,
   RequestStatus,
   RequestPriority,

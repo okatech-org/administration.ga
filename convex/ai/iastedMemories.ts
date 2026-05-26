@@ -15,7 +15,6 @@
 import { ConvexError, v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
 import { requireAuth } from "../lib/auth";
-import type { Id } from "../_generated/dataModel";
 
 // Bornes pour borner la taille du contexte injecté dans le prompt.
 const MAX_CONTEXT_LEN = 400;

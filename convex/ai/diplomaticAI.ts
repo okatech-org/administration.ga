@@ -120,13 +120,6 @@ const generateJSON = async (prompt: string): Promise<unknown> => {
   }
 };
 
-const generateText = async (prompt: string): Promise<string> => {
-  const genAI = getGemini();
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-  const result = await model.generateContent(prompt);
-  return result.response.text();
-};
-
 // ═════════════════════════════════════════════════════════════════════════════
 // 1. DISCOVER TARGETS — Recherche IA de cibles
 // ═════════════════════════════════════════════════════════════════════════════

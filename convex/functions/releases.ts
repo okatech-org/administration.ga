@@ -14,7 +14,6 @@
  *    stream du binaire depuis GitHub avec le token serveur.
  */
 
-import { v } from "convex/values";
 import { action } from "../_generated/server";
 
 const REPO_OWNER = "okatech-org";

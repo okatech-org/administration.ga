@@ -1,4 +1,5 @@
-import { Infer, v } from "convex/values";
+import { v } from "convex/values";
+import type { Infer } from "convex/values";
 import {
   OrganizationType as OrgType,
   MinistrySubType,

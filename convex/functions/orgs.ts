@@ -25,7 +25,7 @@ import {
   chatsConfigValidator,
 } from "../lib/validators"
 import { taskCodeValidator } from "../lib/taskCodes"
-import { MODULE_ACCESS_TASKS, moduleCodeValidator, accessLevelValidator, NETWORK_MODULE_CODES, isNetworkModule, isIntelligenceAgencyModule } from "../lib/moduleCodes"
+import { MODULE_ACCESS_TASKS, moduleCodeValidator, accessLevelValidator, isNetworkModule, isIntelligenceAgencyModule } from "../lib/moduleCodes"
 import { isIntelligenceAgency, isCallerIntelAgency, canSeeIntelAgencies } from "../lib/intelligenceAgencyVisibility"
 import { OrganizationType } from "../lib/constants"
 import { countryCodeValidator, CountryCode } from "../lib/countryCodeValidator"
@@ -1354,9 +1354,6 @@ export const getOrgChart = authQuery({
     const userIds = [...new Set(activeMembers.map((m) => m.userId))]
     const users = await Promise.all(userIds.map((id) => ctx.db.get(id)))
     const userMap = new Map(users.filter(Boolean).map((u) => [u!._id, u!]))
-
-    // Build map of active position IDs to easily check validity
-    const activePositionIds = new Set(positions.map((p) => p._id as string))
 
     // 4. Build a map: positionId → array of membership+user
     const validPositionIds = new Set(positions.map((p) => p._id))

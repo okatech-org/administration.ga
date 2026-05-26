@@ -26,16 +26,6 @@ import { requireAuth, getMembership } from "../lib/auth";
 import { assertCanDoTask } from "../lib/permissions";
 import { error, ErrorCode } from "../lib/errors";
 import { proposedActionValidator } from "../schemas/aiSuggestions";
-import type { Doc } from "../_generated/dataModel";
-
-const statusValidator = v.union(
-  v.literal("pending"),
-  v.literal("accepted"),
-  v.literal("dismissed"),
-  v.literal("expired"),
-  v.literal("auto_applied"),
-  v.literal("error"),
-);
 
 const priorityValidator = v.union(
   v.literal("low"),

@@ -5,7 +5,7 @@
  */
 
 import { v } from "convex/values";
-import { authQuery, authMutation } from "../lib/customFunctions";
+import { authQuery } from "../lib/customFunctions";
 import { internalMutation } from "../_generated/server";
 import {
   packageStatusValidator,

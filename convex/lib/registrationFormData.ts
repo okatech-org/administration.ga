@@ -41,10 +41,6 @@ export function buildRegistrationFormData(
   const homeland = addresses.homeland ?? {};
   // Support both new array format and legacy fields
   const emergencyContacts = contacts.emergencyContacts ?? [];
-  const emergencyRes =
-    emergencyContacts[0] ?? contacts.emergencyResidence ?? {};
-  const emergencyHome =
-    emergencyContacts[1] ?? contacts.emergencyHomeland ?? {};
 
   return {
     // Meta

@@ -17,7 +17,6 @@ import {
   correspondanceTypeValidator,
   correspondancePriorityValidator,
   correspondanceStatusValidator,
-  correspondanceWorkflowStepTypeValidator,
 } from "../schemas/correspondance";
 import {
   requireCorrespondanceAccess,
@@ -27,9 +26,6 @@ import {
   filterByConfidentialityClearance,
   buildCorrespondanceSearchText,
 } from "../lib/correspondanceHelpers";
-import { getMembership } from "../lib/auth";
-import { assertCanDoTask, isSuperAdmin } from "../lib/permissions";
-import { TaskCode } from "../lib/taskCodes";
 import { error, ErrorCode } from "../lib/errors";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -439,25 +435,6 @@ export const restoreFromTrash = authMutation({
 // ═════════════════════════════════════════════════════════════════════════════
 // ATTACHMENTS
 // ═════════════════════════════════════════════════════════════════════════════
-
-/**
- * Limites d'upload — dupliquées côté client (AttachmentUploader.tsx) pour
- * feedback immédiat et ici pour defense-in-depth. Un client malveillant
- * qui contourne la validation JS ne peut pas attacher un fichier de 500 Mo
- * ou un .exe au meeting.
- */
-const MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024; // 50 Mo
-const ALLOWED_ATTACHMENT_MIME_TYPES = new Set<string>([
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/webp",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-]);
 
 /** Generate a Convex storage upload URL */
 export const generateUploadUrl = authMutation({

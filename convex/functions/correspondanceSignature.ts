@@ -102,7 +102,7 @@ export const signDocument = authAction({
       // ── Tampon visuel sur la dernière page ──
       const pages = pdfDoc.getPages();
       const lastPage = pages[pages.length - 1];
-      const { width: pw, height: ph } = lastPage.getSize();
+      const { width: pw } = lastPage.getSize();
       const stampX = pw - 220;
       const stampY = 80;
       const stampW = 180;

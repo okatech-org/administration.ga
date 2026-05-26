@@ -12,7 +12,6 @@
 
 import { v } from "convex/values";
 import { internalQuery } from "../_generated/server";
-import type { Doc, Id } from "../_generated/dataModel";
 
 export const getRequestForTriage = internalQuery({
   args: {
