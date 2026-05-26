@@ -54,21 +54,15 @@ export async function requirePnpeRole(
   user: Doc<"users">,
   allowedRoles: readonly string[],
 ): Promise<void> {
-  const memberships = await ctx.db
-    .query("memberships")
-    .withIndex("by_user_org_deletedAt", (q) =>
-      q.eq("userId", user._id).eq("orgId", undefined as never).eq("deletedAt", undefined),
-    )
-    .collect()
-    .catch(async () =>
-      // Fallback si l'index n'a pas la forme attendue
-      ctx.db
-        .query("memberships")
-        .filter((q) => q.eq(q.field("userId"), user._id))
-        .collect(),
-    );
-  const hasRole = memberships.some(
-    (m) => allowedRoles.includes(m.role) && !m.deletedAt,
+  // Le rôle PNPE n'est pas porté par `memberships` directement (membership
+  // est un schema partagé entre 10+ apps). Il vit dans la table dédiée
+  // `pnpeStaffAssignments`, indexée par userId + by_role_active.
+  const assignments = await ctx.db
+    .query("pnpeStaffAssignments")
+    .withIndex("by_userId", (q) => q.eq("userId", user._id))
+    .collect();
+  const hasRole = assignments.some(
+    (a) => a.isActive && allowedRoles.includes(a.pnpeRole),
   );
   if (!hasRole) {
     throw new Error(

@@ -44,6 +44,7 @@ export const create = authMutation({
       throw new Error("ALREADY_APPLIED");
     }
     const id = await ctx.db.insert("candidatures", {
+      typeCandidature: "DEMANDEUR_INSCRIT",
       offreId: args.offreId,
       demandeurId: args.demandeurId,
       cvStorageId: args.cvStorageId,
@@ -150,6 +151,10 @@ export const withdraw = authMutation({
   handler: async (ctx, args) => {
     const candidature = await ctx.db.get(args.candidatureId);
     if (!candidature) throw new Error("CANDIDATURE_NOT_FOUND");
+    if (!candidature.demandeurId) {
+      // Candidature CITOYEN_ORDINAIRE — pas de D.E à retirer côté PNPE.
+      throw new Error("CANDIDATURE_NOT_DEMANDEUR_INSCRIT");
+    }
     const demandeur = await ctx.db.get(candidature.demandeurId);
     if (!demandeur || demandeur.userId !== ctx.user._id) {
       throw new Error("FORBIDDEN");
