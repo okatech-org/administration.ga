@@ -1,16 +1,13 @@
 /**
  * Tableau de bord PNPE — vue différenciée selon le rôle staff.
  *
- *  - Direction PNPE / Admin Ministère du Travail → KPIs nationaux
- *    (D.E inscrits, offres publiées, antennes opérationnelles,
- *    employeurs vérifiés, top 5 secteurs, répartition par province).
- *  - Chef d'antenne → KPIs locaux (D.E par statut, conseillers,
- *    candidatures actives, derniers D.E inscrits).
- *  - Conseiller PNPE → portefeuille personnel (mes D.E, file d'attente
- *    antenne, entretiens en cours, dernières offres publiées).
+ *  - Direction PNPE / Admin Ministère du Travail → Vue nationale
+ *  - Chef d'antenne → Vue antenne
+ *  - Conseiller PNPE → Mon portefeuille
  *
- * Wrappé dans `PnpeRoleGate` par le layout parent — pas besoin de
- * re-vérifier l'authentification ici.
+ * Composants design system : PageHeader + FlatCard + SectionHeader
+ * (Citizen Design System v3.0 — surfaces warm-gray, zero shadow,
+ * icônes en boîtes colorées).
  */
 "use client";
 
@@ -21,9 +18,10 @@ import {
   Building2,
   Briefcase,
   CheckCircle2,
+  Globe2,
   Inbox,
   Layers,
-  LineChart,
+  LayoutDashboard,
   MapPin,
   PhoneCall,
   TrendingUp,
@@ -32,6 +30,11 @@ import {
 } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import {
+  FlatCard,
+  PageHeader,
+  SectionHeader,
+} from "@workspace/agent-features/components/my-space";
 import { usePnpeRole } from "@/lib/pnpe/use-pnpe-role";
 import { PnpeRole, getRoleLabel } from "@/lib/pnpe/roles";
 
@@ -65,7 +68,6 @@ export default function PnpeDashboardPage() {
     return null; // Géré par PnpeRoleGate dans le layout
   }
 
-  // Vue nationale (Direction PNPE + Admin Ministère Travail)
   if (
     role === PnpeRole.DirectionPnpe ||
     role === PnpeRole.AdminMinistereTravail
@@ -73,7 +75,6 @@ export default function PnpeDashboardPage() {
     return <NationalDashboard role={role} />;
   }
 
-  // Vue antenne (Chef d'antenne)
   if (role === PnpeRole.ChefAntennePnpe && antenneId) {
     return (
       <AntenneDashboard
@@ -83,51 +84,29 @@ export default function PnpeDashboardPage() {
     );
   }
 
-  // Vue portefeuille (Conseiller)
   if (role === PnpeRole.ConseillerPnpe) {
     return <PortfolioDashboard role={role} />;
   }
 
-  // Formateur Auto-Emploi — fallback simple
   return (
     <div className="space-y-6">
-      <DashboardHeader
+      <PageHeader
         title="Tableau de bord"
         subtitle={getRoleLabel(role)}
+        icon={<LayoutDashboard className="size-4" />}
       />
-      <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
+      <FlatCard className="p-12 text-center text-muted-foreground">
         Espace formateur Auto-Emploi —{" "}
         <Link href="/auto-emploi/formation" className="text-primary underline">
           accéder aux sessions BMC
         </Link>
-      </div>
+      </FlatCard>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Header partagé
-// ─────────────────────────────────────────────────────────────
-
-function DashboardHeader({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div>
-      <h1 className="text-2xl font-display font-bold tracking-tight">
-        {title}
-      </h1>
-      <p className="text-muted-foreground mt-1 text-sm">{subtitle}</p>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// KPI Card — bloc compact réutilisable
+// KPI Card — bloc compact réutilisable (FlatCard)
 // ─────────────────────────────────────────────────────────────
 
 function KpiCard({
@@ -150,12 +129,12 @@ function KpiCard({
         ? "bg-emerald-500/10 text-emerald-600"
         : tone === "blue"
           ? "bg-blue-500/10 text-blue-600"
-          : "bg-muted text-muted-foreground";
+          : "bg-foreground/8 dark:bg-foreground/5 text-foreground/70";
 
   return (
-    <div className="rounded-xl border bg-card p-5">
+    <FlatCard className="p-5">
       <div className="flex items-center justify-between gap-3">
-        <div className={`size-9 rounded-lg flex items-center justify-center ${toneClass}`}>
+        <div className={`size-9 rounded-md flex items-center justify-center ${toneClass}`}>
           <Icon className="size-4.5" />
         </div>
         {hint && (
@@ -170,7 +149,7 @@ function KpiCard({
         </div>
         <div className="text-sm text-muted-foreground mt-0.5">{label}</div>
       </div>
-    </div>
+    </FlatCard>
   );
 }
 
@@ -188,9 +167,10 @@ function NationalDashboard({ role }: { role: PnpeRole }) {
 
   return (
     <div className="space-y-8">
-      <DashboardHeader
+      <PageHeader
         title="Vue nationale"
         subtitle={`${getRoleLabel(role)} · Réseau PNPE Gabon`}
+        icon={<Globe2 className="size-4" />}
       />
 
       {/* KPIs nationaux */}
@@ -232,19 +212,14 @@ function NationalDashboard({ role }: { role: PnpeRole }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Répartition D.E par province */}
-        <section className="rounded-xl border bg-card p-5">
-          <header className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="font-display font-semibold text-base">
-                Répartition par province
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Demandeurs d'emploi inscrits
-              </p>
-            </div>
-            <Layers className="size-4 text-muted-foreground" />
-          </header>
+        <FlatCard className="p-5">
+          <SectionHeader
+            icon={<Layers />}
+            title="Répartition par province"
+          />
+          <p className="text-xs text-muted-foreground mt-0.5 mb-4">
+            Demandeurs d'emploi inscrits
+          </p>
           {byProvince === undefined ? (
             <div className="text-sm text-muted-foreground">Chargement…</div>
           ) : byProvince.length === 0 ? (
@@ -254,6 +229,7 @@ function NationalDashboard({ role }: { role: PnpeRole }) {
           ) : (
             <ul className="space-y-2">
               {byProvince
+                .slice()
                 .sort((a, b) => b.count - a.count)
                 .map((p) => (
                   <ProvinceBar
@@ -265,21 +241,13 @@ function NationalDashboard({ role }: { role: PnpeRole }) {
                 ))}
             </ul>
           )}
-        </section>
+        </FlatCard>
 
-        {/* Top secteurs */}
-        <section className="rounded-xl border bg-card p-5">
-          <header className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="font-display font-semibold text-base">
-                Top secteurs
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Offres actuellement publiées
-              </p>
-            </div>
-            <TrendingUp className="size-4 text-muted-foreground" />
-          </header>
+        <FlatCard className="p-5">
+          <SectionHeader icon={<TrendingUp />} title="Top secteurs" />
+          <p className="text-xs text-muted-foreground mt-0.5 mb-4">
+            Offres actuellement publiées
+          </p>
           {bySector === undefined ? (
             <div className="text-sm text-muted-foreground">Chargement…</div>
           ) : bySector.length === 0 ? (
@@ -303,10 +271,9 @@ function NationalDashboard({ role }: { role: PnpeRole }) {
               ))}
             </ul>
           )}
-        </section>
+        </FlatCard>
       </div>
 
-      {/* Offres récentes */}
       <RecentOffresSection offres={recentOffres ?? null} />
     </div>
   );
@@ -328,7 +295,7 @@ function ProvinceBar({
         <span className="text-foreground/90 truncate">{label}</span>
         <span className="text-muted-foreground tabular-nums">{count}</span>
       </div>
-      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+      <div className="h-1.5 bg-foreground/5 rounded-full overflow-hidden">
         <div
           className="h-full bg-primary rounded-full transition-all"
           style={{ width: `${pct}%` }}
@@ -357,9 +324,10 @@ function AntenneDashboard({
 
   return (
     <div className="space-y-8">
-      <DashboardHeader
+      <PageHeader
         title={kpis?.antenneNom ?? "Antenne"}
         subtitle={`${getRoleLabel(role)}${kpis?.antenneVille ? ` · ${kpis.antenneVille}` : ""}`}
+        icon={<MapPin className="size-4" />}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -401,7 +369,7 @@ function AntenneDashboard({
         <KpiCard
           label="Candidatures actives"
           value={kpis?.candidaturesActives ?? "…"}
-          icon={LineChart}
+          icon={TrendingUp}
           hint={`Total : ${kpis?.candidaturesTotal ?? 0}`}
         />
       </div>
@@ -426,7 +394,11 @@ function PortfolioDashboard({ role }: { role: PnpeRole }) {
   if (portfolio === undefined) {
     return (
       <div className="space-y-6">
-        <DashboardHeader title="Mon portefeuille" subtitle="Chargement…" />
+        <PageHeader
+          title="Mon portefeuille"
+          subtitle="Chargement…"
+          icon={<UserCheck className="size-4" />}
+        />
       </div>
     );
   }
@@ -434,22 +406,24 @@ function PortfolioDashboard({ role }: { role: PnpeRole }) {
   if (portfolio === null) {
     return (
       <div className="space-y-6">
-        <DashboardHeader
+        <PageHeader
           title="Mon portefeuille"
           subtitle={getRoleLabel(role)}
+          icon={<UserCheck className="size-4" />}
         />
-        <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
+        <FlatCard className="p-12 text-center text-muted-foreground">
           Aucune antenne rattachée. Contactez votre chef d'antenne.
-        </div>
+        </FlatCard>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <DashboardHeader
+      <PageHeader
         title="Mon portefeuille"
         subtitle={`${getRoleLabel(role)} · ${portfolio.antenneNom}`}
+        icon={<UserCheck className="size-4" />}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -514,18 +488,16 @@ function QuickActions() {
     },
   ];
   return (
-    <section className="rounded-xl border bg-card p-5">
-      <h2 className="font-display font-semibold text-base mb-4">
-        Actions rapides
-      </h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+    <FlatCard className="p-5">
+      <SectionHeader icon={<ArrowRight />} title="Actions rapides" />
+      <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
         {actions.map((a) => {
           const Icon = a.icon;
           return (
             <Link
               key={a.href}
               href={a.href}
-              className="group flex items-center justify-between gap-3 rounded-lg border bg-background p-3 text-sm hover:border-primary/40 hover:bg-primary/5 transition-colors"
+              className="group flex items-center justify-between gap-3 rounded-lg bg-background p-3 text-sm hover:bg-primary/5 transition-colors"
             >
               <span className="flex items-center gap-2.5 min-w-0">
                 <Icon className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
@@ -536,7 +508,7 @@ function QuickActions() {
           );
         })}
       </div>
-    </section>
+    </FlatCard>
   );
 }
 
@@ -557,23 +529,22 @@ function RecentOffresSection({
     | null;
 }) {
   return (
-    <section className="rounded-xl border bg-card p-5">
-      <header className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="font-display font-semibold text-base">
-            Offres récemment publiées
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            5 dernières offres validées et publiées
-          </p>
-        </div>
-        <Link
-          href="/conseiller/offres-a-valider"
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          Voir tout
-        </Link>
-      </header>
+    <FlatCard className="p-5">
+      <SectionHeader
+        icon={<Briefcase />}
+        title="Offres récemment publiées"
+        actions={
+          <Link
+            href="/conseiller/offres-a-valider"
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Voir tout
+          </Link>
+        }
+      />
+      <p className="text-xs text-muted-foreground mt-0.5 mb-4">
+        5 dernières offres validées et publiées
+      </p>
       {offres === null ? (
         <div className="text-sm text-muted-foreground">Chargement…</div>
       ) : offres.length === 0 ? (
@@ -585,7 +556,7 @@ function RecentOffresSection({
           {offres.map((o) => (
             <li
               key={o._id}
-              className="flex items-center justify-between gap-4 rounded-lg border bg-background px-3 py-2.5"
+              className="flex items-center justify-between gap-4 rounded-lg bg-background px-3 py-2.5"
             >
               <div className="min-w-0">
                 <div className="font-medium text-sm truncate">{o.titre}</div>
@@ -600,7 +571,7 @@ function RecentOffresSection({
           ))}
         </ul>
       )}
-    </section>
+    </FlatCard>
   );
 }
 
@@ -619,23 +590,22 @@ function RecentDemandeursSection({
     | null;
 }) {
   return (
-    <section className="rounded-xl border bg-card p-5">
-      <header className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="font-display font-semibold text-base">
-            Derniers D.E inscrits
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            6 inscriptions les plus récentes
-          </p>
-        </div>
-        <Link
-          href="/conseiller/mes-demandeurs"
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          Voir tout
-        </Link>
-      </header>
+    <FlatCard className="p-5">
+      <SectionHeader
+        icon={<Users />}
+        title="Derniers D.E inscrits"
+        actions={
+          <Link
+            href="/conseiller/mes-demandeurs"
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Voir tout
+          </Link>
+        }
+      />
+      <p className="text-xs text-muted-foreground mt-0.5 mb-4">
+        6 inscriptions les plus récentes
+      </p>
       {demandeurs === null ? (
         <div className="text-sm text-muted-foreground">Chargement…</div>
       ) : demandeurs.length === 0 ? (
@@ -647,7 +617,7 @@ function RecentDemandeursSection({
           {demandeurs.map((d) => (
             <li
               key={d._id}
-              className="flex items-center justify-between gap-4 rounded-lg border bg-background px-3 py-2.5"
+              className="flex items-center justify-between gap-4 rounded-lg bg-background px-3 py-2.5"
             >
               <div className="min-w-0">
                 <div className="font-medium text-sm truncate">
@@ -658,13 +628,13 @@ function RecentDemandeursSection({
                   {new Date(d._creationTime).toLocaleDateString("fr-FR")}
                 </div>
               </div>
-              <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground border border-border rounded-full px-2 py-0.5">
+              <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground bg-foreground/5 rounded-full px-2 py-0.5">
                 {STATUT_DE_LABEL[d.statutCompte] ?? d.statutCompte}
               </span>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </FlatCard>
   );
 }

@@ -11,9 +11,14 @@
  *   - **Espace PNPE** : Tableau de bord, File d'attente, Demandeurs,
  *     Employeurs, Offres à valider, Prospection, Rendez-vous, Statistiques
  *     (les items hors-rôle sont masqués via `roles?`).
- *   - **iBureau** : iProfil, iCorrespondance, iDocument, iAgenda, iCom
+ *   - **iBureau** : iProfil, iCorrespondance, iDocument, iAgenda
  *     (modules génériques de l'écosystème OkaTech, accessibles depuis
- *     n'importe quel rôle staff PNPE).
+ *     n'importe quel rôle staff PNPE). iCom n'apparaît pas dans la
+ *     sidebar car le bouton iAsted flottant (PnpeIAstedOverlay) couvre
+ *     déjà cette UX (iChat, iContact, iCall, iMeeting, iVoice). Le
+ *     widget « iAsted — Code du travail » n'est plus affiché dans la
+ *     sidebar pour la même raison : iAsted Realtime intègre désormais
+ *     la compétence « code du travail ».
  *
  * Utilisé par :
  *   - `conseiller/layout.tsx` (avec PnpeRoleGate pour le RBAC)
@@ -37,7 +42,6 @@ import {
   LogOut,
   Mail,
   MapPin,
-  MessageSquare,
   PhoneCall,
   UserCheck,
   UserCircle2,
@@ -49,7 +53,9 @@ import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 import { PnpeRole, getRoleLabel } from "@/lib/pnpe/roles";
 import { usePnpeRole } from "@/lib/pnpe/use-pnpe-role";
-import { IAstedLaborCodeWidget } from "@/components/iasted/IAstedLaborCodeWidget";
+import { IAstedVoiceProvider } from "@/components/iasted/IAstedVoiceProvider";
+import { AIPresenceProvider } from "@/components/ai/proactive/AIPresenceProvider";
+import { PnpeIAstedOverlay } from "@/components/pnpe-iasted-overlay";
 
 type NavItem = {
   href: string;
@@ -101,7 +107,6 @@ const STAFF_NAV: NavSection[] = [
       { href: "/icorrespondance", label: "iCorrespondance", icon: Mail },
       { href: "/idocument", label: "iDocument", icon: FileText },
       { href: "/iagenda", label: "iAgenda", icon: CalendarDays },
-      { href: "/icom", label: "iCom", icon: MessageSquare },
     ],
   },
 ];
@@ -111,15 +116,26 @@ export function PnpeStaffShell({ children }: { children: React.ReactNode }) {
   // iDocument, iAgenda, iCom) qui appellent `useOrg()`. L'utilisateur staff
   // PNPE a une membership sur l'org `pnpe` créée par staffAccountsPnpe.ts,
   // que OrgProvider sélectionne automatiquement (autoBindFirstMembership).
+  //
+  // AIPresenceProvider + IAstedVoiceProvider montent l'infrastructure
+  // iAsted (state graph IA proactive + session vocale Realtime/Gemini)
+  // pour que `<PnpeIAstedOverlay>` puisse rendre le bouton sphérique
+  // flottant avec iCom à l'intérieur (iChat, iContact, iCall, iMeeting,
+  // iVoice, iSettings) — même UX que le shell générique `AppLayout`.
   return (
     <OrgProvider storageKey="pnpe-active-org">
-      <div className="min-h-screen bg-background">
-        <PnpeStaffHeader />
-        <div className="container mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
-          <PnpeStaffSidebar />
-          <main className="min-w-0">{children}</main>
-        </div>
-      </div>
+      <AIPresenceProvider>
+        <IAstedVoiceProvider>
+          <div className="min-h-screen bg-background">
+            <PnpeStaffHeader />
+            <div className="container mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
+              <PnpeStaffSidebar />
+              <main className="min-w-0">{children}</main>
+            </div>
+          </div>
+          <PnpeIAstedOverlay />
+        </IAstedVoiceProvider>
+      </AIPresenceProvider>
     </OrgProvider>
   );
 }
@@ -253,11 +269,7 @@ function PnpeStaffSidebar() {
         );
       })}
 
-      <div className="pt-2">
-        <IAstedLaborCodeWidget />
-      </div>
-
-      <div className="px-2 pt-1 text-[10px] text-muted-foreground/50 flex items-center gap-1.5">
+      <div className="px-2 pt-2 text-[10px] text-muted-foreground/50 flex items-center gap-1.5">
         <BookOpen className="size-3" />
         Espace agent — PNPE.GA
       </div>

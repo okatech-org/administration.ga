@@ -15,6 +15,14 @@ export type { IAstedWindowProps } from "./iasted-window"
 export { GlobalCallAlert } from "./global-call-alert"
 export { FloatingMeetingWindow } from "./floating-meeting-window"
 export { GlobalOutgoingCallWindow } from "./global-outgoing-call-window"
+export { GlobalCallPill } from "./global-call-pill"
+export { GlobalQueuePill } from "./global-queue-pill"
+export { GlobalCallRoomHost } from "./global-call-room-host"
+export {
+	IAstedSidePanel,
+	useIAstedSidePanel,
+} from "./iasted-side-panel"
+export type { IAstedSidePanelProps } from "./iasted-side-panel"
 export { HomeLandingSignIn } from "./home-landing-sign-in"
 export type {
 	HomeLandingSignInProps,
