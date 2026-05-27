@@ -27,7 +27,7 @@ const STATUT_LABELS: Record<string, string> = {
 };
 
 export default function MesOffresPage() {
-  const offres = (useQuery((api as any).functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
+  const offres = (useQuery(api.functions.pnpe.employeurs.listMyOffres, {}) ?? []) as Array<{
     _id: string;
     reference: string;
     titre: string;

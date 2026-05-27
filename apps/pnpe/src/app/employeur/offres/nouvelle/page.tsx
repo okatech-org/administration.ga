@@ -12,6 +12,37 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
+import { IAstedJobOfferDrafter } from "@/components/iasted/IAstedJobOfferDrafter";
+
+type SecteurNAF =
+  | "AGRICULTURE_PECHE"
+  | "MINES_EXTRACTION"
+  | "PETROLE_GAZ"
+  | "INDUSTRIE_MANUFACTURE"
+  | "BTP_CONSTRUCTION"
+  | "COMMERCE"
+  | "TRANSPORT_LOGISTIQUE"
+  | "HOTELLERIE_RESTAURATION"
+  | "TELECOMS_NUMERIQUE"
+  | "BANQUE_ASSURANCE"
+  | "SANTE_SOCIAL"
+  | "EDUCATION_FORMATION"
+  | "ADMINISTRATION_PUBLIQUE"
+  | "SERVICES_AUX_ENTREPRISES"
+  | "ARTS_CULTURE_SPORT"
+  | "ENERGIE_EAU"
+  | "AUTRES";
+
+type Province =
+  | "ESTUAIRE"
+  | "HAUT_OGOOUE"
+  | "MOYEN_OGOOUE"
+  | "NGOUNIE"
+  | "NYANGA"
+  | "OGOOUE_IVINDO"
+  | "OGOOUE_LOLO"
+  | "OGOOUE_MARITIME"
+  | "WOLEU_NTEM";
 
 type FormState = {
   titre: string;
@@ -27,9 +58,9 @@ type FormState = {
     | "INSERTION"
     | "INDEPENDANT";
   dureeMois: string;
-  secteurActivite: string;
+  secteurActivite: SecteurNAF;
   ville: string;
-  province: string;
+  province: Province;
   teletravail: "NON" | "PARTIEL" | "TOTAL";
   salaireMin: string;
   salaireMax: string;
@@ -57,9 +88,9 @@ export default function NouvelleOffrePage() {
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
 
-  const employeur = useQuery((api as any).functions.pnpe.employeurs.getMine);
-  const createOffre = useMutation((api as any).functions.pnpe.employeurs.createOffre);
-  const submitOffre = useMutation((api as any).functions.pnpe.employeurs.submitOffre);
+  const employeur = useQuery(api.functions.pnpe.employeurs.getMine);
+  const createOffre = useMutation(api.functions.pnpe.employeurs.createOffre);
+  const submitOffre = useMutation(api.functions.pnpe.employeurs.submitOffre);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -159,6 +190,20 @@ export default function NouvelleOffrePage() {
               required
             />
           </div>
+          <IAstedJobOfferDrafter
+            titre={form.titre}
+            secteur={form.secteurActivite}
+            typeContrat={form.typeContrat}
+            salaireMin={form.salaireMin ? Number(form.salaireMin) : undefined}
+            salaireMax={form.salaireMax ? Number(form.salaireMax) : undefined}
+            onInsert={(description, missions) => {
+              setForm((s) => ({
+                ...s,
+                description,
+                missions: missions.join("\n"),
+              }));
+            }}
+          />
           <div>
             <label className="text-sm font-medium block mb-1.5">
               Description *
@@ -236,7 +281,9 @@ export default function NouvelleOffrePage() {
               </label>
               <select
                 value={form.secteurActivite}
-                onChange={(e) => update("secteurActivite", e.target.value)}
+                onChange={(e) =>
+                  update("secteurActivite", e.target.value as SecteurNAF)
+                }
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
               >
                 <option value="BTP_CONSTRUCTION">BTP</option>
@@ -284,7 +331,7 @@ export default function NouvelleOffrePage() {
               </label>
               <select
                 value={form.province}
-                onChange={(e) => update("province", e.target.value)}
+                onChange={(e) => update("province", e.target.value as Province)}
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
               >
                 <option value="ESTUAIRE">Estuaire</option>

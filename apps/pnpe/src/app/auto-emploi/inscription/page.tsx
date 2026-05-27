@@ -9,14 +9,33 @@ import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
 
+type SecteurNAF =
+  | "AGRICULTURE_PECHE"
+  | "MINES_EXTRACTION"
+  | "PETROLE_GAZ"
+  | "INDUSTRIE_MANUFACTURE"
+  | "BTP_CONSTRUCTION"
+  | "COMMERCE"
+  | "TRANSPORT_LOGISTIQUE"
+  | "HOTELLERIE_RESTAURATION"
+  | "TELECOMS_NUMERIQUE"
+  | "BANQUE_ASSURANCE"
+  | "SANTE_SOCIAL"
+  | "EDUCATION_FORMATION"
+  | "ADMINISTRATION_PUBLIQUE"
+  | "SERVICES_AUX_ENTREPRISES"
+  | "ARTS_CULTURE_SPORT"
+  | "ENERGIE_EAU"
+  | "AUTRES";
+
 export default function InscriptionAutoEmploi() {
   const router = useRouter();
-  const [secteur, setSecteur] = useState("COMMERCE");
+  const [secteur, setSecteur] = useState<SecteurNAF>("COMMERCE");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const demandeur = useQuery((api as any).functions.pnpe.demandeurs.getMine);
-  const enroll = useMutation((api as any).functions.pnpe.autoEmploi.enroll);
+  const demandeur = useQuery(api.functions.pnpe.demandeurs.getMine);
+  const enroll = useMutation(api.functions.pnpe.autoEmploi.enroll);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +85,7 @@ export default function InscriptionAutoEmploi() {
           </label>
           <select
             value={secteur}
-            onChange={(e) => setSecteur(e.target.value)}
+            onChange={(e) => setSecteur(e.target.value as SecteurNAF)}
             className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
           >
             <option value="COMMERCE">Commerce</option>

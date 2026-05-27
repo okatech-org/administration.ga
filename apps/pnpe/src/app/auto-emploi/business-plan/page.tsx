@@ -11,7 +11,7 @@ import { api } from "@convex/_generated/api";
 import { BMCEditor } from "@/components/auto-emploi/BMCEditor";
 
 export default function BusinessPlanPage() {
-  const programme = useQuery((api as any).functions.pnpe.autoEmploi.getMine);
+  const programme = useQuery(api.functions.pnpe.autoEmploi.getMine);
 
   return (
     <div className="space-y-6">

@@ -182,14 +182,14 @@ export function BackofficeSettingsTab() {
 	// par OpenAI (Téké, Fang, Punu, etc.). Injectées dans le system prompt
 	// à chaque session.
 	const { data: lexicon } = useAuthenticatedConvexQuery(
-		(api as any).ai.userLexicon.listMyLexicon,
+		api.ai.userLexicon.listMyLexicon,
 		{},
 	);
 	const { mutateAsync: addLexiconPhrase } = useConvexMutationQuery(
-		(api as any).ai.userLexicon.addPhrase,
+		api.ai.userLexicon.addPhrase,
 	);
 	const { mutateAsync: deleteLexiconPhrase } = useConvexMutationQuery(
-		(api as any).ai.userLexicon.deletePhrase,
+		api.ai.userLexicon.deletePhrase,
 	);
 	const [newLexiconEntry, setNewLexiconEntry] = useState({
 		expression: "",

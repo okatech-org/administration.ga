@@ -15,6 +15,17 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { api } from "@convex/_generated/api";
 
+type Province =
+  | "ESTUAIRE"
+  | "HAUT_OGOOUE"
+  | "MOYEN_OGOOUE"
+  | "NGOUNIE"
+  | "NYANGA"
+  | "OGOOUE_IVINDO"
+  | "OGOOUE_LOLO"
+  | "OGOOUE_MARITIME"
+  | "WOLEU_NTEM";
+
 type FormState = {
   nom: string;
   prenoms: string;
@@ -25,7 +36,7 @@ type FormState = {
   description: string;
   typeContrat: "CDD" | "CDI" | "STAGE" | "ALTERNANCE" | "INTERIM" | "INDEPENDANT";
   ville: string;
-  province: string;
+  province: Province;
   salaireMin: string;
   salaireMax: string;
   dateExpiration: string;
@@ -53,7 +64,7 @@ export default function PublierParticulierPage() {
   const [submitting, setSubmitting] = useState(false);
 
   
-  const create = useMutation((api as any).functions.pnpe.offresPubliques?.createByParticulier);
+  const create = useMutation(api.functions.pnpe.offresPubliques?.createByParticulier);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -186,7 +197,7 @@ export default function PublierParticulierPage() {
                   </label>
                   <select
                     value={form.province}
-                    onChange={(e) => update("province", e.target.value)}
+                    onChange={(e) => update("province", e.target.value as Province)}
                     className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                   >
                     <option value="ESTUAIRE">Estuaire</option>

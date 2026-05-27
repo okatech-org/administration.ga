@@ -102,9 +102,9 @@ const ECOSYSTEME = [
 
 export default function LandingPage() {
   // KPIs Convex — typés `any` (api codegen partiel en CI)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const kpis = useQuery(
-    (api as any).functions?.pnpe?.stats?.nationalKpis,
+    api.functions?.pnpe?.stats?.nationalKpis,
   ) as NationalKpis | undefined;
 
   const { isFavori, toggle: toggleFavori } = useFavoris();

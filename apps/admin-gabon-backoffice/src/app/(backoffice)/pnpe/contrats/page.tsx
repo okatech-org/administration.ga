@@ -71,11 +71,11 @@ export default function PnpeContratsPage() {
 	const { t } = useTranslation();
 
 	const { data: contrats, isLoading } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.backofficeQueries.listContrats,
+		api.functions.pnpe.backofficeQueries.listContrats,
 		{},
 	);
 	const { data: kpis } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.backofficeQueries.contratsKpis,
+		api.functions.pnpe.backofficeQueries.contratsKpis,
 		{},
 	);
 

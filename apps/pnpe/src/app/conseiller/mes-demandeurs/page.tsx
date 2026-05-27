@@ -7,8 +7,19 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Users } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
-const STATUT_LABELS: Record<string, string> = {
+type StatutDemandeur =
+  | "BROUILLON"
+  | "EN_VALIDATION"
+  | "ACTIF"
+  | "EN_FORMATION"
+  | "EN_CONTRAT"
+  | "PLACE"
+  | "SUSPENDU"
+  | "RADIE";
+
+const STATUT_LABELS: Record<StatutDemandeur, string> = {
   BROUILLON: "Brouillon",
   EN_VALIDATION: "En validation",
   ACTIF: "Actif",
@@ -21,16 +32,16 @@ const STATUT_LABELS: Record<string, string> = {
 
 export default function MesDemandeursPage() {
   const [selectedAntenneId, setSelectedAntenneId] = useState<string>("");
-  const [statutFilter, setStatutFilter] = useState<string>("");
-  const antennes = (useQuery((api as any).functions.pnpe.antennes.list, {}) ?? []) as Array<{
+  const [statutFilter, setStatutFilter] = useState<StatutDemandeur | "">("");
+  const antennes = (useQuery(api.functions.pnpe.antennes.list, {}) ?? []) as Array<{
     _id: string;
     nom: string;
   }>;
   const demandeurs = (useQuery(
-    selectedAntenneId ? (api as any).functions.pnpe.demandeurs.listByAntenne : "skip",
+    api.functions.pnpe.demandeurs.listByAntenne,
     selectedAntenneId
       ? {
-          antenneId: selectedAntenneId,
+          antenneId: selectedAntenneId as Id<"antennesPnpe">,
           statut: statutFilter || undefined,
         }
       : "skip",
@@ -69,7 +80,9 @@ export default function MesDemandeursPage() {
         </select>
         <select
           value={statutFilter}
-          onChange={(e) => setStatutFilter(e.target.value)}
+          onChange={(e) =>
+            setStatutFilter(e.target.value as StatutDemandeur | "")
+          }
           className="rounded-lg border bg-background px-3 py-1.5 text-sm"
         >
           <option value="">Tous les statuts</option>
@@ -107,7 +120,8 @@ export default function MesDemandeursPage() {
                   <td className="p-3 text-xs">{d.provinceResidence}</td>
                   <td className="p-3 text-xs">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5">
-                      {STATUT_LABELS[d.statutCompte] ?? d.statutCompte}
+                      {STATUT_LABELS[d.statutCompte as StatutDemandeur] ??
+                        d.statutCompte}
                     </span>
                   </td>
                 </tr>

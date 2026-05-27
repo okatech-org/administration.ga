@@ -11,10 +11,14 @@
  */
 "use client";
 
+import { useMutation } from "convex/react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useAuthenticatedConvexQuery } from "@/integrations/convex/hooks";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FlatCard } from "@/components/design-system/flat-card";
 import { PageHeader } from "@/components/design-system/page-header";
 import { SectionHeader } from "@/components/design-system/section-header";
@@ -23,6 +27,7 @@ import {
 	Briefcase,
 	GraduationCap,
 	MapPin,
+	PowerIcon,
 	Shield,
 	UserCheck,
 	Users,
@@ -80,11 +85,30 @@ function getRoleMeta(role: string) {
 
 export default function PnpeUtilisateursPage() {
 	const { t } = useTranslation();
+	const toggleStaffActive = useMutation(
+		api.functions.pnpe.antennes.toggleStaffActive,
+	);
 
 	const { data: staff, isLoading } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.backofficeQueries.listStaff,
+		api.functions.pnpe.backofficeQueries.listStaff,
 		{},
 	);
+
+	const onToggleActive = async (id: Id<"pnpeStaffAssignments">) => {
+		try {
+			const res = await toggleStaffActive({ staffId: id });
+			toast.success(
+				res.next ? "Agent réactivé." : "Agent désactivé.",
+			);
+		} catch (err) {
+			const m = err instanceof Error ? err.message : "Erreur";
+			if (m.includes("INSUFFICIENT_PERMISSIONS")) {
+				toast.error("Permissions insuffisantes.");
+			} else {
+				toast.error(m);
+			}
+		}
+	};
 
 	const list = (staff ?? []) as any[];
 	const byRole: Record<string, number> = {};
@@ -229,6 +253,27 @@ export default function PnpeUtilisateursPage() {
 													<span className="truncate">{s.antenneNom}</span>
 												</div>
 											)}
+
+											{/* Toggle actif/inactif */}
+											<Button
+												size="sm"
+												variant="ghost"
+												className="h-8 gap-1 text-xs shrink-0"
+												onClick={() =>
+													onToggleActive(
+														s._id as Id<"pnpeStaffAssignments">,
+													)
+												}
+												title={
+													s.isActive
+														? "Désactiver l'agent"
+														: "Réactiver l'agent"
+												}
+											>
+												<PowerIcon
+													className={`h-3.5 w-3.5 ${s.isActive ? "text-emerald-600" : "text-muted-foreground"}`}
+												/>
+											</Button>
 										</div>
 									);
 								})}

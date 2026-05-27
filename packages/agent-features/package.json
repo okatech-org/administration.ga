@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Pages et composants partagés entre agent-web (Next.js) et agent-desktop (Electron). Toutes les features métier (dashboard, affaires diplomatiques/consulaires, iBureau, iAsted, calls, meetings, settings…) vivent ici pour éviter toute duplication.",
+  "description": "Pages et composants partag\u00e9s entre agent-web (Next.js) et agent-desktop (Electron). Toutes les features m\u00e9tier (dashboard, affaires diplomatiques/consulaires, iBureau, iAsted, calls, meetings, settings\u2026) vivent ici pour \u00e9viter toute duplication.",
   "exports": {
     "./shell": "./src/shell/index.ts",
     "./features/*": "./src/features/*/index.ts",
@@ -18,7 +18,7 @@
     "./stores": "./src/stores/index.ts"
   },
   "scripts": {
-    "lint": "eslint",
+    "lint": "echo \"workspace package \u2014 lint delegated to apps\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -1908,3 +1908,35 @@ export const bulkAssignTemplates = authMutation({
     return { updated, count: args.templateIds.length }
   },
 })
+
+/**
+ * Liste les organisations dans lesquelles l'utilisateur courant est
+ * membre actif (memberships non supprimées). Utilisé par TRAVAIL.GA
+ * pour permettre à un agent administratif de publier une offre au nom
+ * d'un organisme public auquel il est rattaché.
+ */
+export const listMine = authQuery({
+  args: {},
+  handler: async (ctx) => {
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => q.eq("userId", ctx.user._id))
+      .collect()
+    const active = memberships.filter((m) => !m.deletedAt)
+
+    const orgs = await Promise.all(
+      active.map(async (m) => {
+        const org = await ctx.db.get(m.orgId)
+        if (!org || org.deletedAt) return null
+        return {
+          _id: org._id,
+          name: org.name,
+          slug: org.slug,
+          type: org.type,
+        }
+      }),
+    )
+
+    return orgs.filter((o): o is NonNullable<typeof o> => o !== null)
+  },
+})

@@ -73,15 +73,15 @@ export default function PnpeReportingPage() {
 	const [exporting, setExporting] = useState<string | null>(null);
 
 	const { data: kpis } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.stats.nationalKpis,
+		api.functions.pnpe.stats.nationalKpis,
 		{},
 	);
 	const { data: byProvince } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.stats.demandeursByProvince,
+		api.functions.pnpe.stats.demandeursByProvince,
 		{},
 	);
 	const { data: bySector } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.stats.offresBySector,
+		api.functions.pnpe.stats.offresBySector,
 		{},
 	);
 
@@ -140,6 +140,75 @@ export default function PnpeReportingPage() {
 		}
 	};
 
+	/**
+	 * Export combiné multi-sections — un seul fichier CSV avec 3 sections
+	 * délimitées par des lignes d'entête. Format pratique pour le cabinet
+	 * qui veut une vision globale sans gérer 3 fichiers séparés.
+	 */
+	const exportSnapshotComplet = () => {
+		setExporting("complet");
+		try {
+			const sections: (string | number)[][] = [];
+
+			// Section 1 : KPI nationaux
+			sections.push(["=== KPI NATIONAUX ==="]);
+			sections.push(["Indicateur", "Valeur"]);
+			sections.push(["Demandeurs inscrits", kpis?.demandeursInscrits ?? 0]);
+			sections.push(["Demandeurs actifs", kpis?.demandeursActifs ?? 0]);
+			sections.push(["Demandeurs placés", kpis?.demandeursPlaces ?? 0]);
+			sections.push(["Offres publiées", kpis?.offresPubliees ?? 0]);
+			sections.push(["Employeurs vérifiés", kpis?.employeursVerifies ?? 0]);
+			sections.push([
+				"Antennes opérationnelles",
+				kpis?.antennesOperationnelles ?? 0,
+			]);
+			sections.push([""]);
+
+			// Section 2 : Par province
+			sections.push(["=== DEMANDEURS D'EMPLOI PAR PROVINCE ==="]);
+			sections.push(["Province", "Nombre de D.E"]);
+			for (const row of byProvince ?? []) {
+				sections.push([row.province, row.count]);
+			}
+			sections.push([""]);
+
+			// Section 3 : Par secteur
+			sections.push(["=== OFFRES PAR SECTEUR NAF ==="]);
+			sections.push(["Secteur NAF", "Nombre d'offres"]);
+			for (const row of bySector ?? []) {
+				sections.push([row.secteur, row.count]);
+			}
+			sections.push([""]);
+
+			// Footer
+			sections.push([
+				`Généré le ${new Date().toLocaleString("fr-FR")}`,
+				"PNPE Gabon — Snapshot complet",
+			]);
+
+			const csv = sections
+				.map((row) => row.map(quoteCsv).join(","))
+				.join("\n");
+			const blob = new Blob(["﻿" + csv], {
+				type: "text/csv;charset=utf-8;",
+			});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `pnpe-snapshot-complet-${todayYmd()}.csv`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			toast.success("Snapshot complet PNPE téléchargé.");
+		} catch (e: any) {
+			toast.error(`Export échoué : ${e?.message ?? "erreur inconnue"}`);
+		} finally {
+			setExporting(null);
+		}
+	};
+
 	return (
 		<div className="space-y-6">
 			<PageHeader
@@ -149,6 +218,17 @@ export default function PnpeReportingPage() {
 					"Exports CSV vers le ministère du Travail — chiffres courants à fournir au cabinet",
 				)}
 				icon={FileBarChart}
+				actions={
+					<Button
+						size="sm"
+						className="gap-1.5"
+						onClick={exportSnapshotComplet}
+						disabled={exporting === "complet" || !kpis}
+					>
+						<Download className="h-3.5 w-3.5" />
+						Snapshot complet
+					</Button>
+				}
 			/>
 
 			{/* Note sur les séries temporelles */}

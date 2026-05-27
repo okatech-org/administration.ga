@@ -71,11 +71,11 @@ export default function PnpeProgrammesPage() {
 	const { t } = useTranslation();
 
 	const { data: programmes, isLoading } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.backofficeQueries.listProgrammes,
+		api.functions.pnpe.backofficeQueries.listProgrammes,
 		{},
 	);
 	const { data: kpis } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.backofficeQueries.programmesKpis,
+		api.functions.pnpe.backofficeQueries.programmesKpis,
 		{},
 	);
 

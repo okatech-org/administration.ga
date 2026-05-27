@@ -12,18 +12,22 @@ import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { CheckCircle2, Inbox, Phone } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 export default function FileAttentePage() {
   const [selectedAntenneId, setSelectedAntenneId] = useState<string>("");
-  const antennes = (useQuery((api as any).functions.pnpe.antennes.list, {}) ?? []) as Array<{
+  const antennes = (useQuery(api.functions.pnpe.antennes.list, {}) ?? []) as Array<{
     _id: string;
     slug: string;
     nom: string;
   }>;
   const demandeurs = (useQuery(
-    selectedAntenneId ? (api as any).functions.pnpe.demandeurs.listByAntenne : "skip",
+    api.functions.pnpe.demandeurs.listByAntenne,
     selectedAntenneId
-      ? { antenneId: selectedAntenneId, statut: "EN_VALIDATION" }
+      ? {
+          antenneId: selectedAntenneId as Id<"antennesPnpe">,
+          statut: "EN_VALIDATION" as const,
+        }
       : "skip",
   ) ?? []) as Array<{
     _id: string;
@@ -33,11 +37,11 @@ export default function FileAttentePage() {
     telephoneWhatsApp?: string;
     _creationTime: number;
   }>;
-  const validate = useMutation((api as any).functions.pnpe.demandeurs.validateDemandeur);
+  const validate = useMutation(api.functions.pnpe.demandeurs.validateDemandeur);
 
   const onValidate = async (id: string) => {
     try {
-      await validate({ demandeurId: id });
+      await validate({ demandeurId: id as Id<"demandeursEmploi"> });
       toast.success("D.E validé. Statut → ACTIF.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erreur");

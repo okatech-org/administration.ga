@@ -20,6 +20,8 @@ import {
   UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PnpeRoleGate } from "@/components/auth/PnpeRoleGate";
+import { PnpeRole } from "@/lib/pnpe/roles";
 
 const NAV_ITEMS = [
   { href: "/demandeur/profil", label: "Mon profil", icon: UserCircle },
@@ -37,6 +39,10 @@ export default function DemandeurLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  // Pages d'inscription : accessibles sans profil (le user n'a pas encore
+  // de profil D.E). Les autres routes /demandeur/* exigent le rôle.
+  const isInscription = pathname?.startsWith("/demandeur/inscription");
 
   return (
     <div className="min-h-screen bg-background">
@@ -97,7 +103,15 @@ export default function DemandeurLayout({
           </aside>
 
           {/* Main content */}
-          <main className="min-w-0">{children}</main>
+          <main className="min-w-0">
+            {isInscription ? (
+              children
+            ) : (
+              <PnpeRoleGate allowedRoles={[PnpeRole.DemandeurEmploi]}>
+                {children}
+              </PnpeRoleGate>
+            )}
+          </main>
         </div>
       </div>
     </div>

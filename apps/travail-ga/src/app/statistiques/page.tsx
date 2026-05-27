@@ -11,12 +11,12 @@ import { api } from "@convex/_generated/api";
 
 export default function StatistiquesPage() {
   
-  const kpis = useQuery((api as any).functions.pnpe.stats?.nationalKpis, {});
+  const kpis = useQuery(api.functions.pnpe.stats?.nationalKpis, {});
   
-  const byProvince = (useQuery((api as any).functions.pnpe.stats?.demandeursByProvince, {}) ??
+  const byProvince = (useQuery(api.functions.pnpe.stats?.demandeursByProvince, {}) ??
     []) as Array<{ province: string; count: number }>;
   
-  const bySector = (useQuery((api as any).functions.pnpe.stats?.offresBySector, {}) ?? []) as Array<{
+  const bySector = (useQuery(api.functions.pnpe.stats?.offresBySector, {}) ?? []) as Array<{
     secteur: string;
     count: number;
   }>;

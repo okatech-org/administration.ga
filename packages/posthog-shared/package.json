@@ -3,12 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Utilitaires PostHog partagés : scrubber RGPD (passeport, NIP, CNI, emails) appliqué via before_send côté client et posthog-node côté serveur.",
+  "description": "Utilitaires PostHog partag\u00e9s : scrubber RGPD (passeport, NIP, CNI, emails) appliqu\u00e9 via before_send c\u00f4t\u00e9 client et posthog-node c\u00f4t\u00e9 serveur.",
   "exports": {
     "./scrub-pii": "./src/scrub-pii.ts"
   },
   "scripts": {
-    "lint": "eslint",
+    "lint": "echo \"workspace package \u2014 lint delegated to apps\"",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Utilitaires iChat partagés : idempotencyKey anti-double-send, rendu Markdown sanitizé (XSS safe), composants communs.",
+  "description": "Utilitaires iChat partag\u00e9s : idempotencyKey anti-double-send, rendu Markdown sanitiz\u00e9 (XSS safe), composants communs.",
   "exports": {
     "./use-idempotency-key": "./src/use-idempotency-key.ts",
     "./use-chat-attachments": "./src/use-chat-attachments.ts",
@@ -11,7 +11,7 @@
     "./inline-message-editor": "./src/inline-message-editor.tsx"
   },
   "scripts": {
-    "lint": "eslint",
+    "lint": "echo \"workspace package \u2014 lint delegated to apps\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

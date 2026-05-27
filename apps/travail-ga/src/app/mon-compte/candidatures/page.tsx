@@ -1,5 +1,8 @@
 /**
  * Mes candidatures (citoyen ordinaire) — TRAVAIL.GA.
+ *
+ * Layout (SiteHeader/SiteFooter/Sidebar) géré par
+ * `app/mon-compte/layout.tsx` — cette page ne rend QUE le contenu.
  */
 "use client";
 
@@ -13,8 +16,6 @@ import {
   Send,
   User,
 } from "lucide-react";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { api } from "@convex/_generated/api";
 
 const STATUT_LABELS: Record<string, { label: string; tone: string }> = {
@@ -40,7 +41,7 @@ export default function MesCandidaturesPage() {
   
   // Auth pas câblée sur TRAVAIL.GA — on skip pour éviter NOT_AUTHENTICATED
   const candidatures = (useQuery(
-    (api as any).functions.pnpe.citizenMigration?.listMyCandidatures,
+    api.functions.pnpe.citizenMigration?.listMyCandidatures,
     "skip",
   ) ?? []) as Array<{
     _id: string;
@@ -56,11 +57,9 @@ export default function MesCandidaturesPage() {
   }>;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
-
-      <main className="flex-1 py-10">
-        <div className="container mx-auto px-6 lg:px-10 max-w-3xl">
+    <div className="max-w-3xl">
+      <div>
+        <div>
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h1 className="text-2xl font-display font-bold tracking-tight">
@@ -143,9 +142,7 @@ export default function MesCandidaturesPage() {
             </ul>
           )}
         </div>
-      </main>
-
-      <SiteFooter />
+      </div>
     </div>
   );
 }

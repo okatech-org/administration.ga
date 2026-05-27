@@ -33,7 +33,7 @@ const STATUT_BADGES: Record<string, { label: string; tone: string; icon: typeof 
 
 export default function ProfilDemandeurPage() {
   const router = useRouter();
-  const demandeur = useQuery((api as any).functions.pnpe.demandeurs.getMine);
+  const demandeur = useQuery(api.functions.pnpe.demandeurs.getMine);
 
   useEffect(() => {
     if (demandeur === null) {

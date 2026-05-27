@@ -106,19 +106,16 @@ function KpiCard({ label, value, icon: Icon, iconColorClass, hint, loading }: Kp
 export default function PnpeDashboardPage() {
 	const { t } = useTranslation();
 
-	// Cast `(api as any)` : pattern utilisé pour résister au codegen Convex stale
-	// (cf. bulk-fix PR #33 sur les pages publiques travail-ga). À retirer une
-	// fois le codegen régénéré côté Convex prod.
 	const { data: kpis, isLoading: kpisLoading } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.stats.nationalKpis,
+		api.functions.pnpe.stats.nationalKpis,
 		{},
 	);
 	const { data: byProvince, isLoading: byProvinceLoading } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.stats.demandeursByProvince,
+		api.functions.pnpe.stats.demandeursByProvince,
 		{},
 	);
 	const { data: bySector, isLoading: bySectorLoading } = useAuthenticatedConvexQuery(
-		(api as any).functions.pnpe.stats.offresBySector,
+		api.functions.pnpe.stats.offresBySector,
 		{},
 	);
 

@@ -31,7 +31,7 @@ export default function EntretienVisioPage({
       setToken(null);
     });
 
-  const requestToken = useAction((api as any).actions.pnpeLivekit.getEntretienToken);
+  const requestToken = useAction(api.actions.pnpeLivekit.getEntretienToken);
 
   useEffect(() => {
     let cancelled = false;

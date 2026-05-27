@@ -22,13 +22,33 @@ const CONTRAT_LABELS: Record<string, string> = {
   INDEPENDANT: "Indépendant",
 };
 
+type TypeContrat =
+  | "CDI"
+  | "CDD"
+  | "STAGE"
+  | "ALTERNANCE"
+  | "INTERIM"
+  | "INSERTION"
+  | "INDEPENDANT";
+
+type Province =
+  | "ESTUAIRE"
+  | "HAUT_OGOOUE"
+  | "MOYEN_OGOOUE"
+  | "NGOUNIE"
+  | "NYANGA"
+  | "OGOOUE_IVINDO"
+  | "OGOOUE_LOLO"
+  | "OGOOUE_MARITIME"
+  | "WOLEU_NTEM";
+
 export default function OffresPage() {
   const [filters, setFilters] = useState<{
-    typeContrat?: string;
-    province?: string;
+    typeContrat?: TypeContrat;
+    province?: Province;
   }>({});
 
-  const offres = useQuery((api as any).functions.pnpe.offres.listPublished, filters) ?? [];
+  const offres = useQuery(api.functions.pnpe.offres.listPublished, filters) ?? [];
 
   return (
     <div className="space-y-6">
@@ -52,7 +72,9 @@ export default function OffresPage() {
           onChange={(e) =>
             setFilters({
               ...filters,
-              typeContrat: e.target.value || undefined,
+              typeContrat: (e.target.value || undefined) as
+                | TypeContrat
+                | undefined,
             })
           }
           className="rounded-lg border bg-background px-3 py-1.5 text-sm"

@@ -12,8 +12,8 @@ import { FileCheck2, ShieldCheck } from "lucide-react";
 import { api } from "@convex/_generated/api";
 
 export default function VerificationPage() {
-  const employeur = useQuery((api as any).functions.pnpe.employeurs.getMine);
-  const request = useMutation((api as any).functions.pnpe.employeurs.requestVerification);
+  const employeur = useQuery(api.functions.pnpe.employeurs.getMine);
+  const request = useMutation(api.functions.pnpe.employeurs.requestVerification);
 
   if (employeur === undefined) {
     return <div className="h-64 bg-muted/50 animate-pulse rounded-xl" />;

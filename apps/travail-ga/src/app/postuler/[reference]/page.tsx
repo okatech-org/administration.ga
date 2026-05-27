@@ -25,6 +25,7 @@ import { Badge, Button } from "@/components/design/ui";
 import { authClient } from "@/lib/auth-client";
 import { offreHref, pnpeLink } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 type FormState = {
   nom: string;
@@ -112,15 +113,15 @@ export default function PostulerPage({
     }));
   }, [initial]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const offre = useQuery(
-    (api as any).functions.pnpe.offres?.getByReference,
+    api.functions.pnpe.offres?.getByReference,
     { reference },
   ) as { _id: string; titre: string } | null | undefined;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const apply = useMutation(
-    (api as any).functions.pnpe.candidaturesPubliques?.applyAsCitizen,
+    api.functions.pnpe.candidaturesPubliques?.applyAsCitizen,
   );
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -136,7 +137,7 @@ export default function PostulerPage({
     setSubmitting(true);
     try {
       await apply({
-        offreId: offre._id,
+        offreId: offre._id as Id<"offresEmploi">,
         contact: {
           nom: form.nom,
           prenoms: form.prenoms,
