@@ -263,7 +263,7 @@ export function UserButton() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {view.fullName ?? view.email ?? "Compte"}
+                {view.fullName || view.email || "Compte"}
               </div>
               {view.email && view.fullName && (
                 <div
